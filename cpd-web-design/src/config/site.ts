@@ -180,6 +180,15 @@ export const portfolio: PortfolioItem[] = [
     cover: { bg: "#14202B", fg: "#C9A66B" },
   },
   {
+    title: "Sette Colli Tours",
+    href: "/examples/tours",
+    year: "Demo",
+    category: { en: "Tour company · example site", it: "Tour operator · sito di esempio" },
+    description: { en: "Tour filters, live booking with dates, times and prices, guides.", it: "Filtri dei tour, prenotazione con date, orari e prezzi, guide." },
+    image: "/images/work/tours.jpg",
+    cover: { bg: "#2B211C", fg: "#F4EDE2" },
+  },
+  {
     title: "Salone Iris",
     href: "/examples/salon",
     year: "Demo",

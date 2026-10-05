@@ -10,7 +10,8 @@ import { hotelMeta } from "./hotel";
 import { portfolioMeta } from "./portfolio";
 import { restaurantMeta } from "./restaurant";
 import { salonMeta } from "./salon";
+import { toursMeta } from "./tours";
 import { yogaMeta } from "./yoga";
 import type { ExampleMeta } from "./types";
 
-export const examples: ExampleMeta[] = [restaurantMeta, hotelMeta, salonMeta, yogaMeta, portfolioMeta];
+export const examples: ExampleMeta[] = [restaurantMeta, hotelMeta, toursMeta, salonMeta, yogaMeta, portfolioMeta];

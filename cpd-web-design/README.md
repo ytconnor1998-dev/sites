@@ -21,7 +21,7 @@ npm run lint
 | **Example sites / client work section** | `src/config/site.ts` → `portfolio` |
 | Contact form endpoint (Formspree) | `src/config/site.ts` → `contactForm` or env `NEXT_PUBLIC_FORM_ENDPOINT` |
 | **All page copy, EN + IT** (headlines, FAQ, about text…) | `src/content/translations.ts` |
-| Example sites' content (menus, rooms, prices, timetables, images, which plan each is on) | `src/content/examples/*.ts` (restaurant, hotel, salon, yoga, portfolio) |
+| Example sites' content (menus, rooms, prices, timetables, images, which plan each is on) | `src/content/examples/*.ts` (restaurant, hotel, tours, salon, yoga, portfolio) |
 | Example screenshots used in the hero and Work section | `public/images/work/*.jpg` (retake them after changing a demo) |
 | Feature list shown in each demo's overlay and on the home page | `features` in each demo file above |
 | **Legal details** (legal name, address, PEC, REA, notice period, court) | `src/config/site.ts` → `legal` |
