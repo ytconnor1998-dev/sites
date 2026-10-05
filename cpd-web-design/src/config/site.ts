@@ -31,6 +31,34 @@ export const site = {
   languages: ["English", "Italiano"],
 };
 
+/**
+ * LEGAL DETAILS
+ * Used on /privacy, /cookies, /terms and /legal. Fill these in before going public,
+ * and have the pages checked by a lawyer or your commercialista: they're a solid
+ * starting point, not legal advice. The page text is in src/content/legal.ts.
+ * Lines whose value is "" (e.g. no PEC) are left off the pages automatically.
+ */
+export const legal = {
+  /** Your full legal name, or your company's registered name. */
+  ownerName: "Your Full Name", // PLACEHOLDER
+  /** Full business address. */
+  address: "Via Esempio 1, 00100 Roma (RM), Italia", // PLACEHOLDER
+  /** Certified email (PEC), if you have one. */
+  pec: "", // PLACEHOLDER
+  /** REA number, if registered with the Chamber of Commerce (e.g. "RM-1234567"). */
+  rea: "",
+  /** When the legal pages last changed (YYYY-MM-DD). Update it whenever you edit them. */
+  lastUpdated: "2026-10-05",
+  /** Days of notice to cancel after the minimum term (also written into the FAQ copy). */
+  noticeDays: 30,
+  /** Months to keep enquiries that don't become clients. */
+  enquiryRetentionMonths: 12,
+  /** Court for disputes with business clients. */
+  court: { en: "Rome", it: "Roma" } satisfies L,
+  /** Hosting provider, named in the legal notice. Change it if you move host. */
+  host: "Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA",
+};
+
 export const contact = {
   email: "hello@cpdwebdesign.com", // PLACEHOLDER
   /** International format, digits only, no + or spaces (used for wa.me links). */
@@ -46,6 +74,8 @@ export const contact = {
  * 2. Paste its endpoint below, e.g. "https://formspree.io/f/abcdwxyz".
  * While it still contains "YOUR_FORM_ID", the form runs in demo mode: it shows the
  * success message but sends nothing (and logs a warning in the browser console).
+ * Using a service other than Formspree? Add its domain to connect-src and form-action
+ * in vercel.json (the Content-Security-Policy), or the browser will block the request.
  */
 export const contactForm = {
   endpoint: process.env.NEXT_PUBLIC_FORM_ENDPOINT ?? "https://formspree.io/f/YOUR_FORM_ID",

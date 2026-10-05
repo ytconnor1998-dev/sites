@@ -4,20 +4,20 @@ import { Header } from "@/components/site/Header";
 import { LegalPage } from "@/components/site/LegalPage";
 import { legalDocs } from "@/content/legal";
 
-const doc = legalDocs.en.privacy;
+const doc = legalDocs.en.cookies;
 
 export const metadata: Metadata = {
   title: doc.title,
   description: doc.description,
-  alternates: { canonical: "/privacy" },
+  alternates: { canonical: "/cookies" },
 };
 
-export default function PrivacyPage() {
+export default function CookiePolicyPage() {
   return (
     <>
       <Header />
       <main id="main">
-        <LegalPage kind="privacy" />
+        <LegalPage kind="cookies" />
       </main>
       <Footer />
     </>

@@ -119,16 +119,16 @@ export function Contact() {
             <form onSubmit={onSubmit} noValidate className="grid gap-5 sm:grid-cols-2">
               <p className="font-medium sm:col-span-2">{t.contact.or}</p>
               <Field id="contact-name" label={f.name} error={errors.name}>
-                <input id="contact-name" name="name" autoComplete="name" required value={fields.name} onChange={(e) => set("name", e.target.value)} aria-invalid={!!errors.name} aria-describedby={errors.name ? "contact-name-error" : undefined} className={input} />
+                <input id="contact-name" name="name" autoComplete="name" required maxLength={100} value={fields.name} onChange={(e) => set("name", e.target.value)} aria-invalid={!!errors.name} aria-describedby={errors.name ? "contact-name-error" : undefined} className={input} />
               </Field>
               <Field id="contact-business" label={f.business}>
-                <input id="contact-business" name="business" autoComplete="organization" value={fields.business} onChange={(e) => set("business", e.target.value)} className={input} />
+                <input id="contact-business" name="business" autoComplete="organization" maxLength={120} value={fields.business} onChange={(e) => set("business", e.target.value)} className={input} />
               </Field>
               <Field id="contact-email" label={f.email} error={errors.email} className="sm:col-span-2">
-                <input id="contact-email" name="email" type="email" autoComplete="email" required value={fields.email} onChange={(e) => set("email", e.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email ? "contact-email-error" : undefined} className={input} />
+                <input id="contact-email" name="email" type="email" autoComplete="email" required maxLength={254} value={fields.email} onChange={(e) => set("email", e.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email ? "contact-email-error" : undefined} className={input} />
               </Field>
               <Field id="contact-need" label={f.need} error={errors.need} className="sm:col-span-2">
-                <textarea id="contact-need" name="message" rows={4} required placeholder={f.needPlaceholder} value={fields.need} onChange={(e) => set("need", e.target.value)} aria-invalid={!!errors.need} aria-describedby={errors.need ? "contact-need-error" : undefined} className={`${input} resize-y py-3`} />
+                <textarea id="contact-need" name="message" rows={4} required maxLength={5000} placeholder={f.needPlaceholder} value={fields.need} onChange={(e) => set("need", e.target.value)} aria-invalid={!!errors.need} aria-describedby={errors.need ? "contact-need-error" : undefined} className={`${input} resize-y py-3`} />
               </Field>
 
 
@@ -147,7 +147,7 @@ export function Contact() {
                     <Link href="/privacy" className="text-ink underline underline-offset-4">
                       {f.privacy}
                     </Link>
-                    .
+                    {f.consentAfter}
                   </span>
                 </label>
                 {errors.consent && (

@@ -7,7 +7,7 @@ export default function NotFound() {
     <>
       <Header />
       <main id="main">
-        <SimplePage kind="notFound" />
+        <SimplePage />
       </main>
       <Footer />
     </>
