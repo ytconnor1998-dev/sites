@@ -1,0 +1,48 @@
+# ─────────────────────────────────────────────────────────────────────
+#  GENERAL SETTINGS
+# ─────────────────────────────────────────────────────────────────────
+
+user_agent: "CPDLeadFinder/1.0 (+https://www.cpdwebdesign.com; local business website audit)"
+
+database: data/leads.db
+export_dir: exports
+default_target: 100
+dry_run_limit: 10
+
+http:
+  timeout_s: 15
+  retries: 2                   # extra attempts on timeouts / 5xx / 429
+  backoff_s: 1.5               # doubles on every retry
+  audit_concurrency: 8         # business sites audited at the same time
+  per_host_delay_s: 1.0        # minimum gap between requests to the same site
+
+# Previously audited businesses that did NOT qualify are skipped on reruns
+# until this many days have passed, then re-audited.
+recheck_excluded_after_days: 90
+
+google:
+  # "primary": one query per category (first Italian term) — cheapest.
+  # "all": every Italian AND English term — better coverage, more calls.
+  term_mode: primary
+  max_pages_per_query: 3       # Google returns 20 per page, 60 max
+  requests_per_second: 5
+  # Free monthly calls for Text Search with phone/website fields
+  # ("Text Search Enterprise" SKU). Check the current number at
+  # https://developers.google.com/maps/billing-and-pricing/pricing
+  free_calls_per_month: 1000
+
+pagespeed:
+  enabled: true
+  strategy: mobile
+  timeout_s: 90
+  concurrency: 3
+  free_calls_per_day: 25000
+
+overpass:
+  urls:                        # tried in turn if one is down
+    - https://overpass-api.de/api/interpreter
+    - https://overpass.kumi.systems/api/interpreter
+  timeout_s: 120
+  delay_between_queries_s: 2
+
+contact_pages: ["/contatti", "/contact"]

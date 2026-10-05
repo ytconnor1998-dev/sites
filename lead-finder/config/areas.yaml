@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────────────
+#  ROME ZONES
+#  Each zone is a circle (center + radius_m) or a polygon (list of
+#  [lat, lon] points). Google gets the zone's bounding box as a hard
+#  location restriction and results outside the zone are dropped;
+#  Overpass gets the circle/polygon directly.
+#
+#  type: grid  splits a big circle into tiles of tile_m metres, because
+#  Google Text Search returns at most 60 results per query. Every tile
+#  is a separate query, so "All of Rome" costs a lot more API calls.
+# ─────────────────────────────────────────────────────────────────────
+
+areas:
+  centro-storico:
+    name: Centro Storico
+    center: [41.8986, 12.4769]
+    radius_m: 1000
+  trastevere:
+    name: Trastevere
+    center: [41.8885, 12.4695]
+    radius_m: 700
+  monti:
+    name: Monti
+    center: [41.8953, 12.4913]
+    radius_m: 550
+  prati-vatican:
+    name: Prati / Vatican
+    aliases: [prati, vatican, vaticano]
+    center: [41.9067, 12.4610]
+    radius_m: 1000
+  testaccio:
+    name: Testaccio
+    center: [41.8770, 12.4760]
+    radius_m: 600
+  san-lorenzo:
+    name: San Lorenzo
+    center: [41.8975, 12.5150]
+    radius_m: 550
+  pigneto:
+    name: Pigneto
+    center: [41.8880, 12.5280]
+    radius_m: 600
+  esquilino-termini:
+    name: Esquilino / Termini
+    aliases: [esquilino, termini]
+    center: [41.8970, 12.5030]
+    radius_m: 700
+  ostiense:
+    name: Ostiense
+    center: [41.8640, 12.4820]
+    radius_m: 900
+  all:
+    name: All of Rome
+    aliases: [all of rome, rome, roma, tutta roma]
+    type: grid
+    center: [41.8930, 12.4940]   # roughly the centre of the GRA ring road
+    radius_m: 10500
+    tile_m: 3000

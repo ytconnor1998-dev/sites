@@ -1,0 +1,149 @@
+# ─────────────────────────────────────────────────────────────────────
+#  WEBSITE AUDIT
+#  Every site starts at 100. Each failed check subtracts its weight.
+#  Set enabled: false to switch a check off; change label to change
+#  how it reads in the "Failed checks" column.
+# ─────────────────────────────────────────────────────────────────────
+
+start_score: 100
+
+tiers:
+  # Tier A = no website / no real website (set by the "no_real_website" rule)
+  B: {max_score: 49}   # score < 50
+  C: {max_score: 70}   # score 50–70; anything above is excluded
+
+checks:
+  no_https:
+    enabled: true
+    weight: 20
+    label: "No HTTPS"
+    invalid_ssl_label: "Invalid SSL certificate"
+  not_mobile_friendly:
+    enabled: true
+    weight: 20
+    label: "Not mobile-friendly"
+  slow_pagespeed:
+    enabled: true
+    weight: 15
+    label: "Slow on mobile (PageSpeed {score})"
+    threshold: 50              # mobile performance score below this fails
+  old_copyright:
+    enabled: true
+    weight: 10
+    label: "©{year}"
+    min_year: 2022             # footer year older than this fails
+  outdated_tech:
+    enabled: true
+    weight: 10
+    label: "Outdated tech: {details}"
+    jquery_min_major: 2        # jQuery < 2 fails
+    generator_min_versions:    # from <meta name="generator">
+      WordPress: "5.0"
+      Joomla: "4.0"
+      Drupal: "9.0"
+  free_builder:
+    enabled: true
+    weight: 10
+    label: "Free builder subdomain ({host})"
+    domains:
+      - wixsite.com
+      - altervista.org
+      - weebly.com
+      - weeblysite.com
+      - jimdofree.com
+      - jimdosite.com
+      - jimdo.com
+      - webnode.it
+      - webnode.com
+      - wordpress.com
+      - blogspot.com
+      - blogspot.it
+      - business.site
+      - godaddysites.com
+      - site123.me
+      - squarespace.com
+      - myshopify.com
+      - tripod.com
+      - xoom.it
+      - interfree.it
+      - netsons.org
+      - wix.com
+      - webflow.io
+      - carrd.co
+      - sites.google.com
+  missing_meta:
+    enabled: true
+    weight: 5
+    label: "Missing {what}"
+  no_contact_info:
+    enabled: true
+    weight: 5
+    label: "No contact info on homepage"
+  no_english:
+    enabled: true
+    weight: 5
+    label: "No English version"   # only for groups with needs_english: true
+
+# Websites that are really just a profile somewhere else → Tier A
+# ("No real website: social media only").
+social_domains:
+  - facebook.com
+  - fb.com
+  - fb.me
+  - instagram.com
+  - tiktok.com
+  - twitter.com
+  - x.com
+  - linktr.ee
+  - linkin.bio
+  - wa.me
+  - whatsapp.com
+  - tripadvisor.com
+  - tripadvisor.it
+  - booking.com
+  - airbnb.com
+  - airbnb.it
+  - thefork.it
+  - thefork.com
+  - paginegialle.it
+  - paginebianche.it
+  - youtube.com
+  - linkedin.com
+  - google.com
+  - goo.gl
+  - g.page
+  - treatwell.it
+  - miodottore.it
+
+# Parked / placeholder pages → Tier A ("No real website: parked domain").
+parking_hosts:
+  - sedoparking.com
+  - parkingcrew.net
+  - bodis.com
+  - dan.com
+  - afternic.com
+  - hugedomains.com
+  - above.com
+  - parklogic.com
+  - undeveloped.com
+parking_phrases:
+  - "domain is for sale"
+  - "this domain may be for sale"
+  - "buy this domain"
+  - "dominio in vendita"
+  - "questo dominio è in vendita"
+  - "domain parking"
+  - "parked free"
+  - "sito in costruzione"
+  - "sito in allestimento"
+  - "under construction"
+  - "coming soon"
+  - "website coming soon"
+  - "this site is under construction"
+  - "dominio registrato"
+  - "default web site page"
+  - "apache2 default page"
+  - "welcome to nginx"
+  - "account suspended"
+  - "this account has been suspended"
+min_text_chars: 80   # homepage with less visible text than this counts as a placeholder

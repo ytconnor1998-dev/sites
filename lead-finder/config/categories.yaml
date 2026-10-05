@@ -1,0 +1,279 @@
+# ─────────────────────────────────────────────────────────────────────
+#  BUSINESS CATEGORIES
+#  Add a category by copying an entry. No code changes needed.
+#
+#  key (e.g. "restaurants")  used on the CLI: --categories "restaurants,b&bs"
+#    name           display name (also accepted on the CLI)
+#    group          one of the group keys below
+#    aliases        optional extra names accepted on the CLI
+#    google_types   Google Places (New) types. The first is sent as
+#                   `includedType`; leave the list empty if no type fits
+#                   (the text query alone is used then).
+#    terms_it       Italian search terms (the first one is the primary query)
+#    terms_en       English search terms (only queried if settings.yaml
+#                   google.term_mode is "all")
+#    osm_tags       OpenStreetMap tags; a business matches ANY of them
+# ─────────────────────────────────────────────────────────────────────
+
+groups:
+  tourist-facing:
+    name: Tourist-facing
+    needs_english: true     # turns on the "No English version" audit check
+  personal-services:
+    name: Personal services
+  trades:
+    name: Trades
+  health:
+    name: Health
+  other-local:
+    name: Other local
+
+categories:
+  # ── Tourist-facing ────────────────────────────────────────────────
+  restaurants:
+    name: Restaurants
+    group: tourist-facing
+    google_types: [restaurant]
+    terms_it: [ristorante]
+    terms_en: [restaurant]
+    osm_tags: [{amenity: restaurant}]
+  trattorie:
+    name: Trattorie
+    group: tourist-facing
+    aliases: [trattoria]
+    google_types: [italian_restaurant]
+    terms_it: [trattoria, osteria]
+    terms_en: [trattoria]
+    osm_tags: [{amenity: restaurant, cuisine: italian}]
+  pizzerias:
+    name: Pizzerias
+    group: tourist-facing
+    aliases: [pizzeria]
+    google_types: [pizza_restaurant]
+    terms_it: [pizzeria]
+    terms_en: [pizzeria]
+    osm_tags: [{amenity: restaurant, cuisine: pizza}, {amenity: fast_food, cuisine: pizza}]
+  bars-cafes:
+    name: Bars / cafés
+    group: tourist-facing
+    aliases: [bars, cafes, cafe, bar]
+    google_types: [cafe]
+    terms_it: [bar caffetteria]
+    terms_en: [cafe]
+    osm_tags: [{amenity: cafe}, {amenity: bar}]
+  gelaterie:
+    name: Gelaterie
+    group: tourist-facing
+    aliases: [gelateria, ice cream]
+    google_types: [ice_cream_shop]
+    terms_it: [gelateria]
+    terms_en: [gelato]
+    osm_tags: [{amenity: ice_cream}, {shop: ice_cream}]
+  bnbs:
+    name: B&Bs
+    group: tourist-facing
+    aliases: [b&b, bed and breakfast]
+    google_types: [bed_and_breakfast]
+    terms_it: [bed and breakfast]
+    terms_en: [bed and breakfast]
+    osm_tags: [{tourism: guest_house, guest_house: bed_and_breakfast}]
+  guesthouses:
+    name: Guesthouses
+    group: tourist-facing
+    aliases: [guesthouse, affittacamere]
+    google_types: [guest_house]
+    terms_it: [affittacamere]
+    terms_en: [guesthouse]
+    osm_tags: [{tourism: guest_house}]
+  small-hotels:
+    name: Small hotels
+    group: tourist-facing
+    aliases: [hotels, hotel]
+    google_types: [hotel]
+    terms_it: [hotel]
+    terms_en: [small hotel]
+    osm_tags: [{tourism: hotel}]
+  souvenir-artisan:
+    name: Souvenir / artisan shops
+    group: tourist-facing
+    aliases: [souvenir, artisan]
+    google_types: [gift_shop]
+    terms_it: [negozio artigianato, souvenir]
+    terms_en: [souvenir shop]
+    osm_tags: [{shop: gift}, {shop: craft}, {craft: "*"}]
+  tour-operators:
+    name: Tour operators
+    group: tourist-facing
+    aliases: [tours]
+    google_types: [travel_agency]
+    terms_it: [tour operator, visite guidate]
+    terms_en: [tour operator]
+    osm_tags: [{shop: travel_agency}, {office: travel_agent}, {tourism: information, information: office}]
+  bike-scooter-rental:
+    name: Bike / scooter rental
+    group: tourist-facing
+    aliases: [bike rental, scooter rental]
+    google_types: []
+    terms_it: [noleggio bici, noleggio scooter]
+    terms_en: [bike rental]
+    osm_tags: [{amenity: bicycle_rental}, {shop: rental}, {amenity: motorcycle_rental}]
+
+  # ── Personal services ─────────────────────────────────────────────
+  hair-salons:
+    name: Hair salons
+    group: personal-services
+    aliases: [parrucchiere, hairdressers]
+    google_types: [hair_salon]
+    terms_it: [parrucchiere]
+    terms_en: [hair salon]
+    osm_tags: [{shop: hairdresser}]
+  barbers:
+    name: Barbers
+    group: personal-services
+    aliases: [barbiere, barber]
+    google_types: [barber_shop]
+    terms_it: [barbiere]
+    terms_en: [barber]
+    osm_tags: [{shop: hairdresser, male: "yes"}, {shop: barber}]
+  beauty-salons:
+    name: Beauty salons
+    group: personal-services
+    aliases: [estetista, beauty]
+    google_types: [beauty_salon]
+    terms_it: [centro estetico]
+    terms_en: [beauty salon]
+    osm_tags: [{shop: beauty}]
+  nail-salons:
+    name: Nail salons
+    group: personal-services
+    aliases: [nails]
+    google_types: [nail_salon]
+    terms_it: [nail salon, ricostruzione unghie]
+    terms_en: [nail salon]
+    osm_tags: [{shop: beauty, beauty: nails}]
+  tattoo-studios:
+    name: Tattoo studios
+    group: personal-services
+    aliases: [tattoo]
+    google_types: []
+    terms_it: [tatuaggi studio]
+    terms_en: [tattoo studio]
+    osm_tags: [{shop: tattoo}]
+
+  # ── Trades ────────────────────────────────────────────────────────
+  plumbers:
+    name: Plumbers
+    group: trades
+    aliases: [idraulico, plumber]
+    google_types: [plumber]
+    terms_it: [idraulico]
+    terms_en: [plumber]
+    osm_tags: [{craft: plumber}]
+  electricians:
+    name: Electricians
+    group: trades
+    aliases: [elettricista, electrician]
+    google_types: [electrician]
+    terms_it: [elettricista]
+    terms_en: [electrician]
+    osm_tags: [{craft: electrician}]
+  locksmiths:
+    name: Locksmiths
+    group: trades
+    aliases: [fabbro, locksmith]
+    google_types: [locksmith]
+    terms_it: [fabbro]
+    terms_en: [locksmith]
+    osm_tags: [{craft: locksmith}, {shop: locksmith}]
+  builders:
+    name: Builders
+    group: trades
+    aliases: [impresa edile, builder]
+    google_types: [general_contractor]
+    terms_it: [impresa edile]
+    terms_en: [builder]
+    osm_tags: [{craft: builder}, {office: construction_company}]
+  car-repair:
+    name: Car repair
+    group: trades
+    aliases: [meccanico, officina, mechanic]
+    google_types: [car_repair]
+    terms_it: [officina meccanica]
+    terms_en: [car repair]
+    osm_tags: [{shop: car_repair}]
+
+  # ── Health ────────────────────────────────────────────────────────
+  dentists:
+    name: Dentists
+    group: health
+    aliases: [dentista, dentist]
+    google_types: [dentist]
+    terms_it: [dentista]
+    terms_en: [dentist]
+    osm_tags: [{amenity: dentist}, {healthcare: dentist}]
+  physiotherapists:
+    name: Physiotherapists
+    group: health
+    aliases: [fisioterapista, physio]
+    google_types: [physiotherapist]
+    terms_it: [fisioterapista]
+    terms_en: [physiotherapist]
+    osm_tags: [{healthcare: physiotherapist}]
+  private-clinics:
+    name: Private clinics
+    group: health
+    aliases: [poliambulatorio, clinics]
+    google_types: [medical_clinic]
+    terms_it: [poliambulatorio privato]
+    terms_en: [private clinic]
+    osm_tags: [{amenity: clinic}, {healthcare: clinic}]
+  vets:
+    name: Vets
+    group: health
+    aliases: [veterinario, vet]
+    google_types: [veterinary_care]
+    terms_it: [veterinario]
+    terms_en: [vet]
+    osm_tags: [{amenity: veterinary}]
+
+  # ── Other local ───────────────────────────────────────────────────
+  gyms:
+    name: Gyms
+    group: other-local
+    aliases: [palestra, gym]
+    google_types: [gym]
+    terms_it: [palestra]
+    terms_en: [gym]
+    osm_tags: [{leisure: fitness_centre}]
+  florists:
+    name: Florists
+    group: other-local
+    aliases: [fioraio, florist]
+    google_types: [florist]
+    terms_it: [fioraio]
+    terms_en: [florist]
+    osm_tags: [{shop: florist}]
+  bakeries:
+    name: Bakeries
+    group: other-local
+    aliases: [forno, panificio, bakery]
+    google_types: [bakery]
+    terms_it: [forno panificio]
+    terms_en: [bakery]
+    osm_tags: [{shop: bakery}]
+  tailors:
+    name: Tailors
+    group: other-local
+    aliases: [sarto, sartoria, tailor]
+    google_types: []
+    terms_it: [sartoria]
+    terms_en: [tailor]
+    osm_tags: [{shop: tailor}, {craft: tailor}]
+  dry-cleaners:
+    name: Dry cleaners
+    group: other-local
+    aliases: [lavanderia, tintoria]
+    google_types: [laundry]
+    terms_it: [lavanderia tintoria]
+    terms_en: [dry cleaner]
+    osm_tags: [{shop: dry_cleaning}, {shop: laundry}]
