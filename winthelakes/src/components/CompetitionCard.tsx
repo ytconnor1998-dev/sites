@@ -1,75 +1,87 @@
-import { Radio, Shuffle, Zap } from "lucide-react";
 import Link from "next/link";
-import { categories, instantWinCount, type Competition } from "@/config/competitions";
-import { money } from "@/lib/format";
+import { instantWinCount, type Competition } from "@/config/competitions";
+import { money, num } from "@/lib/format";
 import { CountdownInline } from "./Countdown";
-import { PrizeArt } from "./PrizeArt";
+import { PrizeImage } from "./PrizeImage";
 import { Progress } from "./Progress";
+import { serial, Ticket } from "./Ticket";
 
-export function Badge({ children, tone = "plain" }: { children: React.ReactNode; tone?: "plain" | "lake" | "lantern" | "ember" }) {
-  const tones = {
-    plain: "bg-night/70 text-mist ring-white/15",
-    lake: "bg-lake text-night ring-lake",
-    lantern: "bg-lantern text-night ring-lantern",
-    ember: "bg-ember text-white ring-ember",
-  };
-  return <span className={`eyebrow inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.6rem] ring-1 backdrop-blur ${tones[tone]}`}>{children}</span>;
+export function drawLabel(comp: Competition) {
+  return comp.drawType === "live" ? "Drawn live on Facebook" : "Drawn automatically";
 }
 
-export function DrawBadge({ comp }: { comp: Competition }) {
-  return comp.drawType === "live" ? (
-    <Badge>
-      <Radio size={11} className="text-ember" /> Live draw
-    </Badge>
-  ) : (
-    <Badge>
-      <Shuffle size={11} /> Auto draw
-    </Badge>
-  );
-}
-
+/** A competition, printed on its own colour of raffle ticket. */
 export function CompetitionCard({ comp }: { comp: Competition }) {
   const iw = instantWinCount(comp);
-  const category = categories.find((c) => c.id === comp.category)?.label;
   return (
-    <article className="card group relative flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:border-lake/40">
-      <div className="relative aspect-[4/3] overflow-hidden">
-        <PrizeArt comp={comp} className="transition-transform duration-500 group-hover:scale-105" />
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-          <DrawBadge comp={comp} />
-          {comp.wasPrice && <Badge tone="ember">Sale</Badge>}
-        </div>
-        {iw > 0 && (
-          <div className="absolute top-3 right-3">
-            <Badge tone="lantern">
-              <Zap size={11} /> {iw} instant wins
-            </Badge>
+    <article className="relative">
+      <Ticket
+        paper={comp.paper}
+        orientation="v"
+        stubV="5rem"
+        className="h-full"
+        stub={
+          <div className="flex items-center justify-between gap-3 px-5">
+            <p className="leading-none">
+              {comp.wasPrice && (
+                <s className="mr-1.5 text-sm text-ink-2">
+                  <span className="sr-only">was </span>
+                  {money(comp.wasPrice)}
+                </s>
+              )}
+              <span className="display text-[2rem]">{money(comp.price)}</span>
+              <span className="ml-1 text-sm text-ink-2">a ticket</span>
+            </p>
+            <span className="btn btn-primary !py-2.5" aria-hidden="true">
+              Enter
+            </span>
           </div>
-        )}
-        <div className="absolute inset-x-3 bottom-3 rounded-full bg-night/75 px-3 py-1.5 text-center text-xs font-bold ring-1 ring-white/10 backdrop-blur">
-          <CountdownInline drawAt={comp.drawAt} />
-        </div>
-      </div>
-      <div className="flex flex-1 flex-col p-5">
-        <p className="eyebrow text-[0.62rem] text-fog">{category}</p>
-        <h3 className="display mt-1.5 text-xl leading-[1.02]">
-          <Link href={`/competitions/${comp.slug}`} className="after:absolute after:inset-0">
-            {comp.title}
-          </Link>
-        </h3>
-        <p className="mt-2 text-sm text-fog">{comp.teaser}</p>
-        <div className="mt-auto pt-5">
-          <Progress sold={comp.sold} max={comp.maxTickets} size="sm" />
-          <div className="mt-4 flex items-end justify-between gap-3">
-            <div>
-              {comp.wasPrice && <span className="mr-1.5 text-sm text-fog line-through">{money(comp.wasPrice)}</span>}
-              <span className="display normal-case text-3xl text-lantern">{money(comp.price)}</span>
-              <span className="eyebrow ml-1.5 text-[0.6rem] text-fog">a ticket</span>
+        }
+      >
+        <div className="flex h-full flex-col">
+          <div className="p-2.5 pb-0">
+            <div className="relative aspect-[3/2] overflow-hidden rounded-[3px] bg-sheet">
+              <PrizeImage seed={comp.slug} image={comp.image} alt="" />
+              {comp.cashAlternative && (
+                <span className="absolute bottom-2 left-2 rounded-[3px] bg-ink px-2 py-1 text-xs font-medium text-map">
+                  or {money(comp.cashAlternative)} cash
+                </span>
+              )}
             </div>
-            <span className="btn btn-primary relative !px-4 !py-2.5 !text-[0.72rem]">Enter</span>
+          </div>
+          <div className="flex flex-1 flex-col px-5 pt-4 pb-5">
+            <p className="flex justify-between gap-3 text-xs text-ink-2">
+              <span>{drawLabel(comp)}</span>
+              <span className="tabular" title="The next ticket number to be sold">
+                {serial(comp.sold + 1)}
+              </span>
+            </p>
+            <h3 className="display mt-2 text-[1.85rem]">
+              <Link href={`/competitions/${comp.slug}`} className="after:absolute after:inset-0 hover:underline">
+                {comp.title}
+              </Link>
+            </h3>
+            <p className="mt-1.5 text-[0.95rem] text-ink-2">{comp.teaser}</p>
+            <dl className="mt-4 mb-4 grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <dt className="text-ink-2">Draw in</dt>
+                <dd className="font-semibold">
+                  <CountdownInline drawAt={comp.drawAt} />
+                </dd>
+              </div>
+              {iw > 0 && (
+                <div>
+                  <dt className="text-ink-2">Instant wins</dt>
+                  <dd className="font-semibold">{num(iw)} prizes</dd>
+                </div>
+              )}
+            </dl>
+            <div className="mt-auto">
+              <Progress sold={comp.sold} max={comp.maxTickets} compact />
+            </div>
           </div>
         </div>
-      </div>
+      </Ticket>
     </article>
   );
 }

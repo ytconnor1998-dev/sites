@@ -4,41 +4,33 @@ import { useCountdown } from "@/lib/countdown";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** Big boxed countdown (competition page). */
+/** Large countdown for the competition page. */
 export function CountdownBoxes({ drawAt }: { drawAt: string }) {
   const r = useCountdown(drawAt);
+  if (r?.ended) return <p className="font-semibold">Entries are closed. The draw is next.</p>;
   const parts: [string, number | undefined][] = [
-    ["Days", r?.days],
-    ["Hours", r?.hours],
-    ["Mins", r?.minutes],
-    ["Secs", r?.seconds],
+    ["days", r?.days],
+    ["hours", r?.hours],
+    ["mins", r?.minutes],
+    ["secs", r?.seconds],
   ];
-  if (r?.ended) return <p className="rounded-xl bg-deep-2 px-4 py-3 font-bold text-lantern">Entries closed. Draw coming up!</p>;
   return (
-    <div className="grid grid-cols-4 gap-2" role="timer" aria-label="Time until the draw">
+    <div className="flex items-baseline gap-4" role="timer" aria-label="Time until the draw">
       {parts.map(([label, v]) => (
-        <div key={label} className="rounded-xl border border-line bg-deep-2 py-2.5 text-center">
-          <div className="display tabular text-2xl sm:text-3xl">{v === undefined ? "--" : pad(v)}</div>
-          <div className="eyebrow mt-1 text-[0.6rem] text-fog">{label}</div>
-        </div>
+        <span key={label} className="flex items-baseline gap-1">
+          <span className="display tabular text-4xl">{v === undefined ? "--" : pad(v)}</span>
+          <span className="text-sm text-ink-2">{label}</span>
+        </span>
       ))}
     </div>
   );
 }
 
-/** Compact inline countdown: 02d 14h 05m 33s. */
+/** One-line countdown: "2d 14h 05m" (seconds only on the final day). */
 export function CountdownInline({ drawAt, className = "" }: { drawAt: string; className?: string }) {
   const r = useCountdown(drawAt);
-  if (!r) return <span className={`tabular ${className}`}>--d --h --m --s</span>;
-  if (r.ended) return <span className={className}>Draw due</span>;
-  const urgent = r.days === 0;
-  return (
-    <span className={`tabular ${urgent ? "text-ember" : ""} ${className}`}>
-      {pad(r.days)}
-      <small className="opacity-60">d</small> {pad(r.hours)}
-      <small className="opacity-60">h</small> {pad(r.minutes)}
-      <small className="opacity-60">m</small> {pad(r.seconds)}
-      <small className="opacity-60">s</small>
-    </span>
-  );
+  if (!r) return <span className={`tabular ${className}`}>&nbsp;</span>;
+  if (r.ended) return <span className={className}>Drawing now</span>;
+  const text = r.days > 0 ? `${r.days}d ${r.hours}h ${pad(r.minutes)}m` : `${r.hours}h ${pad(r.minutes)}m ${pad(r.seconds)}s`;
+  return <span className={`tabular ${r.days === 0 ? "font-semibold text-explorer" : ""} ${className}`}>{text}</span>;
 }

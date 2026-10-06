@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Gift, Lock, Minus, Plus, Trash2 } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,7 +9,8 @@ import { basketLines, clearBasket, removeFromBasket, setQty, useBasket } from "@
 import { placeOrder } from "@/lib/entries";
 import { money, num } from "@/lib/format";
 import { site } from "@/config/site";
-import { PrizeArt } from "./PrizeArt";
+import { PrizeImage } from "./PrizeImage";
+import { Ticket } from "./Ticket";
 
 export function Basket() {
   const items = useBasket();
@@ -53,9 +54,8 @@ export function Basket() {
 
   if (lines.length === 0) {
     return (
-      <div className="card mx-auto max-w-xl p-10 text-center">
-        <p className="display text-3xl">Your basket is empty</p>
-        <p className="mt-3 text-fog">Pick a prize, answer the question, and your tickets will appear here.</p>
+      <div className="max-w-xl">
+        <p className="text-lg">Your basket is empty. Pick a prize and answer its question, and your tickets will appear here.</p>
         <Link href="/competitions" className="btn btn-primary mt-6">
           Browse competitions
         </Link>
@@ -65,81 +65,83 @@ export function Basket() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-      <ul className="space-y-4">
+      <ul className="space-y-5">
         {lines.map((l) => {
           const max = l.comp.maxPerPerson;
           const right = l.answer === l.comp.question.answer;
           return (
-            <li key={l.slug} className="card flex gap-4 p-4 sm:p-5">
-              <Link href={`/competitions/${l.slug}`} className="relative aspect-square w-24 shrink-0 overflow-hidden rounded-xl sm:w-32">
-                <PrizeArt comp={l.comp} iconSize={30} />
-              </Link>
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-start justify-between gap-3">
-                  <Link href={`/competitions/${l.slug}`} className="display text-lg leading-tight hover:text-lake sm:text-xl">
-                    {l.comp.title}
-                  </Link>
-                  <button type="button" onClick={() => removeFromBasket(l.slug)} aria-label={`Remove ${l.comp.title}`} className="text-fog hover:text-ember">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-                <p className="mt-1 text-sm text-fog">
-                  Your answer: <span className={right ? "text-mist" : "font-bold text-ember"}>{l.comp.question.options[l.answer]}</span>
-                </p>
-                <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-3">
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setQty(l.slug, l.qty - 1)} aria-label="One fewer ticket" className="grid h-9 w-9 place-items-center rounded-full border border-line-2 hover:border-lake">
-                      <Minus size={15} />
+            <li key={l.slug}>
+              <Ticket
+                paper={l.comp.paper}
+                orientation="r"
+                stubW="9rem"
+                stubV="4rem"
+                stub={
+                  <div className="flex items-center justify-between gap-2 px-5 sm:flex-col sm:items-end">
+                    <span className="display tabular text-3xl">{money(l.total, { short: false })}</span>
+                    <button type="button" onClick={() => removeFromBasket(l.slug)} className="text-sm text-ink-2 underline underline-offset-2 hover:text-ink">
+                      Remove<span className="sr-only"> {l.comp.title}</span>
                     </button>
-                    <span className="tabular w-10 text-center font-bold" aria-label={`${l.qty} tickets`}>
-                      {l.qty}
-                    </span>
-                    <button type="button" disabled={l.qty >= max} onClick={() => setQty(l.slug, l.qty + 1)} aria-label="One more ticket" className="grid h-9 w-9 place-items-center rounded-full border border-line-2 hover:border-lake disabled:opacity-40">
-                      <Plus size={15} />
-                    </button>
-                    {l.free > 0 && (
-                      <span className="ml-1 flex items-center gap-1 text-sm font-bold text-lantern">
-                        <Gift size={14} /> +{l.free} free
-                      </span>
-                    )}
                   </div>
-                  <span className="display normal-case text-2xl">{money(l.total, { short: false })}</span>
+                }
+              >
+                <div className="flex gap-4 p-3 pr-5">
+                  <Link href={`/competitions/${l.slug}`} className="relative aspect-square w-24 shrink-0 overflow-hidden rounded-[3px] sm:w-28">
+                    <PrizeImage seed={l.slug} image={l.comp.image} alt="" />
+                  </Link>
+                  <div className="min-w-0 py-1">
+                    <Link href={`/competitions/${l.slug}`} className="display text-2xl hover:underline">
+                      {l.comp.title}
+                    </Link>
+                    <p className="mt-1 text-sm">
+                      <span className="text-ink-2">Your answer:</span> {l.comp.question.options[l.answer]}
+                      {!right && <strong className="ml-1 font-semibold text-explorer">(check this)</strong>}
+                    </p>
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <button type="button" onClick={() => setQty(l.slug, l.qty - 1)} aria-label="One fewer ticket" className="grid h-8 w-8 place-items-center rounded-md bg-white/60 hover:bg-white">
+                        <Minus size={14} />
+                      </button>
+                      <span className="tabular w-9 text-center font-semibold">{l.qty}</span>
+                      <button type="button" disabled={l.qty >= max} onClick={() => setQty(l.slug, l.qty + 1)} aria-label="One more ticket" className="grid h-8 w-8 place-items-center rounded-md bg-white/60 hover:bg-white disabled:opacity-40">
+                        <Plus size={14} />
+                      </button>
+                      <span className="text-sm text-ink-2">
+                        tickets{l.free > 0 && <>, plus {l.free} free</>}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </Ticket>
             </li>
           );
         })}
         {wrong.length > 0 && (
-          <li className="flex gap-3 rounded-2xl border border-ember/50 bg-ember/10 p-4 text-sm">
-            <AlertTriangle size={18} className="shrink-0 text-ember" />
-            <span>
-              Double-check your answer{wrong.length > 1 ? "s" : ""}. Tickets with a wrong answer aren&rsquo;t entered into the draw. To change it, remove the competition and add it
-              again.
-            </span>
+          <li className="border-l-[3px] border-explorer pl-4 text-sm">
+            Tickets with a wrong answer aren&rsquo;t entered into the draw. To change an answer, remove the competition and add it again.
           </li>
         )}
       </ul>
 
-      <form onSubmit={submit} className="card h-fit space-y-5 p-6 lg:sticky lg:top-32">
-        <h2 className="display text-2xl">Checkout</h2>
+      <form onSubmit={submit} className="h-fit space-y-5 rounded-md bg-sheet p-6 shadow-[0_1px_0_#1d2b3326] lg:sticky lg:top-24">
+        <h2 className="display text-4xl">Checkout</h2>
         <dl className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <dt className="text-fog">Tickets</dt>
+            <dt className="text-ink-2">Tickets</dt>
             <dd className="tabular">{num(tickets)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-fog">Subtotal</dt>
+            <dt className="text-ink-2">Subtotal</dt>
             <dd className="tabular">{money(subtotal, { short: false })}</dd>
           </div>
           {creditUsed > 0 && (
-            <div className="flex justify-between text-lake">
+            <div className="flex justify-between text-wood">
               <dt>Site credit</dt>
               <dd className="tabular">−{money(creditUsed, { short: false })}</dd>
             </div>
           )}
-          <div className="flex items-baseline justify-between border-t border-line pt-3">
+          <div className="flex items-baseline justify-between border-t border-rule pt-3">
             <dt className="font-bold">To pay</dt>
-            <dd className="display normal-case text-3xl text-lantern">{money(toPay, { short: false })}</dd>
+            <dd className="display normal-case text-3xl text-explorer">{money(toPay, { short: false })}</dd>
           </div>
         </dl>
 
@@ -150,11 +152,11 @@ export function Basket() {
           <Field label="Date of birth" name="dob" type="date" autoComplete="bday" />
         </div>
 
-        <label className="flex gap-3 text-sm text-fog">
-          <input type="checkbox" required className="mt-0.5 h-4 w-4 shrink-0 accent-[#2ee6d0]" />
+        <label className="flex gap-3 text-sm">
+          <input type="checkbox" required className="mt-0.5 h-4 w-4 shrink-0 accent-[#1d2b33]" />
           <span>
             I&rsquo;m {site.minAge}+, a UK resident, and I accept the{" "}
-            <Link href="/terms" className="text-mist underline underline-offset-2">
+            <Link href="/terms" className="link">
               terms
             </Link>
             .
@@ -162,17 +164,15 @@ export function Basket() {
         </label>
 
         {error && (
-          <p role="alert" className="rounded-xl bg-ember/15 p-3 text-sm font-bold text-ember">
+          <p role="alert" className="border-l-[3px] border-explorer pl-3 text-sm font-semibold">
             {error}
           </p>
         )}
 
-        <button type="submit" disabled={busy} className="btn btn-primary w-full !py-4 !text-base">
-          <Lock size={17} /> {toPay === 0 ? "Confirm entry" : `Pay ${money(toPay, { short: false })}`}
+        <button type="submit" disabled={busy} className="btn btn-primary w-full">
+          {toPay === 0 ? "Confirm entry" : `Pay ${money(toPay, { short: false })}`}
         </button>
-        <p className="rounded-xl border border-dashed border-line-2 p-3 text-center text-xs text-fog">
-          <strong className="text-lantern">Demo mode:</strong> no payment is taken. Card payments are added when the site goes live.
-        </p>
+        <p className="text-sm text-ink-2">This is a demo: no payment is taken. Card payments are added when the site goes live.</p>
       </form>
     </div>
   );
@@ -181,8 +181,8 @@ export function Basket() {
 function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="block">
-      <span className="eyebrow text-[0.6rem] text-fog">{label}</span>
-      <input required {...props} className="mt-1.5 w-full rounded-xl border border-line-2 bg-deep-2 px-4 py-3 focus:border-lake focus:outline-none" />
+      <span className="text-sm font-medium">{label}</span>
+      <input required {...props} className="mt-1 w-full rounded-md border border-ink/25 bg-white px-3.5 py-2.5 focus:border-ink focus:outline-2 focus:outline-explorer" />
     </label>
   );
 }

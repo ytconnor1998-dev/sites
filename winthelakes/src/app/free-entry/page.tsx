@@ -8,11 +8,11 @@ export const metadata: Metadata = { title: "Free postal entry", description: "Ho
 export default function FreeEntryPage() {
   return (
     <>
-      <PageHero eyebrow="No purchase necessary" title="Free postal entry" intro="You can enter every competition for free. Postal entries have exactly the same chance of winning as paid ones." />
+      <PageHero title="Free postal entry" intro="You can enter every competition for free. Postal entries have exactly the same chance of winning as paid ones." />
       <Prose>
         <h2>How to enter by post</h2>
         <p>Send an unenclosed postcard (first or second class) to:</p>
-        <p className="rounded-2xl border border-line bg-deep p-5 font-bold !text-mist">
+        <p className="paper-lemon ticket inline-block bg-[var(--paper)] px-6 py-5 font-semibold">
           {site.company.legalName}
           <br />
           {site.company.address.split(", ").map((l) => (

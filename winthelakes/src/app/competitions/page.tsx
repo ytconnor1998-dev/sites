@@ -9,8 +9,8 @@ export const metadata: Metadata = { title: "Competitions", description: "Every l
 export default function CompetitionsPage() {
   return (
     <>
-      <PageHero eyebrow={`${competitions.length} live now`} title="Competitions" intro="Lodges, cash, cars and more. Every one drawn on time, sold out or not." />
-      <div className="mx-auto max-w-7xl px-4 pt-10 sm:px-6">
+      <PageHero title="Competitions" intro={`${competitions.length} open now. Every one is drawn on the date shown, sold out or not.`} />
+      <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
         <Suspense>
           <CompetitionGrid comps={competitions} syncUrl />
         </Suspense>

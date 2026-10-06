@@ -1,7 +1,9 @@
 # Win the Lakes
 
 Prize competition site for the Lake District: lodge breaks, cash, cars and tech, with instant wins, ticket bundles, live draws and safer-play tools.
-Next.js (App Router) · TypeScript · Tailwind CSS v4. Dark "night on the lake" theme.
+Next.js (App Router), TypeScript, Tailwind CSS v4.
+
+**Design:** every competition is printed on a paper raffle ticket in a classic roll colour (pink, lemon, mint, sky, lilac, peach), with a perforated stub holding the price and the Enter button. The rest of the palette comes from an Ordnance Survey Explorer map: map-paper white, slate ink, Explorer orange for buttons, lake blue. One typeface, Archivo, used condensed for headlines and ticket numbers and at normal width for text.
 
 > **Status: front end complete, running in demo mode.** Everything works end to end in the browser, but no money is taken and the basket, tickets and account are stored in the visitor's own browser. See [Going live](#going-live) for what's needed to take real entries.
 
@@ -18,11 +20,11 @@ npm run lint
 
 | Page | What it does |
 | --- | --- |
-| `/` | Featured-prize slider (countdown, price, instant wins, % sold), winners ticker, competitions grid with category tabs (All, Ending soon, Lakes breaks, Cash, Cars & bikes, Tech, Instant wins), stats, how it works, recent winners, FAQ |
+| `/` | Lead prize with a big ticket over its photo (countdown, price, % sold), competitions grid with category tabs (All, Ending soon, Lakes breaks, Cash, Cars & bikes, Tech, Instant wins), how it works, recent winners, who we are, FAQ |
 | `/competitions` | All competitions, filterable (`?c=cash` etc. can be linked to) |
 | `/competitions/[slug]` | Prize details, live countdown, progress bar, **ticket bundles** (buy 10 get 3 free), quantity stepper/slider, max per person, **skill question**, add to basket, **instant-win numbers with found/unfound status**, cash alternative, related prizes |
 | `/basket` | Edit quantities, wrong-answer warning, **site credit** applied automatically, details + 18+ date-of-birth check, **monthly spend limit and self-exclusion enforced** |
-| `/order` | After checkout: **scratch card** to reveal instant wins, then your ticket numbers with winners highlighted |
+| `/order` | After checkout: **scratch card** to reveal instant wins, then your ticket numbers drop in as little tickets, winners in orange |
 | `/account` | My tickets (grouped by competition, with countdowns), wallet & order history, **safer play**: monthly limit and take-a-break |
 | `/winners` | Winners gallery with ticket numbers and quotes |
 | `/draws` | Draw results with winning ticket and link to the live-draw recording, plus **entry lists** |
@@ -36,12 +38,13 @@ npm run lint
 | Winners and draw results | `src/config/competitions.ts` → `winners`, `drawResults` |
 | Business name, email, company details, postal entry address, socials, stats | `src/config/site.ts` |
 | FAQ | `src/config/faq.ts` |
-| Colours and fonts | `src/app/globals.css` (`@theme`) and `src/app/layout.tsx` |
+| Colours, ticket colours and fonts | `src/app/globals.css` (`@theme`) and `src/app/layout.tsx` |
+| Ticket shape (notches, perforation) | `src/app/globals.css` (`.ticket`) and `src/components/Ticket.tsx` |
 | Logo | `src/components/Logo.tsx`, `src/app/icon.svg` |
 
 Anything to replace before launch is marked `PLACEHOLDER`.
 
-**Prize photos:** put them in `public/images/prizes/` and add `image: "/images/prizes/lodge.jpg"` to the competition. Without a photo, each prize shows designed artwork (fells over a lake with the prize icon) in the colours set by `art`.
+**Prize photos** live in `public/images/prizes/` and are set with `image:` on each competition. The ones there now are stand-ins from [Unsplash](https://unsplash.com/license) (free to use): **replace each with a photo of the actual prize** before launch, since a prize photo should show exactly what's being won. A competition without a photo shows a small Ordnance Survey-style map tile instead. Pick a ticket colour per competition with `paper:`.
 
 **Draw dates:** the demo sets them a few days after each build so the countdowns are always running. For real competitions write the date, e.g. `drawAt: "2026-11-20T20:00:00+00:00"`.
 

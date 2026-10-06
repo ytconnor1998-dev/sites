@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { categories } from "@/config/competitions";
 import { site } from "@/config/site";
-import { Logo } from "./Logo";
+import { LogoMark } from "./Logo";
 
 const cols = [
   {
@@ -9,7 +9,7 @@ const cols = [
     links: [{ href: "/competitions", label: "All competitions" }, ...categories.map((c) => ({ href: `/competitions?c=${c.id}`, label: c.label }))],
   },
   {
-    title: "Winners",
+    title: "Results",
     links: [
       { href: "/winners", label: "Winners" },
       { href: "/draws", label: "Draw results" },
@@ -20,45 +20,42 @@ const cols = [
     title: "Help",
     links: [
       { href: "/how-it-works", label: "How it works" },
-      { href: "/faq", label: "FAQ" },
-      { href: "/free-entry", label: "Free postal entry" },
+      { href: "/faq", label: "Questions" },
+      { href: "/free-entry", label: "Enter free by post" },
       { href: "/safer-play", label: "Safer play" },
-      { href: `mailto:${site.email}`, label: "Contact us" },
+      { href: `mailto:${site.email}`, label: "Email us" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { href: "/terms", label: "Terms & conditions" },
-      { href: "/privacy", label: "Privacy policy" },
+      { href: "/terms", label: "Terms" },
+      { href: "/privacy", label: "Privacy" },
     ],
   },
 ];
 
 export function Footer() {
   return (
-    <footer className="mt-24 border-t border-line bg-deep">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.3fr_repeat(4,1fr)]">
+    <footer className="mt-28 bg-ink text-map">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_repeat(4,1fr)]">
         <div>
-          <Logo />
-          <p className="mt-4 max-w-xs text-sm leading-relaxed text-fog">
-            Prize competitions from the Lake District. Every main draw is streamed live and every winner is published.
+          <LogoMark className="h-10 w-10" />
+          <p className="mt-4 max-w-[30ch] text-sm leading-relaxed text-map/75">
+            Prize competitions run from Windermere. Main prizes are drawn live on{" "}
+            <a href={site.social.facebook} className="link text-map" rel="noopener" target="_blank">
+              Facebook
+            </a>
+            .
           </p>
-          <div className="mt-5 flex gap-2">
-            {Object.entries(site.social).map(([name, href]) => (
-              <a key={name} href={href} className="eyebrow rounded-full border border-line-2 px-3 py-1.5 text-[0.62rem] text-fog hover:border-lake hover:text-lake" rel="noopener" target="_blank">
-                {name}
-              </a>
-            ))}
-          </div>
         </div>
         {cols.map((col) => (
           <div key={col.title}>
-            <h2 className="eyebrow text-lake">{col.title}</h2>
-            <ul className="mt-4 space-y-2.5 text-sm">
+            <h2 className="text-sm font-semibold">{col.title}</h2>
+            <ul className="mt-3 space-y-2 text-sm">
               {col.links.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-fog transition-colors hover:text-mist">
+                  <Link href={l.href} className="text-map/70 hover:text-map hover:underline">
                     {l.label}
                   </Link>
                 </li>
@@ -67,13 +64,13 @@ export function Footer() {
           </div>
         ))}
       </div>
-      <div className="border-t border-line">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-xs text-fog sm:px-6 md:flex-row md:items-center md:justify-between">
+      <div className="border-t border-map/15">
+        <div className="mx-auto max-w-6xl space-y-1 px-4 py-6 text-xs text-map/65 sm:px-6">
           <p>
-            © {new Date().getFullYear()} {site.company.legalName}. Company no. {site.company.number}. {site.company.address}.
+            You must be {site.minAge} or over and live in the UK to enter. Every competition can be entered free by post.
           </p>
           <p>
-            <strong className="text-mist">{site.minAge}+ only.</strong> Please play responsibly. Free entry route available on every competition.
+            © {new Date().getFullYear()} {site.company.legalName}, company number {site.company.number}, {site.company.address}.
           </p>
         </div>
       </div>

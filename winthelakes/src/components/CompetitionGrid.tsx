@@ -8,7 +8,7 @@ type Filter = Category | "all" | "ending";
 
 const tabs: { id: Filter; label: string }[] = [{ id: "all", label: "All" }, { id: "ending", label: "Ending soon" }, ...categories];
 
-/** Category tabs + grid. The selected tab is kept in the URL (?c=cash) so it can be linked to. */
+/** Category tabs + ticket grid. The selected tab is kept in the URL (?c=cash) so it can be linked to. */
 export function CompetitionGrid({ comps, syncUrl = false }: { comps: Competition[]; syncUrl?: boolean }) {
   const params = useSearchParams();
   const router = useRouter();
@@ -19,7 +19,7 @@ export function CompetitionGrid({ comps, syncUrl = false }: { comps: Competition
     filter === "all"
       ? comps
       : filter === "ending"
-        ? [...comps].sort((a, b) => a.drawAt.localeCompare(b.drawAt)).slice(0, 4)
+        ? [...comps].sort((a, b) => a.drawAt.localeCompare(b.drawAt)).slice(0, 3)
         : comps.filter((c) => c.category === filter);
 
   function select(id: Filter) {
@@ -29,7 +29,7 @@ export function CompetitionGrid({ comps, syncUrl = false }: { comps: Competition
 
   return (
     <div>
-      <div role="tablist" aria-label="Filter competitions" className="rail -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
+      <div role="tablist" aria-label="Filter competitions" className="-mx-4 flex gap-6 overflow-x-auto border-b border-rule px-4">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -37,19 +37,19 @@ export function CompetitionGrid({ comps, syncUrl = false }: { comps: Competition
             type="button"
             aria-selected={filter === t.id}
             onClick={() => select(t.id)}
-            className={`eyebrow shrink-0 rounded-full border px-4 py-2.5 text-[0.68rem] transition-colors ${
-              filter === t.id ? "border-lake bg-lake text-night" : "border-line-2 text-fog hover:border-lake hover:text-lake"
+            className={`-mb-px shrink-0 border-b-[3px] pt-1 pb-3 text-[0.95rem] ${
+              filter === t.id ? "border-explorer font-semibold" : "border-transparent text-ink-2 hover:text-ink"
             }`}
           >
             {t.label}
           </button>
         ))}
       </div>
-      <div role="tabpanel" className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div role="tabpanel" className="mt-8 grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((c) => (
           <CompetitionCard key={c.slug} comp={c} />
         ))}
-        {shown.length === 0 && <p className="text-fog">Nothing in this category right now. New competitions launch every week.</p>}
+        {shown.length === 0 && <p className="text-ink-2">Nothing in this category right now. New competitions open every week.</p>}
       </div>
     </div>
   );

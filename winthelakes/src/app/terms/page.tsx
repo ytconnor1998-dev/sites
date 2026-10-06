@@ -10,7 +10,7 @@ export default function TermsPage() {
   const c = site.company;
   return (
     <>
-      <PageHero eyebrow="Legal" title="Terms & conditions" intro="Draft for review. Please read before entering." />
+      <PageHero title="Terms & conditions" intro="Draft for review. Please read before entering." />
       <Prose>
         <h2>1. The promoter</h2>
         <p>

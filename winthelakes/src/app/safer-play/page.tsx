@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Safer play", description: "Tools to 
 export default function SaferPlayPage() {
   return (
     <>
-      <PageHero eyebrow="Stay in control" title="Safer play" intro="Competitions should be fun. If they stop being fun, we're here to help." />
+      <PageHero title="Safer play" intro="Competitions should be fun. If they stop being fun, we're here to help." />
       <Prose>
         <h2>Tools in your account</h2>
         <ul>

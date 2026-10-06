@@ -1,6 +1,5 @@
 "use client";
 
-import { PartyPopper, Ticket, Zap } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -9,6 +8,7 @@ import { creditValue } from "@/lib/account";
 import { useEntries } from "@/lib/entries";
 import { drawDate, num } from "@/lib/format";
 import { ScratchCard } from "./ScratchCard";
+import { serial } from "./Ticket";
 
 export function OrderReveal() {
   const id = useSearchParams().get("id");
@@ -18,8 +18,8 @@ export function OrderReveal() {
 
   if (entries.length === 0) {
     return (
-      <div className="card mx-auto max-w-xl p-10 text-center">
-        <p className="display text-3xl">Order not found</p>
+      <div className="mx-auto max-w-6xl">
+        <p className="text-lg">We couldn&rsquo;t find that order in this browser.</p>
         <Link href="/account" className="btn btn-primary mt-6">
           See my tickets
         </Link>
@@ -29,79 +29,84 @@ export function OrderReveal() {
 
   const wins = entries.flatMap((e) => e.instantWins.map((w) => ({ ...w, title: e.title })));
   const total = entries.reduce((n, e) => n + e.tickets.length, 0);
+  // Where each competition's tickets start in the overall reveal order (for staggered timing).
+  const starts = entries.map((_, i) => entries.slice(0, i).reduce((n, e) => n + e.tickets.length, 0));
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <p className="eyebrow text-lake">Order {id}</p>
-      <h1 className="display mt-2 text-5xl">You&rsquo;re in!</h1>
-      <p className="mt-3 text-lg text-fog">
-        {num(total)} tickets across {entries.length} {entries.length === 1 ? "competition" : "competitions"}. A confirmation is on its way to your inbox.
+    <div className="mx-auto max-w-6xl">
+      <h1 className="display text-6xl sm:text-8xl">You&rsquo;re in</h1>
+      <p className="mt-3 max-w-[55ch] text-lg">
+        {num(total)} tickets in {entries.length} {entries.length === 1 ? "competition" : "competitions"}. Order {id}. We&rsquo;ve emailed you a copy.
       </p>
 
-      <div className="mt-8">
-        <ScratchCard label="Scratch for instant wins" onReveal={() => setRevealed(true)}>
-          <div className={`flex min-h-48 flex-col items-center justify-center p-8 text-center ${wins.length ? "bg-gradient-to-br from-lantern to-[#ff9f43] text-night" : "bg-deep-2"}`}>
+      <div className="mt-10 max-w-2xl">
+        <ScratchCard label="Scratch to see your tickets" onReveal={() => setRevealed(true)}>
+          <div className={`flex min-h-52 flex-col justify-center p-8 ${wins.length ? "bg-explorer text-white" : "bg-sheet"}`}>
             {wins.length ? (
               <>
-                <PartyPopper size={40} />
-                <p className="display mt-3 text-4xl">Instant win!</p>
-                <ul className="mt-3 space-y-1 font-bold">
+                <p className="display text-6xl">Instant win</p>
+                <ul className="mt-3 space-y-1 text-lg">
                   {wins.map((w) => (
                     <li key={`${w.title}-${w.ticket}`}>
-                      Ticket #{num(w.ticket)} won <span className="underline">{w.prize}</span>
+                      Ticket {num(w.ticket)} wins <strong>{w.prize}</strong> in {w.title}.
                     </li>
                   ))}
                 </ul>
-                <p className="mt-3 text-sm font-semibold">
+                <p className="mt-3 text-white/90">
                   {wins.some((w) => creditValue(w.prize) > 0) ? "Site credit is already in your wallet. " : ""}We&rsquo;ll be in touch about cash and prizes within 24 hours.
                 </p>
               </>
             ) : (
               <>
-                <Ticket size={36} className="text-lake" />
-                <p className="display mt-3 text-3xl">No instant win this time</p>
-                <p className="mt-2 text-fog">All your tickets are still in the main draw. Good luck!</p>
+                <p className="display text-5xl">No instant win this time</p>
+                <p className="mt-2 text-lg text-ink-2">All your tickets are in the main draw. Good luck.</p>
               </>
             )}
           </div>
         </ScratchCard>
       </div>
 
-      <div className={`mt-10 space-y-5 transition-opacity ${revealed ? "" : "opacity-60"}`}>
-        {entries.map((e) => {
-          const comp = getCompetition(e.slug);
-          const winners = new Set(e.instantWins.map((w) => w.ticket));
-          return (
-            <section key={e.slug} className="card p-6">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="display text-xl">{e.title}</h2>
-                {comp && <span className="text-sm text-fog">Draw {drawDate(comp.drawAt)}</span>}
-              </div>
-              {!e.correct && <p className="mt-2 text-sm font-bold text-ember">Wrong answer: these tickets aren&rsquo;t in the draw.</p>}
-              <ul className="mt-4 flex flex-wrap gap-2" aria-label="Your ticket numbers">
-                {e.tickets.map((t) => (
-                  <li
-                    key={t}
-                    className={`tabular flex items-center gap-1 rounded-lg px-2.5 py-1 text-sm font-bold ${
-                      revealed && winners.has(t) ? "bg-lantern text-night shadow-[0_0_20px_#ffc85788]" : "bg-lake/10 text-lake ring-1 ring-lake/25"
-                    }`}
-                  >
-                    {revealed && winners.has(t) && <Zap size={12} />}#{num(t)}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
-      </div>
-      <div className="mt-8 flex flex-wrap gap-3">
-        <Link href="/account" className="btn btn-primary">
-          My tickets
-        </Link>
-        <Link href="/competitions" className="btn btn-ghost">
-          Keep playing
-        </Link>
-      </div>
+      {revealed && (
+        <div className="mt-12 space-y-10">
+          {entries.map((e, ei) => {
+            const comp = getCompetition(e.slug);
+            const winners = new Set(e.instantWins.map((w) => w.ticket));
+            return (
+              <section key={e.slug}>
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-rule pb-2">
+                  <h2 className="display text-3xl">{e.title}</h2>
+                  {comp && <span className="text-sm text-ink-2">Draw {drawDate(comp.drawAt)}</span>}
+                </div>
+                {!e.correct && <p className="mt-2 text-sm font-semibold text-explorer">Your answer was wrong, so these tickets aren&rsquo;t in the draw.</p>}
+                <ul className="mt-4 flex flex-wrap gap-2.5" aria-label="Your ticket numbers">
+                  {e.tickets.map((t, ti) => {
+                    const won = winners.has(t);
+                    const d = Math.min((starts[ei] + ti) * 60, 1800);
+                    return (
+                      <li
+                        key={t}
+                        style={{ animation: `tear-in .35s ${d}ms both` }}
+                        className={`ticket ticket-h tabular flex h-11 items-center text-sm font-semibold ${won ? "bg-explorer !text-white" : `paper-${comp?.paper ?? "lemon"}`}`}
+                      >
+                        <span className="px-3">{serial(t)}</span>
+                        {won && <span className="pr-3">Winner</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })}
+          <div className="flex flex-wrap gap-3">
+            <Link href="/account" className="btn btn-primary">
+              My tickets
+            </Link>
+            <Link href="/competitions" className="btn btn-quiet">
+              More competitions
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

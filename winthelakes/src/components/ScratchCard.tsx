@@ -35,11 +35,11 @@ export function ScratchCard({ children, onReveal, label = "Scratch to reveal" }:
       ctx.lineTo(x + 70, rect.height);
       ctx.fill();
     }
-    ctx.fillStyle = "#0a141c";
-    ctx.font = "800 20px system-ui, sans-serif";
+    ctx.fillStyle = "#1d2b33";
+    ctx.font = `600 20px ${getComputedStyle(c).fontFamily}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(label.toUpperCase(), rect.width / 2, rect.height / 2);
+    ctx.fillText(label, rect.width / 2, rect.height / 2);
   }, [label]);
 
   function finish() {
@@ -69,7 +69,7 @@ export function ScratchCard({ children, onReveal, label = "Scratch to reveal" }:
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className="relative overflow-hidden rounded-md">
       <div aria-live="polite">{children}</div>
       <canvas
         ref={canvas}
@@ -87,8 +87,8 @@ export function ScratchCard({ children, onReveal, label = "Scratch to reveal" }:
         }}
       />
       {!revealed && (
-        <button type="button" onClick={finish} className="eyebrow absolute right-3 bottom-3 rounded-full bg-night px-3 py-1.5 text-[0.62rem] text-mist">
-          Reveal
+        <button type="button" onClick={finish} className="absolute right-3 bottom-3 rounded-md bg-ink px-3 py-1.5 text-sm text-map">
+          Reveal all
         </button>
       )}
     </div>

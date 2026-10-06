@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "How it works", description: "How to 
 export default function HowPage() {
   return (
     <>
-      <PageHero eyebrow="Four steps" title="How it works" />
+      <PageHero title="How it works" />
       <Prose>
         <h2>1. Pick a prize</h2>
         <p>

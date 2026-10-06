@@ -51,16 +51,17 @@ export type Competition = {
   /** Ticket bundles: buy `buy` tickets, get `free` extra free. */
   bundles?: { buy: number; free: number }[];
   instantWins?: InstantWin[];
-  /** Prize photo in /public/images/prizes/. Without one, the card shows designed artwork. */
+  /** Prize photo in /public/images/prizes/. Without one, a map-style placeholder is shown. */
   image?: string;
-  /** Artwork used when there's no photo. */
-  art: { icon: ArtIcon; from: string; to: string };
+  /** Colour of the paper ticket this competition is printed on. */
+  paper: Paper;
   description: string[];
   highlights: string[];
   question: { text: string; options: string[]; answer: number };
 };
 
-export type ArtIcon = "lodge" | "cash" | "car" | "bike" | "tech" | "boat" | "gift" | "camper";
+/** Classic raffle-roll colours. Defined in globals.css as --color-paper-<name>. */
+export type Paper = "pink" | "lemon" | "mint" | "sky" | "lilac" | "peach";
 
 /**
  * Demo draw dates are set relative to when the site was built (BUILD_TIME, from
@@ -95,7 +96,8 @@ export const competitions: Competition[] = [
       { prize: "£50 cash", value: 5_000, tickets: [44, 512, 1_301, 2_222, 3_333, 4_100, 4_777], claimed: [512, 1_301, 3_333] },
       { prize: "Windermere cruise for two", value: 4_000, tickets: [77, 1_888, 4_444], claimed: [] },
     ],
-    art: { icon: "lodge", from: "#0e5a63", to: "#123047" },
+    image: "/images/prizes/windermere-lodge-week.jpg",
+    paper: "sky",
     description: [
       "Seven nights for up to six people in a lake-view lodge on the eastern shore of Windermere, with a private hot tub, wood burner and your own jetty.",
       "We'll add £1,000 spending money for boat hire, fell walks, pubs and Kendal mint cake. Pick any week in the next 12 months, subject to availability.",
@@ -117,16 +119,17 @@ export const competitions: Competition[] = [
     drawAt: inDays(1),
     featured: true,
     bundles: [{ buy: 10, free: 2 }, { buy: 25, free: 7 }, { buy: 50, free: 20 }],
-    art: { icon: "cash", from: "#1d6b3f", to: "#0f2a22" },
+    image: "/images/prizes/10k-tax-free-cash.jpg",
+    paper: "lemon",
     description: ["Ten thousand pounds, tax free, sent by bank transfer the day after the draw. Spend it on whatever you like."],
     highlights: ["Tax-free cash", "Paid within 24 hours of the draw", "Live draw on Facebook"],
     question: { text: "How many pence are in £1?", options: ["10", "100", "1,000"], answer: 1 },
   },
   {
-    slug: "defender-90",
+    slug: "range-rover-sport",
     drawType: "live",
-    title: "Land Rover Defender 90 + £5,000",
-    teaser: "Built for Hardknott Pass. Or £45,000 cash",
+    title: "Range Rover Sport + £5,000",
+    teaser: "Hardknott Pass in comfort, or £45,000 cash",
     category: "cars",
     price: 499,
     value: 6_500_000,
@@ -141,9 +144,10 @@ export const competitions: Competition[] = [
       { prize: "£1,000 cash", value: 100_000, tickets: [999, 12_345, 20_202], claimed: [] },
       { prize: "£100 cash", value: 10_000, tickets: [7, 300, 4_040, 8_008, 15_015, 18_000, 22_222, 24_000], claimed: [300, 8_008] },
     ],
-    art: { icon: "car", from: "#4a5a2c", to: "#1b2116" },
+    image: "/images/prizes/range-rover-sport.jpg",
+    paper: "mint",
     description: [
-      "A new Land Rover Defender 90 in Pangea Green, delivered to your door, with £5,000 cash on top for insurance and fuel.",
+      "A Range Rover Sport in Santorini Black, delivered to your door, with £5,000 cash on top for insurance and fuel.",
       "Prefer the money? Take £45,000 tax-free cash instead.",
     ],
     highlights: ["Brand new, delivered to your door", "£5,000 cash included", "£45,000 cash alternative", "16 instant wins"],
@@ -162,7 +166,8 @@ export const competitions: Competition[] = [
     sold: 2_610,
     maxPerPerson: 50,
     drawAt: inDays(2),
-    art: { icon: "camper", from: "#3d6b5a", to: "#162a26" },
+    image: "/images/prizes/ullswater-glamping.jpg",
+    paper: "pink",
     description: [
       "Three nights in a luxury safari tent above Ullswater for four, with an Ullswater 'Steamers' cruise and a guided walk up Helvellyn via Striding Edge (or a gentler route, your call).",
     ],
@@ -190,7 +195,8 @@ export const competitions: Competition[] = [
       { prize: "£25 site credit", value: 2_500, tickets: [5, 66, 140, 333, 480, 777, 1_234, 1_777, 2_048, 3_141, 3_500, 4_321], claimed: [5, 66, 140, 777, 1_234] },
       { prize: "Free tickets x10", value: 1_990, tickets: [9, 99, 909, 1_999, 2_999, 3_999, 4_999], claimed: [9, 909] },
     ],
-    art: { icon: "gift", from: "#7a3b8f", to: "#22142e" },
+    image: "/images/prizes/instant-win-bonanza.jpg",
+    paper: "lilac",
     description: [
       "Over 250 instant prizes hidden in the ticket numbers. If your ticket matches one, you win straight away and we'll pay out within 24 hours. Every ticket is also in the end draw for £2,500.",
     ],
@@ -211,7 +217,8 @@ export const competitions: Competition[] = [
     sold: 1_206,
     maxPerPerson: 100,
     drawAt: inDays(8),
-    art: { icon: "tech", from: "#334155", to: "#0f172a" },
+    image: "/images/prizes/iphone-17-pro.jpg",
+    paper: "peach",
     description: ["The newest iPhone in your choice of colour, unlocked and delivered free. Or £1,300 cash."],
     highlights: ["1TB, any colour", "Unlocked", "£1,300 cash alternative"],
     question: { text: "Which company makes the iPhone?", options: ["Apple", "Samsung", "Google"], answer: 0 },
@@ -229,7 +236,8 @@ export const competitions: Competition[] = [
     sold: 640,
     maxPerPerson: 50,
     drawAt: inDays(9),
-    art: { icon: "boat", from: "#1e4f7a", to: "#0d1e33" },
+    image: "/images/prizes/coniston-boat-day.jpg",
+    paper: "mint",
     description: ["A skippered motor launch for the day on Coniston Water with a picnic hamper, then a three-course lunch at a lakeside inn for six."],
     highlights: ["Skippered boat for 6", "Picnic hamper", "3-course lakeside lunch"],
     question: { text: "Which children's book was inspired by Coniston Water?", options: ["Swallows and Amazons", "The Hobbit", "Black Beauty"], answer: 0 },
@@ -247,7 +255,8 @@ export const competitions: Competition[] = [
     sold: 2_301,
     maxPerPerson: 100,
     drawAt: inDays(15),
-    art: { icon: "bike", from: "#9a4a1c", to: "#2a160c" },
+    image: "/images/prizes/e-mtb.jpg",
+    paper: "pink",
     description: ["A top-spec full-suspension e-MTB with a 750Wh battery, plus helmet and a day's guided ride at Grizedale Forest."],
     highlights: ["750Wh battery", "Helmet & accessories", "Guided Grizedale ride", "£4,000 cash alternative"],
     question: { text: "Grizedale Forest sits between Coniston Water and which lake?", options: ["Windermere", "Derwentwater", "Wastwater"], answer: 0 },
@@ -264,7 +273,8 @@ export const competitions: Competition[] = [
     sold: 4_998,
     maxPerPerson: 200,
     drawAt: inDays(4),
-    art: { icon: "cash", from: "#2f6b1d", to: "#132211" },
+    image: "/images/prizes/1k-friday-cash.jpg",
+    paper: "lemon",
     description: ["Our weekly 25p cash draw. A thousand pounds, every Friday, drawn live."],
     highlights: ["Just 25p a ticket", "Drawn live every Friday", "Paid within 24 hours"],
     question: { text: "What is 12 + 8?", options: ["18", "20", "22"], answer: 1 },
@@ -305,19 +315,18 @@ export type Winner = {
   ticket: number;
   date: string;
   quote?: string;
-  art: Competition["art"];
 };
 
 export const winners: Winner[] = [
   // PLACEHOLDER: replace with real winners (with their permission).
-  { name: "Sarah M.", town: "Kendal", prize: "Lake-view lodge week, Derwentwater", ticket: 1_482, date: "2026-09-26", quote: "Watched the live draw in my pyjamas and screamed the house down.", art: { icon: "lodge", from: "#0e5a63", to: "#123047" } },
-  { name: "Dave P.", town: "Preston", prize: "£10,000 tax-free cash", ticket: 8_831, date: "2026-09-19", quote: "Money was in my account the next morning. Unreal.", art: { icon: "cash", from: "#1d6b3f", to: "#0f2a22" } },
-  { name: "Aisha K.", town: "Manchester", prize: "Volkswagen California camper", ticket: 20_117, date: "2026-09-12", quote: "First thing we did was drive it to Buttermere.", art: { icon: "camper", from: "#3d6b5a", to: "#162a26" } },
-  { name: "Tom R.", town: "Carlisle", prize: "£1,000 Friday cash", ticket: 3_006, date: "2026-10-02", art: { icon: "cash", from: "#2f6b1d", to: "#132211" } },
-  { name: "Gemma L.", town: "Lancaster", prize: "PlayStation 5 Pro bundle", ticket: 744, date: "2026-09-28", quote: "Bought 5 tickets on a whim.", art: { icon: "tech", from: "#334155", to: "#0f172a" } },
-  { name: "Liam O.", town: "Leeds", prize: "£500 instant win", ticket: 250, date: "2026-10-04", art: { icon: "gift", from: "#7a3b8f", to: "#22142e" } },
-  { name: "Jo W.", town: "Keswick", prize: "Ullswater glamping weekend", ticket: 1_093, date: "2026-09-05", quote: "Lived here 20 years and never been on the steamers. Now I have!", art: { icon: "camper", from: "#3d6b5a", to: "#162a26" } },
-  { name: "Priya S.", town: "Newcastle", prize: "£250 instant win", ticket: 2_047, date: "2026-10-05", art: { icon: "cash", from: "#1d6b3f", to: "#0f2a22" } },
+  { name: "Sarah M.", town: "Kendal", prize: "Lake-view lodge week, Derwentwater", ticket: 1_482, date: "2026-09-26", quote: "Watched the live draw in my pyjamas and screamed the house down." },
+  { name: "Dave P.", town: "Preston", prize: "£10,000 tax-free cash", ticket: 8_831, date: "2026-09-19", quote: "Money was in my account the next morning. Unreal." },
+  { name: "Aisha K.", town: "Manchester", prize: "Volkswagen California camper", ticket: 20_117, date: "2026-09-12", quote: "First thing we did was drive it to Buttermere." },
+  { name: "Tom R.", town: "Carlisle", prize: "£1,000 Friday cash", ticket: 3_006, date: "2026-10-02" },
+  { name: "Gemma L.", town: "Lancaster", prize: "PlayStation 5 Pro bundle", ticket: 744, date: "2026-09-28", quote: "Bought 5 tickets on a whim." },
+  { name: "Liam O.", town: "Leeds", prize: "£500 instant win", ticket: 250, date: "2026-10-04" },
+  { name: "Jo W.", town: "Keswick", prize: "Ullswater glamping weekend", ticket: 1_093, date: "2026-09-05", quote: "Lived here 20 years and never been on the steamers. Now I have!" },
+  { name: "Priya S.", town: "Newcastle", prize: "£250 instant win", ticket: 2_047, date: "2026-10-05" },
 ];
 
 export type DrawResult = {

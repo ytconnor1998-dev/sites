@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Privacy policy" };
 export default function PrivacyPage() {
   return (
     <>
-      <PageHero eyebrow="Legal" title="Privacy policy" intro="Draft for review." />
+      <PageHero title="Privacy policy" intro="Draft for review." />
       <Prose>
         <h2>Who we are</h2>
         <p>

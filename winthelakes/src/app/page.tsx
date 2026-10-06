@@ -1,172 +1,151 @@
-import { HandCoins, HelpCircle, Radio, ShieldCheck, Sparkles, Ticket, Trees, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CompetitionGrid } from "@/components/CompetitionGrid";
-import { HeroSlider } from "@/components/HeroSlider";
-import { SectionHeading } from "@/components/Section";
-import { WinnersTicker } from "@/components/WinnersTicker";
+import { LeadPrize } from "@/components/LeadPrize";
 import { competitions, winners } from "@/config/competitions";
 import { faq } from "@/config/faq";
-import { site, stats } from "@/config/site";
-import { num } from "@/lib/format";
-import { PrizeArt } from "@/components/PrizeArt";
+import { site } from "@/config/site";
+import { num, shortDate } from "@/lib/format";
 
 const steps = [
-  { icon: Ticket, title: "Pick your prize", text: "Choose a competition and how many tickets you want. Bigger bundles get free tickets." },
-  { icon: HelpCircle, title: "Answer the question", text: "One simple question. Get it right and your tickets go into the draw." },
-  { icon: Sparkles, title: "Reveal instant wins", text: "After checkout, reveal your ticket numbers. Matching numbers win straight away." },
-  { icon: Radio, title: "Watch the live draw", text: "Main prizes are drawn live on Facebook. Winners are announced the same night." },
+  { title: "Pick a prize", text: "Choose how many tickets you want. Bigger bundles come with free tickets." },
+  { title: "Answer the question", text: "One question per competition. Correct answers go into the draw." },
+  { title: "Scratch for instant wins", text: "After you pay, scratch to see your ticket numbers. Some win straight away." },
+  { title: "Watch the draw", text: "Main prizes are drawn on the date shown, sold out or not, live on Facebook." },
 ];
 
 export default function Home() {
-  const featured = competitions.filter((c) => c.featured);
+  // The first featured competition leads the page; the rest go in the grid.
+  const lead = competitions.find((c) => c.featured) ?? competitions[0];
+  const rest = competitions.filter((c) => c !== lead);
   return (
     <>
-      <HeroSlider comps={featured} />
+      <LeadPrize comp={lead} />
 
-      <div className="mt-8">
-        <WinnersTicker />
-      </div>
-
-      <section id="competitions" aria-labelledby="comps-h" className="mx-auto mt-20 max-w-7xl px-4 sm:px-6">
-        <SectionHeading eyebrow="Open now" title="Live competitions" id="comps-h">
-          <Link href="/competitions" className="btn btn-ghost self-start md:self-auto">
-            View all
-          </Link>
-        </SectionHeading>
+      <section id="competitions" aria-labelledby="comps-h" className="mx-auto mt-20 max-w-6xl px-4 sm:px-6">
+        <h2 id="comps-h" className="display mb-5 text-5xl">
+          Open competitions
+        </h2>
         <Suspense>
-          <CompetitionGrid comps={competitions} />
+          <CompetitionGrid comps={rest} />
         </Suspense>
       </section>
 
-      <section aria-label="Our numbers" className="mx-auto mt-24 max-w-7xl px-4 sm:px-6">
-        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-line bg-line lg:grid-cols-4">
-          {[
-            ["Given away in prizes", `£${num(stats.givenAway)}`],
-            ["Happy winners", num(stats.winners)],
-            ["Donated to Lakes causes", `£${num(stats.charity)}`],
-            ["Trustpilot rating", `${stats.trustpilot} / 5`],
-          ].map(([label, value]) => (
-            <div key={label} className="bg-deep px-6 py-8">
-              <dt className="eyebrow text-[0.62rem] text-fog">{label}</dt>
-              <dd className="display mt-2 text-3xl text-lantern sm:text-4xl">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      <section aria-labelledby="how-h" className="mx-auto mt-24 max-w-7xl px-4 sm:px-6">
-        <SectionHeading eyebrow="Simple as that" title="How it works" id="how-h">
-          <Link href="/how-it-works" className="btn btn-ghost self-start md:self-auto">
-            Full details
-          </Link>
-        </SectionHeading>
-        <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((s, i) => (
-            <li key={s.title} className="card relative p-6">
-              <span className="display absolute top-5 right-6 text-5xl text-white/5">{i + 1}</span>
-              <s.icon className="text-lake" size={28} strokeWidth={1.6} />
-              <h3 className="display mt-5 text-xl">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-fog">{s.text}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section aria-labelledby="winners-h" className="mx-auto mt-24 max-w-7xl px-4 sm:px-6">
-        <SectionHeading eyebrow="Real people, real prizes" title="Recent winners" id="winners-h">
-          <Link href="/winners" className="btn btn-ghost self-start md:self-auto">
-            All winners
-          </Link>
-        </SectionHeading>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {winners.slice(0, 4).map((w) => (
-            <figure key={`${w.name}-${w.ticket}`} className="card overflow-hidden">
-              <div className="relative aspect-[5/4]">
-                <PrizeArt comp={{ art: w.art, title: w.prize }} iconSize={44} />
-                <span className="absolute top-3 left-3 rounded-full bg-lantern px-2.5 py-1 text-[0.62rem] font-extrabold tracking-wider text-night uppercase">
-                  Ticket #{num(w.ticket)}
-                </span>
-              </div>
-              <figcaption className="p-5">
-                <p className="display text-lg">{w.prize}</p>
-                <p className="mt-1 text-sm text-fog">
-                  {w.name}, {w.town}
-                </p>
-                {w.quote && <blockquote className="mt-3 border-l-2 border-lake pl-3 text-sm italic">“{w.quote}”</blockquote>}
-              </figcaption>
-            </figure>
-          ))}
+      <section aria-labelledby="how-h" className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
+        <div className="grid gap-10 border-t-[3px] border-ink pt-8 lg:grid-cols-[1fr_3fr]">
+          <h2 id="how-h" className="display text-5xl">
+            How it works
+          </h2>
+          <ol className="grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
+            {steps.map((s, i) => (
+              <li key={s.title}>
+                <span className="display text-6xl text-explorer">{i + 1}</span>
+                <h3 className="mt-2 text-lg font-semibold">{s.title}</h3>
+                <p className="mt-1 text-ink-2">{s.text}</p>
+              </li>
+            ))}
+          </ol>
         </div>
-      </section>
-
-      <section aria-labelledby="trust-h" className="mx-auto mt-24 max-w-7xl px-4 sm:px-6">
-        <div className="card water grid gap-10 overflow-hidden p-8 sm:p-12 lg:grid-cols-2">
-          <div>
-            <p className="eyebrow text-lake">Why Win the Lakes</p>
-            <h2 id="trust-h" className="display mt-2 text-4xl sm:text-5xl">
-              Born in the fells. Fair to the last ticket.
-            </h2>
-            <p className="mt-5 max-w-md text-fog">
-              We&rsquo;re a small team from Cumbria. Every competition is drawn on time whether it sells out or not, every live draw is streamed, and a slice of
-              every ticket goes back into the Lake District.
-            </p>
-          </div>
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {[
-              [ShieldCheck, "Always drawn on time", "We never extend a draw date. Sold out or not, it's drawn."],
-              [Radio, "Live on Facebook", "Watch the number come out of the random generator in real time."],
-              [HandCoins, "Paid within 24 hours", "Cash prizes and instant wins hit your bank the next day."],
-              [Trees, "Giving back", "We donate to fell-rescue, footpath and lake conservation charities."],
-            ].map(([Icon, title, text]) => {
-              const I = Icon as typeof ShieldCheck;
-              return (
-                <li key={title as string} className="rounded-2xl border border-line bg-night/40 p-5">
-                  <I size={22} className="text-lantern" />
-                  <h3 className="mt-3 font-extrabold">{title as string}</h3>
-                  <p className="mt-1 text-sm text-fog">{text as string}</p>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </section>
-
-      <section aria-labelledby="faq-h" className="mx-auto mt-24 max-w-3xl px-4 sm:px-6">
-        <SectionHeading eyebrow="Questions" title="Good to know" id="faq-h" />
-        <div className="divide-y divide-line rounded-3xl border border-line bg-deep">
-          {faq.slice(0, 5).map((f) => (
-            <details key={f.q} className="group px-6 py-5">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-bold">
-                {f.q}
-                <span className="text-xl text-lake transition-transform group-open:rotate-45" aria-hidden="true">
-                  +
-                </span>
-              </summary>
-              <p className="mt-3 text-fog">{f.a}</p>
-            </details>
-          ))}
-        </div>
-        <p className="mt-6 text-center">
-          <Link href="/faq" className="font-bold text-lake underline-offset-4 hover:underline">
-            All questions
+        <p className="mt-8 text-ink-2 lg:ml-[25%]">
+          Prefer not to pay?{" "}
+          <Link href="/free-entry" className="link text-ink">
+            Every competition can be entered free by post
           </Link>
-          <span className="text-fog"> · </span>
-          <Link href="/free-entry" className="font-bold text-lake underline-offset-4 hover:underline">
-            Enter for free by post
-          </Link>
+          , with the same chance of winning.
         </p>
       </section>
 
-      <section aria-label="Join" className="mx-auto mt-24 max-w-7xl px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-lake px-8 py-12 text-night sm:px-12">
-          <Trophy className="absolute -right-6 -bottom-8 text-night/10" size={220} aria-hidden="true" />
-          <h2 className="display max-w-2xl text-4xl sm:text-5xl">Your Lakes escape could be one ticket away.</h2>
-          <p className="mt-4 max-w-xl font-semibold">Tickets from 25p. {site.minAge}+ only. Free entry route available.</p>
-          <Link href="/competitions" className="btn mt-7 bg-night text-mist hover:bg-deep">
-            See all prizes
-          </Link>
+      <section aria-labelledby="winners-h" className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
+        <div className="grid gap-10 border-t-[3px] border-ink pt-8 lg:grid-cols-[1fr_3fr]">
+          <div>
+            <h2 id="winners-h" className="display text-5xl">
+              Recent winners
+            </h2>
+            <Link href="/winners" className="link mt-4 inline-block">
+              All winners
+            </Link>
+          </div>
+          <ol className="divide-y divide-rule border-y border-rule">
+            {winners.slice(0, 6).map((w) => (
+              <li key={`${w.name}-${w.ticket}`} className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-1 py-4 sm:grid-cols-[7rem_1fr_auto] sm:items-baseline">
+                <span className="text-sm text-ink-2 sm:order-none">{shortDate(w.date)}</span>
+                <span className="col-span-2 sm:col-span-1">
+                  <strong className="font-semibold">{w.name}</strong>, {w.town}, won {w.prize}
+                </span>
+                <span className="tabular row-start-1 text-right text-sm sm:row-auto">Ticket {num(w.ticket)}</span>
+              </li>
+            ))}
+          </ol>
         </div>
+      </section>
+
+      <section aria-labelledby="about-h" className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
+        <div className="grid gap-10 border-t-[3px] border-ink pt-8 lg:grid-cols-[1fr_3fr]">
+          <h2 id="about-h" className="display text-5xl">
+            Who we are
+          </h2>
+          <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
+            <p className="text-lg md:col-span-2 max-w-[60ch]">
+              We&rsquo;re a small team based in Windermere. We started Win the Lakes to give away the kind of weeks we&rsquo;d want to win: a lodge on the water, a
+              boat for the day, a Defender for the passes.
+            </p>
+            <div>
+              <h3 className="font-semibold">Drawn on time, every time</h3>
+              <p className="mt-1 text-ink-2">We never extend a draw date. If a competition doesn&rsquo;t sell out, it&rsquo;s still drawn when we said it would be.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold">Every result published</h3>
+              <p className="mt-1 text-ink-2">
+                The winning ticket, the winner&rsquo;s name and town, and a recording of the draw go on the{" "}
+                <Link href="/draws" className="link text-ink">
+                  results page
+                </Link>
+                .
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold">Paid within a day</h3>
+              <p className="mt-1 text-ink-2">Cash prizes and instant wins are paid by bank transfer the next working day.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold">Some of every ticket stays local</h3>
+              <p className="mt-1 text-ink-2">We give to fell rescue teams and footpath repair across the national park.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="faq-h" className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
+        <div className="grid gap-10 border-t-[3px] border-ink pt-8 lg:grid-cols-[1fr_3fr]">
+          <div>
+            <h2 id="faq-h" className="display text-5xl">
+              Questions
+            </h2>
+            <Link href="/faq" className="link mt-4 inline-block">
+              All questions
+            </Link>
+          </div>
+          <div className="divide-y divide-rule border-y border-rule">
+            {faq.slice(0, 5).map((f) => (
+              <details key={f.q} className="group py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold">
+                  {f.q}
+                  <span className="text-2xl leading-none font-normal transition-transform group-open:rotate-45" aria-hidden="true">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-2 max-w-[65ch] text-ink-2">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+        <p className="mt-10 text-sm text-ink-2 lg:ml-[25%]">
+          {site.minAge}+ only. Please play responsibly.{" "}
+          <Link href="/safer-play" className="link">
+            Set limits or take a break
+          </Link>
+          .
+        </p>
       </section>
     </>
   );
