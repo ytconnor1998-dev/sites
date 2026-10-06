@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import time
 from collections import Counter, deque
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
@@ -59,6 +60,7 @@ class RunSummary:
 
 
 MAX_CONSECUTIVE_FAILURES = 3
+HEARTBEAT_SECONDS = 10
 
 
 class FatalRunError(Exception):
@@ -96,6 +98,8 @@ class Pipeline:
         self.on_progress = on_progress or (lambda p: None)
         self.should_stop = should_stop or (lambda: False)
         self.progress = Progress()
+        self.run_id: int | None = None
+        self._last_heartbeat = 0.0
         audit_cfg = cfg.audit
         self.shared_hosts = [*audit_cfg.get("social_domains", []), *audit_cfg.get("checks", {}).get("free_builder", {}).get("domains", [])]
 
@@ -106,6 +110,12 @@ class Pipeline:
     def _emit(self, message: str | None = None) -> None:
         if message:
             self.progress.message = message
+        if self.run_id and time.monotonic() - self._last_heartbeat > HEARTBEAT_SECONDS:
+            self._last_heartbeat = time.monotonic()
+            try:
+                self.db.heartbeat(self.run_id, self.progress.scanned, self.progress.leads)
+            except Exception:
+                log.warning("Couldn't save run progress", exc_info=True)
         try:
             self.on_progress(self.progress)
         except Exception:  # a UI callback must never break the run
@@ -135,6 +145,7 @@ class Pipeline:
         }
         label = filters_label(cats, areas, opts, cfg)
         run_id = self.db.start_run(filters, label, source, target, opts.dry_run)
+        self.run_id = run_id
         self.progress = Progress(target=target)
         log.info("Run %s started: %s (source: %s)", run_id, label, source)
 

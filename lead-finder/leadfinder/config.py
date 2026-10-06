@@ -88,8 +88,12 @@ class Config:
     root: Path = field(default=ROOT)
 
     @property
-    def db_path(self) -> Path:
-        return _resolve(self.root, os.getenv("LEADFINDER_DB") or self.settings.get("database", "data/leads.db"))
+    def db_url(self) -> str:
+        """DATABASE_URL (hosted Postgres) if set, otherwise the local SQLite file."""
+        url = os.getenv("DATABASE_URL", "").strip()
+        if url:
+            return url
+        return str(_resolve(self.root, os.getenv("LEADFINDER_DB") or self.settings.get("database", "data/leads.db")))
 
     @property
     def export_dir(self) -> Path:

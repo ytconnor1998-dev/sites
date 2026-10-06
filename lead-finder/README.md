@@ -1,17 +1,93 @@
 # Rome lead finder
 
-Finds businesses in Rome that have **no website or a weak one** and a public **phone number or email**, scores their sites, and exports the leads to Excel. Internal tool for CPD Web Design.
+A private website for CPD Web Design. It finds businesses in Rome that have **no website or a weak one** and a public **phone number or email**, scores their sites, and exports the leads to Excel.
 
 - **Sources:** Google Places API (New), with OpenStreetMap (Overpass) as the free fallback.
 - **Website audit:** HTTPS, mobile-friendliness, PageSpeed, copyright year, outdated tech, free-builder subdomains, title/description, contact info, English version.
-- **Output:** a colour-coded Excel file plus a SQLite database, so reruns skip businesses already found.
-- **Interfaces:** a command line (`cli.py`) and a local dashboard (`dashboard.py`).
+- **Hosting:** runs free on Streamlit Community Cloud, password-protected, with leads stored in a free Neon database. Searches keep running if you close the tab.
+- **Also:** a command line (`cli.py`) for running it on your own computer.
 
 ---
 
-## Setup (Windows, PowerShell)
+## Put it online (one-time setup, about 20 minutes)
 
-You need **Python 3.10 or newer**. Check with `py --version`; if it's missing, install it from [python.org](https://www.python.org/downloads/) and tick "Add python.exe to PATH".
+You'll create three free accounts: Google Cloud (for the API key), Neon (the database) and Streamlit Community Cloud (the hosting). Nothing needs installing on your computer.
+
+### 1. Google API key
+
+You can skip this step to start with: without a key the site uses OpenStreetMap, which is free but lists fewer Rome businesses.
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create a project, e.g. "lead-finder".
+2. **APIs & Services → Library**: enable **Places API (New)** and **PageSpeed Insights API**.
+3. **Billing**: link a billing account. Places requires one, even when you stay inside the free usage.
+4. **APIs & Services → Credentials → Create credentials → API key**. Under *API restrictions*, restrict the key to those two APIs. Leave *Application restrictions* on "None": the hosting has no fixed IP address.
+5. **Safety net (recommended):** in **APIs & Services → Places API (New) → Quotas**, set a daily cap on Text Search requests (e.g. 30/day ≈ 900/month), and add a budget alert under **Billing → Budgets & alerts**. Then a mistake can't run up a bill.
+6. Copy the key somewhere safe. You'll paste it in step 3.
+
+### 2. Database (Neon)
+
+1. Sign up at [neon.tech](https://neon.tech) (free plan; signing in with GitHub is easiest).
+2. Create a project: name it "lead-finder" and pick the region **AWS Europe Central (Frankfurt)**, the closest to Rome.
+3. On the project dashboard, click **Connect** and copy the connection string. It starts with `postgresql://` and ends with `?sslmode=require`. Keep "Connection pooling" switched on.
+
+The tables are created automatically the first time the site starts.
+
+### 3. Hosting (Streamlit Community Cloud)
+
+1. Go to [share.streamlit.io](https://share.streamlit.io) and choose **Continue with GitHub**. Allow it to access your repositories.
+2. Click **Create app** → **Deploy a public app from GitHub** and fill in:
+   - **Repository:** `ytconnor1998-dev/sites`
+   - **Branch:** `claude/rome-lead-gen-architecture-3tn9oi` (or your main branch, once this is merged)
+   - **Main file path:** `lead-finder/dashboard.py`
+   - **App URL:** something like `cpd-leads`. The site will be at `https://cpd-leads.streamlit.app`.
+3. Open **Advanced settings**. Choose Python **3.12** and paste this into **Secrets**, filling in your values:
+
+   ```toml
+   APP_PASSWORD = "a long password only you know"
+   DATABASE_URL = "postgresql://...the Neon connection string..."
+   GOOGLE_PLACES_API_KEY = "...your Google key..."
+   ```
+
+4. Click **Deploy**. The first start takes a few minutes while it installs everything.
+
+"Public app" means anyone with the link can reach the page, but they only see a password box. The data is in your Neon database, not in GitHub. For an extra layer, you can limit who can open the app at all under the app's **Settings → Sharing**.
+
+You can change the secrets later under **⋮ → Settings → Secrets**; the app restarts with the new values.
+
+### 4. First test
+
+Log in, tick **Trattorie** and **Monti**, tick **Dry run**, and press **Run search**. It processes 10 businesses using 1–2 Google calls. Check the results look right in the table, then do a real search.
+
+---
+
+## Using the website
+
+- **Search:** tick business types (a group's *All* box selects the whole group) and areas, set the target, and watch the API estimate update. Then press **Run search**. Progress updates live.
+- **Background searches:** you can close the tab during a search; it keeps running on the server and saves each lead as it goes. Only one search runs at a time, and **Stop search** ends it early.
+- **Browse leads:** filter and sort every lead in the database. Click a column header to sort.
+- **Track outreach:** edit **Status** and **Notes** in the table, then press **Save status/notes**. These are included in every export, so re-exporting never loses your tracking.
+- **Export:** **Export all** or **Export filtered view** downloads the Excel file.
+- **Bottom of the page:** recent searches, API usage this month, and the log (useful if something goes wrong).
+
+Good to know about the free hosting:
+
+- **It sleeps.** If nobody opens the site for a while, it goes to sleep. The next visit shows a "wake up" button and takes about a minute.
+- **Updates restart it.** Every new commit to the deployed branch restarts the app, which ends any search in progress. That search is marked *interrupted*; leads it already found are kept.
+
+## What it costs
+
+- **Hosting (Streamlit Community Cloud) and database (Neon):** free plans. Neon's free storage is far more than this needs.
+- **Google Text Search:** the tool asks Text Search for the phone, website, rating and Maps link directly. That's **1 call per 20 businesses**, with no separate Place Details calls. Requesting those fields puts each call in Google's "Text Search Enterprise" price tier. The free allowance is set in `config/settings.yaml` (`free_calls_per_month: 1000`); check it against [Google's pricing page](https://developers.google.com/maps/billing-and-pricing/pricing) because Google changes it.
+- **Usage tracking:** the site counts its own Google calls and shows *"used this month"* with every estimate.
+- **PageSpeed Insights:** free (25,000 calls a day). It only runs on borderline sites, where the speed check can change the tier.
+
+---
+
+## Running on your own computer (optional)
+
+You don't need this for the website. It's for using the command line, or testing changes before they go online.
+
+You need **Python 3.10 or newer**. Check with `py --version`; if it's missing, install it from [python.org](https://www.python.org/downloads/) and tick "Add python.exe to PATH". Then, in PowerShell:
 
 ```powershell
 cd path\to\sites\lead-finder
@@ -22,34 +98,12 @@ copy .env.example .env
 notepad .env
 ```
 
-If PowerShell refuses to run `Activate.ps1`, run this once, then try again:
+If PowerShell refuses to run `Activate.ps1`, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, then try again. Run `.venv\Scripts\Activate.ps1` every time you open a new PowerShell window.
 
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
+In `.env`, set `APP_PASSWORD` and your Google key. To work with the **same leads as the website**, also set `DATABASE_URL` to the Neon connection string; otherwise a separate local file (`data\leads.db`) is used.
 
-Run `.venv\Scripts\Activate.ps1` every time you open a new PowerShell window. `(.venv)` appears at the start of the prompt when it's active.
-
-### Google API keys
-
-You can skip this step: the tool then uses OpenStreetMap, which is free but lists fewer Rome businesses.
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create a project, e.g. "lead-finder".
-2. **APIs & Services → Library**: enable **Places API (New)** and **PageSpeed Insights API**.
-3. **Billing**: link a billing account. Places requires one, even when you stay inside the free usage.
-4. **APIs & Services → Credentials → Create credentials → API key**. Under *API restrictions*, restrict the key to those two APIs.
-5. Paste the key into `.env` as `GOOGLE_PLACES_API_KEY=...`. PageSpeed reuses the same key unless you set `PAGESPEED_API_KEY`.
-6. **Recommended safety net:** in **APIs & Services → Places API (New) → Quotas**, set a daily cap on Text Search requests (e.g. 30/day ≈ 900/month). Also add a budget alert under **Billing → Budgets & alerts**. Then a mistake can't run up a bill.
-
-#### What it costs
-
-- **Google Text Search:** the tool asks Text Search for the phone, website, rating and Maps link directly. That's **1 call per 20 businesses**, with no separate Place Details calls. Requesting those fields puts each call in Google's "Text Search Enterprise" price tier. The free allowance is set in `config/settings.yaml` (`free_calls_per_month: 1000`); check it against [Google's pricing page](https://developers.google.com/maps/billing-and-pricing/pricing) because Google changes it.
-- **Usage tracking:** the tool counts its own calls in the database and shows *"used this month"* before every run.
-- **PageSpeed Insights:** free (25,000 calls a day). It only runs on borderline sites, where the speed check can change the tier.
-
----
-
-## Using the command line
+- **Dashboard:** `streamlit run dashboard.py` opens the same site at http://localhost:8501.
+- **Command line:**
 
 ```powershell
 # Show every category, group and area key
@@ -64,11 +118,11 @@ python cli.py run --groups tourist-facing --areas trastevere --source osm --dry-
 # A real run
 python cli.py run --groups "tourist-facing" --categories "barbers" --areas "trastevere,monti" --target 100
 
-# Re-export every lead in the database to Excel
+# Export every lead in the database to Excel (in exports\)
 python cli.py export
 ```
 
-Before searching, the tool prints the estimated API calls and asks you to confirm. Add `--yes` to skip the question.
+Before searching, the command line prints the estimated API calls and asks you to confirm. Add `--yes` to skip the question.
 
 | Option | Meaning |
 |---|---|
@@ -81,22 +135,7 @@ Before searching, the tool prints the estimated API calls and asks you to confir
 | `--no-export` | Don't write the Excel file at the end. |
 | `--verbose` / `-v` | Print every business as it's checked. |
 
-The tool only queries the category × area combinations you select. It takes Google result pages in turn across all of them, so a run that hits its target early still covers every selection, and it stops paying as soon as the target is reached.
-
-## Using the dashboard
-
-```powershell
-streamlit run dashboard.py
-```
-
-It opens at http://localhost:8501. From there you can:
-
-- **Search:** tick business types (a group's *All* box selects the whole group) and areas, set the target, and watch the API estimate update. Then press **Run search**.
-- **Browse leads:** filter and sort every lead in the database. Click a column header to sort.
-- **Track outreach:** edit **Status** and **Notes** in the table, then press **Save status/notes**. These are stored in the database and included in every export, so re-exporting never loses your outreach tracking.
-- **Export:** download **Export all** or **Export filtered view**. A copy is also saved in `exports\`.
-
-Don't change selections while a run is in progress: Streamlit restarts the page and the run stops. Leads found up to that point are already saved.
+The tool only queries the category × area combinations you select. It takes Google result pages in turn across all of them, so a search that hits its target early still covers every selection, and it stops paying as soon as the target is reached.
 
 ---
 
@@ -134,7 +173,7 @@ A few rules worth knowing:
 
 ## Changing the configuration
 
-Edit these files; no code changes needed.
+Edit these files; no code changes needed. Online, commit the change to the deployed branch and the app picks it up after restarting (searches in progress are interrupted).
 
 | File | What's in it |
 |---|---|
@@ -143,13 +182,12 @@ Edit these files; no code changes needed.
 | `config/audit.yaml` | The checklist: weights, labels, tier cut-offs, free-builder domains, social/parking domains. |
 | `config/settings.yaml` | User agent, concurrency, timeouts, rate limits, free-tier numbers, recheck interval. `google.term_mode: all` also searches the English terms: better coverage, more calls. |
 
-## Files it creates
+## Where the data lives
 
-- `data\leads.db`: SQLite database with every business checked, every run's filters and results, and API usage.
-- `exports\rome_leads_YYYY-MM-DD_HHMM.xlsx`: the Excel exports.
-- `logs\leadfinder.log`: full log of every business and every error.
+- **Online:** every business checked, every search's filters and results, and API usage are in the Neon database. Excel files are downloaded straight to your computer. The log is visible at the bottom of the page and resets when the app restarts.
+- **On your computer:** `data\leads.db` (unless `DATABASE_URL` is set), `exports\*.xlsx` and `logs\leadfinder.log`.
 
-All three are git-ignored: they contain business contact data.
+None of this goes into GitHub: keys, the database, exports and logs are all git-ignored, because they contain business contact data.
 
 ## Being a polite visitor
 
@@ -171,4 +209,4 @@ pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-The tests run fully offline: Google, PageSpeed and business websites are mocked with saved HTML pages.
+The tests run fully offline: Google, PageSpeed and business websites are mocked with saved HTML pages. Database tests run against SQLite and against a real temporary Postgres server (via `pgserver`).

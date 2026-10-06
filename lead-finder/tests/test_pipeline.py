@@ -78,8 +78,8 @@ def run(cfg, db, **kw):
 
 
 @pytest.fixture
-def db(cfg):
-    d = Database(cfg.db_path)
+def db(db_url):
+    d = Database(db_url)
     yield d
     d.close()
 
@@ -113,7 +113,7 @@ def test_full_run_tiers_contacts_and_rerun(cfg, db):
         assert counts.get("excluded") == 1      # Bella Pizza
         assert counts.get("no_contact") == 1    # Solo Facebook
         # outside the zone, permanently closed and duplicate phone never stored
-        names = {r[0] for r in db.conn.execute("SELECT name FROM businesses")}
+        names = db.business_names()
         assert not names & {"Far Away", "Chiuso", "Da Mario (dup)"}
 
         # PageSpeed only ran for the borderline site

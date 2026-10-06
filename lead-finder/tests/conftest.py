@@ -25,3 +25,30 @@ def cfg(tmp_path):
     c.settings["http"]["backoff_s"] = 0
     c.settings["google"]["requests_per_second"] = 1000
     return c
+
+
+@pytest.fixture(scope="session")
+def pg_server(tmp_path_factory):
+    pgserver = pytest.importorskip("pgserver", reason="pip install pgserver to test against Postgres")
+    srv = pgserver.get_server(str(tmp_path_factory.mktemp("pg")), cleanup_mode="stop")
+    yield srv
+    srv.cleanup()
+
+
+@pytest.fixture(params=["sqlite", "postgres"])
+def db_url(request, cfg, monkeypatch):
+    """Runs each test against SQLite and against a fresh Postgres database."""
+    if request.param == "sqlite":
+        yield cfg.db_url
+        return
+    import uuid
+
+    import psycopg
+
+    srv = request.getfixturevalue("pg_server")
+    name = "t_" + uuid.uuid4().hex[:10]
+    with psycopg.connect(srv.get_uri(), autocommit=True) as conn:
+        conn.execute(f"CREATE DATABASE {name}")
+    url = srv.get_uri(name)
+    monkeypatch.setenv("DATABASE_URL", url)
+    yield url

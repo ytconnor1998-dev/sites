@@ -7,3 +7,4 @@ logs/
 exports/*
 !exports/.gitkeep
 .ruff_cache/
+.streamlit/secrets.toml

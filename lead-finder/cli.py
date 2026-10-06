@@ -53,7 +53,7 @@ def run(
         raise typer.Exit(2) from None
 
     target = target or int(cfg.settings.get("default_target", 100))
-    db = Database(cfg.db_path)
+    db = Database(cfg.db_url)
     src, warning = resolve_source(source, cfg)
     if warning:
         console.print(f"[yellow]{warning}[/yellow]")
@@ -124,7 +124,7 @@ def run(
 def export_cmd(out: str = typer.Option("", "--out", "-o", help="Output .xlsx path")) -> None:
     """Export every lead in the database to Excel."""
     cfg = load_config()
-    db = Database(cfg.db_path)
+    db = Database(cfg.db_url)
     rows = db.leads()
     path = export_leads(rows, out or default_export_path(cfg.export_dir))
     console.print(f"Exported {len(rows)} leads to [bold]{path}[/bold]")
