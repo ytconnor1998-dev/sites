@@ -5,6 +5,8 @@ Next.js (App Router), TypeScript, Tailwind CSS v4.
 
 **Design:** every competition is printed on a paper raffle ticket in a classic roll colour (pink, lemon, mint, sky, lilac, peach), with a perforated stub holding the price and the Enter button. The rest of the palette comes from an Ordnance Survey Explorer map: map-paper white, slate ink, Explorer orange for buttons, lake blue. One typeface, Archivo, used condensed for headlines and ticket numbers and at normal width for text.
 
+The excitement comes from a full-screen hero (rotating featured prizes, flip-clock countdown, a draw-machine counter rolling to the next ticket number), an orange "Last chance" band, tickets tilted like a pile with rubber stamps ("Almost gone", "Sale"), a wall of instant-win numbers still to be won, a rolling total of prize money given away, and confetti when you add tickets or win instantly. All motion is switched off for visitors who ask their device for reduced motion.
+
 > **Status: front end complete, running in demo mode.** Everything works end to end in the browser, but no money is taken and the basket, tickets and account are stored in the visitor's own browser. See [Going live](#going-live) for what's needed to take real entries.
 
 ## Run it
@@ -20,7 +22,7 @@ npm run lint
 
 | Page | What it does |
 | --- | --- |
-| `/` | Lead prize with a big ticket over its photo (countdown, price, % sold), competitions grid with category tabs (All, Ending soon, Lakes breaks, Cash, Cars & bikes, Tech, Instant wins), how it works, recent winners, who we are, FAQ |
+| `/` | Full-screen featured prizes, last-chance band, competitions grid with category tabs (All, Ending soon, Lakes breaks, Cash, Cars & bikes, Tech, Instant wins), instant wins wall, prize money total with recent winners, how it works, FAQ |
 | `/competitions` | All competitions, filterable (`?c=cash` etc. can be linked to) |
 | `/competitions/[slug]` | Prize details, live countdown, progress bar, **ticket bundles** (buy 10 get 3 free), quantity stepper/slider, max per person, **skill question**, add to basket, **instant-win numbers with found/unfound status**, cash alternative, related prizes |
 | `/basket` | Edit quantities, wrong-answer warning, **site credit** applied automatically, details + 18+ date-of-birth check, **monthly spend limit and self-exclusion enforced** |

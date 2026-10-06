@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { freeTicketsFor, lineTotal, ticketsLeft, type Competition } from "@/config/competitions";
 import { addToBasket, useBasket } from "@/lib/basket";
+import { confetti } from "@/lib/confetti";
 import { money, num } from "@/lib/format";
 import { Ticket } from "./Ticket";
 
@@ -20,7 +21,7 @@ export function EntryPanel({ comp }: { comp: Competition }) {
   const clamp = (n: number) => Math.max(1, Math.min(max, Math.round(n) || 1));
   const free = freeTicketsFor(comp, qty);
 
-  function add() {
+  function add(e: React.MouseEvent<HTMLButtonElement>) {
     if (answer === null) {
       setShowError(true);
       document.getElementById("question")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -28,6 +29,8 @@ export function EntryPanel({ comp }: { comp: Competition }) {
     }
     addToBasket(comp.slug, qty, answer);
     setAdded(qty + free);
+    const r = e.currentTarget.getBoundingClientRect();
+    confetti(r.left + r.width / 2, r.top, 70);
   }
 
   if (max === 0) {

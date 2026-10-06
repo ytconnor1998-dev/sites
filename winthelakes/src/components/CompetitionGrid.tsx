@@ -45,9 +45,9 @@ export function CompetitionGrid({ comps, syncUrl = false }: { comps: Competition
           </button>
         ))}
       </div>
-      <div role="tabpanel" className="mt-8 grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-        {shown.map((c) => (
-          <CompetitionCard key={c.slug} comp={c} />
+      <div role="tabpanel" className="mt-10 grid gap-x-7 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+        {shown.map((c, i) => (
+          <CompetitionCard key={c.slug} comp={c} index={i} />
         ))}
         {shown.length === 0 && <p className="text-ink-2">Nothing in this category right now. New competitions open every week.</p>}
       </div>

@@ -36,6 +36,7 @@ html {
 }
 
 body {
+  overflow-x: clip; /* tilted tickets and stamps may poke past the edge */
   background: var(--color-map);
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -209,5 +210,49 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Rubber-stamp ink: slightly uneven, as if pressed by hand. */
+.stamp {
+  font-stretch: 85%;
+  -webkit-mask: radial-gradient(circle at 30% 40%, #000 60%, #000c 80%) , url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 2.1'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)'/%3E%3C/svg%3E");
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(circle at 30% 40%, #000 60%, #000c 80%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 2.1'/%3E%3C/filter%3E%3Crect width='60' height='60' filter='url(%23n)'/%3E%3C/svg%3E");
+  mask-composite: intersect;
+}
+
+/* Pile-of-tickets tilt; each ticket straightens and lifts when you point at it. */
+.tilt {
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tilt:hover,
+.tilt:focus-within {
+  transform: rotate(0deg) translateY(-6px) scale(1.015);
+}
+
+/* Flip-clock tile seam. */
+.flip-tile {
+  background: linear-gradient(#ffffff1f, #ffffff12 50%, #00000024 50%, #ffffff0d);
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+@keyframes timer {
+  from {
+    transform: scaleX(0);
   }
 }

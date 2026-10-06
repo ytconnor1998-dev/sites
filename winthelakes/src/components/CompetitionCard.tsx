@@ -1,20 +1,44 @@
 import Link from "next/link";
 import { instantWinCount, type Competition } from "@/config/competitions";
-import { money, num } from "@/lib/format";
+import { money, num, percent } from "@/lib/format";
 import { CountdownInline } from "./Countdown";
 import { PrizeImage } from "./PrizeImage";
 import { Progress } from "./Progress";
+import { Stamp } from "./Stamp";
 import { serial, Ticket } from "./Ticket";
 
 export function drawLabel(comp: Competition) {
   return comp.drawType === "live" ? "Drawn live on Facebook" : "Drawn automatically";
 }
 
-/** A competition, printed on its own colour of raffle ticket. */
-export function CompetitionCard({ comp }: { comp: Competition }) {
+const TILTS = [-1.6, 1.1, -0.7, 1.5, -1.2, 0.8];
+
+/** The loudest true thing about a competition, for its rubber stamp. */
+function stampFor(comp: Competition): { text: string; tone: "explorer" | "ink" | "wood" } | null {
+  const p = percent(comp.sold, comp.maxTickets);
+  if (p >= 80) return { text: "Almost gone", tone: "explorer" };
+  if (comp.wasPrice) return { text: `Sale: ${Math.round((1 - comp.price / comp.wasPrice) * 100)}% off`, tone: "explorer" };
   const iw = instantWinCount(comp);
+  if (iw >= 15) return { text: `${iw} instant wins`, tone: "ink" };
+  return null;
+}
+
+/** A competition, printed on its own colour of raffle ticket. Pass `index` to tilt it like a ticket in a pile. */
+export function CompetitionCard({ comp, index }: { comp: Competition; index?: number }) {
+  const iw = instantWinCount(comp);
+  const stamp = stampFor(comp);
   return (
-    <article className="relative">
+    <article
+      className={`relative ${index === undefined ? "" : "tilt"}`}
+      style={index === undefined ? undefined : ({ "--tilt": `${TILTS[index % TILTS.length]}deg` } as React.CSSProperties)}
+    >
+      {stamp && (
+        <div className="pointer-events-none absolute -top-3 -right-2 z-10">
+          <Stamp tone={stamp.tone} angle={8} className="bg-map/90">
+            {stamp.text}
+          </Stamp>
+        </div>
+      )}
       <Ticket
         paper={comp.paper}
         orientation="v"

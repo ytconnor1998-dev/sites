@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { getCompetition } from "@/config/competitions";
 import { creditValue } from "@/lib/account";
+import { confetti } from "@/lib/confetti";
 import { useEntries } from "@/lib/entries";
 import { drawDate, num } from "@/lib/format";
 import { ScratchCard } from "./ScratchCard";
@@ -40,7 +41,14 @@ export function OrderReveal() {
       </p>
 
       <div className="mt-10 max-w-2xl">
-        <ScratchCard label="Scratch to see your tickets" onReveal={() => setRevealed(true)}>
+        <ScratchCard label="Scratch to see your tickets" onReveal={() => {
+            setRevealed(true);
+            if (wins.length) {
+              confetti(window.innerWidth / 2, window.innerHeight * 0.45, 160);
+              window.setTimeout(() => confetti(window.innerWidth * 0.25, window.innerHeight * 0.6, 80), 250);
+              window.setTimeout(() => confetti(window.innerWidth * 0.75, window.innerHeight * 0.6, 80), 450);
+            }
+          }}>
           <div className={`flex min-h-52 flex-col justify-center p-8 ${wins.length ? "bg-explorer text-white" : "bg-sheet"}`}>
             {wins.length ? (
               <>

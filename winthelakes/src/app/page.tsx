@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { CompetitionGrid } from "@/components/CompetitionGrid";
-import { LeadPrize } from "@/components/LeadPrize";
+import { Hero } from "@/components/Hero";
+import { InstantWall } from "@/components/InstantWall";
+import { LastChance } from "@/components/LastChance";
+import { Odometer } from "@/components/Odometer";
+import { Stamp } from "@/components/Stamp";
 import { competitions, winners } from "@/config/competitions";
 import { faq } from "@/config/faq";
-import { site } from "@/config/site";
+import { site, stats } from "@/config/site";
 import { num, shortDate } from "@/lib/format";
 
 const steps = [
@@ -15,103 +19,93 @@ const steps = [
 ];
 
 export default function Home() {
-  // The first featured competition leads the page; the rest go in the grid.
-  const lead = competitions.find((c) => c.featured) ?? competitions[0];
-  const rest = competitions.filter((c) => c !== lead);
+  const featured = competitions.filter((c) => c.featured);
+  const closing = [...competitions].sort((a, b) => a.drawAt.localeCompare(b.drawAt)).slice(0, 3);
+
   return (
     <>
-      <LeadPrize comp={lead} />
+      <Hero comps={featured} />
+      <LastChance comps={closing} />
 
       <section id="competitions" aria-labelledby="comps-h" className="mx-auto mt-20 max-w-6xl px-4 sm:px-6">
-        <h2 id="comps-h" className="display mb-5 text-5xl">
-          Open competitions
+        <h2 id="comps-h" className="display mb-5 text-6xl sm:text-7xl">
+          Pick your prize
         </h2>
         <Suspense>
-          <CompetitionGrid comps={rest} />
+          <CompetitionGrid comps={competitions} />
         </Suspense>
       </section>
 
-      <section aria-labelledby="how-h" className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
-        <div className="grid gap-10 border-t-[3px] border-ink pt-8 lg:grid-cols-[1fr_3fr]">
-          <h2 id="how-h" className="display text-5xl">
-            How it works
-          </h2>
-          <ol className="grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
-            {steps.map((s, i) => (
-              <li key={s.title}>
-                <span className="display text-6xl text-explorer">{i + 1}</span>
-                <h3 className="mt-2 text-lg font-semibold">{s.title}</h3>
-                <p className="mt-1 text-ink-2">{s.text}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <p className="mt-8 text-ink-2 lg:ml-[25%]">
-          Prefer not to pay?{" "}
-          <Link href="/free-entry" className="link text-ink">
-            Every competition can be entered free by post
-          </Link>
-          , with the same chance of winning.
-        </p>
-      </section>
+      <div className="mt-24">
+        <InstantWall comps={competitions} />
+      </div>
 
-      <section aria-labelledby="winners-h" className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
-        <div className="grid gap-10 border-t-[3px] border-ink pt-8 lg:grid-cols-[1fr_3fr]">
+      <section aria-labelledby="winners-h" className="bg-[var(--color-paper-lemon)]">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:items-center">
           <div>
-            <h2 id="winners-h" className="display text-5xl">
-              Recent winners
+            <h2 id="winners-h" className="sr-only">
+              Winners
             </h2>
-            <Link href="/winners" className="link mt-4 inline-block">
-              All winners
+            <p className="display text-[clamp(4rem,12vw,9rem)]">
+              <Odometer value={stats.givenAway} prefix="£" />
+            </p>
+            <p className="mt-3 text-xl">
+              given away to <strong>{num(stats.winners)} winners</strong> so far. Every one drawn live or published with the winning ticket.
+            </p>
+            <Link href="/winners" className="btn btn-quiet mt-6">
+              See all winners
             </Link>
           </div>
-          <ol className="divide-y divide-rule border-y border-rule">
-            {winners.slice(0, 6).map((w) => (
-              <li key={`${w.name}-${w.ticket}`} className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-1 py-4 sm:grid-cols-[7rem_1fr_auto] sm:items-baseline">
-                <span className="text-sm text-ink-2 sm:order-none">{shortDate(w.date)}</span>
-                <span className="col-span-2 sm:col-span-1">
-                  <strong className="font-semibold">{w.name}</strong>, {w.town}, won {w.prize}
-                </span>
-                <span className="tabular row-start-1 text-right text-sm sm:row-auto">Ticket {num(w.ticket)}</span>
+          <ol className="space-y-3">
+            {winners.slice(0, 4).map((w, i) => (
+              <li key={`${w.name}-${w.ticket}`} className="tilt" style={{ "--tilt": `${[1, -1.2, 0.6, -0.4][i]}deg` } as React.CSSProperties}>
+                <div className="ticket ticket-h flex items-stretch bg-white" style={{ "--stub": "7rem", "--paper": "#fff" } as React.CSSProperties}>
+                  <div className="min-w-0 flex-1 px-4 py-3">
+                    <p className="text-sm text-ink-2">
+                      {shortDate(w.date)}, {w.name} from {w.town}
+                    </p>
+                    <p className="display mt-0.5 text-2xl">{w.prize}</p>
+                  </div>
+                  <div className="stub-h flex flex-col items-center justify-center text-center">
+                    <span className="text-xs text-ink-2">Ticket</span>
+                    <span className="display tabular text-2xl">{num(w.ticket)}</span>
+                  </div>
+                </div>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section aria-labelledby="about-h" className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
-        <div className="grid gap-10 border-t-[3px] border-ink pt-8 lg:grid-cols-[1fr_3fr]">
-          <h2 id="about-h" className="display text-5xl">
-            Who we are
-          </h2>
-          <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
-            <p className="text-lg md:col-span-2 max-w-[60ch]">
-              We&rsquo;re a small team based in Windermere. We started Win the Lakes to give away the kind of weeks we&rsquo;d want to win: a lodge on the water, a
-              boat for the day, a Defender for the passes.
-            </p>
-            <div>
-              <h3 className="font-semibold">Drawn on time, every time</h3>
-              <p className="mt-1 text-ink-2">We never extend a draw date. If a competition doesn&rsquo;t sell out, it&rsquo;s still drawn when we said it would be.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold">Every result published</h3>
-              <p className="mt-1 text-ink-2">
-                The winning ticket, the winner&rsquo;s name and town, and a recording of the draw go on the{" "}
-                <Link href="/draws" className="link text-ink">
-                  results page
-                </Link>
-                .
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold">Paid within a day</h3>
-              <p className="mt-1 text-ink-2">Cash prizes and instant wins are paid by bank transfer the next working day.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold">Some of every ticket stays local</h3>
-              <p className="mt-1 text-ink-2">We give to fell rescue teams and footpath repair across the national park.</p>
-            </div>
-          </div>
+      <section aria-labelledby="how-h" className="mx-auto mt-24 max-w-6xl px-4 sm:px-6">
+        <h2 id="how-h" className="display text-6xl sm:text-7xl">
+          How it works
+        </h2>
+        <ol className="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((s, i) => (
+            <li key={s.title} className="relative">
+              <span className="display block text-[7rem] leading-[0.8] text-[var(--color-water)]" aria-hidden="true">
+                {i + 1}
+              </span>
+              <h3 className="display -mt-6 text-3xl">
+                <span className="sr-only">Step {i + 1}: </span>
+                {s.title}
+              </h3>
+              <p className="mt-2 text-ink-2">{s.text}</p>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-12 flex flex-wrap items-center gap-4">
+          <Stamp tone="wood" angle={-3}>
+            Free entry route
+          </Stamp>
+          <p className="text-ink-2">
+            Prefer not to pay?{" "}
+            <Link href="/free-entry" className="link text-ink">
+              Enter any competition free by post
+            </Link>
+            , with the same chance of winning.
+          </p>
         </div>
       </section>
 
