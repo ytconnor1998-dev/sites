@@ -11,9 +11,14 @@
 
 const en = {
   meta: {
-    title: "CPD Web Design: your website, built free. You just pay to keep it running.",
+    // Shown in Google results. Keep titles under ~65 characters and descriptions under ~155.
+    title: "Web Designer in Rome: Website Built Free, From {min} a Month",
     description:
-      "Web designer in Rome. I design and build your business website for free, then charge a flat monthly fee for hosting, updates, changes and support. English and Italian.",
+      "Web designer in Rome for small businesses. I build your website free, then {min}–{max} a month covers hosting, updates, changes and support. English and Italian.",
+    examplesTitle: "Example Websites for Restaurants, Hotels & Shops in Rome",
+    examplesDescription:
+      "Working example sites for a restaurant, hotel, tour company, salon, yoga studio and photographer in Rome. Try the bookings and see what you'd get, built free.",
+    ogLocale: "en_GB",
   },
   nav: {
     how: "How it works",
@@ -29,6 +34,7 @@ const en = {
     language: "Language",
   },
   hero: {
+    eyebrow: "Web designer in Rome",
     titleA: "Your website,",
     titleB: "built free.",
     sub: "You just pay to keep it running, from {price} a month.",
@@ -200,6 +206,14 @@ const en = {
       error: "Your enquiry couldn't be sent. Check your connection and try again, or email me directly.",
       required: "Fill in this field",
       invalidEmail: "Enter an email address like name@example.com",
+      submitWhatsApp: "Send on WhatsApp",
+      waNote: "Opens WhatsApp with your message ready. Just press send.",
+      waTitle: "Nearly there",
+      waBody: "WhatsApp has opened with your message filled in. Press send there and I'll reply within one working day.",
+      waOpen: "WhatsApp didn't open? Tap here",
+      waInstead: "Send it on WhatsApp instead.",
+      waMessage: "Hi! I'd like a website.\n\nName: {name}\nBusiness: {business}\nEmail: {email}\n\n{message}",
+      waMessageNoBusiness: "Hi! I'd like a website.\n\nName: {name}\nEmail: {email}\n\n{message}",
     },
   },
   footer: {
@@ -248,9 +262,13 @@ export type Dict = typeof en;
 
 const it: Dict = {
   meta: {
-    title: "CPD Web Design: il tuo sito, realizzato gratis. Paghi solo per tenerlo attivo.",
+    title: "Web Designer a Roma: Sito Web Gratis, da {min} al Mese",
     description:
-      "Web designer a Roma. Progetto e realizzo gratis il sito della tua attività, poi un canone mensile fisso copre hosting, aggiornamenti, modifiche e assistenza. Italiano e inglese.",
+      "Web designer a Roma per piccole attività. Realizzo gratis il tuo sito, poi da {min} a {max} al mese coprono hosting, aggiornamenti, modifiche e assistenza.",
+    examplesTitle: "Esempi di Siti Web per Ristoranti, Hotel e Negozi a Roma",
+    examplesDescription:
+      "Siti di esempio funzionanti per ristorante, hotel, tour operator, parrucchiere, studio di yoga e fotografa a Roma. Prova le prenotazioni e guarda cosa avresti, gratis.",
+    ogLocale: "it_IT",
   },
   nav: {
     how: "Come funziona",
@@ -266,6 +284,7 @@ const it: Dict = {
     language: "Lingua",
   },
   hero: {
+    eyebrow: "Web designer a Roma",
     titleA: "Il tuo sito,",
     titleB: "fatto gratis.",
     sub: "Paghi solo per tenerlo attivo, da {price} al mese.",
@@ -437,6 +456,14 @@ const it: Dict = {
       error: "Non è stato possibile inviare la richiesta. Controlla la connessione e riprova, oppure scrivimi via email.",
       required: "Compila questo campo",
       invalidEmail: "Inserisci un indirizzo email come nome@esempio.it",
+      submitWhatsApp: "Invia su WhatsApp",
+      waNote: "Si apre WhatsApp con il messaggio già scritto. Ti basta premere invia.",
+      waTitle: "Quasi fatto",
+      waBody: "WhatsApp si è aperto con il tuo messaggio. Premi invia e ti rispondo entro un giorno lavorativo.",
+      waOpen: "WhatsApp non si è aperto? Tocca qui",
+      waInstead: "Invialo invece su WhatsApp.",
+      waMessage: "Ciao! Vorrei un sito web.\n\nNome: {name}\nAttività: {business}\nEmail: {email}\n\n{message}",
+      waMessageNoBusiness: "Ciao! Vorrei un sito web.\n\nNome: {name}\nEmail: {email}\n\n{message}",
     },
   },
   footer: {

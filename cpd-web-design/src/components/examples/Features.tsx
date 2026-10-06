@@ -4,7 +4,7 @@ import { Layers, X } from "lucide-react";
 import Link from "next/link";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { FeatureDef } from "@/content/examples/types";
-import { useL } from "@/lib/i18n";
+import { useHref, useL } from "@/lib/i18n";
 
 type Ctx = { show: boolean; features: FeatureDef[] };
 const FeatureCtx = createContext<Ctx>({ show: false, features: [] });
@@ -23,6 +23,7 @@ const ui = {
 export function ExampleChrome({ features, children }: { features: FeatureDef[]; children: React.ReactNode }) {
   const [show, setShow] = useState(false);
   const tr = useL();
+  const href = useHref();
 
   useEffect(() => {
     if (!show) return;
@@ -54,7 +55,7 @@ export function ExampleChrome({ features, children }: { features: FeatureDef[]; 
           <span className="rounded-full bg-[#14257F] px-2 py-0.5 text-xs text-[#FFFFFF]">{features.length}</span>
         </button>
         <Link
-          href="/#contact"
+          href={href("/#contact")}
           className="group inline-flex min-h-11 items-center gap-3 rounded-[4px] bg-[#14257F] py-1.5 pr-4 pl-1.5 text-[#FFFFFF] shadow-lg"
         >
           <span className="flex size-8 shrink-0 items-center justify-center rounded-[3px] bg-[#2340D9] text-[11px] font-black tracking-tight text-[#FFC94D]">CPD</span>

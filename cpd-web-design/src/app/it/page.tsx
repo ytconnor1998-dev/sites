@@ -3,16 +3,16 @@ import { HomePage } from "@/components/site/Pages";
 import { translations } from "@/content/translations";
 import { pageMetadata, withPrices } from "@/lib/seo";
 
-const t = translations.en.meta;
+const t = translations.it.meta;
 
 export const metadata: Metadata = pageMetadata({
   path: "/",
-  lang: "en",
-  title: `${withPrices(t.title, "en")} | CPD Web Design`,
-  description: withPrices(t.description, "en"),
+  lang: "it",
+  title: `${withPrices(t.title, "it")} | CPD Web Design`,
+  description: withPrices(t.description, "it"),
   absoluteTitle: true,
 });
 
 export default function Home() {
-  return <HomePage lang="en" />;
+  return <HomePage lang="it" />;
 }

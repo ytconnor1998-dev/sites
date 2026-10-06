@@ -4,20 +4,23 @@ import { Check, Mail, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { contact, contactForm } from "@/config/site";
-import { useT } from "@/lib/i18n";
+import { fill, useHref, useT } from "@/lib/i18n";
 import { Section, btn } from "./Section";
 
-type Status = "idle" | "sending" | "success" | "error";
+type Status = "idle" | "sending" | "success" | "whatsapp" | "error";
 type Fields = { name: string; business: string; email: string; need: string; consent: boolean };
 
 const empty: Fields = { name: "", business: "", email: "", need: "", consent: false };
 
 export function Contact() {
   const t = useT();
+  const href = useHref();
   const f = t.contact.form;
   const [fields, setFields] = useState<Fields>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({});
   const [status, setStatus] = useState<Status>("idle");
+  const [waUrl, setWaUrl] = useState("");
+  const byWhatsApp = !contactForm.endpoint;
 
 
   const set = <K extends keyof Fields>(key: K, value: Fields[K]) => {
@@ -38,10 +41,20 @@ export function Contact() {
     return !first;
   };
 
+  /** The enquiry as a WhatsApp message to contact.whatsapp, ready for the visitor to send. */
+  const whatsappUrl = () => {
+    const text = fill(fields.business.trim() ? f.waMessage : f.waMessageNoBusiness, {
+      name: fields.name.trim(),
+      business: fields.business.trim(),
+      email: fields.email.trim(),
+      message: fields.need.trim(),
+    });
+    return `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(text)}`;
+  };
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validate()) return;
-    setStatus("sending");
 
     const form = new FormData(e.currentTarget);
     // Spam honeypot: real people never fill the hidden "_gotcha" field.
@@ -51,18 +64,21 @@ export function Contact() {
     }
 
     /*
-     * ── FORM ENDPOINT ────────────────────────────────────────────
-     * Sends JSON to the endpoint in src/config/site.ts → contactForm.endpoint
-     * (or the NEXT_PUBLIC_FORM_ENDPOINT env var). Formspree accepts this as-is.
-     * Until a real endpoint is set, we simulate success so the site is demo-able.
+     * ── WHERE ENQUIRIES GO ───────────────────────────────────────
+     * No endpoint set (src/config/site.ts → contactForm): open WhatsApp with the message
+     * filled in. This must happen straight away in the click, or browsers block the new tab.
+     * Endpoint set (e.g. Formspree): send it as JSON, which arrives in your email.
      */
-    if (contactForm.endpoint.includes("YOUR_FORM_ID")) {
-      console.warn("[CPD] Contact form is in demo mode: set contactForm.endpoint in src/config/site.ts");
-      await new Promise((r) => setTimeout(r, 700));
-      setStatus("success");
+    if (byWhatsApp) {
+      const url = whatsappUrl();
+      setWaUrl(url);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setStatus("whatsapp");
+      setFields(empty);
       return;
     }
 
+    setStatus("sending");
     try {
       const res = await fetch(contactForm.endpoint, {
         method: "POST",
@@ -110,7 +126,16 @@ export function Contact() {
         </div>
 
         <div className="rounded-[24px] bg-white p-6 text-ink sm:p-10 lg:col-span-8">
-          {status === "success" ? (
+          {status === "whatsapp" ? (
+            <div role="status">
+              <p className="heading text-4xl">{f.waTitle}</p>
+              <p className="mt-2 text-lg text-muted">{f.waBody}</p>
+              <a href={waUrl} target="_blank" rel="noopener noreferrer" className={`${btn.primary} mt-6 gap-2.5`}>
+                <MessageCircle aria-hidden className="size-5" />
+                {f.waOpen}
+              </a>
+            </div>
+          ) : status === "success" ? (
             <div role="status">
               <p className="heading text-4xl">{f.successTitle}</p>
               <p className="mt-2 text-lg text-muted">{f.successBody}</p>
@@ -144,7 +169,7 @@ export function Contact() {
                   <input id="contact-consent" type="checkbox" checked={fields.consent} onChange={(e) => set("consent", e.target.checked)} aria-invalid={!!errors.consent} aria-describedby={errors.consent ? "contact-consent-error" : undefined} className="mt-1 size-4 shrink-0 accent-[var(--color-cobalt)]" />
                   <span>
                     {f.consent}{" "}
-                    <Link href="/privacy" className="text-ink underline underline-offset-4">
+                    <Link href={href("/privacy")} className="text-ink underline underline-offset-4">
                       {f.privacy}
                     </Link>
                     {f.consentAfter}
@@ -159,11 +184,16 @@ export function Contact() {
 
               <div className="sm:col-span-2">
                 <button type="submit" disabled={status === "sending"} className={`${btn.primary} w-full cursor-pointer disabled:opacity-60 sm:w-auto`}>
-                  {status === "sending" ? f.sending : f.submit}
+                  {byWhatsApp && <MessageCircle aria-hidden className="mr-2 size-5" />}
+                  {status === "sending" ? f.sending : byWhatsApp ? f.submitWhatsApp : f.submit}
                 </button>
+                {byWhatsApp && <p className="mt-3 text-sm text-muted">{f.waNote}</p>}
                 {status === "error" && (
                   <p role="alert" className="mt-3 font-semibold text-[#A3262F]">
-                    {f.error}
+                    {f.error}{" "}
+                    <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+                      {f.waInstead}
+                    </a>
                   </p>
                 )}
               </div>

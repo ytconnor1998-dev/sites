@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useConsent } from "@/lib/consent";
-import { useT } from "@/lib/i18n";
+import { useHref, useT } from "@/lib/i18n";
 
 /**
  * Shown on the first visit and whenever "Cookie settings" is clicked.
@@ -13,6 +13,7 @@ import { useT } from "@/lib/i18n";
  */
 export function CookieBanner() {
   const t = useT().cookieBanner;
+  const href = useHref();
   const { consent, ready, save, settingsOpen, closeSettings } = useConsent();
   const [expanded, setExpanded] = useState(false);
   const [external, setExternal] = useState(false);
@@ -62,7 +63,7 @@ export function CookieBanner() {
       </div>
       <p className="mt-2 text-[15px] leading-relaxed text-muted">
         {t.body}{" "}
-        <Link href="/cookies" className="text-ink underline underline-offset-4">
+        <Link href={href("/cookies")} className="text-ink underline underline-offset-4">
           {t.policy}
         </Link>
       </p>

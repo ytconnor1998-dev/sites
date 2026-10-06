@@ -38,11 +38,15 @@ Placeholders to replace before launch are marked `PLACEHOLDER` in the code (pric
 
 ## Contact form
 
-1. Create a form at [formspree.io](https://formspree.io) (free tier is fine).
-2. Put its endpoint (`https://formspree.io/f/xxxxxxx`) in `contactForm.endpoint` or the `NEXT_PUBLIC_FORM_ENDPOINT` env var.
-3. Until then, the form runs in **demo mode** (shows success, sends nothing, logs a console warning).
+**Works out of the box via WhatsApp.** With no email service set up, pressing "Send on WhatsApp" opens WhatsApp (app or WhatsApp Web) to `contact.whatsapp` with the enquiry already written: name, business, email and message. The visitor presses send and it arrives in your WhatsApp. Nothing to sign up for.
 
-The form sends JSON: `name, business, email, message`, with a `_gotcha` honeypot for spam.
+**To get enquiries by email instead** (2 minutes, free):
+
+1. Create a form at [formspree.io](https://formspree.io) and copy its endpoint (`https://formspree.io/f/xxxxxxx`).
+2. In Vercel → Settings → Environment Variables, add `NEXT_PUBLIC_FORM_ENDPOINT` with that endpoint, then redeploy. (Or paste it into `contactForm.endpoint` in `src/config/site.ts`.)
+3. In Formspree, restrict the form to your domain and turn on spam filtering.
+
+The form then sends JSON (`name, business, email, message`) and shows "Enquiry sent". If sending ever fails, it offers WhatsApp as a fallback. A hidden `_gotcha` honeypot catches bots in both modes.
 
 ## Adding another example site (gym, shop, B&B…)
 
@@ -78,12 +82,27 @@ Each demo wraps its page in `<ExampleChrome>` (floating "Example site by CPD" ba
 
 1. Push this repo to GitHub.
 2. In Vercel: **Add New → Project**, import the repo. If the repo contains other folders, set **Root Directory** to `cpd-web-design`.
-3. Add env vars `NEXT_PUBLIC_SITE_URL` (your domain) and optionally `NEXT_PUBLIC_FORM_ENDPOINT`.
-4. Deploy, then add your domain under **Settings → Domains**.
+3. Optional env vars: `NEXT_PUBLIC_SITE_URL` (your own domain, once you have one; until then the `.vercel.app` address is used), `NEXT_PUBLIC_FORM_ENDPOINT` (email delivery, above), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` (below).
+4. Deploy, then add your domain under **Settings → Domains**. After adding a domain, set `NEXT_PUBLIC_SITE_URL` and redeploy so canonical links and the sitemap use it.
+
+## SEO
+
+- **English and Italian pages each have their own URL** (`/`, `/it`, `/privacy`, `/it/privacy`…), rendered on the server in that language, so Google indexes both and shows Italian results to Italian searchers. `hreflang` links (in each page and in `sitemap.xml`) tie the pairs together. Visitors who prefer Italian are sent from `/` to `/it` automatically; the language switch moves between the two.
+- Titles and descriptions per page and language: `meta` in `src/content/translations.ts` (home and examples) and `src/content/legal.ts`. They include "web designer in Rome / a Roma" and your prices, filled from the config.
+- Structured data (JSON-LD): `WebSite` + `ProfessionalService` (address, area served, languages, contact point, plans with prices) in `src/app/layout.tsx`, and `FAQPage` from your FAQ on the home pages. Helps Google and AI assistants describe you accurately.
+- Share image for WhatsApp, Facebook, LinkedIn etc.: `public/og-image.png` (1200×630).
+- Example sites are `noindex` so fictional businesses never appear in Google.
+
+**After launch:**
+
+1. Add your site to [Google Search Console](https://search.google.com/search-console): choose "URL prefix", pick the HTML tag method, copy the `content="…"` value into the Vercel env var `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, redeploy, then verify. Submit `sitemap.xml`.
+2. Create a free [Google Business Profile](https://www.google.com/business/) for CPD Web Design (service-area business, Rome) and link it to the site. For "web designer near me" searches this matters more than anything on the site itself.
+3. Ask your first clients for Google reviews, and add the real Instagram link in `contact.instagram` (it's added to the structured data automatically).
+4. Add each client site to `portfolio` in `src/config/site.ts` with a "Website by CPD Web Design" link in their footer.
 
 ## Notes
 
-- Language: auto-detects Italian browsers; the choice is remembered (localStorage) and shared with the demo sites. Pages render in English first, then switch on load if Italian is selected.
-- SEO: metadata, Open Graph image (`src/app/opengraph-image.png`), `sitemap.xml`, `robots.txt`, SVG favicon, and `ProfessionalService` JSON-LD in `src/app/layout.tsx`. Demo pages are `noindex` so fictional businesses never show up in Google.
+- Language: main pages live at `/…` (English) and `/it/…` (Italian). The choice is remembered (localStorage) and shared with the demo sites, which switch language in place.
+- SEO: see the SEO section above.
 - Cookies: a bilingual banner asks once (Accept / Reject / Choose, X = reject) and remembers the choice for 6 months. "Cookie settings" in the footer reopens it. Google Maps embeds load only after consent or a click on the map.
 - Accessibility: semantic landmarks, skip links, keyboard-operable tabs/accordions/lightbox (`<dialog>`), visible focus, AA contrast, and `prefers-reduced-motion` respected.

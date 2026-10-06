@@ -11,8 +11,15 @@ import type { L } from "@/lib/i18n";
 export const site = {
   name: "CPD Web Design",
   shortName: "CPD",
-  /** Production URL, used for SEO, sitemap and Open Graph. Set NEXT_PUBLIC_SITE_URL on Vercel. */
-  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.cpdwebdesign.com").replace(/\/$/, ""),
+  /**
+   * Production URL, used for canonical links, the sitemap and Open Graph.
+   * Set NEXT_PUBLIC_SITE_URL on Vercel once you have your own domain (e.g. https://www.cpdwebdesign.com).
+   * Until then Vercel's production address (your-project.vercel.app) is used automatically.
+   */
+  url: (
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://www.cpdwebdesign.com")
+  ).replace(/\/$/, ""),
   owner: {
     name: "Your Name", // PLACEHOLDER: your name as it should appear in the About section
     role: { en: "Designer & developer", it: "Designer e sviluppatore" } satisfies L,
@@ -62,24 +69,28 @@ export const legal = {
 export const contact = {
   email: "hello@cpdwebdesign.com", // PLACEHOLDER
   /** International format, digits only, no + or spaces (used for wa.me links). */
-  whatsapp: "390000000000", // PLACEHOLDER
+  whatsapp: "447902353010",
   /** Human-readable phone number shown on the page. */
-  phoneDisplay: "+39 000 000 0000", // PLACEHOLDER
+  phoneDisplay: "+44 7902 353010",
   instagram: "https://instagram.com/", // PLACEHOLDER
 };
 
 /**
  * CONTACT FORM
+ * Without an endpoint, the form sends enquiries to your WhatsApp (contact.whatsapp):
+ * it opens WhatsApp with the message filled in, and the visitor presses send.
+ * To receive enquiries by email instead:
  * 1. Create a free form at https://formspree.io (or any service accepting JSON POSTs).
- * 2. Paste its endpoint below, e.g. "https://formspree.io/f/abcdwxyz".
- * While it still contains "YOUR_FORM_ID", the form runs in demo mode: it shows the
- * success message but sends nothing (and logs a warning in the browser console).
+ * 2. Set NEXT_PUBLIC_FORM_ENDPOINT on Vercel, or paste it below, e.g. "https://formspree.io/f/abcdwxyz".
  * Using a service other than Formspree? Add its domain to connect-src and form-action
  * in vercel.json (the Content-Security-Policy), or the browser will block the request.
  */
 export const contactForm = {
-  endpoint: process.env.NEXT_PUBLIC_FORM_ENDPOINT ?? "https://formspree.io/f/YOUR_FORM_ID",
+  endpoint: process.env.NEXT_PUBLIC_FORM_ENDPOINT ?? "",
 };
+
+/** Google Search Console: paste the "content" value of its HTML-tag verification here, or set the env var. */
+export const searchConsoleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? "";
 
 export type PlanId = "onepage" | "business";
 

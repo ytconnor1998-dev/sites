@@ -5,7 +5,7 @@ import { Fragment } from "react";
 import { CookieSettingsButton } from "@/components/ui/CookieBanner";
 import { contact, legal, pricing, site } from "@/config/site";
 import { legalDocs, legalRoutes, type LegalBlock, type LegalKind } from "@/content/legal";
-import { fill, formatEuro, useLang, useT } from "@/lib/i18n";
+import { fill, formatEuro, localePath, useLang, useT } from "@/lib/i18n";
 import { btn } from "./Section";
 
 /** Renders one of the legal documents in src/content/legal.ts in the active language. */
@@ -131,7 +131,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
         <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
           {others.map((k) => (
             <li key={k}>
-              <Link href={legalRoutes[k]} className={btn.link}>
+              <Link href={localePath(legalRoutes[k], lang)} className={btn.link}>
                 {legalDocs[lang][k].title}
               </Link>
             </li>
@@ -144,13 +144,14 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
 
 /** Turns [text](href) into links; internal paths use next/link. */
 function RichText({ text }: { text: string }) {
+  const { lang } = useLang();
   const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
   return parts.map((part, i) => {
     const m = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
     if (!m) return <Fragment key={i}>{part}</Fragment>;
     const [, label, href] = m;
     return href.startsWith("/") ? (
-      <Link key={i} href={href} className={btn.link}>
+      <Link key={i} href={localePath(href, lang)} className={btn.link}>
         {label}
       </Link>
     ) : (

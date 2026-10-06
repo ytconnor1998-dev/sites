@@ -7,7 +7,7 @@ import Link from "next/link";
 import { lowestMonthly, planById } from "@/config/site";
 import { examples } from "@/content/examples";
 import type { ExampleMeta } from "@/content/examples/types";
-import { fill, formatEuro, useL, useLang, useT } from "@/lib/i18n";
+import { fill, formatEuro, useHref, useL, useLang, useT } from "@/lib/i18n";
 import { btn } from "./Section";
 
 /** Order in the arc: the most striking example sits in the middle. */
@@ -28,6 +28,7 @@ const ARC = [
  */
 export function Hero() {
   const t = useT();
+  const href = useHref();
   const { lang } = useLang();
   const reduce = useReducedMotion();
   const sites = ORDER.map((slug) => examples.find((e) => e.slug === slug)).filter(Boolean) as ExampleMeta[];
@@ -37,6 +38,7 @@ export function Hero() {
       <div className="relative mx-auto max-w-[1440px] overflow-hidden rounded-[28px] bg-sky lg:min-h-[calc(100svh-5rem)]">
         <div className="mx-auto max-w-[980px] px-5 pt-14 text-center sm:px-8 lg:pt-20">
           <h1 id="hero-title" className="headline text-[clamp(3.2rem,8vw,7.5rem)]">
+            <span className="mb-5 block text-[15px] font-semibold tracking-[0.12em] text-ink/75 uppercase sm:text-base">{t.hero.eyebrow}</span>
             {t.hero.titleA}
             <br />
             {t.hero.titleB}
@@ -48,7 +50,7 @@ export function Hero() {
             <Link href="#contact" className={`${btn.primary} min-h-13 px-7 text-lg`}>
               {t.hero.cta}
             </Link>
-            <Link href="/examples" className={`${btn.secondary} min-h-13 border-ink/20 bg-white/60 px-7 text-lg hover:bg-white`}>
+            <Link href={href("/examples")} className={`${btn.secondary} min-h-13 border-ink/20 bg-white/60 px-7 text-lg hover:bg-white`}>
               {t.hero.secondary}
             </Link>
           </div>

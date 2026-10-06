@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { Photo } from "@/components/ui/Photo";
 import { examples } from "@/content/examples";
-import { useL, useT } from "@/lib/i18n";
+import { useHref, useL, useT } from "@/lib/i18n";
 import { btn } from "./Section";
 
 export function ExamplesIndex() {
   const t = useT();
   const tr = useL();
+  const href = useHref();
   return (
     <section aria-labelledby="examples-title" className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-24">
       <h1 id="examples-title" className="heading text-[clamp(2.5rem,6vw,4.5rem)]">
@@ -41,7 +42,7 @@ export function ExamplesIndex() {
 
       <div className="mt-16 flex flex-col gap-4 border-t border-line pt-8 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-[56ch] text-lg">{t.examples.more}</p>
-        <Link href="/#contact" className={btn.primary}>
+        <Link href={href("/#contact")} className={btn.primary}>
           {t.examples.ask}
         </Link>
       </div>

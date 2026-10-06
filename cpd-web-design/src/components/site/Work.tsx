@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Photo } from "@/components/ui/Photo";
 import { planById, portfolio, type PortfolioItem } from "@/config/site";
 import { examples } from "@/content/examples";
-import { formatEuro, useL, useLang, useT } from "@/lib/i18n";
+import { formatEuro, useHref, useL, useLang, useT } from "@/lib/i18n";
 import { Section, btn } from "./Section";
 
 /**
@@ -13,6 +13,7 @@ import { Section, btn } from "./Section";
  */
 export function Work() {
   const t = useT();
+  const href = useHref();
   return (
     <Section id="work" title={t.work.title} intro={t.work.intro}>
       <ul className="grid gap-x-6 gap-y-12 md:grid-cols-2 lg:grid-cols-6">
@@ -22,7 +23,7 @@ export function Work() {
           </li>
         ))}
       </ul>
-      <Link href="/examples" className={`${btn.secondary} mt-12`}>
+      <Link href={href("/examples")} className={`${btn.secondary} mt-12`}>
         {t.work.all}
       </Link>
     </Section>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LangToggle } from "@/components/ui/LangToggle";
-import { useT } from "@/lib/i18n";
+import { useHref, useT } from "@/lib/i18n";
 import { btn } from "./Section";
 
 export function Logo() {
@@ -12,6 +12,7 @@ export function Logo() {
 
 export function Header() {
   const t = useT();
+  const href = useHref();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -35,11 +36,11 @@ export function Header() {
   }, [open]);
 
   const links = [
-    { href: "/#how", label: t.nav.how },
-    { href: "/#pricing", label: t.nav.pricing },
-    { href: "/examples", label: t.nav.examples },
-    { href: "/#faq", label: t.nav.faq },
-    { href: "/#about", label: t.nav.about },
+    { href: href("/#how"), label: t.nav.how },
+    { href: href("/#pricing"), label: t.nav.pricing },
+    { href: href("/examples"), label: t.nav.examples },
+    { href: href("/#faq"), label: t.nav.faq },
+    { href: href("/#about"), label: t.nav.about },
   ];
 
   return (
@@ -49,7 +50,7 @@ export function Header() {
       </a>
       <header className={`sticky top-0 z-50 bg-paper transition-shadow duration-200 ${scrolled ? "shadow-[0_1px_0_var(--color-line),0_8px_24px_-16px_rgb(0_0_0/0.18)]" : ""}`}>
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-5 sm:px-8">
-          <Link href="/" aria-label="CPD Web Design, home">
+          <Link href={href("/")} aria-label="CPD Web Design, home">
             <Logo />
           </Link>
 
@@ -68,7 +69,7 @@ export function Header() {
           <div className="flex items-center gap-3">
             <LangToggle label={t.nav.language} />
             <span className="hidden sm:block">
-              <Link href="/#contact" className={`${btn.primary} min-h-10 px-4 text-sm`}>
+              <Link href={href("/#contact")} className={`${btn.primary} min-h-10 px-4 text-sm`}>
                 {t.nav.cta}
               </Link>
             </span>
@@ -106,7 +107,7 @@ export function Header() {
           </nav>
           <div className="flex items-center justify-between gap-4 border-t border-line py-5">
             <LangToggle label={t.nav.language} />
-            <Link href="/#contact" onClick={() => setOpen(false)} className={btn.primary}>
+            <Link href={href("/#contact")} onClick={() => setOpen(false)} className={btn.primary}>
               {t.nav.cta}
             </Link>
           </div>
