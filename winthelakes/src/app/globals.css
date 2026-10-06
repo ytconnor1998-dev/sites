@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+/*
+ * Win the Lakes design tokens
+ * Night on the lake: near-black blue water, teal glow for actions,
+ * a warm "lantern" gold for money and wins.
+ */
+@theme {
+  --color-night: #050b10; /* page */
+  --color-deep: #0a141c; /* cards */
+  --color-deep-2: #0f1d28; /* raised / inputs */
+  --color-line: #ffffff14;
+  --color-line-2: #ffffff26;
+  --color-mist: #e8f1f4; /* text */
+  --color-fog: #93a8b4; /* muted text: 7.6:1 on night */
+  --color-lake: #2ee6d0; /* primary actions */
+  --color-lake-deep: #0b8f86;
+  --color-lantern: #ffc857; /* prices, wins */
+  --color-ember: #ff5d5d; /* ending soon, sale */
+
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+
+  --animate-marquee: marquee 40s linear infinite;
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 6rem;
+  -webkit-text-size-adjust: 100%;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-night);
+  color: var(--color-mist);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Primary button: teal with a soft glow. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.85rem 1.6rem;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    transform 0.15s,
+    box-shadow 0.2s,
+    background 0.2s;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-primary {
+  background: var(--color-lake);
+  color: #04211f;
+  box-shadow:
+    0 0 0 1px #2ee6d055,
+    0 8px 30px -6px #2ee6d0aa;
+}
+.btn-primary:hover {
+  box-shadow:
+    0 0 0 1px #2ee6d0,
+    0 10px 40px -4px #2ee6d0cc;
+}
+.btn-ghost {
+  border: 1px solid var(--color-line-2);
+  color: var(--color-mist);
+}
+.btn-ghost:hover {
+  border-color: var(--color-lake);
+  color: var(--color-lake);
+}
+.btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.card {
+  background: var(--color-deep);
+  border: 1px solid var(--color-line);
+  border-radius: 1.25rem;
+}
+
+/* Progress bar fill with a moving shimmer. */
+.progress-fill {
+  background: linear-gradient(90deg, var(--color-lake-deep), var(--color-lake));
+  position: relative;
+  overflow: hidden;
+}
+.progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, #ffffff55, transparent);
+  transform: translateX(-100%);
+  animation: shimmer 2.4s infinite;
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Ripple of light on water, used behind the hero. */
+.water {
+  background:
+    radial-gradient(60% 50% at 70% 30%, #2ee6d022, transparent 70%),
+    radial-gradient(40% 40% at 15% 80%, #ffc8571a, transparent 70%);
+}
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-lake);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Thin scrollbars for horizontal rails. */
+.rail {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-2) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
