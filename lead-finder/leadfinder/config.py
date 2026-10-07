@@ -99,6 +99,11 @@ class Config:
     def export_dir(self) -> Path:
         return _resolve(self.root, self.settings.get("export_dir", "exports"))
 
+    def refresh_keys(self) -> None:
+        """Re-read the API keys from the environment (they can change while the app runs)."""
+        self.google_api_key = _env_key("GOOGLE_PLACES_API_KEY")
+        self.pagespeed_api_key = _env_key("PAGESPEED_API_KEY") or self.google_api_key
+
     # ── selection ───────────────────────────────────────────────────
     def select_categories(self, categories: list[str] | None = None, groups: list[str] | None = None) -> list[Category]:
         """Union of the named categories and every category in the named groups."""
@@ -177,10 +182,15 @@ def load_config(config_dir: Path | None = None, env_file: Path | None = None) ->
         areas=areas,
         audit=_load_yaml(config_dir / "audit.yaml"),
         settings=_load_yaml(config_dir / "settings.yaml"),
-        google_api_key=os.getenv("GOOGLE_PLACES_API_KEY") or None,
-        pagespeed_api_key=os.getenv("PAGESPEED_API_KEY") or os.getenv("GOOGLE_PLACES_API_KEY") or None,
+        google_api_key=_env_key("GOOGLE_PLACES_API_KEY"),
+        pagespeed_api_key=_env_key("PAGESPEED_API_KEY") or _env_key("GOOGLE_PLACES_API_KEY"),
         root=config_dir.parent,
     )
+
+
+def _env_key(name: str) -> str | None:
+    # strip: keys pasted into a settings box often pick up a stray space or line break
+    return (os.getenv(name) or "").strip().strip('"').strip("'") or None
 
 
 def _parse_area(key: str, a: dict) -> Area:

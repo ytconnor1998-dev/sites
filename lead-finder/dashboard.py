@@ -28,14 +28,22 @@ XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def secrets_to_env() -> None:
-    """Streamlit Cloud keeps keys in st.secrets; the rest of the code reads environment variables."""
+    """Streamlit Cloud keeps keys in st.secrets; the rest of the code reads environment variables.
+    Runs on every page load, so keys edited in the Secrets box take effect without a reboot."""
     try:
         items = dict(st.secrets)
     except Exception:  # no secrets file (running locally with .env)
         return
+    flat: dict[str, object] = {}
     for key, value in items.items():
-        if isinstance(value, (str, int, float)) and not os.getenv(key):
-            os.environ[key] = str(value)
+        if isinstance(value, dict) or hasattr(value, "items"):
+            # a key pasted under a [section] heading still counts
+            flat.update({k: v for k, v in dict(value).items() if isinstance(k, str) and k.isupper()})
+        else:
+            flat[key] = value
+    for key, value in flat.items():
+        if isinstance(value, (str, int, float)):
+            os.environ[key] = str(value).strip()
 
 
 secrets_to_env()
@@ -53,6 +61,7 @@ def get_db(url: str):
 
 
 cfg = get_config()  # also loads .env when running locally
+cfg.refresh_keys()  # pick up keys added or changed in Secrets since the app started
 
 
 # ── Login ───────────────────────────────────────────────────────────
@@ -295,6 +304,8 @@ with h1.expander("Recent searches"):
     free = int(cfg.settings.get("google", {}).get("free_calls_per_month", 1000))
     st.caption(f"Google calls this month: {db.usage_this_month('google_text_search')} of ~{free} free · "
                f"PageSpeed calls today: {db.usage_today('pagespeed')}")
+    key = cfg.google_api_key
+    st.caption(f"Google API key: found (ends …{key[-4:]})" if key else "Google API key: not found")
 with h2.expander("Log (latest 200 lines)"):
     log_file = ROOT / "logs" / "leadfinder.log"
     if log_file.exists():

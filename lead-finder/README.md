@@ -52,7 +52,7 @@ The tables are created automatically the first time the site starts.
 
 "Public app" means anyone with the link can reach the page, but they only see a password box. The data is in your Neon database, not in GitHub. For an extra layer, you can limit who can open the app at all under the app's **Settings → Sharing**.
 
-You can change the secrets later under **⋮ → Settings → Secrets**; the app restarts with the new values.
+You can change the secrets later under **⋮ → Settings → Secrets**. Changes take effect the next time you load or click on the page. The bottom of the page shows whether a Google key was found (last 4 characters only).
 
 ### 4. First test
 

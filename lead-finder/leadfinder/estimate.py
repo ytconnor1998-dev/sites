@@ -50,8 +50,10 @@ def resolve_source(requested: str, cfg: Config) -> tuple[str, str | None]:
     requested = (requested or "auto").lower()
     if requested in ("auto", "google", "both") and not cfg.google_api_key:
         if requested == "auto":
-            return "osm", "No GOOGLE_PLACES_API_KEY in .env, so OpenStreetMap is used instead."
-        return "osm", f"--source {requested} needs GOOGLE_PLACES_API_KEY in .env; falling back to OpenStreetMap."
+            return "osm", ("No Google API key found (GOOGLE_PLACES_API_KEY in the app's Secrets, or in .env "
+                           "on your computer), so OpenStreetMap is used instead.")
+        return "osm", (f"--source {requested} needs a Google API key (GOOGLE_PLACES_API_KEY in the app's Secrets, "
+                       "or in .env); falling back to OpenStreetMap.")
     return ("google" if requested == "auto" else requested), None
 
 

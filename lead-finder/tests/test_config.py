@@ -41,3 +41,14 @@ def test_zone_contains(cfg):
 def test_split_list():
     assert split_list(" a, b ,,c ") == ["a", "b", "c"]
     assert split_list(None) == []
+
+
+def test_keys_are_reread_and_cleaned(cfg, monkeypatch):
+    monkeypatch.setenv("GOOGLE_PLACES_API_KEY", '  "AIzaKey123" \n')
+    monkeypatch.delenv("PAGESPEED_API_KEY", raising=False)
+    cfg.refresh_keys()
+    assert cfg.google_api_key == "AIzaKey123"
+    assert cfg.pagespeed_api_key == "AIzaKey123"
+    monkeypatch.setenv("GOOGLE_PLACES_API_KEY", "")
+    cfg.refresh_keys()
+    assert cfg.google_api_key is None
