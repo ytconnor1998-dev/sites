@@ -1,0 +1,201 @@
+# ─────────────────────────────────────────────────────────────────────
+#  OUTREACH MESSAGES
+#  Used by the Outreach tab to write a message for each lead from its
+#  actual problems. You can also edit this on the page (Outreach →
+#  "Edit message templates"); edits made there are saved in the database
+#  and take priority over this file.
+#
+#  Placeholders in {curly braces} are filled in automatically:
+#    {name} business name      {website} their website     {platform} Facebook/Instagram
+#    {problem} why their site doesn't work   {issues} bullet list of problems
+#    {issues_inline} the top problems in one sentence
+#    {sender_name} {business} {link} {price} {price_short}  from the sender/price sections
+# ─────────────────────────────────────────────────────────────────────
+
+sender:
+  name: Connor Davies
+  business: CPD Web Design
+  link: https://ui-ux-skill-cpd-web-design.vercel.app/
+
+# Most problems listed in one message (most important first).
+max_issues: 4
+
+it:
+  price: >-
+    Il piano Business costa 49 € al mese, tutto incluso: sito su misura fino a 5 pagine,
+    versione italiana e inglese, hosting, certificato SSL, aggiornamenti e piccole modifiche ogni mese.
+  price_short: "Il piano Business costa 49 €/mese tutto incluso (sito, hosting e aggiornamenti)."
+
+  subject:
+    no_website: "Un sito web per {name}"
+    social_only: "Un sito web per {name}"
+    broken_website: "Il sito di {name} non funziona"
+    weak_website: "Qualche idea per il sito di {name}"
+
+  email: |
+    Buongiorno,
+
+    mi chiamo {sender_name} e realizzo siti web per attività di Roma.
+
+    {opening}
+
+    {offer} {price}
+
+    Qui trovate alcuni esempi del mio lavoro: {link}
+    Se vi interessa, vi preparo una proposta gratuita e senza impegno.
+
+    Se non vi interessa, rispondete pure "no" e non vi contatterò più.
+
+    Grazie e buona giornata,
+    {sender_name}
+    {business} · {link}
+
+  chat: |
+    Buongiorno! Sono {sender_name}, realizzo siti web per attività di Roma. {chat_opening} {price_short} Esempi del mio lavoro: {link}
+    Se non vi interessa basta dirmelo e non vi scrivo più 🙂
+
+  opening:
+    no_website: "Ho cercato {name} su Google e ho notato che non avete un sito web. Oggi molti clienti, soprattutto i turisti, guardano il sito prima di scegliere dove andare o chi chiamare."
+    social_only: "Ho cercato {name} su Google e il link al sito porta solo alla vostra pagina {platform}. Un sito vero vi fa trovare meglio su Google e dà ai clienti orari, servizi e contatti in un attimo."
+    broken_website: "Ho provato ad aprire il sito di {name} ({website}), ma {problem}. Chi vi cerca su Google trova un sito che non funziona."
+    weak_website: "Ho dato un'occhiata al sito di {name} ({website}) e ho notato alcune cose che probabilmente vi fanno perdere clienti:\n{issues}"
+
+  chat_opening:
+    no_website: "Ho visto che {name} non ha un sito web."
+    social_only: "Ho visto che il sito di {name} porta solo alla pagina {platform}."
+    broken_website: "Ho provato ad aprire il sito di {name}, ma {problem}."
+    weak_website: "Ho visto il sito di {name}: {issues_inline}."
+
+  offer:
+    no_website: "Potrei crearvi un sito professionale, pensato per farvi trovare su Google e per funzionare bene sul telefono."
+    social_only: "Potrei crearvi un sito professionale collegato ai vostri social, pensato per farvi trovare su Google."
+    broken_website: "Potrei rimetterlo in piedi con un sito nuovo e veloce."
+    weak_website: "Potrei rifarvi il sito risolvendo tutti questi punti."
+
+  problems:
+    offline: "non si apre (sembra offline)"
+    placeholder: "c'è solo una pagina provvisoria"
+
+  platforms:
+    facebook.com: Facebook
+    instagram.com: Instagram
+    tripadvisor.it: TripAdvisor
+    tripadvisor.com: TripAdvisor
+    default: social
+
+  # One line per audit check. {detail} is e.g. the copyright year or PageSpeed score.
+  issues:
+    no_https: "il sito non è sicuro: il browser mostra l'avviso \"Non sicuro\" (manca HTTPS)"
+    invalid_ssl: "il certificato di sicurezza non è valido, quindi il browser avvisa i visitatori"
+    not_mobile_friendly: "non si legge bene sul telefono, da dove arriva la maggior parte delle visite"
+    slow_pagespeed: "si carica lentamente sul telefono (Google gli dà {detail} su 100)"
+    old_copyright: "in fondo alla pagina c'è ancora © {detail}, che dà l'idea di un sito non aggiornato"
+    outdated_tech: "è costruito con tecnologia ormai superata, più lenta e meno sicura"
+    free_builder: "è su un indirizzo gratuito ({detail}) invece che su un dominio vostro"
+    missing_meta: "mancano titolo e descrizione per Google, quindi appare male nei risultati di ricerca"
+    no_contact_info: "dalla home non si trovano subito telefono o email"
+    no_english: "non c'è una versione in inglese per i turisti"
+    generic: "si potrebbe rendere più moderno e più facile da usare"
+
+  # Short versions for WhatsApp/Instagram ({issues_inline}).
+  issues_short:
+    no_https: "non è sicuro (manca HTTPS)"
+    invalid_ssl: "ha il certificato di sicurezza scaduto"
+    not_mobile_friendly: "non si legge bene sul telefono"
+    slow_pagespeed: "è lento sul telefono"
+    old_copyright: "il copyright è fermo al {detail}"
+    outdated_tech: "usa tecnologia superata"
+    free_builder: "è su un indirizzo gratuito"
+    missing_meta: "appare male su Google"
+    no_contact_info: "non mostra subito i contatti"
+    no_english: "non ha la versione in inglese"
+    generic: "si potrebbe modernizzare"
+
+en:
+  price: >-
+    The Business plan is €49 a month, all included: a custom site of up to 5 pages,
+    Italian and English versions, hosting, SSL certificate, updates and small changes every month.
+  price_short: "The Business plan is €49/month all included (site, hosting and updates)."
+
+  subject:
+    no_website: "A website for {name}"
+    social_only: "A website for {name}"
+    broken_website: "{name}'s website isn't working"
+    weak_website: "A few ideas for {name}'s website"
+
+  email: |
+    Hello,
+
+    my name is {sender_name} and I build websites for businesses in Rome.
+
+    {opening}
+
+    {offer} {price}
+
+    You can see some of my work here: {link}
+    If you're interested, I'll put together a free proposal, with no obligation.
+
+    If you're not interested, just reply "no" and I won't contact you again.
+
+    Thanks and have a good day,
+    {sender_name}
+    {business} · {link}
+
+  chat: |
+    Hello! I'm {sender_name}, I build websites for businesses in Rome. {chat_opening} {price_short} Examples of my work: {link}
+    If you're not interested just let me know and I won't message again 🙂
+
+  opening:
+    no_website: "I looked {name} up on Google and noticed you don't have a website. Many customers, especially tourists, check a website before deciding where to go or who to call."
+    social_only: "I looked {name} up on Google and the website link only goes to your {platform} page. A real website helps you get found on Google and gives customers your hours, services and contacts in seconds."
+    broken_website: "I tried to open {name}'s website ({website}), but {problem}. People who find you on Google land on a site that doesn't work."
+    weak_website: "I had a look at {name}'s website ({website}) and noticed a few things that are probably costing you customers:\n{issues}"
+
+  chat_opening:
+    no_website: "I noticed {name} doesn't have a website."
+    social_only: "I noticed {name}'s website link only goes to your {platform} page."
+    broken_website: "I tried to open {name}'s website, but {problem}."
+    weak_website: "I had a look at {name}'s website: {issues_inline}."
+
+  offer:
+    no_website: "I could build you a professional site, designed to get you found on Google and to work well on phones."
+    social_only: "I could build you a professional site linked to your social pages, designed to get you found on Google."
+    broken_website: "I could get you back online with a new, fast website."
+    weak_website: "I could rebuild your site and fix all of these."
+
+  problems:
+    offline: "it doesn't open (it seems to be offline)"
+    placeholder: "there's only a placeholder page"
+
+  platforms:
+    facebook.com: Facebook
+    instagram.com: Instagram
+    tripadvisor.it: TripAdvisor
+    tripadvisor.com: TripAdvisor
+    default: social media
+
+  issues:
+    no_https: "it isn't secure: browsers show a \"Not secure\" warning (no HTTPS)"
+    invalid_ssl: "its security certificate is invalid, so browsers warn visitors"
+    not_mobile_friendly: "it's hard to read on phones, where most visits come from"
+    slow_pagespeed: "it loads slowly on phones (Google scores it {detail} out of 100)"
+    old_copyright: "the footer still says © {detail}, which makes the site look out of date"
+    outdated_tech: "it's built on outdated technology that's slower and less secure"
+    free_builder: "it's on a free address ({detail}) instead of your own domain"
+    missing_meta: "it's missing a title and description for Google, so it shows up poorly in search results"
+    no_contact_info: "the homepage doesn't show your phone number or email straight away"
+    no_english: "there's no English version for tourists"
+    generic: "it could be made more modern and easier to use"
+
+  issues_short:
+    no_https: "it isn't secure (no HTTPS)"
+    invalid_ssl: "its security certificate is invalid"
+    not_mobile_friendly: "it's hard to read on phones"
+    slow_pagespeed: "it's slow on phones"
+    old_copyright: "the copyright still says {detail}"
+    outdated_tech: "it uses outdated technology"
+    free_builder: "it's on a free address"
+    missing_meta: "it shows up poorly on Google"
+    no_contact_info: "contacts aren't easy to find"
+    no_english: "there's no English version"
+    generic: "it could be modernised"

@@ -39,6 +39,8 @@ class AuditResult:
     final_url: str = ""
     score: int | None = None
     failed: list[str] = field(default_factory=list)
+    failed_keys: dict[str, str] = field(default_factory=dict)  # check key -> detail, for outreach messages
+    social: dict[str, str] = field(default_factory=dict)       # e.g. {"instagram": url} found on the homepage
     emails: list[str] = field(default_factory=list)
     pagespeed: int | None = None
     skipped: bool = False          # e.g. robots.txt disallows us

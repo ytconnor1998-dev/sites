@@ -68,6 +68,11 @@ CREATE INDEX IF NOT EXISTS idx_biz_phone  ON businesses(phone_norm);
 CREATE INDEX IF NOT EXISTS idx_biz_domain ON businesses(domain_key);
 CREATE INDEX IF NOT EXISTS idx_biz_status ON businesses(status);
 
+CREATE TABLE IF NOT EXISTS app_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
+
 CREATE TABLE IF NOT EXISTS api_usage (
     day   TEXT NOT NULL,
     api   TEXT NOT NULL,
@@ -77,12 +82,20 @@ CREATE TABLE IF NOT EXISTS api_usage (
 """
 
 # Columns added after the first release: (table, column, type)
-MIGRATIONS = [("runs", "heartbeat_at", "TEXT")]
+MIGRATIONS = [
+    ("runs", "heartbeat_at", "TEXT"),
+    ("businesses", "failed_keys", "TEXT"),      # JSON {check key: detail}, used for outreach messages
+    ("businesses", "instagram", "TEXT"),
+    ("businesses", "facebook", "TEXT"),
+    ("businesses", "contacted_at", "TEXT"),
+    ("businesses", "contact_channel", "TEXT"),
+]
 
 LEAD_COLUMNS = [
     "uid", "tier", "name", "category", "group_name", "area", "address", "phone", "email", "website", "score",
     "failed_checks", "rating", "review_count", "maps_url", "run_filters", "found_at", "outreach_status", "notes",
     "source", "email_source", "pagespeed", "run_id",
+    "failed_keys", "instagram", "facebook", "contacted_at", "contact_channel",
 ]
 
 # A run whose heartbeat is older than this is treated as dead (app restarted mid-run).
@@ -271,6 +284,35 @@ class Database:
 
     def update_outreach(self, uid: str, status: str, notes: str) -> None:
         self._run("UPDATE businesses SET outreach_status=?, notes=? WHERE uid=?", (status or "", notes or "", uid))
+
+    def mark_contacted(self, uid: str, channel: str) -> None:
+        """Outreach sent: status Contacted, date and channel, and a line in the notes."""
+        row = self._run("SELECT notes FROM businesses WHERE uid=?", (uid,), fetch="one") or {}
+        stamp = now()
+        line = f"Contacted by {channel} on {stamp[:10]}"
+        notes = "\n".join(x for x in ((row.get("notes") or "").strip(), line) if x)
+        self._run(
+            "UPDATE businesses SET outreach_status='Contacted', contacted_at=?, contact_channel=?, notes=? WHERE uid=?",
+            (stamp, channel, notes, uid),
+        )
+
+    def contacted_today(self) -> int:
+        row = self._run("SELECT COUNT(*) AS n FROM businesses WHERE contacted_at LIKE ?", (dt.date.today().isoformat() + "%",), fetch="one")
+        return int(row["n"])
+
+    # ── settings edited on the page ─────────────────────────────────
+    def get_setting(self, key: str) -> str | None:
+        row = self._run("SELECT value FROM app_settings WHERE key=?", (key,), fetch="one")
+        return row["value"] if row else None
+
+    def set_setting(self, key: str, value: str) -> None:
+        self._run(
+            "INSERT INTO app_settings (key, value) VALUES (?,?) ON CONFLICT (key) DO UPDATE SET value=excluded.value",
+            (key, value),
+        )
+
+    def delete_setting(self, key: str) -> None:
+        self._run("DELETE FROM app_settings WHERE key=?", (key,))
 
     def status_counts(self) -> dict[str, int]:
         rows = self._run("SELECT status, COUNT(*) AS n FROM businesses GROUP BY status", fetch="all")

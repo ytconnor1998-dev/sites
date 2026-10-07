@@ -100,6 +100,8 @@ def test_full_run_tiers_contacts_and_rerun(cfg, db):
             "Missing meta description; No contact info on homepage; No English version"
         )
         assert mario["email"] == "info@damario.it" and mario["email_source"] == "website"
+        assert mario["instagram"] == "https://www.instagram.com/damario_roma/"
+        assert json.loads(mario["failed_keys"])["old_copyright"] == "2015"
         assert mario["phone"] == "+39 06 123 4567"
 
         assert leads["Bar Senza Sito"]["tier"] == "A"
@@ -188,9 +190,10 @@ def test_excel_export(cfg, db, tmp_path):
     assert ws.auto_filter.ref.startswith("A1:")
     tiers = [ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)]
     assert tiers == sorted(tiers)
-    scores = [ws.cell(row=r, column=10).value for r in range(2, ws.max_row + 1) if ws.cell(row=r, column=1).value != "A"]
+    scores = [ws.cell(row=r, column=headers.index("Score") + 1).value for r in range(2, ws.max_row + 1) if ws.cell(row=r, column=1).value != "A"]
     assert scores == sorted(scores)
     assert ws.cell(row=2, column=1).fill.fgColor.rgb.endswith("E57373")
+    assert "Instagram" in headers and "Contacted on" in headers
 
 
 def test_all_searches_failing_is_a_failed_run(cfg, db):

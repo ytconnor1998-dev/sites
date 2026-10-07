@@ -22,6 +22,7 @@ COLUMNS = [
     ("Phone", "phone", 18),
     ("Email", "email", 30),
     ("Website", "website", 32),
+    ("Instagram", "instagram", 28),
     ("Score", "score", 7),
     ("Failed checks", "failed_checks", 50),
     ("Google rating", "rating", 8),
@@ -30,6 +31,7 @@ COLUMNS = [
     ("Run filters", "run_filters", 40),
     ("Date found", "found_at", 12),
     ("Source", "_source", 22),
+    ("Contacted on", "contacted_at", 12),
     ("Status", "outreach_status", 14),
     ("Notes", "notes", 40),
 ]
@@ -88,12 +90,12 @@ def export_leads(rows: list[dict], path: Path | str | BinaryIO) -> Path | Binary
             value = _source_text(r) if field == "_source" else r.get(field)
             if value != value:  # NaN from pandas
                 value = None
-            if field == "found_at" and value:
+            if field in ("found_at", "contacted_at") and value:
                 value = str(value)[:10]
             cell = ws.cell(row=r_idx, column=c_idx, value=value if value not in ("", None) else None)
             if tier in TIER_FILL:
                 cell.fill = TIER_FILL[tier]
-            if field in ("website", "maps_url") and value:
+            if field in ("website", "maps_url", "instagram") and value:
                 cell.hyperlink = str(value)
                 cell.font = Font(color="1A56DB", underline="single")
                 if field == "maps_url":

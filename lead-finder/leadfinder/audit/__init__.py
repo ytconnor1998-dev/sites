@@ -95,15 +95,18 @@ class Auditor:
         score = int(self.cfg.get("start_score", 100))
         failed: list[str] = []
 
-        def fail(key: str, label: str) -> None:
+        failed_keys: dict[str, str] = {}
+
+        def fail(key: str, label: str, detail: object = "") -> None:
             nonlocal score
-            if self._on(key):
+            if self._on(key) and key not in failed_keys:
                 score -= self._weight(key)
                 failed.append(label)
+                failed_keys[key] = str(detail)
 
         # 2. HTTPS / SSL
         if ssl_state == "invalid":
-            fail("no_https", self.checks.get("no_https", {}).get("invalid_ssl_label", "Invalid SSL certificate"))
+            fail("no_https", self.checks.get("no_https", {}).get("invalid_ssl_label", "Invalid SSL certificate"), "invalid_ssl")
         elif urlsplit(page.url).scheme != "https":
             fail("no_https", self._label("no_https"))
         # 3. mobile
@@ -114,21 +117,21 @@ class Auditor:
         year = c.copyright_year(soup, text)
         min_year = int(self.checks.get("old_copyright", {}).get("min_year", 2022))
         if year and year < min_year:
-            fail("old_copyright", self._label("old_copyright", year=year))
+            fail("old_copyright", self._label("old_copyright", year=year), year)
         # 6. outdated tech
         tech = c.outdated_tech(soup, page.text, self.checks.get("outdated_tech", {}))
         if tech:
-            fail("outdated_tech", self._label("outdated_tech", details=", ".join(tech)))
+            fail("outdated_tech", self._label("outdated_tech", details=", ".join(tech)), ", ".join(tech))
         # 7. free builder
         builder = c.free_builder(page.url, self.checks.get("free_builder", {}).get("domains", [])) or c.free_builder(
             url, self.checks.get("free_builder", {}).get("domains", [])
         )
         if builder:
-            fail("free_builder", self._label("free_builder", host=builder))
+            fail("free_builder", self._label("free_builder", host=builder), builder)
         # 8. title / description
         missing = c.missing_meta(soup)
         if missing:
-            fail("missing_meta", self._label("missing_meta", what=" and ".join(missing)))
+            fail("missing_meta", self._label("missing_meta", what=" and ".join(missing)), ",".join(missing))
         # 9. contact info
         if not c.has_contact_info(soup, text):
             fail("no_contact_info", self._label("no_contact_info"))
@@ -136,7 +139,8 @@ class Auditor:
         if biz.category.group.needs_english and not c.has_english(soup, page.url):
             fail("no_english", self._label("no_english"))
 
-        # contacts: homepage + one contact page
+        # contacts: homepage + one contact page, plus their social profiles for outreach
+        result.social = c.social_profiles(soup, page.url)
         emails = c.extract_emails(soup, text)
         emails += await self._contact_page_emails(soup, page.url)
         result.emails = c.rank_emails(c.clean_emails(emails), page.url)
@@ -149,12 +153,13 @@ class Auditor:
                 result.pagespeed = psi.performance
                 threshold = int(self.checks["slow_pagespeed"].get("threshold", 50))
                 if psi.performance is not None and psi.performance < threshold:
-                    fail("slow_pagespeed", self._label("slow_pagespeed", score=psi.performance))
+                    fail("slow_pagespeed", self._label("slow_pagespeed", score=psi.performance), psi.performance)
                 if psi.viewport_ok is False and viewport_ok:
                     fail("not_mobile_friendly", self._label("not_mobile_friendly"))
 
         result.score = max(score, 0)
         result.failed = failed
+        result.failed_keys = failed_keys
         return result
 
     def _pagespeed_matters(self, score: int) -> bool:

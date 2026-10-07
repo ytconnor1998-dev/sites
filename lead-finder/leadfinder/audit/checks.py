@@ -346,3 +346,30 @@ def find_contact_link(soup: BeautifulSoup, base_url: str) -> str | None:
         if re.search(r"contatt|contact", path) or label in ("contatti", "contattaci", "contact", "contacts", "contact us"):
             return full.split("#")[0]
     return None
+
+
+# ── social profiles (for outreach) ───────────────────────────────────
+
+_SOCIAL_PATTERNS = {
+    "instagram": re.compile(r"^https?://(?:www\.)?instagram\.com/([A-Za-z0-9_.]{2,30})/?(?:\?.*)?$", re.I),
+    "facebook": re.compile(r"^https?://(?:www\.|m\.|it-it\.)?facebook\.com/([A-Za-z0-9.\-]{3,80})/?(?:\?.*)?$", re.I),
+}
+_SOCIAL_SKIP = {"p", "reel", "reels", "explore", "stories", "sharer", "sharer.php", "share", "tr", "plugins", "dialog", "groups", "events", "watch"}
+
+
+def social_profile(url: str) -> tuple[str, str] | None:
+    """('instagram', 'https://www.instagram.com/name/') for a profile link, else None."""
+    for network, pat in _SOCIAL_PATTERNS.items():
+        m = pat.match((url or "").strip())
+        if m and m.group(1).lower() not in _SOCIAL_SKIP:
+            return network, f"https://www.{network}.com/{m.group(1)}/"
+    return None
+
+
+def social_profiles(soup: BeautifulSoup, base_url: str) -> dict[str, str]:
+    found: dict[str, str] = {}
+    for a in soup.find_all("a", href=True):
+        hit = social_profile(urljoin(base_url, a["href"]))
+        if hit and hit[0] not in found:
+            found[hit[0]] = hit[1]
+    return found

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 import time
 from collections import Counter, deque
@@ -11,6 +12,7 @@ from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 
 from .audit import Auditor, tier_for
+from .audit.checks import social_profile
 from .config import Area, Category, Config, split_list
 from .db import Database, now
 from .dedupe import domain_key, format_phone, normalise_phone
@@ -61,6 +63,11 @@ class RunSummary:
 
 MAX_CONSECUTIVE_FAILURES = 3
 HEARTBEAT_SECONDS = 10
+
+
+def social_url(url: str, network: str) -> str | None:
+    hit = social_profile(url)
+    return hit[1] if hit and hit[0] == network else None
 
 
 class FatalRunError(Exception):
@@ -332,6 +339,9 @@ class Pipeline:
             "website": b.website, "domain_key": dkey, "rating": b.rating, "review_count": b.review_count,
             "maps_url": b.maps_url, "status": ev.status, "tier": ev.tier, "score": a.score,
             "failed_checks": a.failed_text, "pagespeed": a.pagespeed, "audit_note": a.reason,
+            "failed_keys": json.dumps(a.failed_keys) if a.failed_keys else None,
+            "instagram": social_url(b.website, "instagram") or a.social.get("instagram"),
+            "facebook": social_url(b.website, "facebook") or a.social.get("facebook"),
         }
         if ev.status == "lead":
             row.update(run_id=run_id, run_filters=label, found_at=now())

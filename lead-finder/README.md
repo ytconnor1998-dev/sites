@@ -74,6 +74,21 @@ Good to know about the free hosting:
 - **It sleeps.** If nobody opens the site for a while, it goes to sleep. The next visit shows a "wake up" button and takes about a minute.
 - **Updates restart it.** Every new commit to the deployed branch restarts the app, which ends any search in progress. That search is marked *interrupted*; leads it already found are kept.
 
+## Contacting leads (Outreach tab)
+
+The **Outreach** tab takes you through the leads you haven't contacted yet, one at a time, most promising first (Tier A, then the lowest scores).
+
+1. **A message is written for each lead** from what the audit actually found. A business with no website gets a "you don't have a website" message; a weak site gets its real problems listed, e.g. *"il sito non è sicuro (manca HTTPS)… in fondo alla pagina c'è ancora © 2015"*. Every message includes your name, your website link, the €49/month Business plan, and an opt-out line. Italian by default, English with one click. You can edit the text before sending.
+2. **One button per channel opens the message ready to send:**
+   - **Open in Gmail** / **Open in my email app**: the address, subject and text are filled in. Check it and press Send.
+   - **Open in WhatsApp** (mobile numbers only): opens a chat with the message typed in.
+   - **Open their Instagram / Facebook**: opens their profile. Copy the short message with the copy button on its box and paste it into a DM.
+3. **Press "✓ Sent: mark as contacted".** The lead's Status becomes *Contacted*, with the date and channel added to its notes, and the next lead appears. **Skip** leaves it for later; **Do not contact** removes it for good.
+
+Nothing is ever sent automatically. That's deliberate: in Italy, unsolicited marketing emails generally need prior consent, even to businesses, and Instagram bans accounts that send automated DMs. Personal one-by-one messages with an opt-out are much safer, but check with your commercialista or a privacy consultant if you're unsure. Always honour a "no" by marking the lead **Do not contact**.
+
+**Changing the wording:** open **Edit message templates** at the bottom of the tab, change the text, and press **Save templates**. Changes are checked before saving, and are stored in the database, so they survive restarts; **Reset to the original templates** goes back to `config/outreach.yaml`.
+
 ## What it costs
 
 - **Hosting (Streamlit Community Cloud) and database (Neon):** free plans. Neon's free storage is far more than this needs.
