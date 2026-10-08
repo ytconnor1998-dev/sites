@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Photo } from "@/components/ui/Photo";
 import { examples } from "@/content/examples";
-import { useHref, useL, useT } from "@/lib/i18n";
+import { industries } from "@/content/industries";
+import { fill, useHref, useL, useT } from "@/lib/i18n";
 import { btn } from "./Section";
 
 export function ExamplesIndex() {
@@ -31,10 +32,19 @@ export function ExamplesIndex() {
                 {tr(ex.industry)}, {ex.location}
               </p>
               <p className="mt-2 text-lg">{tr(ex.tagline)}</p>
-              <Link href={`/examples/${ex.slug}`} className={`${btn.secondary} mt-5`}>
-                {t.examples.open}
-                <span className="sr-only">: {ex.name}</span>
-              </Link>
+              <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
+                <Link href={`/examples/${ex.slug}`} className={btn.secondary}>
+                  {t.examples.open}
+                  <span className="sr-only">: {ex.name}</span>
+                </Link>
+                {industries
+                  .filter((i) => i.example === ex.slug)
+                  .map((i) => (
+                    <Link key={i.slug} href={href(`/websites/${i.slug}`)} className={btn.link}>
+                      {fill(t.industryPage.more, { name: tr(i.name) })}
+                    </Link>
+                  ))}
+              </div>
             </article>
           </li>
         ))}

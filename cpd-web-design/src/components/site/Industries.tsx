@@ -6,7 +6,8 @@ import { useId, useState } from "react";
 import { Photo } from "@/components/ui/Photo";
 import { planById } from "@/config/site";
 import { examples } from "@/content/examples";
-import { fill, formatEuro, useL, useLang, useT } from "@/lib/i18n";
+import { industries } from "@/content/industries";
+import { fill, formatEuro, useHref, useL, useLang, useT } from "@/lib/i18n";
 import { Section, btn } from "./Section";
 
 /** What each example site includes. Everything is in the one plan. */
@@ -25,6 +26,8 @@ export function Industries() {
     document.getElementById(`${baseId}-tab-${next}`)?.focus();
   };
 
+  const href = useHref();
+  const industry = industries.find((x) => x.example === ex.slug);
   return (
     <Section id="industries" tone="paper-2" title={t.industries.title} intro={t.industries.intro}>
       <div role="tablist" aria-label={t.industries.title} className="inline-flex flex-wrap gap-1 rounded-[24px] border border-ink/20 p-1" onKeyDown={onKeyDown}>
@@ -59,6 +62,11 @@ export function Industries() {
           <Link href={`/examples/${ex.slug}`} className={`${btn.secondary} mt-5`}>
             {fill(t.industries.demo, { name: ex.name })}
           </Link>
+          {industry && (
+            <Link href={href(`/websites/${industry.slug}`)} className={`${btn.link} mt-4 block`}>
+              {fill(t.industryPage.more, { name: tr(industry.name) })} →
+            </Link>
+          )}
         </div>
 
         <div className="lg:col-span-8">

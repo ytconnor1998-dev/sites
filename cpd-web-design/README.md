@@ -24,6 +24,7 @@ npm run lint
 | Example sites' content (menus, rooms, prices, timetables, images, which plan each is on) | `src/content/examples/*.ts` (restaurant, hotel, tours, salon, yoga, portfolio) |
 | Example screenshots used in the hero and Work section | `public/images/work/*.jpg` (retake them after changing a demo) |
 | Feature list shown in each demo's overlay and on the home page | `features` in each demo file above |
+| **Industry landing pages** (/websites/restaurants etc., EN + IT) | `src/content/industries.ts` |
 | **Legal details** (legal name, address, PEC, REA, notice period, court) | `src/config/site.ts` → `legal` |
 | **Privacy policy, cookie policy, terms, legal notice** (EN + IT) | `src/content/legal.ts` |
 | Cookie banner and consent categories | `src/lib/consent.tsx`, `src/components/ui/CookieBanner.tsx` |
@@ -38,13 +39,15 @@ Placeholders to replace before launch are marked `PLACEHOLDER` in the code (pric
 
 ## Contact form and WhatsApp
 
-**The form emails you.** Enquiries go through [FormSubmit](https://formsubmit.co) (free, no account) to `contact.email.en` (hello@cpdwebdesign.com), with the subject "New website enquiry: …" (tagged `[IT]` from the Italian site). Replying to the email replies to the visitor.
+**The form is a free mockup request**: visitors leave their business, current website (optional) and what they need, and you send them a homepage mockup within 2 working days (the promise is in `translations.ts` → `contact`; change it there if you need longer). It emails you.
+
+Enquiries go through [FormSubmit](https://formsubmit.co) (free, no account) to `contact.email.en` (hello@cpdwebdesign.com), with the subject "Free mockup request: …" (tagged `[IT]` from the Italian site). Replying to the email replies to the visitor.
 
 **One-time activation:** after the site is live, fill in the form yourself once. FormSubmit emails hello@ a link: click **Activate form**. Until then, sending shows an error with a "Send it on WhatsApp instead" link, so no enquiry is lost.
 
 To use Formspree or another service instead, set `NEXT_PUBLIC_FORM_ENDPOINT` on Vercel (same JSON: `name, business, email, message`) and add its domain to `connect-src` in `vercel.json`. A hidden `_gotcha` honeypot catches bots.
 
-**WhatsApp buttons** (contact section, About card, footer) open a chat with `contact.whatsapp` and a greeting already typed: "Hi Connor! I'm interested in a website for my business." (Italian on the Italian pages). Edit it in `translations.ts` → `contact.waPreset`.
+**WhatsApp buttons** (contact section, About card, footer, and the bar fixed to the bottom of the screen on phones) open a chat with `contact.whatsapp` and a greeting already typed: "Hi Connor! I'm interested in a website for my business." (Italian on the Italian pages). Edit it in `translations.ts` → `contact.waPreset`.
 
 ## Adding another example site (gym, shop, B&B…)
 
@@ -86,6 +89,7 @@ Each demo wraps its page in `<ExampleChrome>` (floating "Example site by CPD" ba
 ## SEO
 
 - **English and Italian pages each have their own URL** (`/`, `/it`, `/privacy`, `/it/privacy`…), rendered on the server in that language, so Google indexes both and shows Italian results to Italian searchers. `hreflang` links (in each page and in `sitemap.xml`) tie the pairs together. Visitors who prefer Italian are sent from `/` to `/it` automatically; the language switch moves between the two.
+- **Industry pages** (`/websites/restaurants`, `/hotels`, `/tours`, `/salons`, `/studios`, `/portfolios`, and `/it/websites/…`) target searches like "restaurant website Rome" / "sito web ristorante Roma". Each has its own title, intro, FAQ (with FAQ structured data) and links its example site. Edit or add them in `src/content/industries.ts`; they appear in the footer, on `/examples` and in the sitemap automatically.
 - Titles and descriptions per page and language: `meta` in `src/content/translations.ts` (home and examples) and `src/content/legal.ts`. They include "web designer in Rome / a Roma" and your prices, filled from the config.
 - Structured data (JSON-LD): `WebSite` + `ProfessionalService` (address, area served, languages, contact point, plans with prices) in `src/app/layout.tsx`, and `FAQPage` from your FAQ on the home pages. Helps Google and AI assistants describe you accurately.
 - Share image for WhatsApp, Facebook, LinkedIn etc.: `public/og-image.png` (1200×630).

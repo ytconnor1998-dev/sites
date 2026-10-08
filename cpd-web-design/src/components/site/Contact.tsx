@@ -9,9 +9,9 @@ import { fill, useHref, useL, useLang, useT } from "@/lib/i18n";
 import { Section, btn } from "./Section";
 
 type Status = "idle" | "sending" | "success" | "error";
-type Fields = { name: string; business: string; email: string; need: string; consent: boolean };
+type Fields = { name: string; business: string; email: string; website: string; need: string; consent: boolean };
 
-const empty: Fields = { name: "", business: "", email: "", need: "", consent: false };
+const empty: Fields = { name: "", business: "", email: "", website: "", need: "", consent: false };
 
 export function Contact() {
   const t = useT();
@@ -75,9 +75,10 @@ export function Contact() {
           name: fields.name,
           business: fields.business,
           email: fields.email,
+          website: fields.website.trim(),
           message: fields.need,
           language: lang === "it" ? "Italiano" : "English",
-          _subject: `New website enquiry${lang === "it" ? " [IT]" : ""}: ${fields.business || fields.name}`,
+          _subject: `Free mockup request${lang === "it" ? " [IT]" : ""}: ${fields.business || fields.name}`,
           _replyto: fields.email,
           _template: "table",
           _captcha: "false",
@@ -134,8 +135,11 @@ export function Contact() {
               <Field id="contact-business" label={f.business}>
                 <input id="contact-business" name="business" autoComplete="organization" maxLength={120} value={fields.business} onChange={(e) => set("business", e.target.value)} className={input} />
               </Field>
-              <Field id="contact-email" label={f.email} error={errors.email} className="sm:col-span-2">
+              <Field id="contact-email" label={f.email} error={errors.email}>
                 <input id="contact-email" name="email" type="email" autoComplete="email" required maxLength={254} value={fields.email} onChange={(e) => set("email", e.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email ? "contact-email-error" : undefined} className={input} />
+              </Field>
+              <Field id="contact-website" label={f.website}>
+                <input id="contact-website" name="website" type="text" inputMode="url" autoComplete="url" maxLength={200} placeholder={f.websitePlaceholder} value={fields.website} onChange={(e) => set("website", e.target.value)} className={input} />
               </Field>
               <Field id="contact-need" label={f.need} error={errors.need} className="sm:col-span-2">
                 <textarea id="contact-need" name="message" rows={4} required maxLength={5000} placeholder={f.needPlaceholder} value={fields.need} onChange={(e) => set("need", e.target.value)} aria-invalid={!!errors.need} aria-describedby={errors.need ? "contact-need-error" : undefined} className={`${input} resize-y py-3`} />
@@ -171,6 +175,7 @@ export function Contact() {
                 <button type="submit" disabled={status === "sending"} className={`${btn.primary} w-full cursor-pointer disabled:opacity-60 sm:w-auto`}>
                   {status === "sending" ? f.sending : f.submit}
                 </button>
+                <p className="mt-3 text-sm text-muted">{f.reassure}</p>
                 {status === "error" && (
                   <p role="alert" className="mt-3 font-semibold text-[#A3262F]">
                     {f.error}{" "}

@@ -13,10 +13,13 @@ import { Hero } from "@/components/site/Hero";
 import { HowItWorks } from "@/components/site/HowItWorks";
 import { Included } from "@/components/site/Included";
 import { Industries } from "@/components/site/Industries";
+import { IndustryPage } from "@/components/site/IndustryPage";
 import { LegalPage } from "@/components/site/LegalPage";
+import { MobileBar } from "@/components/site/MobileBar";
 import { Pricing } from "@/components/site/Pricing";
 import { Work } from "@/components/site/Work";
-import { pricing, site } from "@/config/site";
+import { planById, pricing, site } from "@/config/site";
+import type { Industry } from "@/content/industries";
 import type { LegalKind } from "@/content/legal";
 import { translations } from "@/content/translations";
 import { RouteLang, type Lang } from "@/lib/i18n";
@@ -28,6 +31,7 @@ function Shell({ lang, children }: { lang: Lang; children: React.ReactNode }) {
       <Header />
       <main id="main">{children}</main>
       <Footer />
+      <MobileBar />
     </RouteLang>
   );
 }
@@ -83,6 +87,51 @@ export function LegalRoute({ lang, kind }: { lang: Lang; kind: LegalKind }) {
   return (
     <Shell lang={lang}>
       <LegalPage kind={kind} />
+    </Shell>
+  );
+}
+
+export function IndustryRoute({ lang, industry }: { lang: Lang; industry: Industry }) {
+  const url = `${site.url}${langPath(`/websites/${industry.slug}`, lang)}`;
+  const t = translations[lang];
+  const plan = planById(industry.plan);
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Service",
+        name: industry.h1[lang],
+        description: industry.metaDescription[lang].replace("{price}", euro(plan.monthly, lang)),
+        url,
+        serviceType: "Web design",
+        provider: { "@id": `${site.url}/#business` },
+        areaServed: { "@type": "City", name: "Rome" },
+        offers: {
+          "@type": "Offer",
+          priceCurrency: "EUR",
+          price: plan.monthly,
+          priceSpecification: { "@type": "UnitPriceSpecification", price: plan.monthly, priceCurrency: "EUR", unitCode: "MON", valueAddedTaxIncluded: false },
+        },
+      },
+      {
+        "@type": "FAQPage",
+        inLanguage: lang,
+        mainEntity: industry.faqs.map((f) => ({ "@type": "Question", name: f.q[lang], acceptedAnswer: { "@type": "Answer", text: f.a[lang] } })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: site.name, item: `${site.url}${langPath("/", lang)}` },
+          { "@type": "ListItem", position: 2, name: t.industryPage.breadcrumb, item: `${site.url}${langPath("/examples", lang)}` },
+          { "@type": "ListItem", position: 3, name: industry.name[lang], item: url },
+        ],
+      },
+    ],
+  };
+  return (
+    <Shell lang={lang}>
+      <JsonLd data={data} />
+      <IndustryPage industry={industry} />
     </Shell>
   );
 }

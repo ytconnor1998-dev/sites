@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/config/site";
+import { industries } from "@/content/industries";
 import { langPath } from "@/lib/seo";
 
 // Generated once at build time (required for the static export).
@@ -10,6 +11,7 @@ export const dynamic = "force-static";
 const pages: { path: string; priority: number; changeFrequency: "monthly" | "yearly" }[] = [
   { path: "/", priority: 1, changeFrequency: "monthly" },
   { path: "/examples", priority: 0.8, changeFrequency: "monthly" },
+  ...industries.map((i) => ({ path: `/websites/${i.slug}`, priority: 0.7, changeFrequency: "monthly" as const })),
   { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
   { path: "/cookies", priority: 0.2, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
