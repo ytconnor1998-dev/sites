@@ -36,17 +36,15 @@ Placeholders to replace before launch are marked `PLACEHOLDER` in the code (pric
 
 **Demo images** are Unsplash photos referenced by URL in the demo data files. If any fails to load, a styled placeholder is shown instead. Swap any of them for your own `/images/...` files.
 
-## Contact form
+## Contact form and WhatsApp
 
-**Works out of the box via WhatsApp.** With no email service set up, pressing "Send on WhatsApp" opens WhatsApp (app or WhatsApp Web) to `contact.whatsapp` with the enquiry already written: name, business, email and message. The visitor presses send and it arrives in your WhatsApp. Nothing to sign up for.
+**The form emails you.** Enquiries go through [FormSubmit](https://formsubmit.co) (free, no account) to `contact.email.en` (hello@cpdwebdesign.com), with the subject "New website enquiry: …" (tagged `[IT]` from the Italian site). Replying to the email replies to the visitor.
 
-**To get enquiries by email instead** (2 minutes, free):
+**One-time activation:** after the site is live, fill in the form yourself once. FormSubmit emails hello@ a link: click **Activate form**. Until then, sending shows an error with a "Send it on WhatsApp instead" link, so no enquiry is lost.
 
-1. Create a form at [formspree.io](https://formspree.io) and copy its endpoint (`https://formspree.io/f/xxxxxxx`).
-2. In Vercel → Settings → Environment Variables, add `NEXT_PUBLIC_FORM_ENDPOINT` with that endpoint, then redeploy. (Or paste it into `contactForm.endpoint` in `src/config/site.ts`.)
-3. In Formspree, restrict the form to your domain and turn on spam filtering.
+To use Formspree or another service instead, set `NEXT_PUBLIC_FORM_ENDPOINT` on Vercel (same JSON: `name, business, email, message`) and add its domain to `connect-src` in `vercel.json`. A hidden `_gotcha` honeypot catches bots.
 
-The form then sends JSON (`name, business, email, message`) and shows "Enquiry sent". If sending ever fails, it offers WhatsApp as a fallback. A hidden `_gotcha` honeypot catches bots in both modes.
+**WhatsApp buttons** (contact section, About card, footer) open a chat with `contact.whatsapp` and a greeting already typed: "Hi Connor! I'm interested in a website for my business." (Italian on the Italian pages). Edit it in `translations.ts` → `contact.waPreset`.
 
 ## Adding another example site (gym, shop, B&B…)
 
@@ -66,23 +64,23 @@ Each demo wraps its page in `<ExampleChrome>` (floating "Example site by CPD" ba
 - [ ] Read `/privacy`, `/cookies`, `/terms` and `/legal` in both languages and adjust anything that doesn't match how you work (payment method, domain renewal, response times).
 - [ ] If you're in the *regime forfettario* you don't charge VAT: the terms already say "plus VAT where due", but check the wording with your commercialista.
 - [ ] Clients sign a written proposal that includes the terms. Have the clauses listed in section 15 of the terms signed separately (art. 1341–1342 c.c.), and sign a data processing agreement (art. 28 GDPR) with clients whose sites collect visitor data.
-- [ ] Turn on two-factor authentication for your email, GitHub, Vercel and Formspree accounts (the privacy policy says you do).
+- [ ] Turn on two-factor authentication for your email, GitHub and Vercel accounts (the privacy policy says you do).
 - [ ] Added analytics, a chat widget or a newsletter? Add a consent category in `src/lib/consent.tsx`, load the tool only after consent, and list it in the privacy and cookie policies.
 
 **Security** (already set up):
 
 - Strict security headers on every page via `vercel.json`: Content-Security-Policy, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy. After deploying, check your domain at [securityheaders.com](https://securityheaders.com).
-- The CSP only allows this site, `images.unsplash.com`, `formspree.io` and Google Maps. If you add another service (e.g. a different form provider or your own images host), add its domain to `vercel.json`, or the browser will block it.
+- The CSP only allows this site, `images.unsplash.com`, `formsubmit.co`, `formspree.io` and Google Maps. If you add another service (e.g. a different form provider or your own images host), add its domain to `vercel.json`, or the browser will block it.
 - `/.well-known/security.txt` tells people how to report a problem. Update the `Expires` date every year.
 - Dependabot (`.github/dependabot.yml`) opens weekly pull requests for dependency updates. Run `npm audit` before big changes.
-- The contact form has a spam honeypot and length limits. In Formspree, also turn on its spam filtering and restrict the form to your domain.
+- The contact form has a spam honeypot and length limits.
 - In GitHub, protect your default branch and don't commit secrets (the site needs none).
 
 ## Deploy to Vercel
 
 1. Push this repo to GitHub.
 2. In Vercel: **Add New → Project**, import the repo. If the repo contains other folders, set **Root Directory** to `cpd-web-design`.
-3. Optional env vars: `NEXT_PUBLIC_SITE_URL` (only to override the main address, `https://www.cpdwebdesign.com`, set in `src/config/site.ts`), `NEXT_PUBLIC_FORM_ENDPOINT` (email delivery, above), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` (below).
+3. Optional env vars: `NEXT_PUBLIC_SITE_URL` (only to override the main address, `https://www.cpdwebdesign.com`, set in `src/config/site.ts`), `NEXT_PUBLIC_FORM_ENDPOINT` (only to replace FormSubmit, above), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` (below).
 4. Deploy, then under **Settings → Domains** add `www.cpdwebdesign.com` (production) and `cpdwebdesign.com` set to redirect to it.
 
 ## SEO

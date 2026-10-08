@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { CookieSettingsButton } from "@/components/ui/CookieBanner";
-import { contact, site } from "@/config/site";
-import { useHref, useL, useT } from "@/lib/i18n";
+import { contact, site, whatsappUrl } from "@/config/site";
+import { fill, useHref, useL, useT } from "@/lib/i18n";
 
 export function Footer() {
   const t = useT();
@@ -18,7 +18,8 @@ export function Footer() {
           <p className="text-lg font-semibold tracking-tight">{site.name}</p>
           <p className="mt-1 text-muted">{t.footer.based}</p>
           <p className="mt-4 text-muted">
-            © {year} {site.name} · {t.footer.vat} {site.vatNumber}
+            © {year} {site.name}
+            {site.vatNumber && ` · ${t.footer.vat} ${site.vatNumber}`}
           </p>
         </div>
         <ul className="space-y-1.5 text-muted">
@@ -28,7 +29,7 @@ export function Footer() {
             </a>
           </li>
           <li>
-            <a className={link} href={`https://wa.me/${contact.whatsapp}`} target="_blank" rel="noopener noreferrer">
+            <a className={link} href={whatsappUrl(fill(t.contact.waPreset, { name: site.owner.name }))} target="_blank" rel="noopener noreferrer">
               WhatsApp {contact.phoneDisplay}
             </a>
           </li>

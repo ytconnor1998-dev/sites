@@ -14,7 +14,7 @@ const en = {
     // Shown in Google results. Keep titles under ~65 characters and descriptions under ~155.
     title: "Web Designer in Rome: Website Built Free, From {min} a Month",
     description:
-      "Web designer in Rome for small businesses. I build your website free, then {min}–{max} a month covers hosting, updates, changes and support. English and Italian.",
+      "Web designer in Rome for small businesses. I build your website free, then {min}–{max} a month covers hosting, updates, changes and support. Sites in English, Italian or both.",
     examplesTitle: "Example Websites for Restaurants, Hotels & Shops in Rome",
     examplesDescription:
       "Working example sites for a restaurant, hotel, tour company, salon, yoga studio and photographer in Rome. Try the bookings and see what you'd get, built free.",
@@ -60,7 +60,7 @@ const en = {
       { key: "maintenance", title: "Updates", body: "Software and integrations kept current, so nothing quietly stops working." },
       { key: "backups", title: "Daily backups", body: "If something breaks, I restore yesterday's version." },
       { key: "edits", title: "Changes", body: "New menu, new prices, new photos. Send them over and I'll update the site." },
-      { key: "support", title: "Support", body: "Me, on WhatsApp or email, in English or Italian." },
+      { key: "support", title: "Support", body: "Me, on WhatsApp or email." },
       { key: "speed", title: "Speed", body: "Compressed images and lean code, so pages open quickly on a phone signal." },
       { key: "mobile", title: "Phones first", body: "Most people will find you on a phone, so that's what I design for first." },
     ],
@@ -157,7 +157,7 @@ const en = {
       },
       {
         q: "Do you build sites in Italian?",
-        a: "Yes. I work in English and Italian, and every site can have both, with a language switch like the one on this site. It's included in the Business plan.",
+        a: "Yes. Every site can have Italian and English versions, with a language switch like the one on this site. It's included in the Business plan. I work in English myself, so we agree the Italian text together before your site goes live.",
       },
       {
         q: "What counts as a small change?",
@@ -178,18 +178,24 @@ const en = {
     paragraphs: [
       "I'm {name}, a designer and developer based in Rome. I've built websites for small businesses for years, and kept seeing the same thing: thousands paid up front for a site that nobody looked after once it launched.",
       "So I changed how I charge. I build the site properly for free, and I'm paid each month for keeping it working. If your site isn't doing its job, I hear about it.",
-      "I work with restaurants, hotels, studios and shops in Rome and further afield, in English and Italian.",
+      "I work with restaurants, hotels, studios and shops in Rome and further afield.",
     ],
     photoAlt: "Photo of {name}",
-    photoPlaceholder: "Your photo here",
+    facts: [
+      { label: "Based in", value: "Rome" },
+      { label: "Works with", value: "Small businesses" },
+      { label: "Replies", value: "Within one working day" },
+    ],
+    say: "Say ciao on WhatsApp",
   },
   contact: {
     title: "Get in touch",
     intro: "Tell me about your business and what you need. I reply within one working day.",
     whatsapp: "WhatsApp me",
+    waPreset: "Hi {name}! I'm interested in a website for my business.",
     email: "Email me",
     or: "Or send a message here:",
-    details: ["I reply within one working day", "English or Italian, whichever you prefer", "Based in Rome, working with businesses anywhere"],
+    details: ["I reply within one working day", "No obligation and nothing to pay up front", "Based in Rome, working with businesses anywhere"],
     form: {
       name: "Your name",
       business: "Business name",
@@ -206,11 +212,6 @@ const en = {
       error: "Your enquiry couldn't be sent. Check your connection and try again, or email me directly.",
       required: "Fill in this field",
       invalidEmail: "Enter an email address like name@example.com",
-      submitWhatsApp: "Send on WhatsApp",
-      waNote: "Opens WhatsApp with your message ready. Just press send.",
-      waTitle: "Nearly there",
-      waBody: "WhatsApp has opened with your message filled in. Press send there and I'll reply within one working day.",
-      waOpen: "WhatsApp didn't open? Tap here",
       waInstead: "Send it on WhatsApp instead.",
       waMessage: "Hi! I'd like a website.\n\nName: {name}\nBusiness: {business}\nEmail: {email}\n\n{message}",
       waMessageNoBusiness: "Hi! I'd like a website.\n\nName: {name}\nEmail: {email}\n\n{message}",
@@ -218,7 +219,7 @@ const en = {
   },
   footer: {
     vat: "VAT no.",
-    based: "Based in Rome, working in English and Italian.",
+    based: "Web design in Rome, for small businesses.",
     legalNav: "Legal",
     privacy: "Privacy policy",
     cookies: "Cookie policy",
@@ -310,7 +311,7 @@ const it: Dict = {
       { key: "maintenance", title: "Aggiornamenti", body: "Software e integrazioni sempre aggiornati, così niente smette di funzionare di nascosto." },
       { key: "backups", title: "Backup giornalieri", body: "Se qualcosa si rompe, ripristino la versione del giorno prima." },
       { key: "edits", title: "Modifiche", body: "Nuovo menu, nuovi prezzi, nuove foto. Me li mandi e aggiorno il sito." },
-      { key: "support", title: "Assistenza", body: "Io, su WhatsApp o via email, in italiano o in inglese." },
+      { key: "support", title: "Assistenza", body: "Io, su WhatsApp o via email." },
       { key: "speed", title: "Velocità", body: "Immagini compresse e codice leggero, così le pagine si aprono in fretta anche con poco segnale." },
       { key: "mobile", title: "Prima il telefono", body: "Quasi tutti ti troveranno dal telefono, quindi progetto prima per quello." },
     ],
@@ -407,7 +408,7 @@ const it: Dict = {
       },
       {
         q: "Fai siti in italiano?",
-        a: "Sì. Lavoro in italiano e in inglese, e ogni sito può averle entrambe, con un cambio lingua come quello di questo sito. È incluso nel piano Business.",
+        a: "Sì. Ogni sito può avere la versione italiana e quella inglese, con un cambio lingua come quello di questo sito. È incluso nel piano Business. Io lavoro in inglese, quindi i testi in italiano li concordiamo insieme prima della pubblicazione.",
       },
       {
         q: "Cosa si intende per piccola modifica?",
@@ -428,18 +429,24 @@ const it: Dict = {
     paragraphs: [
       "Sono {name}, designer e sviluppatore a Roma. Da anni realizzo siti per piccole attività, e vedevo sempre la stessa cosa: migliaia di euro pagati all'inizio per un sito che nessuno curava più dopo il lancio.",
       "Così ho cambiato il modo in cui mi faccio pagare. Realizzo il sito come si deve, gratis, e vengo pagato ogni mese per farlo funzionare. Se il tuo sito non fa il suo lavoro, lo vengo a sapere.",
-      "Lavoro con ristoranti, hotel, studi e negozi a Roma e altrove, in italiano e in inglese.",
+      "Lavoro con ristoranti, hotel, studi e negozi a Roma e altrove.",
     ],
     photoAlt: "Foto di {name}",
-    photoPlaceholder: "La tua foto qui",
+    facts: [
+      { label: "Dove", value: "Roma" },
+      { label: "Lavoro con", value: "Piccole attività" },
+      { label: "Risposta", value: "Entro un giorno lavorativo" },
+    ],
+    say: "Scrivimi su WhatsApp",
   },
   contact: {
     title: "Contattami",
     intro: "Raccontami della tua attività e di cosa hai bisogno. Rispondo entro un giorno lavorativo.",
     whatsapp: "Scrivimi su WhatsApp",
+    waPreset: "Ciao {name}! Mi interessa un sito web per la mia attività.",
     email: "Mandami una email",
     or: "Oppure scrivimi qui:",
-    details: ["Rispondo entro un giorno lavorativo", "In italiano o in inglese, come preferisci", "Lavoro da Roma, con attività ovunque"],
+    details: ["Rispondo entro un giorno lavorativo", "Senza impegno e senza costi iniziali", "Lavoro da Roma, con attività ovunque"],
     form: {
       name: "Il tuo nome",
       business: "Nome dell'attività",
@@ -456,11 +463,6 @@ const it: Dict = {
       error: "Non è stato possibile inviare la richiesta. Controlla la connessione e riprova, oppure scrivimi via email.",
       required: "Compila questo campo",
       invalidEmail: "Inserisci un indirizzo email come nome@esempio.it",
-      submitWhatsApp: "Invia su WhatsApp",
-      waNote: "Si apre WhatsApp con il messaggio già scritto. Ti basta premere invia.",
-      waTitle: "Quasi fatto",
-      waBody: "WhatsApp si è aperto con il tuo messaggio. Premi invia e ti rispondo entro un giorno lavorativo.",
-      waOpen: "WhatsApp non si è aperto? Tocca qui",
       waInstead: "Invialo invece su WhatsApp.",
       waMessage: "Ciao! Vorrei un sito web.\n\nNome: {name}\nAttività: {business}\nEmail: {email}\n\n{message}",
       waMessageNoBusiness: "Ciao! Vorrei un sito web.\n\nNome: {name}\nEmail: {email}\n\n{message}",
@@ -468,7 +470,7 @@ const it: Dict = {
   },
   footer: {
     vat: "P.IVA",
-    based: "Lavoro da Roma, in italiano e in inglese.",
+    based: "Web design a Roma, per piccole attività.",
     legalNav: "Informazioni legali",
     privacy: "Privacy policy",
     cookies: "Cookie policy",

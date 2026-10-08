@@ -57,7 +57,7 @@ const en: Record<LegalKind, LegalDoc> = {
         body: [
           {
             list: [
-              "Contact form: your name, business name (optional), email address and message. The form opens WhatsApp with your message filled in, so it reaches me only when you press send there; if email delivery is switched on, it's sent to my inbox instead.",
+              "Contact form: your name, business name (optional), email address and message, and when you sent it. It's delivered to my inbox by email.",
               "Email and WhatsApp: whatever you choose to send me, plus your email address or phone number.",
               "Clients: the details needed to set up and run our contract and to invoice you, such as name, business name, tax code or VAT number, billing address and payment records.",
               "Technical data: when you visit the site, the hosting provider automatically records your IP address, browser type, the page requested and the time, in server logs used for security and to keep the site running.",
@@ -95,9 +95,9 @@ const en: Record<LegalKind, LegalDoc> = {
           {
             list: [
               "Vercel Inc. (USA): website hosting and server logs.",
-              "Formspree, Inc. (USA): if email delivery of the contact form is switched on, it delivers form messages to my inbox.",
+              "FormSubmit (formsubmit.co): delivers contact form messages to my inbox by email.",
               "My email provider, which stores the emails I send and receive.",
-              "WhatsApp (Meta Platforms Ireland Ltd.), when you message me there or send the contact form through it. WhatsApp's own privacy policy applies.",
+              "WhatsApp (Meta Platforms Ireland Ltd.), only if you choose to message me there. WhatsApp's own privacy policy applies.",
               "Unsplash, which serves some photos on the example sites and receives your IP address to do so.",
               "Google Ireland Ltd., only if you choose to show a map on an example site.",
               "My accountant (commercialista), banks and the tax authorities, for invoicing and tax records.",
@@ -421,7 +421,7 @@ const it: Record<LegalKind, LegalDoc> = {
         body: [
           {
             list: [
-              "Modulo di contatto: nome, nome dell'attività (facoltativo), indirizzo email e messaggio. Il modulo apre WhatsApp con il messaggio già scritto, quindi mi arriva solo quando premi invia; se è attivo l'invio via email, arriva invece nella mia casella.",
+              "Modulo di contatto: nome, nome dell'attività (facoltativo), indirizzo email e messaggio, e quando l'hai inviato. Mi arriva via email.",
               "Email e WhatsApp: ciò che scegli di inviarmi, insieme al tuo indirizzo email o numero di telefono.",
               "Clienti: i dati necessari per attivare e gestire il contratto e per la fatturazione, come nome, ragione sociale, codice fiscale o partita IVA, indirizzo di fatturazione e pagamenti.",
               "Dati tecnici: quando visiti il sito, il fornitore di hosting registra automaticamente indirizzo IP, tipo di browser, pagina richiesta e orario, in log usati per la sicurezza e il funzionamento del sito.",
@@ -459,9 +459,9 @@ const it: Record<LegalKind, LegalDoc> = {
           {
             list: [
               "Vercel Inc. (USA): hosting del sito e log del server.",
-              "Formspree, Inc. (USA): se è attivo l'invio via email, recapita alla mia casella i messaggi del modulo di contatto.",
+              "FormSubmit (formsubmit.co): recapita via email alla mia casella i messaggi del modulo di contatto.",
               "Il mio fornitore di posta elettronica, che conserva le email che invio e ricevo.",
-              "WhatsApp (Meta Platforms Ireland Ltd.), quando mi scrivi lì o invii il modulo di contatto tramite WhatsApp. Si applica l'informativa di WhatsApp.",
+              "WhatsApp (Meta Platforms Ireland Ltd.), solo se scegli di scrivermi lì. Si applica l'informativa di WhatsApp.",
               "Unsplash, che fornisce alcune foto dei siti di esempio e per farlo riceve il tuo indirizzo IP.",
               "Google Ireland Ltd., solo se scegli di mostrare una mappa in un sito di esempio.",
               "Il mio commercialista, le banche e l'amministrazione finanziaria, per fatturazione e obblighi fiscali.",

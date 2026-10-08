@@ -3,11 +3,11 @@
 import { Check, Mail, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { contact, contactForm } from "@/config/site";
-import { fill, useHref, useL, useT } from "@/lib/i18n";
+import { contact, contactForm, site, whatsappUrl } from "@/config/site";
+import { fill, useHref, useL, useLang, useT } from "@/lib/i18n";
 import { Section, btn } from "./Section";
 
-type Status = "idle" | "sending" | "success" | "whatsapp" | "error";
+type Status = "idle" | "sending" | "success" | "error";
 type Fields = { name: string; business: string; email: string; need: string; consent: boolean };
 
 const empty: Fields = { name: "", business: "", email: "", need: "", consent: false };
@@ -20,8 +20,7 @@ export function Contact() {
   const [fields, setFields] = useState<Fields>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({});
   const [status, setStatus] = useState<Status>("idle");
-  const [waUrl, setWaUrl] = useState("");
-  const byWhatsApp = !contactForm.endpoint;
+  const { lang } = useLang();
 
 
   const set = <K extends keyof Fields>(key: K, value: Fields[K]) => {
@@ -42,16 +41,16 @@ export function Contact() {
     return !first;
   };
 
-  /** The enquiry as a WhatsApp message to contact.whatsapp, ready for the visitor to send. */
-  const whatsappUrl = () => {
-    const text = fill(fields.business.trim() ? f.waMessage : f.waMessageNoBusiness, {
-      name: fields.name.trim(),
-      business: fields.business.trim(),
-      email: fields.email.trim(),
-      message: fields.need.trim(),
-    });
-    return `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(text)}`;
-  };
+  /** If email sending fails: the enquiry as a WhatsApp message, ready to send. */
+  const enquiryOnWhatsApp = () =>
+    whatsappUrl(
+      fill(fields.business.trim() ? f.waMessage : f.waMessageNoBusiness, {
+        name: fields.name.trim(),
+        business: fields.business.trim(),
+        email: fields.email.trim(),
+        message: fields.need.trim(),
+      }),
+    );
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,35 +63,28 @@ export function Contact() {
       return;
     }
 
-    /*
-     * ── WHERE ENQUIRIES GO ───────────────────────────────────────
-     * No endpoint set (src/config/site.ts → contactForm): open WhatsApp with the message
-     * filled in. This must happen straight away in the click, or browsers block the new tab.
-     * Endpoint set (e.g. Formspree): send it as JSON, which arrives in your email.
-     */
-    if (byWhatsApp) {
-      const url = whatsappUrl();
-      setWaUrl(url);
-      window.open(url, "_blank", "noopener,noreferrer");
-      setStatus("whatsapp");
-      setFields(empty);
-      return;
-    }
-
     setStatus("sending");
     try {
       const res = await fetch(contactForm.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
+        // Sent to contactForm.endpoint (src/config/site.ts). "_" fields are instructions for
+        // FormSubmit / Formspree: subject line, reply goes to the visitor, tidy table layout.
         body: JSON.stringify({
           name: fields.name,
           business: fields.business,
           email: fields.email,
           message: fields.need,
-          _subject: `New website enquiry: ${fields.business || fields.name}`,
+          language: lang === "it" ? "Italiano" : "English",
+          _subject: `New website enquiry${lang === "it" ? " [IT]" : ""}: ${fields.business || fields.name}`,
+          _replyto: fields.email,
+          _template: "table",
+          _captcha: "false",
         }),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json().catch(() => ({}))) as { success?: string | boolean };
+      // FormSubmit answers 200 with success "false" until the form is activated.
+      if (!res.ok || data.success === "false" || data.success === false) throw new Error(String(res.status));
       setStatus("success");
       setFields(empty);
     } catch {
@@ -108,7 +100,7 @@ export function Contact() {
     <Section id="contact" title={t.contact.title} intro={t.contact.intro} tone="cobalt">
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
         <div className="space-y-3 lg:col-span-4">
-          <a href={`https://wa.me/${contact.whatsapp}`} target="_blank" rel="noopener noreferrer" className={`${btn.onCobalt} w-full gap-2.5`}>
+          <a href={whatsappUrl(fill(t.contact.waPreset, { name: site.owner.name }))} target="_blank" rel="noopener noreferrer" className={`${btn.onCobalt} w-full gap-2.5`}>
             <MessageCircle aria-hidden className="size-5" />
             {t.contact.whatsapp}
           </a>
@@ -127,16 +119,7 @@ export function Contact() {
         </div>
 
         <div className="rounded-[24px] bg-white p-6 text-ink sm:p-10 lg:col-span-8">
-          {status === "whatsapp" ? (
-            <div role="status">
-              <p className="heading text-4xl">{f.waTitle}</p>
-              <p className="mt-2 text-lg text-muted">{f.waBody}</p>
-              <a href={waUrl} target="_blank" rel="noopener noreferrer" className={`${btn.primary} mt-6 gap-2.5`}>
-                <MessageCircle aria-hidden className="size-5" />
-                {f.waOpen}
-              </a>
-            </div>
-          ) : status === "success" ? (
+          {status === "success" ? (
             <div role="status">
               <p className="heading text-4xl">{f.successTitle}</p>
               <p className="mt-2 text-lg text-muted">{f.successBody}</p>
@@ -185,14 +168,12 @@ export function Contact() {
 
               <div className="sm:col-span-2">
                 <button type="submit" disabled={status === "sending"} className={`${btn.primary} w-full cursor-pointer disabled:opacity-60 sm:w-auto`}>
-                  {byWhatsApp && <MessageCircle aria-hidden className="mr-2 size-5" />}
-                  {status === "sending" ? f.sending : byWhatsApp ? f.submitWhatsApp : f.submit}
+                  {status === "sending" ? f.sending : f.submit}
                 </button>
-                {byWhatsApp && <p className="mt-3 text-sm text-muted">{f.waNote}</p>}
                 {status === "error" && (
                   <p role="alert" className="mt-3 font-semibold text-[#A3262F]">
                     {f.error}{" "}
-                    <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+                    <a href={enquiryOnWhatsApp()} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
                       {f.waInstead}
                     </a>
                   </p>

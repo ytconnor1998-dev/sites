@@ -85,12 +85,9 @@ const jsonLd = {
         { "@type": "City", name: "Rome" },
         { "@type": "Country", name: "Italy" },
       ],
-      knowsLanguage: ["en", "it"],
+      knowsLanguage: "en",
       knowsAbout: ["Web design", "Website development", "Small business websites", "Restaurant websites", "Hotel websites", "Local SEO", "Website hosting"],
-      contactPoint: [
-        { "@type": "ContactPoint", contactType: "sales", telephone: contact.phoneDisplay, email: contact.email.en, availableLanguage: "English" },
-        { "@type": "ContactPoint", contactType: "sales", telephone: contact.phoneDisplay, email: contact.email.it, availableLanguage: "Italian" },
-      ],
+      contactPoint: { "@type": "ContactPoint", contactType: "sales", telephone: contact.phoneDisplay, email: contact.email.en, availableLanguage: "English" },
       ...(contact.instagramIsBusiness && { sameAs: [contact.instagram] }),
       makesOffer: pricing.plans.map((plan) => ({
         "@type": "Offer",

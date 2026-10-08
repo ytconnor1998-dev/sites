@@ -18,9 +18,9 @@ export const site = {
    */
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.cpdwebdesign.com").replace(/\/$/, ""),
   owner: {
-    name: "Your Name", // PLACEHOLDER: your name as it should appear in the About section
+    name: "Connor",
     role: { en: "Designer & developer", it: "Designer e sviluppatore" } satisfies L,
-    /** Put your photo in /public/images/ and set e.g. "/images/me.jpg". null shows a placeholder frame. */
+    /** Optional. Put your photo in /public/images/ and set e.g. "/images/me.jpg". null shows a name card instead. */
     photo: null as string | null,
   },
   city: "Rome",
@@ -30,9 +30,11 @@ export const site = {
     postalCode: "00100", // PLACEHOLDER
     country: "IT",
   },
-  /** Italian businesses must show their Partita IVA on their website. */
-  vatNumber: "IT00000000000", // PLACEHOLDER
-  languages: ["English", "Italiano"],
+  /**
+   * Partita IVA, e.g. "IT12345678901". Required on the home page by Italian law once you have one
+   * (art. 35 DPR 633/1972). Leave "" until then: the footer and legal pages hide the line.
+   */
+  vatNumber: "",
 };
 
 /**
@@ -82,18 +84,20 @@ export const contact = {
 };
 
 /**
- * CONTACT FORM
- * Without an endpoint, the form sends enquiries to your WhatsApp (contact.whatsapp):
- * it opens WhatsApp with the message filled in, and the visitor presses send.
- * To receive enquiries by email instead:
- * 1. Create a free form at https://formspree.io (or any service accepting JSON POSTs).
- * 2. Set NEXT_PUBLIC_FORM_ENDPOINT on Vercel, or paste it below, e.g. "https://formspree.io/f/abcdwxyz".
- * Using a service other than Formspree? Add its domain to connect-src and form-action
- * in vercel.json (the Content-Security-Policy), or the browser will block the request.
+ * CONTACT FORM → EMAIL
+ * Enquiries are emailed via FormSubmit (formsubmit.co, free, no account) to contact.email.en,
+ * an alias of your main inbox. One-time setup: send yourself a test enquiry from the live site,
+ * then click "Activate form" in the email FormSubmit sends you. Until then, sending fails and
+ * the form offers WhatsApp instead.
+ * To use Formspree or another service, set NEXT_PUBLIC_FORM_ENDPOINT on Vercel (it gets the same
+ * JSON), and add its domain to connect-src in vercel.json.
  */
 export const contactForm = {
-  endpoint: process.env.NEXT_PUBLIC_FORM_ENDPOINT ?? "",
+  endpoint: process.env.NEXT_PUBLIC_FORM_ENDPOINT ?? `https://formsubmit.co/ajax/${contact.email.en}`,
 };
+
+/** wa.me link to your WhatsApp, optionally with a message already typed in. */
+export const whatsappUrl = (text?: string) => `https://wa.me/${contact.whatsapp}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 
 /** Google Search Console: paste the "content" value of its HTML-tag verification here, or set the env var. */
 export const searchConsoleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? "";
