@@ -82,8 +82,8 @@ Each demo wraps its page in `<ExampleChrome>` (floating "Example site by CPD" ba
 
 1. Push this repo to GitHub.
 2. In Vercel: **Add New → Project**, import the repo. If the repo contains other folders, set **Root Directory** to `cpd-web-design`.
-3. Optional env vars: `NEXT_PUBLIC_SITE_URL` (your own domain, once you have one; until then the `.vercel.app` address is used), `NEXT_PUBLIC_FORM_ENDPOINT` (email delivery, above), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` (below).
-4. Deploy, then add your domain under **Settings → Domains**. After adding a domain, set `NEXT_PUBLIC_SITE_URL` and redeploy so canonical links and the sitemap use it.
+3. Optional env vars: `NEXT_PUBLIC_SITE_URL` (only to override the main address, `https://www.cpdwebdesign.com`, set in `src/config/site.ts`), `NEXT_PUBLIC_FORM_ENDPOINT` (email delivery, above), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` (below).
+4. Deploy, then under **Settings → Domains** add `www.cpdwebdesign.com` (production) and `cpdwebdesign.com` set to redirect to it.
 
 ## SEO
 

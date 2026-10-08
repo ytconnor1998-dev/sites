@@ -12,14 +12,11 @@ export const site = {
   name: "CPD Web Design",
   shortName: "CPD",
   /**
-   * Production URL, used for canonical links, the sitemap and Open Graph.
-   * Set NEXT_PUBLIC_SITE_URL on Vercel once you have your own domain (e.g. https://www.cpdwebdesign.com).
-   * Until then Vercel's production address (your-project.vercel.app) is used automatically.
+   * Production URL, used for canonical links, the sitemap, Open Graph and structured data.
+   * The www version is the main address; cpdwebdesign.com (no www) redirects to it on Vercel.
+   * NEXT_PUBLIC_SITE_URL overrides it if you ever need to (e.g. a staging domain).
    */
-  url: (
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://www.cpdwebdesign.com")
-  ).replace(/\/$/, ""),
+  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.cpdwebdesign.com").replace(/\/$/, ""),
   owner: {
     name: "Your Name", // PLACEHOLDER: your name as it should appear in the About section
     role: { en: "Designer & developer", it: "Designer e sviluppatore" } satisfies L,
