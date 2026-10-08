@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { CookieSettingsButton } from "@/components/ui/CookieBanner";
 import { contact, site } from "@/config/site";
-import { useHref, useT } from "@/lib/i18n";
+import { useHref, useL, useT } from "@/lib/i18n";
 
 export function Footer() {
   const t = useT();
   const href = useHref();
+  const tr = useL();
   const year = new Date().getFullYear();
   const link = "hover:text-ink hover:underline";
   return (
@@ -22,8 +23,8 @@ export function Footer() {
         </div>
         <ul className="space-y-1.5 text-muted">
           <li>
-            <a className={link} href={`mailto:${contact.email}`}>
-              {contact.email}
+            <a className={link} href={`mailto:${tr(contact.email)}`}>
+              {tr(contact.email)}
             </a>
           </li>
           <li>

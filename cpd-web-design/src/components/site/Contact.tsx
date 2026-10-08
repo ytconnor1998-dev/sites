@@ -4,7 +4,7 @@ import { Check, Mail, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { contact, contactForm } from "@/config/site";
-import { fill, useHref, useT } from "@/lib/i18n";
+import { fill, useHref, useL, useT } from "@/lib/i18n";
 import { Section, btn } from "./Section";
 
 type Status = "idle" | "sending" | "success" | "whatsapp" | "error";
@@ -14,6 +14,7 @@ const empty: Fields = { name: "", business: "", email: "", need: "", consent: fa
 
 export function Contact() {
   const t = useT();
+  const tr = useL();
   const href = useHref();
   const f = t.contact.form;
   const [fields, setFields] = useState<Fields>(empty);
@@ -111,9 +112,9 @@ export function Contact() {
             <MessageCircle aria-hidden className="size-5" />
             {t.contact.whatsapp}
           </a>
-          <a href={`mailto:${contact.email}`} className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full border border-white/60 px-6 font-medium text-white transition-colors hover:bg-white hover:text-cobalt">
+          <a href={`mailto:${tr(contact.email)}`} className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full border border-white/60 px-6 font-medium text-white transition-colors hover:bg-white hover:text-cobalt">
             <Mail aria-hidden className="size-5 shrink-0" />
-            <span className="truncate">{contact.email}</span>
+            <span className="truncate">{tr(contact.email)}</span>
           </a>
           <ul className="space-y-2 pt-6 text-cobalt-soft">
             {t.contact.details.map((d) => (

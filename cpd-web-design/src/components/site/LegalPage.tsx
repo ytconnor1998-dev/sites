@@ -21,7 +21,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
     vat: site.vatNumber,
     rea: legal.rea,
     pec: legal.pec,
-    email: contact.email,
+    email: contact.email[lang],
     phone: contact.phoneDisplay,
     months: String(pricing.minimumTermMonths),
     fee: formatEuro(pricing.buyoutFee, lang),

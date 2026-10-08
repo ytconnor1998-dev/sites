@@ -1,5 +1,5 @@
 # How to report a security problem with this website.
-# PLACEHOLDER: update Contact if your email changes, and renew Expires before that date (max 1 year ahead).
+# Update Contact if your email changes, and renew Expires before that date (max 1 year ahead).
 Contact: mailto:hello@cpdwebdesign.com
 Expires: 2027-10-01T00:00:00.000Z
 Preferred-Languages: en, it

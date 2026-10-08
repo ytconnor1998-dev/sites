@@ -64,7 +64,11 @@ export const legal = {
 };
 
 export const contact = {
-  email: "hello@cpdwebdesign.com", // PLACEHOLDER
+  /**
+   * Public email, by the visitor's language. Both are aliases of connor@cpdwebdesign.com,
+   * so everything lands in one inbox, and the alias shows which language they wrote in.
+   */
+  email: { en: "hello@cpdwebdesign.com", it: "ciao@cpdwebdesign.com" } satisfies L,
   /** International format, digits only, no + or spaces (used for wa.me links). */
   whatsapp: "447902353010",
   /** Human-readable phone number shown on the page. */

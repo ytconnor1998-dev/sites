@@ -70,7 +70,7 @@ const jsonLd = {
       name: site.name,
       description: withPrices(t.description, "en"),
       url: site.url,
-      email: contact.email,
+      email: contact.email.en,
       telephone: contact.phoneDisplay,
       image: `${site.url}${ogImage.url}`,
       logo: `${site.url}/icon.svg`,
@@ -88,13 +88,10 @@ const jsonLd = {
       ],
       knowsLanguage: ["en", "it"],
       knowsAbout: ["Web design", "Website development", "Small business websites", "Restaurant websites", "Hotel websites", "Local SEO", "Website hosting"],
-      contactPoint: {
-        "@type": "ContactPoint",
-        contactType: "sales",
-        telephone: contact.phoneDisplay,
-        email: contact.email,
-        availableLanguage: ["English", "Italian"],
-      },
+      contactPoint: [
+        { "@type": "ContactPoint", contactType: "sales", telephone: contact.phoneDisplay, email: contact.email.en, availableLanguage: "English" },
+        { "@type": "ContactPoint", contactType: "sales", telephone: contact.phoneDisplay, email: contact.email.it, availableLanguage: "Italian" },
+      ],
       ...(realInstagram && { sameAs: [contact.instagram] }),
       makesOffer: pricing.plans.map((plan) => ({
         "@type": "Offer",
