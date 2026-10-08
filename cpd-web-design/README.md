@@ -97,7 +97,7 @@ Each demo wraps its page in `<ExampleChrome>` (floating "Example site by CPD" ba
 
 1. Add your site to [Google Search Console](https://search.google.com/search-console): choose "URL prefix", pick the HTML tag method, copy the `content="…"` value into the Vercel env var `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, redeploy, then verify. Submit `sitemap.xml`.
 2. Create a free [Google Business Profile](https://www.google.com/business/) for CPD Web Design (service-area business, Rome) and link it to the site. For "web designer near me" searches this matters more than anything on the site itself.
-3. Ask your first clients for Google reviews, and add the real Instagram link in `contact.instagram` (it's added to the structured data automatically).
+3. Ask your first clients for Google reviews. If you make a CPD Web Design Instagram, put it in `contact.instagram` and set `instagramIsBusiness: true` so Google links it to the business.
 4. Add each client site to `portfolio` in `src/config/site.ts` with a "Website by CPD Web Design" link in their footer.
 
 ## Notes

@@ -50,7 +50,6 @@ export const viewport: Viewport = {
   themeColor: "#2340D9",
 };
 
-const realInstagram = !/instagram\.com\/?$/.test(contact.instagram);
 
 /** Structured data: tells search engines (and AI assistants) who you are, where, and what it costs. */
 const jsonLd = {
@@ -92,7 +91,7 @@ const jsonLd = {
         { "@type": "ContactPoint", contactType: "sales", telephone: contact.phoneDisplay, email: contact.email.en, availableLanguage: "English" },
         { "@type": "ContactPoint", contactType: "sales", telephone: contact.phoneDisplay, email: contact.email.it, availableLanguage: "Italian" },
       ],
-      ...(realInstagram && { sameAs: [contact.instagram] }),
+      ...(contact.instagramIsBusiness && { sameAs: [contact.instagram] }),
       makesOffer: pricing.plans.map((plan) => ({
         "@type": "Offer",
         name: `${plan.name.en} website plan`,

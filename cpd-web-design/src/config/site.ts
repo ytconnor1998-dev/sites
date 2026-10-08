@@ -73,7 +73,12 @@ export const contact = {
   whatsapp: "447902353010",
   /** Human-readable phone number shown on the page. */
   phoneDisplay: "+44 7902 353010",
-  instagram: "https://instagram.com/", // PLACEHOLDER
+  instagram: "https://www.instagram.com/connor_davies0/",
+  /**
+   * false = a personal account: linked in the footer, but not given to Google as the business's profile.
+   * Set to true if you switch to a CPD Web Design business account.
+   */
+  instagramIsBusiness: false,
 };
 
 /**
