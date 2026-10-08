@@ -13,10 +13,10 @@ export const site = {
   shortName: "CPD",
   /**
    * Production URL, used for canonical links, the sitemap, Open Graph and structured data.
-   * The www version is the main address; cpdwebdesign.com (no www) redirects to it on Vercel.
+   * cpdwebdesign.com (no www) is the main address. If you add www later, set it to redirect here in Vercel.
    * NEXT_PUBLIC_SITE_URL overrides it if you ever need to (e.g. a staging domain).
    */
-  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.cpdwebdesign.com").replace(/\/$/, ""),
+  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://cpdwebdesign.com").replace(/\/$/, ""),
   owner: {
     name: "Connor",
     role: { en: "Designer & developer", it: "Designer e sviluppatore" } satisfies L,

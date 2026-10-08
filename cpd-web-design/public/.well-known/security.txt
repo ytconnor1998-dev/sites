@@ -3,4 +3,4 @@
 Contact: mailto:hello@cpdwebdesign.com
 Expires: 2027-10-01T00:00:00.000Z
 Preferred-Languages: en, it
-Canonical: https://www.cpdwebdesign.com/.well-known/security.txt
+Canonical: https://cpdwebdesign.com/.well-known/security.txt
