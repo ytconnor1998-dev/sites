@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { CookieSettingsButton } from "@/components/ui/CookieBanner";
+import { EmailLink } from "@/components/ui/EmailLink";
 import { contact, site, whatsappUrl } from "@/config/site";
-import { fill, useHref, useL, useT } from "@/lib/i18n";
+import { fill, useHref, useT } from "@/lib/i18n";
 
 export function Footer() {
   const t = useT();
   const href = useHref();
-  const tr = useL();
   const year = new Date().getFullYear();
   const link = "hover:text-ink hover:underline";
   return (
@@ -24,9 +24,7 @@ export function Footer() {
         </div>
         <ul className="space-y-1.5 text-muted">
           <li>
-            <a className={link} href={`mailto:${tr(contact.email)}`}>
-              {tr(contact.email)}
-            </a>
+            <EmailLink className={`inline-flex items-center gap-1.5 ${link}`} />
           </li>
           <li>
             <a className={link} href={whatsappUrl(fill(t.contact.waPreset, { name: site.owner.name }))} target="_blank" rel="noopener noreferrer">

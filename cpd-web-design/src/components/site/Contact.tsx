@@ -3,6 +3,7 @@
 import { Check, Mail, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { EmailLink } from "@/components/ui/EmailLink";
 import { contact, contactForm, site, whatsappUrl } from "@/config/site";
 import { fill, useHref, useL, useLang, useT } from "@/lib/i18n";
 import { Section, btn } from "./Section";
@@ -104,10 +105,10 @@ export function Contact() {
             <MessageCircle aria-hidden className="size-5" />
             {t.contact.whatsapp}
           </a>
-          <a href={`mailto:${tr(contact.email)}`} className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full border border-white/60 px-6 font-medium text-white transition-colors hover:bg-white hover:text-cobalt">
+          <EmailLink className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full border border-white/60 px-6 font-medium text-white transition-colors hover:bg-white hover:text-cobalt">
             <Mail aria-hidden className="size-5 shrink-0" />
             <span className="truncate">{tr(contact.email)}</span>
-          </a>
+          </EmailLink>
           <ul className="space-y-2 pt-6 text-cobalt-soft">
             {t.contact.details.map((d) => (
               <li key={d} className="flex gap-2.5">
