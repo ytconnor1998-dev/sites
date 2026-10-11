@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DART Delivery Rome</title>
+<meta name="description" content="DART is on-demand delivery for Rome. Post a delivery, local couriers bid, you pick the price. Multi-stop, scheduled, live tracking and chat.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<!--BODY-START-->
+<style>
+/* Layout: speed lines — a wide, slanted display face over a calm cool page; one cobalt "lane" band carries the bidding story. */
+:root{
+  --bg:#F4F5F9;
+  --surface:#FFFFFF;
+  --ink:#10142B;
+  --muted:#5B6180;
+  --line:#DCDFEA;
+  --cobalt:#2433E8;
+  --cobalt-ink:#FFFFFF;
+  --signal:#FFD23F;
+  --signal-ink:#10142B;
+  --good:#11946A;
+  --band:#2433E8;
+  --band-ink:#FFFFFF;
+  --band-muted:#C9CEFF;
+  --shadow:0 18px 50px -20px rgba(22,30,110,.35);
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C0F1F;--surface:#151A33;--ink:#EEF0FA;--muted:#A0A6C6;--line:#262C4D;
+  --cobalt:#6C78FF;--cobalt-ink:#0C0F1F;--signal:#FFD23F;--signal-ink:#10142B;--good:#3DD6A0;
+  --band:#1A2290;--band-ink:#FFFFFF;--band-muted:#B7BDFF;--shadow:0 18px 50px -20px rgba(0,0,0,.7);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C0F1F;--surface:#151A33;--ink:#EEF0FA;--muted:#A0A6C6;--line:#262C4D;
+  --cobalt:#6C78FF;--cobalt-ink:#0C0F1F;--signal:#FFD23F;--signal-ink:#10142B;--good:#3DD6A0;
+  --band:#1A2290;--band-ink:#FFFFFF;--band-muted:#B7BDFF;--shadow:0 18px 50px -20px rgba(0,0,0,.7);color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--signal);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1160px;margin:0 auto;padding-inline:clamp(16px,4vw,32px)}
+h1,h2,h3{font-family:var(--display);line-height:1.08;letter-spacing:-.02em;text-wrap:balance;margin:0}
+h2{font-size:clamp(28px,4.2vw,46px);font-weight:700}
+h3{font-size:18px;font-weight:700;letter-spacing:-.01em}
+p{margin:0}
+.eyebrow{font:600 13px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--cobalt)}
+.lede{color:var(--muted);font-size:clamp(17px,1.6vw,19px);max-width:58ch}
+
+/* language */
+html[data-lang="en"] [data-l="it"],html[data-lang="it"] [data-l="en"]{display:none!important}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:68px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font:800 22px/1 var(--display);letter-spacing:.02em;font-style:italic}
+.logo svg{width:34px;height:34px;flex:none}
+.nav-links{display:flex;gap:26px;margin-left:auto;font-weight:600;font-size:15px}
+.nav-links a{text-decoration:none;color:var(--muted)}
+.nav-links a:hover{color:var(--ink)}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.lang button{border:0;background:none;font:700 12px/1 var(--body);letter-spacing:.08em;color:var(--muted);padding:7px 10px;border-radius:999px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:14px 22px;font:700 16px/1 var(--body);text-decoration:none;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:var(--cobalt);color:var(--cobalt-ink);box-shadow:var(--shadow)}
+.btn-signal{background:var(--signal);color:var(--signal-ink)}
+.btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.nav .btn{padding:11px 16px;font-size:14px;border-radius:12px}
+@media (max-width:860px){.nav-links{display:none}.nav .lang{margin-left:auto}}
+@media (max-width:420px){.nav .btn{display:none}}
+
+/* hero */
+.hero{padding-block:clamp(40px,7vw,88px) clamp(48px,7vw,96px);position:relative;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(32px,5vw,64px);align-items:center}
+.hero h1{font-size:clamp(40px,6.6vw,82px);font-weight:800}
+.hero h1 em{font-style:italic;color:var(--cobalt);display:inline-block}
+.hero .lede{margin-top:22px}
+.hero-ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.stores{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;align-items:center;color:var(--muted);font-size:14px}
+.store{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:600;color:var(--ink);background:var(--surface)}
+.store svg{width:18px;height:18px}
+.soon{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;background:var(--signal);color:var(--signal-ink);padding:4px 6px;border-radius:5px}
+.speed{position:absolute;inset:auto -10% 6% auto;width:70%;height:2px;background:linear-gradient(90deg,transparent,var(--cobalt));opacity:.25;transform:skewY(-8deg)}
+@media (max-width:900px){.hero .wrap{grid-template-columns:1fr}}
+
+/* live bid card */
+.bidcard{background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:20px;max-width:440px;width:100%;justify-self:center}
+.bid-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
+.route{display:grid;gap:8px;font-size:15px;min-width:0}
+.route div{display:flex;gap:10px;align-items:center;min-width:0}
+.route span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--cobalt)}
+.dot.end{background:var(--signal);box-shadow:0 0 0 2px var(--ink) inset}
+.tag{font:500 12px/1 var(--mono);color:var(--muted);white-space:nowrap}
+.budget{font:500 12px/1.4 var(--mono);color:var(--muted);text-align:right;white-space:nowrap}
+.budget b{display:block;font:700 22px/1.1 var(--display);color:var(--ink)}
+.bids{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:10px}
+.bid{display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:16px;border:1px solid var(--line);animation:slidein .5s ease both}
+.bid:nth-child(2){animation-delay:.25s}.bid:nth-child(3){animation-delay:.5s}
+.bid.best{border-color:var(--cobalt);background:color-mix(in srgb,var(--cobalt) 8%,var(--surface))}
+@keyframes slidein{from{transform:translateX(18px)}to{transform:none}}
+.avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font:700 15px/1 var(--display);color:#fff}
+.who{min-width:0}
+.who b{display:block;font-weight:700}
+.who small{color:var(--muted);font-size:13px}
+.price{font:700 20px/1 var(--display);font-variant-numeric:tabular-nums;text-align:right}
+.price small{display:block;font:500 11px/1.6 var(--mono);color:var(--good)}
+.bidcard .btn{width:100%;margin-top:14px}
+.bid-foot{display:flex;justify-content:space-between;margin-top:12px;color:var(--muted);font-size:13px}
+.pulse{display:inline-flex;align-items:center;gap:6px}
+.pulse::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+/* sections */
+section{padding-block:clamp(56px,8vw,104px)}
+.section-head{display:grid;gap:14px;margin-bottom:clamp(32px,4vw,52px);max-width:720px}
+
+/* steps band */
+.band{background:var(--band);color:var(--band-ink);position:relative;overflow:hidden}
+.band .eyebrow{color:var(--signal)}
+.band .lede{color:var(--band-muted)}
+.band::after{content:"";position:absolute;right:-120px;top:-60px;width:520px;height:520px;background:repeating-linear-gradient(115deg,transparent 0 22px,rgba(255,255,255,.05) 22px 24px);pointer-events:none}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(16px,2.4vw,28px);counter-reset:s;position:relative;z-index:1}
+.steps li{counter-increment:s;display:grid;gap:10px;align-content:start;padding-top:22px;border-top:2px solid rgba(255,255,255,.25)}
+.steps li::before{content:counter(s);font:800 44px/1 var(--display);color:var(--signal);font-style:italic}
+.steps p{color:var(--band-muted);font-size:16px}
+@media (max-width:900px){.steps{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+
+/* features */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:24px;overflow:hidden}
+.feature{background:var(--surface);padding:28px;display:grid;gap:12px;align-content:start}
+.feature svg{width:28px;height:28px;color:var(--cobalt)}
+.feature p{color:var(--muted);font-size:16px}
+.new{font:500 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--signal-ink);background:var(--signal);padding:4px 6px;border-radius:5px;margin-left:6px;vertical-align:3px}
+@media (max-width:900px){.features{grid-template-columns:1fr 1fr}}
+@media (max-width:580px){.features{grid-template-columns:1fr}}
+
+/* drivers */
+.drive{display:grid;grid-template-columns:1fr 1fr;gap:clamp(32px,5vw,64px);align-items:center}
+.perks{list-style:none;padding:0;margin:26px 0 30px;display:grid;gap:14px}
+.perks li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start}
+.perks li svg{width:22px;height:22px;color:var(--good);margin-top:3px}
+.vehicles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vehicle{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:6px}
+.vehicle svg{width:40px;height:40px;color:var(--ink)}
+.vehicle small{color:var(--muted);font:500 12px/1.4 var(--mono)}
+.earn{grid-column:1/-1;background:var(--ink);color:var(--bg);border-radius:18px;padding:20px;display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.earn b{font:800 34px/1 var(--display);font-variant-numeric:tabular-nums}
+.earn small{display:block;opacity:.7;font-size:13px;margin-bottom:6px}
+.earn .ok{font:500 12px/1.4 var(--mono);color:var(--signal)}
+@media (max-width:900px){.drive{grid-template-columns:1fr}}
+
+/* coverage */
+.cover{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(32px,5vw,64px);align-items:center}
+.map{width:100%;max-width:100%;aspect-ratio:1;background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:12px}
+.map svg{width:100%;height:100%;display:block}
+.zones{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.zones span{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:600}
+@media (max-width:900px){.cover{grid-template-columns:1fr}.map{max-width:460px}}
+
+/* faq */
+.faq{display:grid;gap:12px;max-width:820px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:0 22px}
+summary{cursor:pointer;list-style:none;padding:20px 0;font-weight:700;font-size:17px;display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:700 22px/1 var(--display);color:var(--cobalt);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--muted);padding-bottom:20px;max-width:65ch}
+
+/* waitlist */
+.join{background:var(--ink);color:var(--bg);border-radius:32px;padding:clamp(28px,5vw,64px);display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,56px);align-items:center}
+.join .eyebrow{color:var(--signal)}
+.join .lede{color:color-mix(in srgb,var(--bg) 70%,var(--ink))}
+form{display:grid;gap:14px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:color-mix(in srgb,var(--bg) 12%,var(--ink));border-radius:14px;padding:4px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{text-align:center;padding:12px;border-radius:11px;font-weight:700;cursor:pointer;color:color-mix(in srgb,var(--bg) 70%,var(--ink))}
+.seg input:checked+label{background:var(--signal);color:var(--signal-ink)}
+.seg input:focus-visible+label{outline:3px solid var(--signal);outline-offset:2px}
+.field{display:grid;gap:6px}
+.field label{font-size:14px;font-weight:600;color:color-mix(in srgb,var(--bg) 75%,var(--ink))}
+.field input,.field select{font:500 16px/1.2 var(--body);padding:14px 16px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--bg) 22%,var(--ink));background:color-mix(in srgb,var(--bg) 6%,var(--ink));color:var(--bg);width:100%}
+.field input::placeholder{color:color-mix(in srgb,var(--bg) 45%,var(--ink))}
+.join .btn{width:100%;margin-top:4px}
+.done{background:var(--signal);color:var(--signal-ink);border-radius:14px;padding:16px;font-weight:700}
+@media (max-width:900px){.join{grid-template-columns:1fr}}
+
+footer{padding-block:48px;color:var(--muted);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:center}
+footer nav{display:flex;gap:18px;flex-wrap:wrap}
+footer a{text-decoration:none}
+footer a:hover{color:var(--ink)}
+</style>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="DART home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2433E8"/><path d="M6 25 27 6l-6 20-5.5-6.5z" fill="#FFD23F"/><path d="M15.5 19.5 27 6 13 17.5z" fill="#fff" opacity=".85"/></svg>
+      DART
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how"><span data-l="en">How it works</span><span data-l="it">Come funziona</span></a>
+      <a href="#features"><span data-l="en">Features</span><span data-l="it">Funzioni</span></a>
+      <a href="#drive"><span data-l="en">Drive with DART</span><span data-l="it">Diventa corriere</span></a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-en" data-set="en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-it" data-set="it" aria-pressed="false">IT</button>
+    </div>
+    <a class="btn btn-primary" href="#join"><span data-l="en">Get early access</span><span data-l="it">Accesso anticipato</span></a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="speed" aria-hidden="true"></div>
+    <div class="wrap">
+      <div>
+        <p class="eyebrow"><span data-l="en">On-demand delivery · Roma</span><span data-l="it">Consegne on-demand · Roma</span></p>
+        <h1 style="margin-top:18px">
+          <span data-l="en">Name your price. <em>Rome delivers.</em></span>
+          <span data-l="it">Fai il tuo prezzo. <em>Roma consegna.</em></span>
+        </h1>
+        <p class="lede">
+          <span data-l="en">Post a delivery and local couriers bid for the job in minutes. Compare price, rating and arrival time, then pick the one you want. Track every stop live and chat with your courier.</span>
+          <span data-l="it">Pubblica una consegna e i corrieri della tua zona fanno un'offerta in pochi minuti. Confronta prezzo, valutazioni e tempi di arrivo, poi scegli tu. Segui ogni tappa in diretta e scrivi al tuo corriere in chat.</span>
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="#join"><span data-l="en">Send something</span><span data-l="it">Invia qualcosa</span></a>
+          <a class="btn btn-ghost" href="#drive"><span data-l="en">Earn as a courier</span><span data-l="it">Guadagna come corriere</span></a>
+        </div>
+        <div class="stores">
+          <span class="store"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8s-1.9-.8-3.1-.8C6.8 7.2 5.2 8.2 4.4 9.700c-1.7 2.900-.4 7.200 1.200 9.600.8 1.100 1.700 2.400 3 2.400 1.200-.1 1.700-.8 3.100-.8s1.800.8 3.100.8c1.300 0 2.100-1.200 2.900-2.300.9-1.300 1.300-2.600 1.300-2.700-.1 0-2.600-1-2.600-4.100zM14.200 5.600c.6-.8 1.100-1.900 1-3-.9 0-2.100.6-2.700 1.400-.6.700-1.100 1.800-1 2.900 1 .1 2.100-.5 2.700-1.300z"/></svg>App Store</span>
+          <span class="store"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 2.8v18.400c0 .4.4.7.8.5l10.300-9.700L4.800 2.300c-.4-.2-.8.100-.8.500zM16.400 13.200l2.900 2.800-12.100 6.900 9.200-9.700zm3.900-2.500-2.700-1.600-3 2.900 3 2.900 2.700-1.600c1-.6 1-2 0-2.600zM7.200 1.100l12.100 6.900-2.900 2.800-9.200-9.700z"/></svg>Google Play</span>
+          <span class="soon"><span data-l="en">Coming 2027</span><span data-l="it">In arrivo 2027</span></span>
+        </div>
+      </div>
+
+      <div class="bidcard" aria-label="Example of couriers bidding on a delivery">
+        <div class="bid-head">
+          <div class="route">
+            <div><i class="dot" aria-hidden="true"></i><span>Via Cola di Rienzo 120, Prati</span></div>
+            <div><i class="dot" aria-hidden="true"></i><span>Viale Trastevere 64</span></div>
+            <div><i class="dot end" aria-hidden="true"></i><span>Piazza Bologna 9</span></div>
+            <span class="tag"><span data-l="en">3 stops · 7.4 km · 4 kg box</span><span data-l="it">3 tappe · 7,4 km · pacco 4 kg</span></span>
+          </div>
+          <div class="budget"><span data-l="en">Your price</span><span data-l="it">Il tuo prezzo</span><b>€14</b></div>
+        </div>
+        <ul class="bids">
+          <li class="bid best">
+            <span class="avatar" style="background:#2433E8">GL</span>
+            <span class="who"><b>Giulia L.</b><small><span data-l="en">Scooter · ★ 4.9 · 6 min away</span><span data-l="it">Scooter · ★ 4,9 · a 6 min</span></small></span>
+            <span class="price">€12.50<small><span data-l="en">best value</span><span data-l="it">migliore</span></small></span>
+          </li>
+          <li class="bid">
+            <span class="avatar" style="background:#11946A">MR</span>
+            <span class="who"><b>Marco R.</b><small><span data-l="en">E-bike · ★ 4.8 · 3 min away</span><span data-l="it">E-bike · ★ 4,8 · a 3 min</span></small></span>
+            <span class="price">€13.00</span>
+          </li>
+          <li class="bid">
+            <span class="avatar" style="background:#C2410C">AF</span>
+            <span class="who"><b>Ahmed F.</b><small><span data-l="en">Car · ★ 5.0 · 11 min away</span><span data-l="it">Auto · ★ 5,0 · a 11 min</span></small></span>
+            <span class="price">€15.00</span>
+          </li>
+        </ul>
+        <a class="btn btn-primary" href="#join"><span data-l="en">Accept Giulia · €12.50</span><span data-l="it">Accetta Giulia · €12,50</span></a>
+        <div class="bid-foot"><span class="pulse"><span data-l="en">Couriers are bidding</span><span data-l="it">Offerte in arrivo</span></span><span data-l="en">Example</span><span data-l="it">Esempio</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow"><span data-l="en">How it works</span><span data-l="it">Come funziona</span></p>
+        <h2><span data-l="en">From post to doorstep in four steps</span><span data-l="it">Dalla richiesta alla porta in quattro passi</span></h2>
+      </div>
+      <ol class="steps">
+        <li><h3><span data-l="en">Post your delivery</span><span data-l="it">Pubblica la consegna</span></h3><p><span data-l="en">Add pickup, one or more drop-offs, a photo of the item and your suggested price. Send now or pick a time.</span><span data-l="it">Inserisci il ritiro, una o più consegne, una foto dell'oggetto e il prezzo che proponi. Subito o a un orario scelto.</span></p></li>
+        <li><h3><span data-l="en">Couriers bid</span><span data-l="it">I corrieri fanno offerte</span></h3><p><span data-l="en">Verified couriers nearby send offers with their price, vehicle and how soon they can collect.</span><span data-l="it">I corrieri verificati vicino a te inviano un'offerta con prezzo, mezzo e tempo di ritiro.</span></p></li>
+        <li><h3><span data-l="en">You choose</span><span data-l="it">Scegli tu</span></h3><p><span data-l="en">Compare offers side by side and accept the one that suits you. You pay only when you accept.</span><span data-l="it">Confronta le offerte e accetta quella che preferisci. Paghi solo quando accetti.</span></p></li>
+        <li><h3><span data-l="en">Track and chat</span><span data-l="it">Segui e chatta</span></h3><p><span data-l="en">Watch your courier on the map, message them in the app, and get a photo at every drop-off.</span><span data-l="it">Segui il corriere sulla mappa, scrivigli nell'app e ricevi una foto a ogni consegna.</span></p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow"><span data-l="en">Features</span><span data-l="it">Funzioni</span></p>
+        <h2><span data-l="en">Built for how Rome actually moves</span><span data-l="it">Pensata per come si muove Roma</span></h2>
+        <p class="lede"><span data-l="en">Scooters through the ZTL, vans to the outskirts, and a shop that needs five parcels gone before lunch.</span><span data-l="it">Scooter nella ZTL, furgoni verso la periferia e il negozio che deve spedire cinque pacchi prima di pranzo.</span></p>
+      </div>
+      <div class="features">
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+          <h3><span data-l="en">Bidding, your way</span><span data-l="it">Offerte, a modo tuo</span></h3>
+          <p><span data-l="en">Set a suggested price and let couriers compete, or accept the first fair offer.</span><span data-l="it">Proponi un prezzo e lascia che i corrieri competano, oppure accetta subito la prima offerta giusta.</span></p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="19" r="2"/><path d="M7 6h10M6 8l5 9M18 8l-5 9"/></svg>
+          <h3><span data-l="en">Multi-stop routes</span><span data-l="it">Più tappe</span><span class="new">New</span></h3>
+          <p><span data-l="en">One pickup, up to 10 drop-offs. Each stop gets its own recipient, notes and proof of delivery.</span><span data-l="it">Un ritiro, fino a 10 consegne. Ogni tappa ha destinatario, note e prova di consegna.</span></p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M12 14v3l2 1"/></svg>
+          <h3><span data-l="en">Scheduled deliveries</span><span data-l="it">Consegne programmate</span><span class="new">New</span></h3>
+          <p><span data-l="en">Book for later today or next week. Couriers bid ahead, and you get a reminder before pickup.</span><span data-l="it">Prenota per più tardi o per la prossima settimana. I corrieri fanno offerte in anticipo e ricevi un promemoria.</span></p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/></svg>
+          <h3><span data-l="en">Live chat</span><span data-l="it">Chat dal vivo</span><span class="new">New</span></h3>
+          <p><span data-l="en">Message your courier with text and photos. Your phone number stays private.</span><span data-l="it">Scrivi al corriere con testo e foto. Il tuo numero resta privato.</span></p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          <h3><span data-l="en">Live tracking</span><span data-l="it">Tracciamento live</span></h3>
+          <p><span data-l="en">See your courier move on the map with an arrival time for each stop. Share a tracking link with the recipient.</span><span data-l="it">Vedi il corriere sulla mappa con l'orario di arrivo a ogni tappa. Condividi il link con il destinatario.</span></p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
+          <h3><span data-l="en">Verified couriers</span><span data-l="it">Corrieri verificati</span></h3>
+          <p><span data-l="en">ID and vehicle checks before a courier's first job, ratings after every delivery, and photo or PIN proof at the door.</span><span data-l="it">Controllo di documento e mezzo prima del primo lavoro, valutazioni dopo ogni consegna e prova con foto o PIN.</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="drive" style="padding-top:0">
+    <div class="wrap drive">
+      <div>
+        <p class="eyebrow"><span data-l="en">For couriers</span><span data-l="it">Per i corrieri</span></p>
+        <h2 style="margin-top:14px"><span data-l="en">Pick the jobs. Set the price.</span><span data-l="it">Scegli i lavori. Fai il prezzo.</span></h2>
+        <ul class="perks">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span><span data-l="en">See jobs near you with distance, weight and stops before you bid.</span><span data-l="it">Vedi i lavori vicini con distanza, peso e tappe prima di fare un'offerta.</span></span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span><span data-l="en">Work when you want. Go online for an hour or a full day.</span><span data-l="it">Lavora quando vuoi. Online per un'ora o per tutto il giorno.</span></span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span><span data-l="en">Weekly payouts to your IBAN, with every job and fee itemised.</span><span data-l="it">Pagamenti settimanali sul tuo IBAN, con ogni lavoro e commissione in dettaglio.</span></span></li>
+        </ul>
+        <a class="btn btn-signal" href="#join" data-role="driver"><span data-l="en">Apply to drive</span><span data-l="it">Candidati come corriere</span></a>
+      </div>
+      <div class="vehicles">
+        <div class="vehicle">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="32" r="7"/><circle cx="37" cy="32" r="7"/><path d="M11 32l8-14h10l8 14M19 18l-3-5h-4M29 18l3-6h5"/></svg>
+          <h3><span data-l="en">Bike</span><span data-l="it">Bici</span></h3><small><span data-l="en">up to 5 kg · centro</span><span data-l="it">fino a 5 kg · centro</span></small>
+        </div>
+        <div class="vehicle">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="34" r="5"/><circle cx="37" cy="34" r="5"/><path d="M16 34h14l4-12h-6M34 22l-2-8h-5M8 26h14l2 8"/></svg>
+          <h3>Scooter</h3><small><span data-l="en">up to 15 kg · ZTL friendly</span><span data-l="it">fino a 15 kg · ok ZTL</span></small>
+        </div>
+        <div class="vehicle">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 30v-6l5-8h20l7 8h4v6"/><circle cx="14" cy="32" r="4"/><circle cx="34" cy="32" r="4"/><path d="M18 32h12M6 30h4M38 30h4"/></svg>
+          <h3><span data-l="en">Car</span><span data-l="it">Auto</span></h3><small><span data-l="en">up to 40 kg</span><span data-l="it">fino a 40 kg</span></small>
+        </div>
+        <div class="vehicle">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 32V12h26v20M30 18h8l6 7v7h-4"/><circle cx="13" cy="34" r="4"/><circle cx="36" cy="34" r="4"/><path d="M17 34h15"/></svg>
+          <h3><span data-l="en">Van</span><span data-l="it">Furgone</span></h3><small><span data-l="en">up to 600 kg · moves</span><span data-l="it">fino a 600 kg · traslochi</span></small>
+        </div>
+        <div class="earn">
+          <div><small><span data-l="en">Example week · scooter, 25 hours</span><span data-l="it">Settimana di esempio · scooter, 25 ore</span></small><b>€486.00</b></div>
+          <span class="ok"><span data-l="en">38 jobs · ★ 4.9</span><span data-l="it">38 lavori · ★ 4,9</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="coverage" style="padding-top:0">
+    <div class="wrap cover">
+      <div class="map" aria-label="Map of the DART launch area inside Rome's ring road">
+        <svg viewBox="0 0 400 400" role="img" aria-hidden="true">
+          <circle cx="200" cy="200" r="168" fill="none" stroke="var(--line)" stroke-width="18"/>
+          <circle cx="200" cy="200" r="168" fill="color-mix(in srgb,var(--cobalt) 7%,transparent)" stroke="var(--cobalt)" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+          <path d="M150 30 C175 95 140 130 168 170 C195 210 150 240 172 280 C190 312 170 345 196 372" fill="none" stroke="var(--cobalt)" stroke-width="9" stroke-linecap="round" opacity=".55"/>
+          <g fill="var(--ink)" font-family="Figtree,system-ui,sans-serif" font-size="13" font-weight="700">
+            <circle cx="140" cy="140" r="5"/><text x="80" y="128">Prati</text>
+            <circle cx="198" cy="190" r="7" fill="var(--signal)" stroke="var(--ink)" stroke-width="2"/><text x="210" y="186">Centro</text>
+            <circle cx="150" cy="232" r="5"/><text x="66" y="236">Trastevere</text>
+            <circle cx="262" cy="150" r="5"/><text x="272" y="146">Bologna</text>
+            <circle cx="268" cy="246" r="5"/><text x="258" y="268" text-anchor="middle">San Giovanni</text>
+            <circle cx="195" cy="318" r="5"/><text x="208" y="322">EUR</text>
+            <circle cx="300" cy="200" r="5"/><text x="310" y="196">Pigneto</text>
+          </g>
+          <text x="200" y="22" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="var(--muted)">G.R.A.</text>
+        </svg>
+      </div>
+      <div>
+        <p class="eyebrow"><span data-l="en">Launch area</span><span data-l="it">Zona di lancio</span></p>
+        <h2 style="margin-top:14px"><span data-l="en">Everywhere inside the Raccordo</span><span data-l="it">Ovunque dentro il Raccordo</span></h2>
+        <p class="lede" style="margin-top:16px"><span data-l="en">We launch across Rome inside the Grande Raccordo Anulare, then add Fiumicino, Ciampino and the Castelli Romani.</span><span data-l="it">Partiamo in tutta Roma dentro il Grande Raccordo Anulare, poi aggiungeremo Fiumicino, Ciampino e i Castelli Romani.</span></p>
+        <div class="zones">
+          <span>Centro Storico</span><span>Prati</span><span>Trastevere</span><span>Testaccio</span><span>Monti</span><span>San Lorenzo</span><span>Pigneto</span><span>Parioli</span><span>Ostiense</span><span>EUR</span><span>Monteverde</span><span>Tuscolano</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">FAQ</p>
+        <h2><span data-l="en">Questions, answered</span><span data-l="it">Domande frequenti</span></h2>
+      </div>
+      <div class="faq">
+        <details><summary><span data-l="en">How is the price decided?</span><span data-l="it">Come si decide il prezzo?</span></summary><p><span data-l="en">You suggest a price when you post. Couriers can accept it or bid their own. You see every offer and choose. The total, including DART's service fee, is shown before you confirm.</span><span data-l="it">Proponi un prezzo quando pubblichi. I corrieri possono accettarlo o fare la loro offerta. Vedi tutte le offerte e scegli tu. Il totale, compresa la commissione di DART, è indicato prima di confermare.</span></p></details>
+        <details><summary><span data-l="en">How do I pay?</span><span data-l="it">Come pago?</span></summary><p><span data-l="en">By card, Apple Pay or Google Pay in the app. Your card is charged only after you accept a bid. Business accounts can pay by monthly invoice.</span><span data-l="it">Con carta, Apple Pay o Google Pay nell'app. L'addebito avviene solo dopo aver accettato un'offerta. Le aziende possono pagare con fattura mensile.</span></p></details>
+        <details><summary><span data-l="en">What can I send?</span><span data-l="it">Cosa posso spedire?</span></summary><p><span data-l="en">Documents, parcels, shop orders, flowers, keys, furniture with a van, and most things you could carry yourself. No cash, weapons, drugs, live animals or anything illegal.</span><span data-l="it">Documenti, pacchi, ordini dei negozi, fiori, chiavi, mobili con il furgone e quasi tutto ciò che porteresti tu. Niente contanti, armi, droghe, animali vivi o oggetti illegali.</span></p></details>
+        <details><summary><span data-l="en">What do I need to become a courier?</span><span data-l="it">Cosa serve per diventare corriere?</span></summary><p><span data-l="en">You must be 18 or older, with a valid ID, the right to work in Italy, a smartphone and a bike, scooter, car or van. Motor vehicles need a licence and insurance. We review applications within 48 hours.</span><span data-l="it">Devi avere almeno 18 anni, un documento valido, il permesso di lavorare in Italia, uno smartphone e una bici, uno scooter, un'auto o un furgone. Per i mezzi a motore servono patente e assicurazione. Valutiamo le candidature entro 48 ore.</span></p></details>
+        <details><summary><span data-l="en">What if something goes wrong?</span><span data-l="it">E se qualcosa va storto?</span></summary><p><span data-l="en">Chat with your courier first. If that doesn't fix it, report the problem from the order screen and our Rome team will reply the same day.</span><span data-l="it">Prima scrivi al corriere. Se non basta, segnala il problema dalla schermata dell'ordine e il nostro team di Roma ti risponde in giornata.</span></p></details>
+      </div>
+    </div>
+  </section>
+
+  <section id="join" style="padding-top:0">
+    <div class="wrap">
+      <div class="join">
+        <div>
+          <p class="eyebrow"><span data-l="en">Early access</span><span data-l="it">Accesso anticipato</span></p>
+          <h2 style="margin-top:14px"><span data-l="en">Be first when DART launches</span><span data-l="it">Sii tra i primi su DART</span></h2>
+          <p class="lede" style="margin-top:16px"><span data-l="en">Join the list for launch credit as a customer, or a priority review if you want to drive.</span><span data-l="it">Iscriviti per avere credito al lancio come cliente, o una valutazione prioritaria se vuoi fare il corriere.</span></p>
+        </div>
+        <form id="waitlist" novalidate>
+          <div class="seg" role="radiogroup" aria-label="I want to">
+            <input type="radio" name="role" id="role-send" value="customer" checked><label for="role-send"><span data-l="en">I want to send</span><span data-l="it">Voglio spedire</span></label>
+            <input type="radio" name="role" id="role-drive" value="driver"><label for="role-drive"><span data-l="en">I want to drive</span><span data-l="it">Voglio guidare</span></label>
+          </div>
+          <div class="field"><label for="wl-name"><span data-l="en">Name</span><span data-l="it">Nome</span></label><input id="wl-name" name="name" autocomplete="name" required placeholder="Giulia Rossi"></div>
+          <div class="field"><label for="wl-email">Email</label><input id="wl-email" name="email" type="email" autocomplete="email" required placeholder="giulia@esempio.it"></div>
+          <div class="field" id="vehicle-field" hidden><label for="wl-vehicle"><span data-l="en">Vehicle</span><span data-l="it">Mezzo</span></label>
+            <select id="wl-vehicle" name="vehicle"><option value="bike">Bike / Bici</option><option value="scooter">Scooter</option><option value="car">Car / Auto</option><option value="van">Van / Furgone</option></select></div>
+          <button class="btn btn-signal" type="submit"><span data-l="en">Join the list</span><span data-l="it">Iscriviti</span></button>
+          <p class="done" id="wl-done" hidden><span data-l="en">Thanks! We'll email you before launch.</span><span data-l="it">Grazie! Ti scriveremo prima del lancio.</span></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 DART · Roma, Italia</span>
+    <nav aria-label="Footer">
+      <a href="#drive"><span data-l="en">Couriers</span><span data-l="it">Corrieri</span></a>
+      <a href="#faq">FAQ</a>
+      <a href="#top"><span data-l="en">Privacy</span><span data-l="it">Privacy</span></a>
+      <a href="#top"><span data-l="en">Terms</span><span data-l="it">Termini</span></a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function setLang(l){
+    root.setAttribute('data-lang',l);root.lang=l;
+    document.querySelectorAll('.lang button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.set===l))});
+    try{localStorage.setItem('dart-lang',l)}catch(e){}
+  }
+  var saved=null;try{saved=localStorage.getItem('dart-lang')}catch(e){}
+  setLang(saved||((navigator.language||'').toLowerCase().indexOf('it')===0?'it':'en'));
+  document.querySelectorAll('.lang button').forEach(function(b){b.addEventListener('click',function(){setLang(b.dataset.set)})});
+
+  var form=document.getElementById('waitlist'),veh=document.getElementById('vehicle-field');
+  function syncRole(){veh.hidden=!document.getElementById('role-drive').checked}
+  form.addEventListener('change',syncRole);
+  document.querySelectorAll('[data-role="driver"]').forEach(function(a){a.addEventListener('click',function(){document.getElementById('role-drive').checked=true;syncRole()})});
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var email=document.getElementById('wl-email'),name=document.getElementById('wl-name');
+    if(!name.value.trim()){name.focus();return}
+    if(!email.checkValidity()||!email.value){email.focus();return}
+    // TODO: send to the backend (Supabase "waitlist" table) once it exists.
+    form.querySelector('button[type="submit"]').hidden=true;
+    document.getElementById('wl-done').hidden=false;
+  });
+})();
+</script>
+<!--BODY-END-->
+</body>
+</html>
