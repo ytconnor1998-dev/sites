@@ -1,0 +1,200 @@
+<title>DART Look Options</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700;800;900&family=VT323&family=Familjen+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: three full-bleed hero directions stacked, each a deliberately different world; a plain label bar names each one. */
+:root{
+  --page:#E7E7E2;--label:#111111;--labelmuted:#55554F;
+  --a-paper:#EFEBE1;--a-ink:#141414;--a-sign:#F4C300;--a-board:#0E0E0C;--a-amber:#FFB000;--a-red:#B3261E;
+  --b-bg:#0A0A0A;--b-fg:#F5F5F0;--b-mut:#8B8B85;--b-yel:#FFD400;--b-line:#262624;
+  --c-map:#E3E8DF;--c-road:#FFFFFF;--c-river:#B9CBD9;--c-ink:#151A16;--c-route:#E0301E;--c-mut:#5D665F;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#1A1A18;--label:#EDEDE8;--labelmuted:#A3A39B;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#1A1A18;--label:#EDEDE8;--labelmuted:#A3A39B;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--label);font:400 16px/1.5 "Archivo",system-ui,sans-serif}
+.label{max-width:1240px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:36px 16px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+.label b{font:900 30px/1 "Archivo",sans-serif;letter-spacing:-.02em}
+.label span{color:var(--labelmuted);max-width:70ch}
+.intro{max-width:1240px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:40px 0}
+.intro h1{font:900 clamp(28px,4vw,44px)/1 "Archivo",sans-serif;letter-spacing:-.03em;margin:0 0 10px}
+.intro p{margin:0;color:var(--labelmuted);max-width:68ch}
+.frame{max-width:1240px;margin:0 auto;padding-inline:clamp(16px,4vw,40px)}
+.frame>div{overflow:hidden}
+
+/* ============ A: Fermata (Roman bus-stop + departure board) ============ */
+.A{background:var(--a-paper);color:var(--a-ink);font-family:"Archivo",sans-serif}
+.A nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px clamp(16px,3vw,36px);border-bottom:3px solid var(--a-ink)}
+.A .mark{font:400 34px/1 "Anton",sans-serif;letter-spacing:.02em}
+.A .mark i{font-style:normal;color:var(--a-red)}
+.A nav a{color:var(--a-ink);font-weight:700;text-decoration:none;font-size:15px}
+.A nav .links{display:flex;gap:22px}
+.A-hero{display:grid;grid-template-columns:1.15fr .85fr;border-bottom:3px solid var(--a-ink)}
+.A-left{padding:clamp(24px,4vw,48px) clamp(16px,3vw,36px);display:grid;gap:22px;align-content:start;border-right:3px solid var(--a-ink)}
+.A h2{font:400 clamp(64px,10.5vw,148px)/.86 "Anton",sans-serif;text-transform:uppercase;margin:0;letter-spacing:-.005em}
+.A h2 span{display:block;color:var(--a-red)}
+.A p{font-size:19px;line-height:1.45;max-width:46ch;margin:0}
+.A .cta{display:flex;flex-wrap:wrap;gap:0}
+.A .cta a{font:800 17px/1 "Archivo",sans-serif;padding:18px 22px;text-decoration:none;color:var(--a-ink);border:3px solid var(--a-ink)}
+.A .cta a:first-child{background:var(--a-ink);color:var(--a-paper)}
+.A .cta a+a{border-left:0}
+.A-right{background:var(--a-sign);padding:clamp(20px,3vw,32px);display:grid;gap:16px;align-content:start}
+.A .stop{display:flex;align-items:center;gap:12px;font:800 15px/1.1 "Archivo",sans-serif;text-transform:uppercase}
+.A .stop b{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--a-ink);color:var(--a-sign);font:400 22px/1 "Anton",sans-serif}
+.board{background:var(--a-board);color:var(--a-amber);font-family:"VT323",ui-monospace,monospace;padding:16px 18px;border:6px solid var(--a-ink)}
+.board .h{display:grid;grid-template-columns:1fr auto auto;gap:14px;font-size:17px;opacity:.6;border-bottom:1px dashed rgba(255,176,0,.35);padding-bottom:6px;margin-bottom:6px}
+.board .r{display:grid;grid-template-columns:1fr auto auto;gap:14px;font-size:26px;line-height:1.25}
+.board .r span:nth-child(2),.board .r span:nth-child(3),.board .h span:nth-child(2),.board .h span:nth-child(3){text-align:right}
+.board .r.blink span:first-child::after{content:" ◂";animation:bl 1s steps(1) infinite}
+@keyframes bl{50%{opacity:0}}
+.A .route{font:700 14px/1.4 "Archivo",sans-serif;text-transform:uppercase}
+.A-strip{display:grid;grid-template-columns:repeat(3,1fr)}
+.A-strip div{padding:18px clamp(16px,3vw,36px);font-weight:700;font-size:17px}
+.A-strip div+div{border-left:3px solid var(--a-ink)}
+.A-strip small{display:block;font:400 30px/1 "Anton",sans-serif;margin-bottom:6px}
+@media (max-width:820px){.A-hero{grid-template-columns:1fr}.A-left{border-right:0;border-bottom:3px solid var(--a-ink)}.A nav .links{display:none}.A-strip{grid-template-columns:1fr}.A-strip div+div{border-left:0;border-top:3px solid var(--a-ink)}}
+
+/* ============ B: Nero (app-company confidence) ============ */
+.B{background:var(--b-bg);color:var(--b-fg);font-family:"Archivo",sans-serif}
+.B nav{display:flex;justify-content:space-between;align-items:center;padding:22px clamp(16px,3vw,40px)}
+.B .mark{font:900 26px/1 "Archivo",sans-serif;letter-spacing:-.04em}
+.B .mark::after{content:"";display:inline-block;width:9px;height:9px;background:var(--b-yel);margin-left:3px}
+.B nav div{display:flex;gap:26px;font-size:15px;color:var(--b-mut)}
+.B-hero{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;padding:clamp(28px,5vw,64px) clamp(16px,3vw,40px) 0;align-items:end}
+.B h2{font:900 clamp(46px,7.4vw,104px)/.92 "Archivo",sans-serif;letter-spacing:-.055em;margin:0}
+.B h2 em{font-style:normal;color:var(--b-mut)}
+.B p{color:var(--b-mut);font-size:19px;max-width:40ch;margin:26px 0 0}
+.B .get{display:flex;flex-wrap:wrap;gap:12px;margin:32px 0 clamp(28px,5vw,64px)}
+.B .get a{background:var(--b-yel);color:#0A0A0A;font:800 17px/1 "Archivo",sans-serif;padding:18px 26px;border-radius:999px;text-decoration:none}
+.B .get a+a{background:transparent;color:var(--b-fg);border:1px solid var(--b-line)}
+.B .ph{justify-self:center;width:min(300px,100%);aspect-ratio:300/560;background:#161615;border-radius:40px 40px 0 0;border:1px solid var(--b-line);border-bottom:0;padding:22px 18px 0;display:grid;align-content:start;gap:12px}
+.B .ph .t{font:800 13px/1 "Archivo";color:var(--b-mut);display:flex;justify-content:space-between}
+.B .ph h3{margin:6px 0 2px;font:900 26px/1 "Archivo";letter-spacing:-.03em}
+.B .bidrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:14px 0;border-top:1px solid var(--b-line)}
+.B .bidrow b{font-weight:800}
+.B .bidrow span{font:900 22px/1 "Archivo";letter-spacing:-.03em;grid-row:span 2;align-self:center}
+.B .bidrow small{color:var(--b-mut)}
+.B .bidrow.top span{color:var(--b-yel)}
+.B .acc{background:var(--b-yel);color:#0A0A0A;border-radius:14px;text-align:center;padding:15px;font-weight:800;margin-top:4px}
+.B-row{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--b-line)}
+.B-row div{padding:26px clamp(16px,3vw,40px);color:var(--b-mut)}
+.B-row div+div{border-left:1px solid var(--b-line)}
+.B-row b{display:block;color:var(--b-fg);font-size:18px;margin-bottom:4px}
+@media (max-width:820px){.B-hero{grid-template-columns:1fr}.B nav div{display:none}.B-row{grid-template-columns:1fr}.B-row div+div{border-left:0;border-top:1px solid var(--b-line)}}
+
+/* ============ C: Percorso (the route on the map is the hero) ============ */
+.C{background:var(--c-map);color:var(--c-ink);font-family:"Familjen Grotesk",system-ui,sans-serif;position:relative}
+.C canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.C nav{position:relative;display:flex;justify-content:space-between;align-items:center;padding:20px clamp(16px,3vw,40px)}
+.C .mark{font:700 24px/1 "Familjen Grotesk";letter-spacing:-.02em;background:var(--c-ink);color:var(--c-map);padding:8px 12px}
+.C nav span{font-weight:600;background:var(--c-road);padding:8px 12px}
+.C-hero{position:relative;min-height:600px;padding:clamp(20px,4vw,48px) clamp(16px,3vw,40px);display:grid;align-content:space-between;gap:40px}
+.C h2{font:700 clamp(44px,7vw,96px)/.95 "Familjen Grotesk";letter-spacing:-.045em;margin:0;max-width:11ch}
+.C h2 mark{background:none;color:var(--c-route)}
+.C .card{background:var(--c-road);padding:20px;max-width:380px;display:grid;gap:12px;box-shadow:6px 6px 0 var(--c-ink);border:2px solid var(--c-ink)}
+.C .card p{margin:0;font-size:17px}
+.C .card a{background:var(--c-route);color:#fff;text-decoration:none;font-weight:700;padding:14px;text-align:center}
+.C .legend{display:flex;flex-wrap:wrap;gap:8px;font:600 14px/1 "Familjen Grotesk"}
+.C .legend span{background:var(--c-road);border:2px solid var(--c-ink);padding:8px 10px}
+</style>
+
+<div class="intro">
+  <h1>Three looks for DART</h1>
+  <p>Each one shows only the top of the homepage. Pick the one you like, or mix parts of them, and I'll build the full site and app screens in that style.</p>
+</div>
+
+<!-- ===================== A ===================== -->
+<div class="label"><b>A · Fermata</b><span>Based on Rome's bus stops and station boards. The live bids show like an arrival board. Bold, local and hard to mistake for anything else.</span></div>
+<div class="frame"><div class="A">
+  <nav><span class="mark">DART<i>.</i></span><div class="links"><a href="#a">Spedisci</a><a href="#a">Guida con noi</a><a href="#a">Aziende</a></div><a href="#a">IT / EN</a></nav>
+  <div class="A-hero">
+    <div class="A-left">
+      <h2>Consegne<span>al tuo prezzo</span></h2>
+      <p>Post a delivery anywhere in Rome. Couriers bid within minutes and you choose who takes it, at a price you agree.</p>
+      <div class="cta"><a href="#a">Send something</a><a href="#a">Drive with DART</a></div>
+    </div>
+    <div class="A-right">
+      <div class="stop"><b>D</b><span>Prati → Trastevere → Bologna</span></div>
+      <div class="board" aria-label="Example live bids">
+        <div class="h"><span>CORRIERE</span><span>ARRIVO</span><span>PREZZO</span></div>
+        <div class="r blink"><span>GIULIA · SCOOTER</span><span>6'</span><span>€12,50</span></div>
+        <div class="r"><span>MARCO · E-BIKE</span><span>3'</span><span>€13,00</span></div>
+        <div class="r"><span>AHMED · AUTO</span><span>11'</span><span>€15,00</span></div>
+        <div class="r"><span>ELENA · SCOOTER</span><span>9'</span><span>€14,00</span></div>
+      </div>
+      <div class="route">3 tappe · 7,4 km · offerte in diretta</div>
+    </div>
+  </div>
+  <div class="A-strip"><div><small>1</small>Post the job and your price</div><div><small>2</small>Couriers bid</div><div><small>3</small>Pick one, track it live</div></div>
+</div></div>
+
+<!-- ===================== B ===================== -->
+<div class="label"><b>B · Nero</b><span>Black, white and one yellow, with the app itself as the main picture. Feels like a confident tech company, like Bolt or Uber. Simple, with no decoration.</span></div>
+<div class="frame"><div class="B">
+  <nav><span class="mark">dart</span><div><span>Send</span><span>Drive</span><span>Business</span><span>IT</span></div></nav>
+  <div class="B-hero">
+    <div>
+      <h2>Send it across Rome. <em>Couriers bid. You choose.</em></h2>
+      <p>Parcels, keys, flowers, furniture. Post it, compare offers from nearby couriers, and pay only when you accept one.</p>
+      <div class="get"><a href="#b">Get the app</a><a href="#b">Become a courier</a></div>
+    </div>
+    <div class="ph" aria-label="App screen example">
+      <div class="t"><span>9:42</span><span>4 offers</span></div>
+      <h3>Choose a courier</h3>
+      <div class="bidrow top"><b>Giulia</b><span>€12.50</span><small>Scooter · 6 min · ★ 4.9</small></div>
+      <div class="bidrow"><b>Marco</b><span>€13.00</span><small>E-bike · 3 min · ★ 4.8</small></div>
+      <div class="bidrow"><b>Ahmed</b><span>€15.00</span><small>Car · 11 min · ★ 5.0</small></div>
+      <div class="acc">Accept Giulia</div>
+    </div>
+  </div>
+  <div class="B-row"><div><b>Up to 10 stops</b>One pickup, many drop-offs.</div><div><b>Book ahead</b>Schedule for later or next week.</div><div><b>Chat in the app</b>Your number stays private.</div></div>
+</div></div>
+
+<!-- ===================== C ===================== -->
+<div class="label"><b>C · Percorso</b><span>A drawn street map of Rome fills the page, and the delivery route in red is the main picture. Sharp boxes and flat shadows, like a printed city map.</span></div>
+<div class="frame"><div class="C" id="cwrap">
+  <canvas id="cmap" aria-hidden="true"></canvas>
+  <nav><span class="mark">DART</span><span>Roma · IT / EN</span></nav>
+  <div class="C-hero">
+    <h2>Every street inside the <mark>Raccordo</mark>.</h2>
+    <div class="card">
+      <p>Tell us where. Local couriers bid for the route and you pick the price. Track every stop on the map.</p>
+      <a href="#c">Send something</a>
+    </div>
+    <div class="legend"><span>● Pickup · Prati</span><span>1 · Trastevere</span><span>2 · Piazza Bologna</span><span>Giulia · 8 min</span></div>
+  </div>
+</div></div>
+<div style="height:60px"></div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cmap'),wrap=document.getElementById('cwrap');
+  function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+  function draw(){
+    var r=wrap.getBoundingClientRect(),dpr=window.devicePixelRatio||1,w=r.width,h=r.height;
+    cv.width=w*dpr;cv.height=h*dpr;var x=cv.getContext('2d');x.scale(dpr,dpr);
+    x.fillStyle=cssv('--c-map');x.fillRect(0,0,w,h);
+    var seed=7;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647}
+    // blocks of streets in a slightly rotated grid, like Prati
+    x.strokeStyle=cssv('--c-road');x.lineCap='round';
+    for(var k=0;k<3;k++){
+      var ox=rnd()*w,oy=rnd()*h,ang=(rnd()-.5)*.9,step=26+rnd()*20;
+      x.save();x.translate(ox,oy);x.rotate(ang);
+      for(var i=-30;i<30;i++){x.lineWidth=(i%5===0)?7:3;x.beginPath();x.moveTo(i*step,-h*1.5);x.lineTo(i*step+rnd()*20,h*1.5);x.stroke();
+        x.beginPath();x.moveTo(-w*1.5,i*step*1.2);x.lineTo(w*1.5,i*step*1.2+rnd()*20);x.stroke();}
+      x.restore();
+    }
+    // the Tiber
+    x.strokeStyle=cssv('--c-river');x.lineWidth=Math.max(26,w*.03);x.beginPath();
+    x.moveTo(w*.42,-20);x.bezierCurveTo(w*.62,h*.25,w*.38,h*.4,w*.55,h*.6);x.bezierCurveTo(w*.66,h*.75,w*.5,h*.9,w*.6,h+20);x.stroke();
+    // the route
+    var pts=[[w*.58,h*.22],[w*.66,h*.36],[w*.62,h*.5],[w*.78,h*.6],[w*.86,h*.42]];
+    x.strokeStyle=cssv('--c-route');x.lineWidth=7;x.lineJoin='round';x.beginPath();
+    pts.forEach(function(p,i){i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])});x.stroke();
+    [[0,'●'],[2,'1'],[4,'2']].forEach(function(s){var p=pts[s[0]];
+      x.fillStyle=cssv('--c-ink');x.beginPath();x.arc(p[0],p[1],15,0,7);x.fill();
+      x.fillStyle='#fff';x.font='700 15px "Familjen Grotesk",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(s[1],p[0],p[1]+1)});
+    var c=pts[3];x.fillStyle=cssv('--c-route');x.beginPath();x.arc(c[0],c[1],11,0,7);x.fill();x.strokeStyle='#fff';x.lineWidth=3;x.stroke();
+  }
+  draw();addEventListener('resize',draw);document.fonts&&document.fonts.ready.then(draw);
+})();
+</script>
