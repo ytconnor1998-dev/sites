@@ -1,0 +1,386 @@
+<title>DART App Screens</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a contact sheet of phones — page chrome is quiet and theme-aware; each phone keeps its app's own fixed palette (customer = light, courier = night). */
+:root{
+  --bg:#F4F5F9;--fg:#10142B;--muted:#5B6180;--line:#DCDFEA;--accent:#2433E8;--chip:#FFFFFF;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0A0D1C;--fg:#EEF0FA;--muted:#A0A6C6;--line:#262C4D;--accent:#8B95FF;--chip:#151A33;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0A0D1C;--fg:#EEF0FA;--muted:#A0A6C6;--line:#262C4D;--accent:#8B95FF;--chip:#151A33;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+.page{max-width:1320px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:40px 72px}
+header.top{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:end;justify-content:space-between;margin-bottom:12px}
+h1{font:800 clamp(28px,4vw,44px)/1.05 var(--display);letter-spacing:-.02em;margin:0;font-style:italic}
+h1 small{display:block;font:600 13px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-style:normal;margin-bottom:12px}
+.intro{color:var(--muted);max-width:62ch;margin:0}
+.tabs{display:flex;gap:6px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:4px;margin-top:28px;width:max-content;max-width:100%}
+.tabs button{border:0;background:none;color:var(--muted);font:700 14px/1 var(--body);padding:10px 16px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--fg);color:var(--bg)}
+.tabs button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h2{font:700 20px/1.2 var(--display);margin:44px 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 24px}
+.grid{display:flex;flex-wrap:wrap;justify-content:center;gap:40px 28px}
+figure{margin:0;display:grid;gap:14px;justify-items:center}
+figcaption{text-align:center;max-width:290px}
+figcaption b{display:block;font-weight:800}
+figcaption span{color:var(--muted);font-size:14px}
+
+/* ---------- phone shell ---------- */
+.phone{width:296px;height:620px;border-radius:46px;padding:10px;background:#0B0D17;box-shadow:0 30px 60px -28px rgba(10,14,40,.55),inset 0 0 0 2px #2A2E45;flex:none}
+.screen{position:relative;width:100%;height:100%;border-radius:37px;overflow:hidden;display:flex;flex-direction:column;font-family:var(--body)}
+.status{height:44px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 26px 0 30px;font:700 13px/1 var(--body)}
+.status::after{content:"";position:absolute;left:50%;top:10px;width:90px;height:26px;border-radius:20px;background:#0B0D17;transform:translateX(-50%)}
+.status i{font-style:normal;letter-spacing:1px;font-size:11px}
+.body{position:relative;flex:1;overflow:hidden;padding:4px 16px 0;display:flex;flex-direction:column;gap:12px;min-height:0}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(4,1fr);padding:10px 8px 22px;border-top:1px solid var(--p-line)}
+.tabbar span{display:grid;justify-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--p-muted)}
+.tabbar span.on{color:var(--p-accent)}
+.tabbar svg{width:20px;height:20px}
+
+/* customer app palette (fixed light) */
+.c{--p-bg:#F6F7FB;--p-card:#FFFFFF;--p-ink:#10142B;--p-muted:#6A7090;--p-line:#E3E6F0;--p-accent:#2433E8;--p-accent-ink:#FFFFFF;--p-signal:#FFD23F;--p-good:#11946A;--p-soft:#ECEEFE;background:var(--p-bg);color:var(--p-ink)}
+/* courier app palette (fixed dark) */
+.d{--p-bg:#0D1024;--p-card:#171C38;--p-ink:#EEF0FA;--p-muted:#9298BC;--p-line:#262C4D;--p-accent:#FFD23F;--p-accent-ink:#10142B;--p-signal:#FFD23F;--p-good:#3DD6A0;--p-soft:#20264A;background:var(--p-bg);color:var(--p-ink)}
+
+/* shared app parts */
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.between{justify-content:space-between}
+.t-xl{font:800 22px/1.1 var(--display);letter-spacing:-.02em}
+.t-l{font:700 16px/1.2 var(--display);letter-spacing:-.01em}
+.t-s{font-size:12px;color:var(--p-muted)}
+.t-m{font:500 11px/1.3 var(--mono);color:var(--p-muted)}
+.card{background:var(--p-card);border:1px solid var(--p-line);border-radius:18px;padding:12px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:14px;padding:13px;font:800 14px/1 var(--body);background:var(--p-accent);color:var(--p-accent-ink)}
+.btn.ghost{background:transparent;border:1.5px solid var(--p-line);color:var(--p-ink)}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;font:700 11px/1 var(--body);background:var(--p-soft);color:var(--p-ink);white-space:nowrap}
+.pill.on{background:var(--p-accent);color:var(--p-accent-ink)}
+.pill.good{background:color-mix(in srgb,var(--p-good) 16%,transparent);color:var(--p-good)}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 12px/1 var(--display);flex:none}
+.ico{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--p-soft);flex:none}
+.ico svg{width:18px;height:18px}
+.stops{display:grid;gap:0;position:relative}
+.stop{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:8px 0;position:relative;min-width:0}
+.stop+.stop{border-top:1px dashed var(--p-line)}
+.stop .k{width:12px;height:12px;border-radius:50%;background:var(--p-accent);justify-self:center}
+.stop .k.drop{background:var(--p-card);border:3px solid var(--p-accent)}
+.stop .k.done{background:var(--p-good)}
+.stop b{font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stop div{min-width:0}
+.map{position:relative;border-radius:20px;overflow:hidden;flex:none}
+.map svg{display:block;width:100%;height:100%}
+.sheet{background:var(--p-card);border-radius:24px 24px 0 0;padding:14px 16px 0;margin:0 -16px;flex:1;display:flex;flex-direction:column;gap:12px;box-shadow:0 -10px 30px -12px rgba(0,0,0,.25)}
+.grab{width:40px;height:4px;border-radius:4px;background:var(--p-line);margin:0 auto}
+.bubble{max-width:78%;padding:9px 12px;border-radius:16px;font-size:13px;line-height:1.35}
+.bubble.me{align-self:flex-end;background:var(--p-accent);color:var(--p-accent-ink);border-bottom-right-radius:5px}
+.bubble.them{align-self:flex-start;background:var(--p-card);border:1px solid var(--p-line);border-bottom-left-radius:5px}
+.time{align-self:center;font:500 10px/1 var(--mono);color:var(--p-muted)}
+.photo{width:150px;height:96px;border-radius:12px;background:linear-gradient(135deg,#D9A066,#8C5A2B);position:relative;overflow:hidden}
+.photo::after{content:"";position:absolute;inset:22px 34px;border-radius:6px;background:#E9C79C;box-shadow:inset 0 -8px 0 #CFA472}
+.field{display:flex;align-items:center;gap:10px;background:var(--p-card);border:1px solid var(--p-line);border-radius:14px;padding:11px 12px;font-size:13px}
+.field .ph{color:var(--p-muted)}
+.toggle{width:44px;height:26px;border-radius:999px;background:var(--p-good);position:relative;flex:none}
+.toggle::after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff}
+.toggle.off{background:var(--p-line)}.toggle.off::after{right:auto;left:3px}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:120px}
+.bars div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
+.bars i{display:block;flex:none;width:100%;border-radius:7px 7px 3px 3px;background:var(--p-soft)}
+.bars div.on i{background:var(--p-accent)}
+.bars small{font:500 10px/1 var(--mono);color:var(--p-muted)}
+.num{font-variant-numeric:tabular-nums}
+.price{font:800 17px/1 var(--display);font-variant-numeric:tabular-nums}
+.stepper{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px}
+.stepper span{height:44px;border-radius:14px;display:grid;place-items:center;font:700 22px/1 var(--display);background:var(--p-soft)}
+.stepper b{text-align:center;font:800 34px/1 var(--display);letter-spacing:-.02em}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.keypad span{padding:8px;text-align:center;border-radius:10px;background:var(--p-soft);font:700 15px/1 var(--display)}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div>
+      <h1><small>DART · App mockups</small>Two apps, one city</h1>
+    </div>
+    <p class="intro">First-pass screens for the DART customer app and courier app (iOS and Android). The prices, names and addresses in Rome are examples, and the maps are placeholders for Google Maps.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Which app">
+    <button type="button" role="tab" id="tab-all" aria-selected="true" data-show="all">Both apps</button>
+    <button type="button" role="tab" id="tab-c" aria-selected="false" data-show="cust">Customer</button>
+    <button type="button" role="tab" id="tab-d" aria-selected="false" data-show="driver">Courier</button>
+  </div>
+
+  <!-- =================== CUSTOMER =================== -->
+  <section id="cust" data-app="cust">
+    <h2>Customer app</h2>
+    <p class="sub">Post a delivery, compare bids, track it and chat. Light theme, cobalt accent.</p>
+    <div class="grid">
+
+      <!-- C1 Home -->
+      <figure>
+        <div class="phone"><div class="screen c">
+          <div class="status"><span>9:41</span><i>●●● ▮</i></div>
+          <div class="body">
+            <div class="row between"><div><div class="t-s">Buongiorno, Sofia</div><div class="t-xl">Send something</div></div><span class="av" style="background:#C2410C">SR</span></div>
+            <div class="card" style="display:grid;gap:10px">
+              <div class="field"><span class="k" style="width:10px;height:10px;border-radius:50%;background:var(--p-accent)"></span><span>Via Cola di Rienzo 120</span></div>
+              <div class="field"><span style="width:10px;height:10px;border-radius:50%;border:3px solid var(--p-accent)"></span><span class="ph">Where to?</span></div>
+              <div class="row" style="gap:8px"><div class="btn" style="flex:1">Send now</div><div class="btn ghost" style="flex:1">Schedule</div></div>
+            </div>
+            <div class="row between"><b style="font-size:14px">Active</b><span class="t-s">See all</span></div>
+            <div class="card row" style="gap:12px">
+              <span class="ico" style="background:var(--p-signal)"><svg viewBox="0 0 24 24" fill="none" stroke="#10142B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8"/></svg></span>
+              <div style="flex:1;min-width:0"><b style="font-size:13px">On the way · stop 2 of 3</b><div class="t-s">Giulia · arrives 10:12</div></div>
+              <span class="pill good">Live</span>
+            </div>
+            <div class="card row" style="gap:12px">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 7h7v7M3 17l6-6 4 4 8-8"/></svg></span>
+              <div style="flex:1;min-width:0"><b style="font-size:13px">4 bids on your flowers</b><div class="t-s">Tomorrow 18:00 · from €7.00</div></div>
+              <span class="pill on">4</span>
+            </div>
+            <div class="row" style="gap:8px;flex-wrap:wrap"><span class="pill">Documents</span><span class="pill">Keys</span><span class="pill">Parcel</span></div>
+          </div>
+          <div class="tabbar"><span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9H3z"/></svg>Home</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Orders</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>Chats</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Account</span></div>
+        </div></div>
+        <figcaption><b>Home</b><span>Start a delivery, see live orders and new bids at a glance.</span></figcaption>
+      </figure>
+
+      <!-- C2 New delivery multi-stop -->
+      <figure>
+        <div class="phone"><div class="screen c">
+          <div class="status"><span>9:41</span><i>●●● ▮</i></div>
+          <div class="body">
+            <div class="row between"><span class="t-l">New delivery</span><span class="t-s">Step 1 of 2</span></div>
+            <div class="card stops">
+              <div class="stop"><i class="k"></i><div><b>Via Cola di Rienzo 120</b><span class="t-m">PICKUP · Sofia · now</span></div><span class="t-s">⋮</span></div>
+              <div class="stop"><i class="k drop"></i><div><b>Viale Trastevere 64</b><span class="t-m">STOP 1 · Luca B.</span></div><span class="t-s">⋮</span></div>
+              <div class="stop"><i class="k drop"></i><div><b>Piazza Bologna 9</b><span class="t-m">STOP 2 · Bar Sport</span></div><span class="t-s">⋮</span></div>
+              <div class="stop" style="color:var(--p-accent)"><span style="justify-self:center;font-weight:800">+</span><b style="color:var(--p-accent)">Add a stop</b><span class="t-m">max 10</span></div>
+            </div>
+            <div><div class="t-s" style="margin-bottom:6px">Size</div><div class="row" style="gap:6px"><span class="pill">S · 2kg</span><span class="pill on">M · 5kg</span><span class="pill">L · 15kg</span><span class="pill">Van</span></div></div>
+            <div class="card row between"><div><b style="font-size:13px">When</b><div class="t-s">Tomorrow, Tue 13 Oct</div></div><span class="pill on">18:00 – 18:30</span></div>
+            <div class="card row between"><div><b style="font-size:13px">Your price</b><div class="t-m">SUGGESTED €12–16</div></div><span class="price">€14.00</span></div>
+            <div class="btn" style="margin-top:auto;margin-bottom:22px">Post and get bids</div>
+          </div>
+        </div></div>
+        <figcaption><b>New delivery</b><span>Multi-stop route, size, a scheduled time slot and your suggested price.</span></figcaption>
+      </figure>
+
+      <!-- C3 Bids -->
+      <figure>
+        <div class="phone"><div class="screen c">
+          <div class="status"><span>9:42</span><i>●●● ▮</i></div>
+          <div class="body">
+            <div class="row between"><span class="t-l">5 bids</span><span class="pill good">● Live</span></div>
+            <div class="row" style="gap:6px"><span class="pill on">Best value</span><span class="pill">Fastest</span><span class="pill">Top rated</span></div>
+            <div class="card" style="border-color:var(--p-accent);background:var(--p-soft);display:grid;gap:10px">
+              <div class="row"><span class="av" style="background:#2433E8">GL</span><div style="flex:1;min-width:0"><b style="font-size:14px">Giulia L.</b><div class="t-s">★ 4.9 · 312 trips · Scooter</div></div><span class="price">€12.50</span></div>
+              <div class="row" style="gap:6px"><span class="pill" style="background:#fff">Pickup in 6 min</span><span class="pill" style="background:#fff">Done by 10:25</span></div>
+              <div class="btn">Accept · €12.50</div>
+            </div>
+            <div class="card row"><span class="av" style="background:#11946A">MR</span><div style="flex:1;min-width:0"><b style="font-size:14px">Marco R.</b><div class="t-s">★ 4.8 · E-bike · 3 min</div></div><span class="price">€13.00</span></div>
+            <div class="card row"><span class="av" style="background:#C2410C">AF</span><div style="flex:1;min-width:0"><b style="font-size:14px">Ahmed F.</b><div class="t-s">★ 5.0 · Car · 11 min</div></div><span class="price">€15.00</span></div>
+            <div class="card row"><span class="av" style="background:#7C3AED">EB</span><div style="flex:1;min-width:0"><b style="font-size:14px">Elena B.</b><div class="t-s">★ 4.7 · Scooter · 9 min</div></div><span class="price">€14.00</span></div>
+          </div>
+        </div></div>
+        <figcaption><b>Compare bids</b><span>Sort by price, speed or rating. Payment is taken only when you accept.</span></figcaption>
+      </figure>
+
+      <!-- C4 Tracking -->
+      <figure>
+        <div class="phone"><div class="screen c">
+          <div class="map" style="position:absolute;inset:0 0 auto 0;height:340px;border-radius:0">
+            <svg viewBox="0 0 276 340" preserveAspectRatio="xMidYMid slice">
+              <rect width="276" height="340" fill="#E8EBF3"/>
+              <g stroke="#FFFFFF" stroke-width="7" fill="none" stroke-linecap="round"><path d="M-10 90 L290 120"/><path d="M-10 210 L290 180"/><path d="M60 -10 L90 350"/><path d="M200 -10 L180 350"/><path d="M-10 290 L290 260"/></g>
+              <g stroke="#F6F7FB" stroke-width="3" fill="none"><path d="M-10 150 L290 150"/><path d="M130 -10 L140 350"/><path d="M240 -10 L230 350"/></g>
+              <path d="M30 -10 C70 80 40 130 95 175 C140 212 110 260 150 350" fill="none" stroke="#A9C4F5" stroke-width="16" stroke-linecap="round"/>
+              <path d="M70 70 L140 140 L190 210" fill="none" stroke="#2433E8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M190 210 L230 265" fill="none" stroke="#2433E8" stroke-width="5" stroke-dasharray="2 9" stroke-linecap="round"/>
+              <circle cx="70" cy="70" r="7" fill="#11946A" stroke="#fff" stroke-width="3"/>
+              <circle cx="140" cy="140" r="7" fill="#11946A" stroke="#fff" stroke-width="3"/>
+              <circle cx="230" cy="265" r="8" fill="#fff" stroke="#2433E8" stroke-width="4"/>
+              <g transform="translate(176 192)"><circle r="20" fill="#2433E8" opacity=".18"/><circle r="12" fill="#2433E8" stroke="#fff" stroke-width="3"/><path d="M-4 3 L5 -5 L2 5 L0 1z" fill="#FFD23F"/></g>
+            </svg>
+          </div>
+          <div class="status" style="position:relative;z-index:1"><span>10:04</span><i>●●● ▮</i></div>
+          <div class="body" style="padding-top:196px">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="row between"><div><div class="t-m">ARRIVING AT STOP 2</div><div class="t-xl num">8 min</div></div><span class="pill good">On time</span></div>
+              <div class="row"><span class="av" style="background:#2433E8">GL</span><div style="flex:1;min-width:0"><b style="font-size:14px">Giulia L.</b><div class="t-s">Scooter · AB 123 CD</div></div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></span></div>
+              <div class="stops">
+                <div class="stop"><i class="k done"></i><div><b>Cola di Rienzo 120</b><span class="t-m">PICKED UP 09:51</span></div><span class="t-s">✓</span></div>
+                <div class="stop"><i class="k done"></i><div><b>Viale Trastevere 64</b><span class="t-m">DELIVERED 10:02 · PHOTO</span></div><span class="t-s">✓</span></div>
+                <div class="stop"><i class="k drop"></i><div><b>Piazza Bologna 9</b><span class="t-m">ETA 10:12</span></div><span class="t-s"></span></div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption><b>Live tracking</b><span>The courier on the map, an arrival time per stop, and a photo at each drop-off.</span></figcaption>
+      </figure>
+
+      <!-- C5 Chat -->
+      <figure>
+        <div class="phone"><div class="screen c">
+          <div class="status"><span>10:05</span><i>●●● ▮</i></div>
+          <div class="body" style="padding-bottom:0">
+            <div class="row" style="padding-bottom:10px;border-bottom:1px solid var(--p-line);margin:0 -16px;padding-inline:16px"><span class="t-s" style="font-size:18px">‹</span><span class="av" style="background:#2433E8">GL</span><div style="flex:1;min-width:0"><b style="font-size:14px">Giulia L.</b><div class="t-s">Order #DR-4821 · stop 2 of 3</div></div></div>
+            <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-height:0">
+              <span class="time">10:02</span>
+              <div class="bubble them">Delivered to Luca at Viale Trastevere 👍 Photo below</div>
+              <div class="photo" style="align-self:flex-start"></div>
+              <div class="bubble me">Grazie! At Piazza Bologna it's the bar on the corner, ask for Paolo.</div>
+              <div class="bubble them">Perfetto, 8 minutes away</div>
+              <span class="time">Translated from Italian · Show original</span>
+            </div>
+            <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">I'm outside</span><span class="pill">Call me</span><span class="pill">Leave with concierge</span></div>
+            <div class="row" style="padding:10px 0 22px"><div class="field" style="flex:1;padding:10px 12px"><span class="ph">Message…</span></div><span class="ico" style="background:var(--p-accent);color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+          </div>
+        </div></div>
+        <figcaption><b>Live chat</b><span>Text and photos with quick replies. Phone numbers stay private.</span></figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- =================== COURIER =================== -->
+  <section id="driver" data-app="driver">
+    <h2>Courier app</h2>
+    <p class="sub">Find jobs, bid, run the route and get paid. Dark theme for riding at night, signal-yellow accent.</p>
+    <div class="grid">
+
+      <!-- D1 Job feed -->
+      <figure>
+        <div class="phone"><div class="screen d">
+          <div class="status"><span>9:38</span><i>●●● ▮</i></div>
+          <div class="body">
+            <div class="card row between"><div><b style="font-size:14px">You're online</b><div class="t-s">Scooter · Prati</div></div><span class="toggle"></span></div>
+            <div class="row between"><span class="t-l">Jobs near you</span><span class="t-s">12 open</span></div>
+            <div class="row" style="gap:6px"><span class="pill on">All</span><span class="pill">Now</span><span class="pill">Scheduled</span><span class="pill">≤ 5 km</span></div>
+            <div class="card" style="display:grid;gap:8px">
+              <div class="row between"><span class="pill" style="background:var(--p-signal);color:#10142B">3 stops</span><span class="t-m">1.2 KM AWAY</span></div>
+              <b style="font-size:14px">Prati → Trastevere → Bologna</b>
+              <div class="row between"><span class="t-s">7.4 km · M · 5 kg · now</span><span class="price">€14</span></div>
+              <div class="t-m">2 BIDS SO FAR · LOWEST €13.00</div>
+            </div>
+            <div class="card" style="display:grid;gap:8px">
+              <div class="row between"><span class="pill">Scheduled · Tue 18:00</span><span class="t-m">0.6 KM</span></div>
+              <b style="font-size:14px">Fioraio Campo de' Fiori → Monti</b>
+              <div class="row between"><span class="t-s">2.1 km · S · flowers</span><span class="price">€7</span></div>
+            </div>
+            <div class="card" style="display:grid;gap:8px">
+              <div class="row between"><span class="pill">Van</span><span class="t-m">3.9 KM</span></div>
+              <b style="font-size:14px">Ostiense → EUR</b>
+            </div>
+          </div>
+          <div class="tabbar"><span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Jobs</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/></svg>Active</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Earnings</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</span></div>
+        </div></div>
+        <figcaption><b>Job feed</b><span>Go online, filter nearby jobs and see how many bids each has.</span></figcaption>
+      </figure>
+
+      <!-- D2 Place bid -->
+      <figure>
+        <div class="phone"><div class="screen d">
+          <div class="status"><span>9:39</span><i>●●● ▮</i></div>
+          <div class="body">
+            <div class="row"><span class="t-s" style="font-size:18px">‹</span><span class="t-l">Job #DR-4821</span></div>
+            <div class="card stops">
+              <div class="stop"><i class="k"></i><div><b>Via Cola di Rienzo 120</b><span class="t-m">PICKUP · M box, 5 kg</span></div><span class="t-m">1.2 KM</span></div>
+              <div class="stop"><i class="k drop"></i><div><b>Viale Trastevere 64</b><span class="t-m">STOP 1</span></div><span class="t-m">+3.6</span></div>
+              <div class="stop"><i class="k drop"></i><div><b>Piazza Bologna 9</b><span class="t-m">STOP 2</span></div><span class="t-m">+3.8</span></div>
+            </div>
+            <div class="sheet" style="gap:9px">
+              <div class="grab"></div>
+              <div class="row between"><b style="font-size:14px">Your bid</b><span class="t-m">CUSTOMER OFFERS €14</span></div>
+              <div class="stepper"><span>−</span><b class="num">€12.50</b><span>+</span></div>
+              <div class="row between t-s"><span>DART fee (15%)</span><span class="num">−€1.88</span></div>
+              <div class="row between"><b style="font-size:13px">You earn</b><b class="num" style="color:var(--p-good)">€10.62</b></div>
+              <div class="row" style="gap:6px"><span class="pill">Pickup in</span><span class="pill on">5 min</span><span class="pill">10</span><span class="pill">15</span></div>
+              <div class="btn">Send bid</div>
+              <div class="btn ghost" style="margin-bottom:18px;padding:11px">Accept €14 now</div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption><b>Place a bid</b><span>Bid your price or take the customer's. You see your earnings after the fee before you send.</span></figcaption>
+      </figure>
+
+      <!-- D3 Active job -->
+      <figure>
+        <div class="phone"><div class="screen d">
+          <div class="map" style="position:absolute;inset:0 0 auto 0;height:260px;border-radius:0">
+            <svg viewBox="0 0 276 260" preserveAspectRatio="xMidYMid slice">
+              <rect width="276" height="260" fill="#151A33"/>
+              <g stroke="#232A4F" stroke-width="7" fill="none" stroke-linecap="round"><path d="M-10 70 L290 100"/><path d="M-10 170 L290 150"/><path d="M60 -10 L90 270"/><path d="M200 -10 L180 270"/></g>
+              <path d="M30 -10 C70 70 40 110 95 150 C140 182 110 220 150 270" fill="none" stroke="#1E3A78" stroke-width="16" stroke-linecap="round"/>
+              <path d="M120 120 L190 175 L230 220" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="230" cy="220" r="8" fill="#0D1024" stroke="#FFD23F" stroke-width="4"/>
+              <g transform="translate(120 120)"><circle r="18" fill="#FFD23F" opacity=".2"/><circle r="11" fill="#FFD23F" stroke="#0D1024" stroke-width="3"/></g>
+            </svg>
+          </div>
+          <div class="status" style="position:relative;z-index:1"><span>10:03</span><i>●●● ▮</i></div>
+          <div class="body" style="padding-top:120px">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="row between"><div><div class="t-m">NEXT · STOP 2 OF 2</div><div class="t-l">Piazza Bologna 9</div></div><span class="ico" style="background:var(--p-signal);color:#10142B"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"/></svg></span></div>
+              <div class="card" style="background:var(--p-soft);border:0"><div class="t-m">NOTE FROM SOFIA</div><div style="font-size:13px">Bar on the corner, ask for Paolo.</div></div>
+              <div class="stops">
+                <div class="stop"><i class="k done"></i><div><b>Pickup · Cola di Rienzo</b><span class="t-m">09:51</span></div><span class="t-s">✓</span></div>
+                <div class="stop"><i class="k done"></i><div><b>Stop 1 · Viale Trastevere</b><span class="t-m">10:02 · PHOTO</span></div><span class="t-s">✓</span></div>
+              </div>
+              <div class="row" style="gap:8px"><div class="btn ghost" style="flex:1">Chat</div><div class="btn ghost" style="flex:1">Call</div></div>
+              <div class="btn" style="margin-bottom:22px">Take photo and complete</div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption><b>Active route</b><span>One stop at a time, with customer notes and photo or PIN proof to complete each stop.</span></figcaption>
+      </figure>
+
+      <!-- D4 Earnings -->
+      <figure>
+        <div class="phone"><div class="screen d">
+          <div class="status"><span>21:14</span><i>●●● ▮</i></div>
+          <div class="body">
+            <div class="row between"><span class="t-l">Earnings</span><span class="pill">5 – 11 Oct</span></div>
+            <div><div class="t-m">THIS WEEK</div><div class="t-xl num" style="font-size:34px">€486.00</div><div class="t-s">38 jobs · 25 h online · ★ 4.9</div></div>
+            <div class="card">
+              <div class="bars">
+                <div><i style="height:40%"></i><small>M</small></div>
+                <div><i style="height:62%"></i><small>T</small></div>
+                <div><i style="height:30%"></i><small>W</small></div>
+                <div><i style="height:75%"></i><small>T</small></div>
+                <div class="on"><i style="height:100%"></i><small>F</small></div>
+                <div><i style="height:84%"></i><small>S</small></div>
+                <div><i style="height:22%"></i><small>S</small></div>
+              </div>
+            </div>
+            <div class="card" style="display:grid;gap:8px">
+              <div class="row between t-s"><span>Delivery earnings</span><span class="num">€448.50</span></div>
+              <div class="row between t-s"><span>Tips</span><span class="num">€37.50</span></div>
+              <div class="row between" style="border-top:1px dashed var(--p-line);padding-top:8px"><b style="font-size:13px">Available to cash out</b><b class="num" style="color:var(--p-good)">€486.00</b></div>
+            </div>
+            <div class="btn">Cash out to IBAN ••42</div>
+            <div class="t-s" style="text-align:center">Or wait for the free weekly payout on Monday</div>
+          </div>
+          <div class="tabbar"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Jobs</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/></svg>Active</span><span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Earnings</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</span></div>
+        </div></div>
+        <figcaption><b>Earnings</b><span>Daily totals, tips, and a cash-out button or the free weekly payout.</span></figcaption>
+      </figure>
+
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var tabs=document.querySelectorAll('.tabs button');
+  function show(which){
+    tabs.forEach(function(t){t.setAttribute('aria-selected',String(t.dataset.show===which))});
+    document.querySelectorAll('[data-app]').forEach(function(s){s.hidden=!(which==='all'||s.dataset.app===which)});
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(){show(t.dataset.show)})});
+})();
+</script>
