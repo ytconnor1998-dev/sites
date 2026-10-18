@@ -1,0 +1,14 @@
+{
+  "name": "image-finder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Paste a URL, get every image the page references — as links or a zip.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}
