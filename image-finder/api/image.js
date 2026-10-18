@@ -14,6 +14,9 @@ export default async function handler(req, res) {
     const image = await safeFetch(target, {
       maxBytes: MAX_BYTES,
       accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      dest: "image",
+      // Hotlink protection usually only wants to see a referrer from the image's own site.
+      referer: params.get("ref") || undefined,
     });
     if (image.status >= 400) throw new FetchError(`HTTP ${image.status}`);
 

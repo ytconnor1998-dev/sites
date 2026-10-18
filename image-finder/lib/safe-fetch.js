@@ -10,7 +10,24 @@ import zlib from "node:zlib";
 const MAX_REDIRECTS = 5;
 const TIMEOUT_MS = 12000;
 const USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
+// Send the headers a real Chrome sends, so sites with light bot filtering treat us like a browser.
+const BROWSER_HEADERS = {
+  "User-Agent": USER_AGENT,
+  "Accept-Language": "en-US,en;q=0.9",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Sec-Ch-Ua": '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"Windows"',
+};
+const DEST_HEADERS = {
+  document: { "Sec-Fetch-Dest": "document", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Site": "none", "Sec-Fetch-User": "?1", "Upgrade-Insecure-Requests": "1" },
+  style: { "Sec-Fetch-Dest": "style", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Site": "same-origin" },
+  image: { "Sec-Fetch-Dest": "image", "Sec-Fetch-Mode": "no-cors", "Sec-Fetch-Site": "cross-site" },
+};
+
+// Status codes sites use when bot protection turns a request away.
+export const BLOCKED_STATUSES = new Set([401, 403, 406, 429, 503]);
 
 export class FetchError extends Error {}
 
@@ -70,7 +87,7 @@ function decode(res, buffer) {
   return buffer;
 }
 
-function requestOnce(url, maxBytes, accept) {
+function requestOnce(url, maxBytes, accept, dest, referer) {
   return new Promise((resolve, reject) => {
     const lib = url.protocol === "https:" ? https : http;
     const req = lib.get(
@@ -78,10 +95,10 @@ function requestOnce(url, maxBytes, accept) {
       {
         lookup: guardedLookup,
         headers: {
-          "User-Agent": USER_AGENT,
+          ...BROWSER_HEADERS,
+          ...DEST_HEADERS[dest],
           Accept: accept,
-          "Accept-Language": "en-US,en;q=0.9",
-          "Accept-Encoding": "gzip, deflate, br",
+          ...(referer ? { Referer: referer } : {}),
         },
         timeout: TIMEOUT_MS,
       },
@@ -114,7 +131,12 @@ function requestOnce(url, maxBytes, accept) {
 /** Returns { url (final, after redirects), status, contentType, body (Buffer), text }. */
 export async function safeFetch(
   input,
-  { maxBytes = 5 * 1024 * 1024, accept = "text/html,application/xhtml+xml,text/css,*/*;q=0.8" } = {},
+  {
+    maxBytes = 5 * 1024 * 1024,
+    accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    dest = "document",
+    referer,
+  } = {},
 ) {
   let url = new URL(input);
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
@@ -128,7 +150,7 @@ export async function safeFetch(
 
     let result;
     try {
-      result = await requestOnce(url, maxBytes, accept);
+      result = await requestOnce(url, maxBytes, accept, dest, referer);
     } catch (err) {
       if (err instanceof FetchError) throw err;
       if (err.code === "ENOTFOUND") throw new FetchError(`Couldn't find a site at ${url.hostname}.`);

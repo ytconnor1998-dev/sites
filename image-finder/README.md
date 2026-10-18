@@ -29,7 +29,16 @@ inline `style` and `<style>` backgrounds, linked and `@import`ed stylesheets, fa
 touch icons, Open Graph / Twitter meta images, `<link rel=preload as=image>`, video posters,
 SVG `<image>`, links to image files, and image URLs inside scripts/JSON (e.g. Next.js data).
 
-Images a site only injects later with JavaScript, or that sit behind a login, won't be found.
+Images a site only injects later with JavaScript, or that sit behind a login, won't be found
+by a URL scan — use the paste option below for those.
+
+## When a site blocks the scanner
+
+Many sites (especially behind Cloudflare or similar) refuse requests from servers, which shows
+up as "blocked the scanner (HTTP 403)". The scanner already sends the same headers a real Chrome
+does, but strict bot protection still says no. Then use **"Paste the page's code instead"**:
+in your browser, Inspect → right-click `<html>` → Copy → Copy outerHTML, paste it in, and press
+the button. The URL box is still used to complete relative image links.
 
 ## How the zip works
 
