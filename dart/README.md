@@ -4,7 +4,7 @@ Local delivery for Rome: letters, parcels and furniture, for people and business
 
 ## What's here
 
-- `index.html` is the public website.
+- `index.html` is the earlier design concept for the website. The working website is the `#web` view of `apps.html`.
 - `apps.html` is the working test platform, built from `app-src/`. It has four views on one live database:
   - `#customer`: the customer app, in a phone frame.
   - `#web`: the public DART website (home, how it works, pricing, business, couriers, help, terms, privacy), with booking, tracking, login and the customer dashboard built in.
