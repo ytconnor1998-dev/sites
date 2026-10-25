@@ -7,7 +7,7 @@ Local delivery for Rome: letters, parcels and furniture, for people and business
 - `index.html` is the public website.
 - `apps.html` is the working test platform, built from `app-src/`. It has four views on one live database:
   - `#customer`: the customer app, in a phone frame.
-  - `#web`: the same customer account and features, laid out as a website dashboard.
+  - `#web`: the public DART website (home, how it works, pricing, business, couriers, help, terms, privacy), with booking, tracking, login and the customer dashboard built in.
   - `#courier`: the courier app.
   - `#admin`: the admin portal.
 
@@ -24,6 +24,7 @@ python3 dart/app-src/build.py
 | `app-src/shell.html` | Page skeleton, styles and icons |
 | `app-src/core.js` | Data store, rules, item classification, vehicle eligibility, pricing, subscriptions, invoices, map, messenger |
 | `app-src/customer.js` | Customer app and website dashboard |
+| `app-src/site.js` | Public website pages |
 | `app-src/courier.js` | Courier app |
 | `app-src/admin.js` | Admin portal |
 | `app-src/boot.js` | Router, rendering, events, startup |

@@ -37,18 +37,19 @@ function custUnseen() { var seen = S.me.seen.customer || 0; return custNotes().f
 var C_NAV = [["home", "Home", "home"], ["new", "Send", "send"], ["deliveries", "Deliveries", "list"], ["messages", "Messages", "chat"], ["account", "Account", "user"]];
 function customerApp() {
   var acc = me(), web = isWeb();
-  if (!acc && GUEST_VIEWS.indexOf(S.c.view) < 0) S.c.view = "new";
-  var body = !acc ? cGuest() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support at " + esc(settings().supportEmail) + " to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
+  if (web && !S.c.webInit) { S.c.webInit = true; if (!acc || S.c.view === "home") S.c.view = "site-home"; }
+  if (!web && SITE_VIEWS.indexOf(S.c.view) >= 0) S.c.view = acc ? "home" : "new";
+  if (!acc && GUEST_VIEWS.indexOf(S.c.view) < 0) S.c.view = web ? "site-home" : "new";
+  var isSite = SITE_VIEWS.indexOf(S.c.view) >= 0;
+  var body = isSite ? sitePage(S.c.view, acc) : !acc ? cGuest() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support at " + esc(settings().supportEmail) + " to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
   var unreadMsgs = acc ? myOrders().reduce(function (s, o) { return s + unread(o, "customer"); }, 0) : 0;
   var active = acc ? myOrders().filter(isActive).length : 0;
   var badge = function (k) { return k === "deliveries" && active ? '<span class="badge">' + active + "</span>" : k === "messages" && unreadMsgs ? '<span class="badge">' + unreadMsgs + "</span>" : ""; };
   var cur = S.c.view === "order" ? "deliveries" : S.c.view === "chat" ? "messages" : ["invoices", "business", "plans", "bulk", "help", "profile", "addresses", "payments", "prefs", "notes"].indexOf(S.c.view) >= 0 ? "account" : S.c.view;
   if (web) {
-    var nav = acc ? '<nav class="w-nav" aria-label="Customer">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '">' + (n[0] === "new" ? "New delivery" : n[1]) + badge(n[0]) + "</button>"; }).join("") +
-      '<button class="' + (S.c.view === "invoices" ? "on" : "") + '" data-act="c-go" data-v="invoices">Invoices</button><button class="bell ' + (S.c.view === "notes" ? "on" : "") + '" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button></nav>" :
-      '<nav class="w-nav" aria-label="DART">' + [["new", "Send something"], ["track", "Track a delivery"]].map(function (n) { return '<button class="' + (S.c.view === n[0] || (n[0] === "track" && S.c.view === "order") ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '">' + n[1] + "</button>"; }).join("") +
-      '<a class="w-link" href="#courier">Become a courier</a></nav>';
-    return '<div class="web"><header class="w-head"><div class="w-wrap"><a class="logo" href="#home"><svg><use href="#mark"/></svg>DART</a>' + nav + '<span class="w-right">' + modeChip() + (acc ? '<span class="avatar sm">' + esc(initials(acc.name)) + "</span>" : '<button class="btn sm on-purple ghost" data-act="c-auth-open" data-v="login">Log in</button><button class="btn sm on-purple" data-act="c-auth-open" data-v="register">Create account</button>') + '</span></div></header><main class="w-wrap w-main">' + body + "</main></div>";
+    var accNav = acc ? '<nav class="w-nav" aria-label="Your account">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '">' + (n[0] === "new" ? "New delivery" : n[1]) + badge(n[0]) + "</button>"; }).join("") +
+      '<button class="' + (S.c.view === "invoices" ? "on" : "") + '" data-act="c-go" data-v="invoices">Invoices</button><button class="bell ' + (S.c.view === "notes" ? "on" : "") + '" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button></nav>" : "";
+    return siteShell(acc, body, isSite, accNav);
   }
   var tabs = acc && acc.status !== "suspended" ? '<nav class="tabs t5">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + badge(n[0]) + "</button>"; }).join("") + "</nav>" :
     !acc ? '<nav class="tabs t3">' + [["new", "Send", "send"], ["track", "Track", "list"], ["auth", "Log in", "user"]].map(function (n) { var on = S.c.view === n[0] || (n[0] === "track" && (S.c.view === "order" || S.c.view === "chat")); return '<button class="' + (on ? "on" : "") + '" data-act="' + (n[0] === "auth" ? "c-auth-open" : "c-go") + '" data-v="' + (n[0] === "auth" ? "login" : n[0]) + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + "</button>"; }).join("") + "</nav>" : "";
@@ -151,7 +152,7 @@ FORMS["c-google"] = function () {
   if (found) { S.me.customerId = found.id; saveMe(); S.c.view = "home"; render(); return toast("Signed in with Google"); }
   createAccount({ name: clip(m.name, 60) || email.split("@")[0], email: email, provider: "google", type: "individual" });
 };
-ACT["c-logout"] = function () { S.me.customerId = null; saveMe(); S.c = Object.assign(S.c, { view: "new", draft: newDraft() }); closeChat(); render(); };
+ACT["c-logout"] = function () { S.me.customerId = null; saveMe(); S.c = Object.assign(S.c, { view: isWeb() ? "site-home" : "new", draft: newDraft() }); closeChat(); render(); };
 
 // ---------- Home ----------
 function cHome(acc) {
