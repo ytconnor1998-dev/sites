@@ -318,6 +318,7 @@ table.edit .input.n { width: 76px; }
 .tabs { display: grid; border-top: 1px solid var(--line); flex: none; background: var(--card); padding-bottom: env(safe-area-inset-bottom, 0px); }
 .tabs.t5 { grid-template-columns: repeat(5, 1fr); }
 .tabs.t4 { grid-template-columns: repeat(4, 1fr); }
+.tabs.t3 { grid-template-columns: repeat(3, 1fr); }
 .tabs button { border: 0; background: none; padding: 9px 2px 11px; display: grid; justify-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--muted); position: relative; }
 .tabs button.on { color: var(--purple); }
 .tabs svg { width: 22px; height: 22px; }
@@ -335,6 +336,10 @@ table.edit .input.n { width: 76px; }
 .w-nav .bell svg { width: 20px; height: 20px; }
 .w-right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
 .w-right .mode { background: rgba(255,255,255,.14); color: #fff; }
+.w-link { color: #EDE4FF; font-weight: 600; padding: 8px 10px; text-decoration: none; }
+.w-link:hover { color: #fff; text-decoration: underline; }
+.btn.on-purple { background: #fff; color: #170F2E; }
+.btn.on-purple.ghost { background: transparent; color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.6); }
 .w-main { padding-block: 24px 60px; }
 .w-main .pad { padding: 0; }
 .w-title { font-size: clamp(28px, 4vw, 40px); font-weight: 900; letter-spacing: -.03em; line-height: 1.05; }

@@ -5,12 +5,12 @@ function eligibleAny(c, o) { var keep = S.me.declined; S.me.declined = {}; try {
 function launcher() {
   return '<div class="home"><div class="row between wrap"><span class="logo xl"><svg><use href="#mark"/></svg>DART</span>' + modeChip() + "</div>" +
     '<h1>Test the DART platform.</h1><p class="lead">One live system: the customer app and website share one account, couriers get only what fits their vehicle, and the admin portal sets every price and rule. Nothing here charges real money.</p>' +
-    '<div class="launch"><a class="l-c" href="#customer"><h2>DART</h2><p>Customer app. Sign up, book a letter, parcel or sofa, pay, track, chat, get invoices. Business plans live here too.</p><span class="go">Open on phone →</span></a>' +
-    '<a class="l-w" href="#web"><h2>DART website</h2><p>The same customer account and features, laid out for a computer. No app needed.</p><span class="go">Open website dashboard →</span></a>' +
+    '<div class="launch"><a class="l-c" href="#customer"><h2>DART</h2><p>Customer app. Book a letter, parcel or sofa with or without an account, pay, track, chat, get invoices. Businesses get subscription plans.</p><span class="go">Open on phone →</span></a>' +
+    '<a class="l-w" href="#web"><h2>DART website</h2><p>Book and track from a computer, no account needed. Log in for history, invoices and business plans.</p><span class="go">Open website dashboard →</span></a>' +
     '<a class="l-d" href="#courier"><h2>DART Courier</h2><p>Apply with your vehicle and documents, get approved, go online, take deliveries that fit, prove delivery, see earnings.</p><span class="go">Open courier app →</span></a>' +
     '<a class="l-a" href="#admin"><h2>Admin portal</h2><p>Approve couriers, set prices, vehicles, item sizes and plans, manage deliveries, invoices, payments and support.</p><span class="go">Open admin portal →</span></a></div>' +
     '<div class="howto"><div><h3>Try a full delivery</h3><ol><li>Open <b>DART Courier</b>, apply as a courier with a van and add photos for the documents.</li><li>In the <b>Admin portal</b>, open Couriers and approve yourself.</li><li>Back in the courier app, go online.</li><li>Open <b>DART</b> on your phone, create an account and book a parcel or a piece of furniture with photos and measurements.</li><li>Accept the request in the courier app, step through pickup and delivery, and chat with the customer.</li><li>Finish with a photo. The customer sees the proof and the invoice.</li></ol></div>' +
-    '<div><h3>Try the business side</h3><ol><li>In the <b>Admin portal</b>, create a plan under Plans if none exist.</li><li>In the customer app, go to Account → Activate business features.</li><li>Subscribe to a plan and book a delivery using it.</li><li>Upload several deliveries at once with Bulk deliveries.</li><li>Change prices or item sizes in the admin portal and watch the customer price change.</li></ol></div></div>' +
+    '<div><h3>Try the business side</h3><ol><li>In the <b>Admin portal</b>, create a plan under Plans if none exist.</li><li>In the customer app, go to Account → Switch to a business account.</li><li>Subscribe to a plan and book a delivery using it.</li><li>Upload several deliveries at once with Bulk deliveries.</li><li>Change prices or item sizes in the admin portal and watch the customer price change.</li></ol></div></div>' +
     (Store.mode === "live" ? '<p class="muted">Everyone you share this link with as a Contributor uses the same live data. Prices, rules and plans can be changed only by you as owner or by Editors.</p>' : '<p class="muted">Live sync isn\'t available in this view, so data stays in this browser. Open two tabs to play customer and courier.</p>') + "</div>";
 }
 
@@ -72,7 +72,8 @@ function wire() {
     var el = e.target;
     if (el.type === "file") { var file = el.files && el.files[0], h = FILES[el.dataset.file]; if (file && h) h(file, el); el.value = ""; return; }
     if (el.dataset.onchange && ACT[el.dataset.onchange]) { ACT[el.dataset.onchange]({ v: el.value }, el); return; }
-    if (bindValue(el) && (el.dataset.live || el.tagName === "SELECT" || el.type === "checkbox")) render();
+    // Redraw after focus has moved on, so the field being typed into next isn't replaced.
+    if (bindValue(el) && (el.dataset.live || el.tagName === "SELECT" || el.type === "checkbox")) setTimeout(render, 0);
   });
   root.addEventListener("submit", function (e) {
     var f = e.target, h = FORMS[f.dataset.form]; if (!h) return;

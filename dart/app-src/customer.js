@@ -10,6 +10,10 @@ function newDraft() {
 }
 S.c = { view: "home", listTab: "active", order: null, draft: newDraft(), auth: { mode: "login", email: "", name: "", phone: "", type: "individual", bizName: "" }, newAddr: { label: "", area: "", street: "", notes: "" }, newCard: { brand: "Visa", last4: "", exp: "" }, biz: null, bulk: { text: "", rows: null }, ticket: { topic: "delivery", orderId: "", text: "" }, issue: { reason: "Item damaged", text: "" } };
 
+S.me.guestOrders = S.me.guestOrders || [];
+S.c.guest = { name: "", email: "", phone: "", create: false };
+S.c.trk = { code: "", email: "" };
+var GUEST_VIEWS = ["new", "track", "order", "chat", "auth"];
 function me() { return S.me.customerId ? byId(S.accounts, S.me.customerId) : null; }
 function myOrders() { var id = S.me.customerId; return S.orders.filter(function (o) { return o.customer && o.customer.id === id; }); }
 function myInvoices() { var id = S.me.customerId; return S.invoices.filter(function (i) { return i.accountId === id; }).sort(function (a, b) { return b.issuedAt - a.issuedAt; }); }
@@ -33,17 +37,21 @@ function custUnseen() { var seen = S.me.seen.customer || 0; return custNotes().f
 var C_NAV = [["home", "Home", "home"], ["new", "Send", "send"], ["deliveries", "Deliveries", "list"], ["messages", "Messages", "chat"], ["account", "Account", "user"]];
 function customerApp() {
   var acc = me(), web = isWeb();
-  var body = !acc ? cAuth() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support at " + esc(settings().supportEmail) + " to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
+  if (!acc && GUEST_VIEWS.indexOf(S.c.view) < 0) S.c.view = "new";
+  var body = !acc ? cGuest() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support at " + esc(settings().supportEmail) + " to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
   var unreadMsgs = acc ? myOrders().reduce(function (s, o) { return s + unread(o, "customer"); }, 0) : 0;
   var active = acc ? myOrders().filter(isActive).length : 0;
   var badge = function (k) { return k === "deliveries" && active ? '<span class="badge">' + active + "</span>" : k === "messages" && unreadMsgs ? '<span class="badge">' + unreadMsgs + "</span>" : ""; };
   var cur = S.c.view === "order" ? "deliveries" : S.c.view === "chat" ? "messages" : ["invoices", "business", "plans", "bulk", "help", "profile", "addresses", "payments", "prefs", "notes"].indexOf(S.c.view) >= 0 ? "account" : S.c.view;
   if (web) {
     var nav = acc ? '<nav class="w-nav" aria-label="Customer">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '">' + (n[0] === "new" ? "New delivery" : n[1]) + badge(n[0]) + "</button>"; }).join("") +
-      '<button class="' + (S.c.view === "invoices" ? "on" : "") + '" data-act="c-go" data-v="invoices">Invoices</button><button class="bell ' + (S.c.view === "notes" ? "on" : "") + '" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button></nav>" : "";
-    return '<div class="web"><header class="w-head"><div class="w-wrap"><a class="logo" href="#home"><svg><use href="#mark"/></svg>DART</a>' + nav + '<span class="w-right">' + modeChip() + (acc ? '<span class="avatar sm">' + esc(initials(acc.name)) + "</span>" : "") + '</span></div></header><main class="w-wrap w-main">' + body + "</main></div>";
+      '<button class="' + (S.c.view === "invoices" ? "on" : "") + '" data-act="c-go" data-v="invoices">Invoices</button><button class="bell ' + (S.c.view === "notes" ? "on" : "") + '" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button></nav>" :
+      '<nav class="w-nav" aria-label="DART">' + [["new", "Send something"], ["track", "Track a delivery"]].map(function (n) { return '<button class="' + (S.c.view === n[0] || (n[0] === "track" && S.c.view === "order") ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '">' + n[1] + "</button>"; }).join("") +
+      '<a class="w-link" href="#courier">Become a courier</a></nav>';
+    return '<div class="web"><header class="w-head"><div class="w-wrap"><a class="logo" href="#home"><svg><use href="#mark"/></svg>DART</a>' + nav + '<span class="w-right">' + modeChip() + (acc ? '<span class="avatar sm">' + esc(initials(acc.name)) + "</span>" : '<button class="btn sm on-purple ghost" data-act="c-auth-open" data-v="login">Log in</button><button class="btn sm on-purple" data-act="c-auth-open" data-v="register">Create account</button>') + '</span></div></header><main class="w-wrap w-main">' + body + "</main></div>";
   }
-  var tabs = acc && acc.status !== "suspended" ? '<nav class="tabs t5">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + badge(n[0]) + "</button>"; }).join("") + "</nav>" : "";
+  var tabs = acc && acc.status !== "suspended" ? '<nav class="tabs t5">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + badge(n[0]) + "</button>"; }).join("") + "</nav>" :
+    !acc ? '<nav class="tabs t3">' + [["new", "Send", "send"], ["track", "Track", "list"], ["auth", "Log in", "user"]].map(function (n) { var on = S.c.view === n[0] || (n[0] === "track" && (S.c.view === "order" || S.c.view === "chat")); return '<button class="' + (on ? "on" : "") + '" data-act="' + (n[0] === "auth" ? "c-auth-open" : "c-go") + '" data-v="' + (n[0] === "auth" ? "login" : n[0]) + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + "</button>"; }).join("") + "</nav>" : "";
   return stage('<div class="app-body" data-scroll="c-' + S.c.view + '">' + body + "</div>" + tabs, "DART customer app");
 }
 function stage(inner, label) {
@@ -52,6 +60,16 @@ function stage(inner, label) {
 function head(title, back, right) {
   return '<div class="app-head">' + (back ? '<button class="btn ghost sm" data-act="c-go" data-v="' + back + '">← Back</button>' : "") + "<h2>" + title + "</h2>" + (right || "") + "</div>";
 }
+function cGuest() {
+  switch (S.c.view) {
+    case "auth": return cAuth();
+    case "track": return cTrack(null);
+    case "order": return cOrder(null);
+    case "chat": return cChat(null);
+    default: return cNew(null);
+  }
+}
+ACT["c-auth-open"] = function (d) { S.c.auth.mode = d.v; S.c.view = "auth"; closeChat(); render(); };
 function cView(acc) {
   switch (S.c.view) {
     case "new": return cNew(acc);
@@ -69,6 +87,7 @@ function cView(acc) {
     case "bulk": return cBulk(acc);
     case "help": return cHelp(acc);
     case "notes": return cNotesView();
+    case "track": return cTrack(acc);
     default: return cHome(acc);
   }
 }
@@ -83,18 +102,29 @@ function cAuth() {
     (reg ? field("Full name", inp("c.auth.name", a.name, 'autocomplete="name" required')) : "") +
     field("Email", inp("c.auth.email", a.email, 'type="email" autocomplete="email" required')) +
     field("Password", '<input class="input" type="password" data-bind="c.auth.pw" value="' + esc(a.pw || "") + '" autocomplete="' + (reg ? "new-password" : "current-password") + '" required>', "Test build: passwords aren't checked or stored.") +
-    (reg ? field("Phone (optional)", inp("c.auth.phone", a.phone, 'type="tel" autocomplete="tel"')) +
-      '<div class="field"><span>I\'m signing up as</span><div class="seg">' + [["individual", "An individual"], ["business", "A business"]].map(function (t) { return '<button type="button" class="' + (a.type === t[0] ? "on" : "") + '" data-act="c-auth-type" data-v="' + t[0] + '">' + t[1] + "</button>"; }).join("") + '</div><small class="hint">Optional. You can switch to business features later in Settings.</small></div>' +
-      (a.type === "business" ? field("Business name", inp("c.auth.bizName", a.bizName, 'autocomplete="organization"')) : "") : "") +
+    (reg ? field("Phone (optional)", inp("c.auth.phone", a.phone, 'type="tel" autocomplete="tel"')) + '<small class="hint">Running a business? Switch to a business account later in Settings to get subscription plans.</small>' : "") +
     '<button class="btn block">' + (reg ? "Create account" : "Log in") + "</button></form>" +
+    '<p class="center"><button class="link" data-act="c-go" data-v="new">Continue without an account</button></p>' +
     '<p class="center">' + (reg ? 'Already have an account? <button class="link" data-act="c-auth-mode" data-v="login">Log in</button>' : 'New to DART? <button class="link" data-act="c-auth-mode" data-v="register">Create an account</button>') + "</p></div>";
 }
 function findAccount(email) { var e = slugEmail(email); return S.accounts.filter(function (x) { return slugEmail(x.email) === e; })[0] || null; }
-function createAccount(o) {
-  var id = "a-" + rid(10), now = Date.now();
+function claimGuest(id, acc) {
+  var email = slugEmail(acc.email);
+  var mine = S.orders.filter(function (o) { return o.customer && o.customer.guest && slugEmail(o.customer.email) === email; });
+  var invs = S.invoices.filter(function (i) { return /^g-/.test(i.accountId || "") && i.party && slugEmail(i.party.email) === email; });
+  return mine.reduce(function (p, o) { return p.then(function () { return Store.update("orders", o.id, { customer: { id: id, guest: false, name: acc.name } }); }); }, Promise.resolve())
+    .then(function () { return invs.reduce(function (p, i) { return p.then(function () { return Store.update("invoices", i.id, { accountId: id }); }); }, Promise.resolve()); })
+    .then(function () { return mine.length; });
+}
+function newAccountDoc(o) {
+  var now = Date.now();
   var acc = { name: o.name, email: slugEmail(o.email), phone: o.phone || "", provider: o.provider, type: o.type || "individual", addresses: [], cards: [{ id: "k1", brand: "Visa", last4: "4242", exp: "12/29", def: true }], prefs: { push: true, email: true, sms: false }, status: "active", createdAt: now };
   if (o.type === "business") acc.business = { active: true, name: o.bizName || o.name, address: "", vat: "", sdi: "", email: slugEmail(o.email), phone: o.phone || "", verified: false, activatedAt: now };
-  return run(Store.set("accounts", id, acc).then(function () { S.me.customerId = id; saveMe(); S.c.view = "home"; }), "Welcome to DART, " + o.name.split(" ")[0]);
+  return acc;
+}
+function createAccount(o) {
+  var id = "a-" + rid(10), acc = newAccountDoc(o);
+  return run(Store.set("accounts", id, acc).then(function () { S.me.customerId = id; saveMe(); S.c.view = "home"; return claimGuest(id, acc); }).then(function (n) { if (n) toast("Welcome to DART. " + n + " earlier deliver" + (n > 1 ? "ies were" : "y was") + " added to your account."); }), "Welcome to DART, " + o.name.split(" ")[0]);
 }
 FORMS["c-auth"] = function (f) {
   var a = S.c.auth, email = slugEmail(a.email);
@@ -106,10 +136,9 @@ FORMS["c-auth"] = function (f) {
   }
   if (found) return toast("That email already has an account. Log in instead.");
   if (!clip(a.name, 60)) return toast("Enter your name.");
-  createAccount({ name: clip(a.name, 60), email: email, phone: clip(a.phone, 30), provider: "email", type: a.type, bizName: clip(a.bizName, 80) });
+  createAccount({ name: clip(a.name, 60), email: email, phone: clip(a.phone, 30), provider: "email", type: "individual" });
 };
 ACT["c-auth-mode"] = function (d) { S.c.auth.mode = d.v; render(); };
-ACT["c-auth-type"] = function (d) { S.c.auth.type = d.v; render(); };
 ACT["c-google"] = function () { S.modal = { kind: "google", email: "", name: "" }; render(); };
 function googleModal(m) {
   return modalShell("Sign in with Google", '<p class="muted">Test build: this stands in for Google\'s sign-in screen. Enter the Google account you want to use.</p><form class="stack" data-form="c-google">' +
@@ -122,7 +151,7 @@ FORMS["c-google"] = function () {
   if (found) { S.me.customerId = found.id; saveMe(); S.c.view = "home"; render(); return toast("Signed in with Google"); }
   createAccount({ name: clip(m.name, 60) || email.split("@")[0], email: email, provider: "google", type: "individual" });
 };
-ACT["c-logout"] = function () { S.me.customerId = null; saveMe(); S.c = Object.assign(S.c, { view: "home", draft: newDraft() }); closeChat(); render(); };
+ACT["c-logout"] = function () { S.me.customerId = null; saveMe(); S.c = Object.assign(S.c, { view: "new", draft: newDraft() }); closeChat(); render(); };
 
 // ---------- Home ----------
 function cHome(acc) {
@@ -145,7 +174,7 @@ function cHome(acc) {
     else h += '<span class="muted">No plan. You pay per delivery.</span>';
     h += '<div class="row wrap"><button class="btn ghost sm" data-act="c-go" data-v="business">Business settings</button>' + (plan && plan.bulk ? '<button class="btn ghost sm" data-act="c-go" data-v="bulk">Bulk deliveries</button>' : "") + "</div></div>";
   }
-  h += '<div class="quick"><button data-act="c-go" data-v="invoices"><b>Invoices</b><span>' + myInvoices().length + " total</span></button><button data-act=\"c-go\" data-v=\"messages\"><b>Messages</b><span>Chat with couriers</span></button><button data-act=\"c-go\" data-v=\"help\"><b>Help</b><span>Report a problem</span></button>" + (!(acc.business && acc.business.active) ? '<button data-act="c-go" data-v="business"><b>For business</b><span>Plans and invoicing</span></button>' : "") + "</div>";
+  h += '<div class="quick"><button data-act="c-go" data-v="invoices"><b>Invoices</b><span>' + myInvoices().length + " total</span></button><button data-act=\"c-go\" data-v=\"messages\"><b>Messages</b><span>Chat with couriers</span></button><button data-act=\"c-go\" data-v=\"help\"><b>Help</b><span>Report a problem</span></button>" + (!(acc.business && acc.business.active) ? '<button data-act="c-go" data-v="business"><b>For business</b><span>Subscription plans</span></button>' : "") + "</div>";
   return h + "</div></div></div>";
 }
 function usageBar(used, total) {
@@ -161,8 +190,9 @@ function orderRow(o) {
 function cNew(acc) {
   var d = S.c.draft, web = isWeb(), st = settings();
   var steps = ["Where", "What", "Review"];
-  var back = d.step > 1 ? '<button class="btn ghost sm" data-act="c-step" data-v="' + (d.step - 1) + '">← Back</button>' : '<button class="btn ghost sm" data-act="c-go" data-v="home">← Back</button>';
-  var h = (web ? '<h1 class="w-title">New delivery</h1>' : '<div class="app-head">' + back + "<h2>New delivery</h2></div>") + '<div class="pad">';
+  var back = d.step > 1 ? '<button class="btn ghost sm" data-act="c-step" data-v="' + (d.step - 1) + '">← Back</button>' : acc ? '<button class="btn ghost sm" data-act="c-go" data-v="home">← Back</button>' : '<span class="logo"><svg><use href="#mark"/></svg>DART</span>';
+  var title = acc ? "New delivery" : d.step > 1 ? "Send something" : "";
+  var h = (web ? '<h1 class="w-title">' + (acc ? "New delivery" : "Send something across Rome") + "</h1>" + (acc ? "" : '<p class="muted">No account needed. Get a price, book and track with just your email.</p>') : '<div class="app-head">' + back + "<h2>" + title + "</h2>" + (acc ? "" : '<button class="btn ghost sm" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>") + '<div class="pad">';
   if (st.open === false) return h + '<div class="banner bad">DART is closed right now. Bookings open again soon.</div></div>';
   h += '<ol class="stepper">' + steps.map(function (s, i) { return '<li class="' + (d.step === i + 1 ? "on" : d.step > i + 1 ? "done" : "") + '"><button data-act="c-step" data-v="' + (i + 1) + '"' + (i + 1 > d.step ? " disabled" : "") + ">" + (i + 1) + ". " + s + "</button></li>"; }).join("") + "</ol>";
   var main = d.step === 1 ? newWhere(acc) : d.step === 2 ? newWhat(acc) : newReview(acc);
@@ -170,7 +200,7 @@ function cNew(acc) {
   return h + main + "</div>";
 }
 function addrBlock(key, label, acc) {
-  var a = S.c.draft[key], saved = (acc.addresses || []);
+  var a = S.c.draft[key], saved = acc ? (acc.addresses || []) : [];
   return '<div class="card"><b>' + label + "</b>" +
     (saved.length ? '<div class="chips">' + saved.map(function (s) { return '<button type="button" class="chipbtn" data-act="c-use-addr" data-k="' + key + '" data-v="' + esc(s.id) + '">' + esc(s.label || s.street) + "</button>"; }).join("") + "</div>" : "") +
     '<div class="grid2">' + field("Area of Rome", areaSel("c.draft." + key + ".area", a.area)) + field("Street and number", inp("c.draft." + key + ".street", a.street, 'placeholder="e.g. Via Panisperna 41" autocomplete="street-address"')) + "</div>" +
@@ -224,13 +254,20 @@ function newSummary(acc) {
 function newReview(acc) {
   var d = S.c.draft, x = draftQuote(acc);
   if (!x) return '<div class="card warn">Go back and finish the addresses and item details.</div>';
-  var biz = acc.business && acc.business.active, cards = acc.cards || [];
+  var biz = !!(acc && acc.business && acc.business.active), cards = acc ? acc.cards || [] : [];
   if (d.billing === "subscription" && !x.sub) d.billing = "card";
   if (d.billing === "invoice" && !biz) d.billing = "card";
   var h = '<div class="card">' + '<div class="map map-sm">' + mapSVG({ labels: false, routes: [{ from: d.pickup.area, to: d.dropoff.area }] }) + "</div>" +
     legs({ pickup: d.pickup, dropoff: d.dropoff }) + "<span>" + esc(x.cls.label) + (d.item.desc ? " · " + esc(d.item.desc) : "") + "</span>" + (d.item.photos.length ? '<div class="phs">' + photoStrip(d.item.photos) + "</div>" : "") + "</div>";
   h += clsCard(x.cls);
   h += '<div class="card"><b>Price</b>' + breakdown(x.q, d.billing === "subscription" ? x.sub : null) + '<small class="hint">Prices are set by distance with a minimum fee of ' + eur(pricing().minFee) + ", plus size, weight, vehicle and extra services.</small></div>";
+  if (!acc) {
+    var g = S.c.guest;
+    h += '<div class="card"><b>Your details</b><span class="muted sm">For the receipt, the tracking link and so the courier can reach you. No account needed.</span>' +
+      field("Name", inp("c.guest.name", g.name, 'autocomplete="name" required')) + '<div class="grid2">' + field("Email", inp("c.guest.email", g.email, 'type="email" autocomplete="email" required')) + field("Phone", inp("c.guest.phone", g.phone, 'type="tel" autocomplete="tel" required')) + "</div>" +
+      check("c.guest.create", g.create, "Also create a DART account with these details, to keep your history and invoices in one place") +
+      '<span class="sm">Already have an account? <button class="link" data-act="c-auth-open" data-v="login">Log in</button></span></div>';
+  }
   h += '<div class="card"><b>How do you want to pay?</b><div class="opts">' +
     payOpt("card", "Card", (cards.filter(function (k) { return k.def; })[0] || cards[0] || { brand: "Visa", last4: "4242" }).brand + " •• " + (cards.filter(function (k) { return k.def; })[0] || cards[0] || { last4: "4242" }).last4 + " · charged now: " + eur(x.q.total)) +
     (x.sub ? payOpt("subscription", "Use my " + esc(x.sub.plan.name) + " plan", esc(x.sub.note) + " · you pay " + eur(x.sub.amount)) : "") +
@@ -283,20 +320,38 @@ ACT["c-ai"] = function () {
   }).then(function () { d.aiBusy = false; render(); });
 };
 ACT["c-book"] = function () {
-  var acc = me(), d = S.c.draft, x = draftQuote(acc);
+  var acc = me(), d = S.c.draft, x = draftQuote(acc), g = S.c.guest;
   if (!x || busy || settings().open === false) return;
+  if (!acc) {
+    if (!clip(g.name, 60)) return toast("Add your name so the courier knows who it's for.");
+    if (!emailOk(slugEmail(g.email))) return toast("Add your email for the receipt and tracking.");
+    if (!clip(g.phone, 30)) return toast("Add a phone number so the courier can reach you.");
+    if (g.create && findAccount(g.email)) return toast("That email already has a DART account. Log in to book with it.");
+  }
   var now = Date.now(), id = "DRT-" + rid(3) + "-" + rid(3), method = d.billing;
   var amount = method === "subscription" && x.sub ? x.sub.amount : x.q.total;
   var billing = { method: method, amount: r2(amount), status: method === "invoice" ? "to_invoice" : amount === 0 ? "included" : "paid" };
   if (method === "subscription" && x.sub) { billing.planId = x.sub.plan.id; billing.planName = x.sub.plan.name; billing.included = x.sub.included; }
   var item = { type: d.item.type, desc: clip(d.item.desc, 120), qty: Math.max(1, Math.round(num(d.item.qty, 1))), l: num(d.item.l, 0), w: num(d.item.w, 0), h: num(d.item.h, 0), kg: num(d.item.kg, 0), photos: d.item.photos.slice(0, 3), options: Object.assign({}, d.item.options), ai: !!d.item.ai };
   var order = {
-    customer: { id: acc.id, name: acc.name, business: !!(acc.business && acc.business.active), businessName: acc.business && acc.business.active ? acc.business.name : "" },
+    customer: null,
     pickup: { area: d.pickup.area, street: clip(d.pickup.street, 80), notes: clip(d.pickup.notes, 160) },
     dropoff: { area: d.dropoff.area, street: clip(d.dropoff.street, 80), notes: clip(d.dropoff.notes, 160) },
     item: item, cls: x.cls, price: x.q, billing: billing, status: "awaiting", createdAt: now, timeline: { requested: now, awaiting: now }
   };
-  run(Store.set("orders", id, order).then(function () { S.c.draft = newDraft(); S.c.order = id; S.c.view = "order"; }), "Booked. We're finding you a courier.");
+  var start = Promise.resolve(acc ? Object.assign({ id: acc.id }, acc) : null);
+  if (!acc && g.create) {
+    var aid = "a-" + rid(10), doc = newAccountDoc({ name: clip(g.name, 60), email: g.email, phone: clip(g.phone, 30), provider: "email", type: "individual" });
+    start = Store.set("accounts", aid, doc).then(function () { S.me.customerId = aid; saveMe(); return claimGuest(aid, doc); }).then(function () { return Object.assign({ id: aid }, doc); });
+  }
+  run(start.then(function (a) {
+    order.customer = a ? { id: a.id, name: a.name, email: a.email, phone: a.phone || "", business: !!(a.business && a.business.active), businessName: a.business && a.business.active ? a.business.name : "" }
+      : { id: "g-" + rid(10), name: clip(g.name, 60), email: slugEmail(g.email), phone: clip(g.phone, 30), guest: true, business: false, businessName: "" };
+    return Store.set("orders", id, order);
+  }).then(function () {
+    if (order.customer.guest) { S.me.guestOrders = [id].concat(S.me.guestOrders.filter(function (x) { return x !== id; })).slice(0, 30); saveMe(); }
+    S.c.draft = newDraft(); S.c.order = id; S.c.view = "order";
+  }), acc ? "Booked. We're finding you a courier." : "Booked. Your tracking code is " + id + ".");
 };
 
 // ---------- Deliveries ----------
@@ -312,13 +367,14 @@ function cDeliveries() {
 ACT["c-list-tab"] = function (d) { S.c.listTab = d.v; render(); };
 ACT["c-order"] = function (d) { S.c.order = d.v; S.c.view = "order"; closeChat(); render(); };
 function cOrder(acc) {
-  var o = byId(S.orders, S.c.order);
-  if (!o) return head("Delivery", "deliveries") + '<div class="pad">' + emptyState("This delivery isn't available", "It may have been removed.", '<button class="btn sm" data-act="c-go" data-v="deliveries">Back to deliveries</button>') + "</div>";
+  var o = byId(S.orders, S.c.order), backTo = acc ? "deliveries" : "track";
+  if (!o) return head("Delivery", backTo) + '<div class="pad">' + emptyState("This delivery isn't available", "It may have been removed.", '<button class="btn sm" data-act="c-go" data-v="deliveries">Back to deliveries</button>') + "</div>";
   var pos = courierPos(o), idx = FLOW.indexOf(o.status), web = isWeb();
   var eta = "";
   if (o.status === "to_pickup" || o.status === "assigned") eta = "Courier heading to pickup";
   if (o.status === "in_transit") eta = "About " + Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min to delivery";
-  var top = (web ? '<div class="row between"><h1 class="w-title">Delivery ' + esc(o.id) + '</h1><button class="btn ghost sm" data-act="c-go" data-v="deliveries">← All deliveries</button></div>' : head('<span class="mono">' + esc(o.id) + "</span>", "deliveries"));
+  var top = (web ? '<div class="row between"><h1 class="w-title">Delivery ' + esc(o.id) + '</h1><button class="btn ghost sm" data-act="c-go" data-v="' + backTo + '">← ' + (acc ? "All deliveries" : "Track another") + "</button></div>" : head('<span class="mono">' + esc(o.id) + "</span>", backTo));
+  if (!acc && o.customer.guest && o.status === "awaiting") top += '<div class="' + (web ? "" : "pad") + '"><div class="banner">Keep your tracking code <b class="mono">' + esc(o.id) + "</b>. You can track it any time with your email.</div></div>";
   var mapH = '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area }, pos)] }) + "</div>";
   var a = '<div class="stack"><div><h2 class="status-h">' + esc(STATUS[o.status]) + "</h2>" + (eta ? '<p class="muted">' + eta + "</p>" : o.status === "awaiting" ? '<p class="muted">We\'re offering it to couriers with a suitable vehicle.</p>' : "") + "</div>" +
     (idx >= 0 ? '<div class="progress">' + FLOW.map(function (k, i) { return '<i class="' + (i <= idx ? "on" : "") + '"></i>'; }).join("") + "</div>" : "");
@@ -353,7 +409,7 @@ ACT["c-cancel-yes"] = function (d) {
   if (!o) return render();
   var patch = { status: "cancelled", timeline: { cancelled: Date.now() }, cancelledBy: "customer" };
   if (o.billing && o.billing.status === "paid") patch.billing = { status: "refunded" };
-  run(Store.claim("orders", o.id, S.me.customerId, function (x) { return ["awaiting", "assigned", "to_pickup"].indexOf(x.status) >= 0; }, patch).then(function (ok) { if (!ok) toast("Too late to cancel: the item has been collected. Report a problem instead."); }));
+  run(Store.claim("orders", o.id, S.me.customerId || o.customer.id, function (x) { return ["awaiting", "assigned", "to_pickup"].indexOf(x.status) >= 0; }, patch).then(function (ok) { if (!ok) toast("Too late to cancel: the item has been collected. Report a problem instead."); }));
 };
 ACT["c-repeat"] = function (d) {
   var o = byId(S.orders, d.v); if (!o) return;
@@ -369,7 +425,7 @@ function issueModal(m, role) {
 FORMS["issue"] = function (form) {
   var m = S.modal, role = form.dataset.role, o = byId(S.orders, m.order); if (!o) return;
   var now = Date.now(), text = clip(m.text, 800); if (!text) return toast("Tell us what happened.");
-  var who = role === "courier" ? myCourier() : me();
+  var who = role === "courier" ? myCourier() : me() || { id: o.customer.id, name: o.customer.name };
   var tid = "T-" + rid(6);
   var ticket = { from: role, accountId: role === "customer" ? who.id : null, courierId: role === "courier" ? who.id : null, name: who.name, orderId: o.id, topic: "delivery", subject: m.reason, text: text, status: "open", replies: [], createdAt: now };
   var patch = { issue: { open: true, by: role, reason: m.reason, text: text, at: now, ticket: tid } };
@@ -389,10 +445,10 @@ function cMessages() {
 }
 ACT["c-chat"] = function (d) { S.c.order = d.v; S.c.view = "chat"; openChat(d.v); markRead(d.v); render(); scrollChat(); };
 function cChat(acc) {
-  var o = byId(S.orders, S.c.order); if (!o) return head("Chat", "messages");
+  var o = byId(S.orders, S.c.order); if (!o) return head("Chat", acc ? "messages" : "track");
   if (Chat.orderId !== o.id) openChat(o.id);
   var title = esc(o.courier ? o.courier.name : "Chat");
-  return (isWeb() ? '<div class="row between"><h1 class="w-title">' + title + ' <span class="muted mono sm">' + esc(o.id) + '</span></h1><button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Delivery details</button></div>' : head(title, "messages", '<button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Details</button>')) + chatView(o, "customer", acc.name);
+  return (isWeb() ? '<div class="row between"><h1 class="w-title">' + title + ' <span class="muted mono sm">' + esc(o.id) + '</span></h1><button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Delivery details</button></div>' : head(title, acc ? "messages" : "", '<button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Details</button>')) + chatView(o, "customer", acc ? acc.name : o.customer.name);
 }
 FORMS["chat"] = function (form) { sendChat(form); };
 FILES["chat"] = function (file) { shrinkImage(file, 640, 60000).then(function (src) { Chat.draftPhoto = src; render(); }, function () { toast("That photo couldn't be read."); }); };
@@ -409,7 +465,7 @@ function cNotesView() {
 // ---------- Account ----------
 function cAccount(acc) {
   var biz = acc.business && acc.business.active;
-  var rows = [["profile", "Profile", esc(acc.email)], ["addresses", "Saved addresses", (acc.addresses || []).length + " saved"], ["payments", "Payment methods", (acc.cards || []).length + " cards"], ["prefs", "Notifications", "Push, email, SMS"], ["invoices", "Invoices", myInvoices().length + " invoices"], ["deliveries", "Delivery history", myOrders().length + " deliveries"], ["business", biz ? "Business account" : "Activate business features", biz ? esc(acc.business.name) : "Plans, monthly invoicing, bulk deliveries"]];
+  var rows = [["profile", "Profile", esc(acc.email)], ["addresses", "Saved addresses", (acc.addresses || []).length + " saved"], ["payments", "Payment methods", (acc.cards || []).length + " cards"], ["prefs", "Notifications", "Push, email, SMS"], ["invoices", "Invoices", myInvoices().length + " invoices"], ["deliveries", "Delivery history", myOrders().length + " deliveries"], ["business", biz ? "Business account" : "Switch to a business account", biz ? esc(acc.business.name) + " · subscription plans" : "Get access to monthly subscription plans"]];
   if (biz && subPlan(acc) && subPlan(acc).bulk) rows.push(["bulk", "Bulk deliveries", "Upload a CSV or Excel file"]);
   rows.push(["help", "Help and support", "FAQ, contact, report a problem"]);
   return (isWeb() ? '<h1 class="w-title">Account</h1>' : head("Account")) + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(acc.name)) + "</span><div><b>" + esc(acc.name) + '</b><div class="muted sm">' + (biz ? "Business · " + esc(acc.business.name) : "Individual") + (acc.provider === "google" ? " · Google sign-in" : "") + "</div></div></div>" +
@@ -476,11 +532,11 @@ function cBusiness(acc) {
   var b = acc.business || {}, on = b.active;
   if (!S.c.biz || S.c.biz.id !== acc.id) S.c.biz = { id: acc.id, name: b.name || "", address: b.address || "", vat: b.vat || "", sdi: b.sdi || "", email: b.email || acc.email, phone: b.phone || acc.phone || "" };
   var f = S.c.biz, h = (isWeb() ? '<h1 class="w-title">Business</h1>' : head(on ? "Business account" : "Business features", "account")) + '<div class="pad">';
-  if (!on) h += '<div class="card"><b>Use DART for your business</b><span>Keep the same account. Add your business details to get business invoices, monthly invoicing and optional delivery plans.</span></div>';
+  if (!on) h += '<div class="card"><b>Switch to a business account</b><span>Keep the same login. Add your business details and you get access to DART subscription plans: a set number of deliveries every month for one monthly price. Your invoices will show your business details.</span></div>';
   h += '<form class="card" data-form="c-biz"><b>Business details</b>' + field("Business name", inp("c.biz.name", f.name, "required")) + field("Business address", inp("c.biz.address", f.address)) +
     '<div class="grid2">' + field("Partita IVA or Codice Fiscale", inp("c.biz.vat", f.vat)) + field("SDI code or PEC", inp("c.biz.sdi", f.sdi)) + "</div>" +
     '<div class="grid2">' + field("Billing email", inp("c.biz.email", f.email, 'type="email"')) + field("Business phone", inp("c.biz.phone", f.phone, 'type="tel"')) + "</div>" +
-    '<button class="btn">' + (on ? "Save business details" : "Activate business features") + "</button></form>";
+    '<button class="btn">' + (on ? "Save business details" : "Switch to business") + "</button></form>";
   if (!on) return h + "</div>";
   var sub = acc.subscription, plan = sub ? byId(S.plans, sub.planId) : null, active = activeSub(acc);
   h += '<div class="card"><div class="row between"><b>Delivery plan</b>' + (sub ? '<span class="chip ' + (sub.status === "active" ? "s-ok" : "s-bad") + '">' + esc(sub.status === "past_due" ? "Payment failed" : sub.status) + "</span>" : "") + "</div>";
@@ -508,7 +564,7 @@ FORMS["c-biz"] = function () {
   var b = Object.assign({}, acc.business || {}, { active: true, name: clip(f.name, 80), address: clip(f.address, 140), vat: clip(f.vat, 20), sdi: clip(f.sdi, 80), email: slugEmail(f.email), phone: clip(f.phone, 30) });
   if (!b.activatedAt) { b.activatedAt = Date.now(); b.verified = false; }
   var first = !(acc.business && acc.business.active);
-  run(Store.update("accounts", acc.id, { business: b, type: "business" }), first ? "Business features are on" : "Business details saved");
+  run(Store.update("accounts", acc.id, { business: b, type: "business" }), first ? "You're now a business account. Choose a plan below." : "Business details saved");
 };
 ACT["c-sub-pick"] = function (d) {
   var p = byId(S.plans, d.v), acc = me(); if (!p) return;
@@ -647,4 +703,26 @@ FORMS["c-ticket"] = function () {
   var labels = { delivery: "Delivery question", payment: "Payment or invoice", courier: "About a courier", account: "Account", other: "Other" };
   S.c.ticket = { topic: "delivery", orderId: "", text: "" };
   run(Store.set("tickets", "T-" + rid(6), { from: "customer", accountId: acc.id, name: acc.name, orderId: t.orderId || null, topic: t.topic, subject: labels[t.topic], text: text, status: "open", replies: [], createdAt: Date.now() }), "Sent. DART support will reply here.");
+};
+
+// ---------- Track a delivery (no account needed) ----------
+function cTrack(acc) {
+  var t = S.c.trk, web = isWeb();
+  var local = S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);
+  var h = (web ? '<h1 class="w-title">Track a delivery</h1>' : (acc ? head("Track a delivery", "home") : '<div class="app-head"><span class="logo"><svg><use href="#mark"/></svg>DART</span><h2></h2><button class="btn ghost sm" data-act="c-auth-open" data-v="login">Log in</button></div>')) + '<div class="pad"' + (web ? ' style="max-width:640px"' : "") + ">";
+  h += '<form class="card" data-form="c-track"><b>' + (web ? "Enter your tracking code" : "Track a delivery") + '</b><span class="muted sm">You\'ll find the code in your booking confirmation. It looks like DRT-ABC-123.</span>' +
+    field("Tracking code", inp("c.trk.code", t.code, 'autocomplete="off" spellcheck="false" placeholder="DRT-ABC-123" required style="text-transform:uppercase"')) +
+    (acc ? "" : field("Email used to book", inp("c.trk.email", t.email, 'type="email" autocomplete="email" required'))) + '<button class="btn">Track</button></form>';
+  if (local.length) h += '<div class="sec-h"><h3>Booked on this device</h3></div><div class="list">' + local.map(orderRow).join("") + "</div>";
+  if (acc) h += '<p class="muted sm">Your own deliveries are always in <button class="link" data-act="c-go" data-v="deliveries">Deliveries</button>.</p>';
+  else h += '<div class="card"><b>Want your history in one place?</b><span class="muted sm">Create a free account with the same email and your earlier deliveries are added to it.</span><button class="btn ghost sm" data-act="c-auth-open" data-v="register">Create an account</button></div>';
+  return h + "</div>";
+}
+FORMS["c-track"] = function () {
+  var t = S.c.trk, acc = me(), code = clip(t.code, 20).toUpperCase().replace(/\s+/g, "");
+  var o = byId(S.orders, code);
+  var ok = o && ((acc && o.customer.id === acc.id) || (o.customer.email && slugEmail(o.customer.email) === slugEmail(t.email)));
+  if (!ok) return toast(o ? "That email doesn't match this delivery." : "We couldn't find a delivery with that code.");
+  if (o.customer.guest) { S.me.guestOrders = [o.id].concat(S.me.guestOrders.filter(function (x) { return x !== o.id; })).slice(0, 30); saveMe(); }
+  S.c.order = o.id; S.c.view = "order"; render();
 };

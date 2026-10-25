@@ -53,7 +53,7 @@ function aDash() {
   var issues = S.orders.filter(function (o) { return o.status === "issue" || (o.issue && o.issue.open); });
   var n = aCounts();
   var h = aHead("Dashboard") + '<div class="kpis">' +
-    kpi("Customers", S.accounts.length, S.accounts.filter(function (a) { return a.business && a.business.active; }).length + " business") +
+    kpi("Customers", S.accounts.length, S.accounts.filter(function (a) { return a.business && a.business.active; }).length + " business · " + S.orders.filter(function (o) { return o.customer.guest; }).length + " guest bookings") +
     kpi("Couriers", S.couriers.filter(function (c) { return c.status === "approved"; }).length, onlineCouriers().length + " online now") +
     kpi("Registered vehicles", S.couriers.filter(function (c) { return c.vehicle; }).length, n.couriers ? n.couriers + " waiting for approval" : "") +
     kpi("Active deliveries", act.length, S.orders.filter(function (o) { return o.status === "awaiting"; }).length + " awaiting courier") +
@@ -88,7 +88,7 @@ function ordersTable(rows) {
   if (!rows.length) return emptyState("No deliveries here", "Bookings from the customer app and website appear here instantly.");
   return '<div class="tbl"><table><thead><tr><th>Ref</th><th>Created</th><th>Customer</th><th>Route</th><th>Item</th><th>Courier</th><th>Price</th><th>Payment</th><th>Status</th></tr></thead><tbody>' +
     rows.slice(0, 300).map(function (o) {
-      return '<tr class="click" data-act="a-order" data-v="' + esc(o.id) + '"><td class="mono sm">' + esc(o.id) + "</td><td>" + when(o.createdAt) + "</td><td>" + esc(o.customer.businessName || o.customer.name) + "</td><td>" + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + "</td><td>" + esc(cLabel(o.cls.category)) + "</td><td>" + esc(o.courier ? o.courier.name : "—") + '</td><td class="num">' + eur(o.billing ? o.billing.amount : o.price.total) + "</td><td>" + esc(o.billing ? o.billing.status : "") + "</td><td>" + chip(o.status) + "</td></tr>";
+      return '<tr class="click" data-act="a-order" data-v="' + esc(o.id) + '"><td class="mono sm">' + esc(o.id) + "</td><td>" + when(o.createdAt) + "</td><td>" + esc(o.customer.businessName || o.customer.name) + (o.customer.guest ? ' <span class="muted sm">guest</span>' : "") + "</td><td>" + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + "</td><td>" + esc(cLabel(o.cls.category)) + "</td><td>" + esc(o.courier ? o.courier.name : "—") + '</td><td class="num">' + eur(o.billing ? o.billing.amount : o.price.total) + "</td><td>" + esc(o.billing ? o.billing.status : "") + "</td><td>" + chip(o.status) + "</td></tr>";
     }).join("") + "</tbody></table></div>";
 }
 ACT["a-clear-yes"] = function () {
@@ -107,7 +107,8 @@ function aOrderModal(m) {
     '<dl class="kv"><dt>Classification</dt><dd>' + esc(cLabel(o.cls.category)) + " (from " + esc(o.cls.source) + ")</dd><dt>Eligible vehicles</dt><dd>" + esc((o.cls.vehicles || []).map(vLabel).join(", ")) + "</dd><dt>Couriers needed</dt><dd>" + o.cls.couriers + "</dd>" +
     (OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).length ? "<dt>Extras</dt><dd>" + esc(OPTIONS.filter(function (x) { return o.item.options[x.id]; }).map(function (x) { return x.label; }).join(", ")) + "</dd>" : "") + "</dl></div>" +
     '<div class="card"><b>Status history</b>' + timelineList(o) + "</div></div><div class=\"stack\">";
-  h += '<div class="card"><b>Customer</b><button class="link left" data-act="a-customer" data-v="' + esc(o.customer.id) + '">' + esc(o.customer.name) + (o.customer.businessName ? " · " + esc(o.customer.businessName) : "") + "</button>" + (acc ? '<span class="muted sm">' + esc(acc.email) + (acc.phone ? " · " + esc(acc.phone) : "") + "</span>" : "") + "</div>";
+  h += o.customer.guest ? '<div class="card"><b>Customer</b><span>' + esc(o.customer.name) + ' <span class="chip s-pur">Guest</span></span><span class="muted sm">' + esc(o.customer.email) + (o.customer.phone ? " · " + esc(o.customer.phone) : "") + "</span></div>"
+    : '<div class="card"><b>Customer</b><button class="link left" data-act="a-customer" data-v="' + esc(o.customer.id) + '">' + esc(o.customer.name) + (o.customer.businessName ? " · " + esc(o.customer.businessName) : "") + "</button>" + (acc ? '<span class="muted sm">' + esc(acc.email) + (acc.phone ? " · " + esc(acc.phone) : "") + "</span>" : "") + "</div>";
   if (o.courier) h += '<div class="card"><b>Courier</b><button class="link left" data-act="a-courier" data-v="' + esc(o.courier.id) + '">' + esc(o.courier.name) + "</button><span class=\"muted sm\">" + esc(vLabel(o.courier.vehicle)) + (o.courier.plate ? " · " + esc(o.courier.plate) : "") + " · earns " + eur(o.courierPay) + "</span></div>";
   if (o.status === "awaiting") {
     var el = S.couriers.filter(function (c) { return c.status === "approved" && eligibleAny(c, o); });

@@ -32,6 +32,7 @@ python3 dart/app-src/build.py
 
 These are deliberate shortcuts for the test build. The production apps replace them.
 
+- **Guests:** anyone can book and track without an account. Tracking needs the code and the email used to book. If a guest signs up later with the same email, their earlier deliveries move into the new account.
 - **Logins:** passwords aren't checked or stored, and Google sign-in is simulated. Production uses real authentication.
 - **Addresses:** a fixed list of Rome areas plus a typed street. Distances are estimated from the area centres. Production uses address search and road routing.
 - **Payments:** none are taken. Production uses Stripe.
