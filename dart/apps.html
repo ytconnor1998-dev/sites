@@ -1,0 +1,825 @@
+<title>DART Test Apps</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout concept: three working apps (customer, courier, admin) sharing one live store.
+   Phone apps sit in a device frame on wide screens and go full screen on phones. */
+:root {
+  --paper: #F7F5FB;
+  --paper-2: #EEE9F7;
+  --card: #FFFFFF;
+  --ink: #170F2E;
+  --muted: #5E5677;
+  --line: #DCD5EA;
+  --purple: #6A2BE0;
+  --purple-soft: #EDE4FF;
+  --lilac: #CDB6FF;
+  --on-lilac: #170F2E;
+  --on-purple: #FFFFFF;
+  --ok: #128A47;
+  --ok-soft: #DDF3E6;
+  --warn: #B86E00;
+  --warn-soft: #FCEBCF;
+  --bad: #C2283B;
+  --bad-soft: #FBE1E4;
+  --map-bg: #EFECF5;
+  --map-road: #FFFFFF;
+  --map-river: #C7D5F5;
+  --map-park: #D8EAD9;
+  --frame: #170F2E;
+  --shadow: 0 30px 60px -30px rgba(30, 10, 80, .45);
+  --font: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E0A1A; --paper-2: #161028; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE;
+    --line: #2C2444; --purple: #8A55F5; --purple-soft: #2A1D4F; --lilac: #B79BFF;
+    --ok: #4CD38A; --ok-soft: #123425; --warn: #F2B14C; --warn-soft: #3A2A10; --bad: #FF6B7D; --bad-soft: #3D1820;
+    --map-bg: #1A1430; --map-road: #2D2548; --map-river: #263A6E; --map-park: #1C3328;
+    --frame: #000000; --shadow: 0 30px 60px -30px rgba(0, 0, 0, .9);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E0A1A; --paper-2: #161028; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE;
+  --line: #2C2444; --purple: #8A55F5; --purple-soft: #2A1D4F; --lilac: #B79BFF;
+  --ok: #4CD38A; --ok-soft: #123425; --warn: #F2B14C; --warn-soft: #3A2A10; --bad: #FF6B7D; --bad-soft: #3D1820;
+  --map-bg: #1A1430; --map-road: #2D2548; --map-river: #263A6E; --map-park: #1C3328;
+  --frame: #000000; --shadow: 0 30px 60px -30px rgba(0, 0, 0, .9);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--purple); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+#root { min-height: 100%; }
+
+/* Shared controls */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 10px; padding: 14px 18px; font-weight: 700; font-size: 15px; background: var(--purple); color: var(--on-purple); text-decoration: none; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.block { width: 100%; }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+.btn.dark { background: var(--ink); color: var(--paper); }
+.btn.danger { background: var(--bad-soft); color: var(--bad); }
+.btn.ok { background: var(--ok); color: #fff; }
+.btn.sm { padding: 8px 12px; font-size: 13px; border-radius: 8px; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field > span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.input { width: 100%; border: 1.5px solid var(--line); background: var(--card); border-radius: 10px; padding: 11px 12px; font-size: 15px; min-width: 0; }
+textarea.input { resize: vertical; min-height: 64px; }
+.row { display: flex; gap: 10px; align-items: center; }
+.row.wrap { flex-wrap: wrap; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.s-searching { background: var(--warn-soft); color: var(--warn); }
+.s-assigned, .s-picked_up { background: var(--purple-soft); color: var(--purple); }
+.s-delivered { background: var(--ok-soft); color: var(--ok); }
+.s-cancelled { background: var(--bad-soft); color: var(--bad); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.seg button { border: 1.5px solid var(--line); background: var(--card); border-radius: 10px; padding: 10px 6px; font-weight: 600; display: grid; justify-items: center; gap: 2px; font-size: 13px; }
+.seg button.on { border-color: var(--purple); background: var(--purple-soft); }
+.seg button small { color: var(--muted); font-weight: 500; font-size: 12px; }
+.seg svg { width: 32px; height: 22px; }
+.switch { width: 46px; height: 28px; border-radius: 20px; border: 0; background: var(--line); position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: left .15s; }
+.switch.on { background: var(--ok); }
+.switch.on::after { left: 21px; }
+.toast { position: fixed; left: 50%; translate: -50% 0; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--paper); padding: 12px 16px; border-radius: 12px; font-weight: 600; z-index: 100; max-width: calc(100% - 32px); box-shadow: var(--shadow); }
+.logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 900; font-style: italic; letter-spacing: -.02em; font-size: 20px; }
+.logo svg { width: 26px; height: 26px; }
+.empty { text-align: center; padding: 28px 16px; color: var(--muted); display: grid; gap: 8px; justify-items: center; }
+.empty b { color: var(--ink); font-size: 16px; }
+
+/* Launcher */
+.home { max-width: 1000px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+.home h1 { font-size: clamp(40px, 7vw, 72px); font-weight: 900; font-style: italic; letter-spacing: -.04em; line-height: .95; }
+.home .lead { font-size: 18px; color: var(--muted); max-width: 60ch; }
+.launch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.launch a { text-decoration: none; border-radius: 18px; padding: 22px; display: grid; gap: 10px; align-content: start; min-width: 0; min-height: 190px; }
+.launch a h2 { font-size: 26px; font-weight: 900; letter-spacing: -.02em; }
+.launch a p { font-size: 15px; }
+.launch a .go { margin-top: auto; font-weight: 700; }
+.launch .l-c { background: var(--purple); color: #fff; }
+.launch .l-d { background: var(--lilac); color: var(--on-lilac); }
+.launch .l-a { background: var(--ink); color: var(--paper); }
+@media (max-width: 760px) { .launch { grid-template-columns: minmax(0, 1fr); } .launch a { min-height: 0; } }
+.howto { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 32px; border-top: 2px solid var(--ink); padding-top: 20px; }
+.howto ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.howto h3 { font-size: 18px; margin-bottom: 10px; }
+@media (max-width: 760px) { .howto { grid-template-columns: minmax(0, 1fr); } }
+.mode { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 8px; background: var(--paper-2); }
+.mode i { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.mode.live i { background: var(--ok); }
+
+/* Phone shell */
+.stage { min-height: 100%; display: flex; flex-direction: column; align-items: center; }
+.stage-bar { width: 100%; max-width: 430px; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); font-size: 14px; }
+.stage-bar a { font-weight: 700; text-decoration: none; }
+.device { width: 100%; max-width: 430px; height: calc(100dvh - 56px); background: var(--card); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+@media (min-width: 700px) and (min-height: 760px) {
+  .stage { padding-block: 10px 30px; }
+  .device { width: 390px; height: 800px; max-height: calc(100dvh - 90px); border-radius: 46px; border: 12px solid var(--frame); box-shadow: var(--shadow); }
+}
+.app-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; flex: none; }
+.app-head h2 { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.app-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.pad { padding: 0 16px 16px; display: grid; gap: 12px; align-content: start; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); flex: none; background: var(--card); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tabs button { border: 0; background: none; padding: 10px 4px 12px; display: grid; justify-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: var(--muted); position: relative; }
+.tabs button.on { color: var(--purple); }
+.tabs svg { width: 22px; height: 22px; }
+.tabs .badge { position: absolute; top: 6px; left: calc(50% + 6px); background: var(--purple); color: #fff; font-size: 10px; min-width: 16px; height: 16px; border-radius: 8px; display: grid; place-items: center; padding: 0 4px; }
+.map { position: relative; background: var(--map-bg); flex: none; overflow: hidden; }
+.map svg { display: block; width: 100%; height: 100%; }
+.map-lg { height: 260px; }
+.map-md { height: 210px; }
+.banner { margin: 0 16px 10px; padding: 10px 12px; border-radius: 10px; background: var(--purple-soft); color: var(--purple); font-weight: 600; font-size: 14px; }
+.banner.closed { background: var(--bad-soft); color: var(--bad); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.list { display: grid; gap: 8px; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; width: 100%; }
+.item b { font-size: 15px; }
+.item small { color: var(--muted); }
+.price-big { font-size: 30px; font-weight: 900; letter-spacing: -.02em; line-height: 1; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.steps i { height: 5px; border-radius: 4px; background: var(--line); }
+.steps i.on { background: var(--purple); }
+.steps-l { display: grid; grid-template-columns: repeat(4, 1fr); font-size: 11px; color: var(--muted); }
+.person { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 12px; background: var(--paper); }
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--purple-soft); color: var(--purple); display: grid; place-items: center; font-weight: 800; flex: none; }
+.legs { display: grid; gap: 8px; }
+.leg { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; }
+.leg i { width: 11px; height: 11px; border-radius: 50%; border: 3px solid var(--purple); margin-top: 4px; }
+.leg.drop i { border-radius: 2px; background: var(--ink); border-color: var(--ink); }
+.leg small { display: block; color: var(--muted); }
+.proof img { width: 100%; border-radius: 12px; display: block; max-height: 260px; object-fit: cover; }
+.stars { display: flex; gap: 4px; }
+.stars button { border: 0; background: none; font-size: 28px; line-height: 1; color: var(--line); padding: 2px; }
+.stars button.on { color: var(--purple); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; text-align: right; font-weight: 600; }
+.stat3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat3 div { background: var(--paper); border-radius: 12px; padding: 10px; display: grid; }
+.stat3 b { font-size: 18px; font-weight: 800; }
+.stat3 small { color: var(--muted); font-size: 12px; }
+.online-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--paper-2); }
+.online-card.on { background: var(--ok-soft); color: var(--ok); }
+.online-card b { font-size: 16px; }
+.job { border: 2px solid var(--purple); }
+.pay { font-size: 26px; font-weight: 900; letter-spacing: -.02em; }
+.file-btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--line); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; }
+.file-btn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.thumb { width: 100%; max-height: 160px; object-fit: cover; border-radius: 10px; }
+
+/* Admin */
+.admin { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100%; }
+.a-side { background: var(--ink); color: var(--paper); padding: 20px 12px; display: grid; gap: 4px; align-content: start; position: sticky; top: 0; height: 100dvh; }
+.a-side .logo { padding: 0 8px 18px; color: var(--paper); }
+.a-side button { border: 0; background: none; text-align: left; padding: 10px 12px; border-radius: 8px; color: color-mix(in srgb, var(--paper) 75%, var(--ink)); font-weight: 600; display: flex; justify-content: space-between; }
+.a-side button.on { background: color-mix(in srgb, var(--paper) 14%, var(--ink)); color: var(--paper); }
+.a-side a { color: color-mix(in srgb, var(--paper) 75%, var(--ink)); font-size: 13px; padding: 16px 12px 0; text-decoration: none; }
+.a-main { padding: 24px max(16px, env(safe-area-inset-right, 0px)) 40px 24px; display: grid; gap: 18px; align-content: start; min-width: 0; }
+.a-main h1 { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 2px; }
+.kpi small { color: var(--muted); font-weight: 700; font-size: 12px; }
+.kpi b { font-size: 28px; font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.a-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 14px; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; min-width: 0; }
+.panel-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); font-weight: 800; }
+.panel .map { height: 340px; }
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: middle; }
+th { font-size: 12px; color: var(--muted); font-weight: 700; }
+tr:last-child td { border-bottom: 0; }
+.p-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.p-grid .card h3 { font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.p-grid svg { width: 34px; height: 24px; color: var(--purple); }
+.a-top-mobile { display: none; }
+@media (max-width: 900px) {
+  .admin { grid-template-columns: minmax(0, 1fr); }
+  .a-side { position: static; height: auto; grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; padding: 10px max(16px, env(safe-area-inset-left, 0px)); align-items: center; }
+  .a-side .logo { padding: 0 10px 0 0; }
+  .a-side a { padding: 0 12px; }
+  .a-main { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .a-cols, .p-grid { grid-template-columns: minmax(0, 1fr); }
+}
+.splash { min-height: 100%; display: grid; place-items: center; color: var(--muted); padding: 40px 16px; }
+@keyframes pulse { 0% { r: 8; opacity: .5; } 100% { r: 20; opacity: 0; } }
+.pulse { animation: pulse 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="mark" viewBox="0 0 40 40">
+      <rect width="40" height="40" rx="9" fill="var(--purple)"/>
+      <path d="M9 29 L27 11" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      <path d="M19 10 H30 V21" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M8 22 L14 28 M12 18 L18 24" stroke="var(--lilac)" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-scooter" viewBox="0 0 48 32"><circle cx="10" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="38" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="3"/><path d="M10 24 H26 L32 10 H38 M32 10 L38 24 M16 16 H26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="12" y="6" width="12" height="9" rx="2" fill="currentColor"/></symbol>
+    <symbol id="i-car" viewBox="0 0 48 32"><path d="M4 22 V17 L10 9 H32 L40 16 L45 18 V22" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M4 22 H45" stroke="currentColor" stroke-width="3"/><circle cx="13" cy="24" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="3"/><circle cx="35" cy="24" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="3"/></symbol>
+    <symbol id="i-van" viewBox="0 0 48 32"><path d="M3 23 V6 H31 V23 M31 11 H39 L45 18 V23" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M3 23 H45" stroke="currentColor" stroke-width="3"/><circle cx="12" cy="25" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="3"/><circle cx="37" cy="25" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="3"/></symbol>
+    <symbol id="t-send" viewBox="0 0 24 24"><path d="M4 12h13M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="t-list" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="t-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="t-euro" viewBox="0 0 24 24"><path d="M17 6.5A7 7 0 1 0 17 17.5M4 10h9M4 14h9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<div id="root"><div class="splash">Loading DART…</div></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Reference data ----------
+  var AREAS = {
+    "Centro Storico": [41.8986, 12.4769], "Trastevere": [41.8867, 12.4700], "Prati": [41.9065, 12.4625],
+    "Monti": [41.8950, 12.4920], "Testaccio": [41.8768, 12.4762], "San Lorenzo": [41.8975, 12.5150],
+    "Pigneto": [41.8880, 12.5310], "Parioli": [41.9240, 12.4980], "Ostiense": [41.8700, 12.4800],
+    "San Giovanni": [41.8860, 12.5060], "Termini": [41.9010, 12.5010], "EUR": [41.8320, 12.4700]
+  };
+  var AREA_NAMES = Object.keys(AREAS);
+  var VEH = {
+    scooter: { label: "Scooter", cap: "up to 10 kg", speed: 18, pickup: 8, rank: 1 },
+    car: { label: "Car", cap: "up to 50 kg", speed: 15, pickup: 12, rank: 2 },
+    van: { label: "Van", cap: "up to 600 kg", speed: 14, pickup: 20, rank: 3 }
+  };
+  var DEFAULT_PRICING = {
+    scooter: { base: 4.9, km: 0.85, min: 6.9 },
+    car: { base: 9.9, km: 1.1, min: 11.9 },
+    van: { base: 19.9, km: 1.6, min: 24.9 },
+    courierShare: 75
+  };
+  var DEFAULT_SETTINGS = { open: true, banner: "", surge: 1 };
+  var STATUS = {
+    searching: "Finding a courier", assigned: "Courier on the way to pickup",
+    picked_up: "On the way to you", delivered: "Delivered", cancelled: "Cancelled"
+  };
+  var SHORT = { searching: "Finding courier", assigned: "Assigned", picked_up: "Picked up", delivered: "Delivered", cancelled: "Cancelled" };
+
+  // ---------- Helpers ----------
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function eur(n) { return "€" + (Number(n) || 0).toFixed(2); }
+  function hhmm(t) { return t ? new Date(t).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""; }
+  function initials(n) { return String(n || "?").trim().split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(); }
+  function isToday(t) { var d = new Date(t), n = new Date(); return d.toDateString() === n.toDateString(); }
+  function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+  function rid(n) { var a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", s = ""; for (var i = 0; i < n; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+  function num(v, d) { var x = parseFloat(String(v).replace(",", ".")); return isFinite(x) && x >= 0 ? x : d; }
+  function merge(a, b) {
+    var o = Object.assign({}, a);
+    Object.keys(b).forEach(function (k) {
+      var v = b[k];
+      o[k] = v && typeof v === "object" && !Array.isArray(v) && o[k] && typeof o[k] === "object" ? merge(o[k], v) : v;
+    });
+    return o;
+  }
+  function km(a, b) {
+    var R = 6371, r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r;
+    var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.pow(Math.sin(dLng / 2), 2);
+    return 2 * R * Math.asin(Math.sqrt(h)) * 1.35;
+  }
+  function tripKm(from, to) { return from === to ? 1.2 : km(AREAS[from], AREAS[to]); }
+  function quote(vehicle, from, to) {
+    var p = merge(DEFAULT_PRICING, S.pricing || {}), v = p[vehicle], d = tripKm(from, to);
+    var price = Math.max(v.min, v.base + v.km * d) * (num(S.settings.surge, 1) || 1);
+    return { km: d, price: Math.round(price * 100) / 100, mins: Math.round(VEH[vehicle].pickup + d / VEH[vehicle].speed * 60) };
+  }
+
+  // ---------- Store: shared db when the viewer provides it, this browser otherwise ----------
+  var LS = "dart-demo-v1";
+  var Store = {
+    mode: "connecting", db: null, watchers: [], unsubs: [],
+    localData: function () { return lsGet(LS, { orders: {}, couriers: {}, config: {} }); },
+    watch: function (col, cb) { this.watchers.push({ col: col, cb: cb }); if (this.mode !== "connecting") this.attach(this.watchers[this.watchers.length - 1]); },
+    attach: function (w) {
+      var self = this;
+      if (self.mode === "live") {
+        var u = self.db.collection(w.col).onSnapshot(function (snap) {
+          w.cb(snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }));
+        }, function (e) { toast("Lost connection to the live data (" + e.code + "). Reload to retry."); });
+        self.unsubs.push(u);
+      } else {
+        var fire = function () { var d = self.localData()[w.col] || {}; w.cb(Object.keys(d).map(function (id) { return Object.assign({ id: id }, d[id]); })); };
+        self.unsubs.push(Store.onLocal(fire));
+        fire();
+      }
+    },
+    localSubs: [],
+    onLocal: function (f) { var s = this.localSubs; s.push(f); return function () { var i = s.indexOf(f); if (i >= 0) s.splice(i, 1); }; },
+    emitLocal: function () { this.localSubs.slice().forEach(function (f) { f(); }); },
+    start: function (mode, db) {
+      this.unsubs.forEach(function (u) { try { u(); } catch (e) { } });
+      this.unsubs = []; this.mode = mode; this.db = db || null;
+      var self = this; this.watchers.forEach(function (w) { self.attach(w); });
+    },
+    set: function (col, id, data) {
+      if (this.mode === "live") return this.db.doc(col + "/" + id).set(data);
+      var d = this.localData(); d[col] = d[col] || {}; d[col][id] = data; lsSet(LS, d); this.emitLocal(); return Promise.resolve();
+    },
+    update: function (col, id, patch) {
+      if (this.mode === "live") return this.db.doc(col + "/" + id).update(patch);
+      var d = this.localData(); if (!d[col] || !d[col][id]) return Promise.reject({ code: "invalid_argument" });
+      d[col][id] = merge(d[col][id], patch); lsSet(LS, d); this.emitLocal(); return Promise.resolve();
+    },
+    del: function (col, id) {
+      if (this.mode === "live") return this.db.doc(col + "/" + id).delete();
+      var d = this.localData(); if (d[col]) delete d[col][id]; lsSet(LS, d); this.emitLocal(); return Promise.resolve();
+    },
+    // Only one courier can take a job: hold a short lease, re-read, then claim.
+    claim: function (id, holder, patch) {
+      if (this.mode === "live") {
+        var ref = this.db.doc("orders/" + id);
+        return ref.acquire({ holder: holder, ttlMs: 5000 }).then(function (r) {
+          if (!r.acquired) return false;
+          return ref.get().then(function (s) {
+            if (!s.exists || s.data().status !== "searching") return false;
+            return ref.update(patch).then(function () { return true; });
+          });
+        });
+      }
+      var d = this.localData(), o = d.orders && d.orders[id];
+      if (!o || o.status !== "searching") return Promise.resolve(false);
+      return this.update("orders", id, patch).then(function () { return true; });
+    }
+  };
+  window.addEventListener("storage", function (e) { if (e.key === LS && Store.mode === "local") Store.emitLocal(); });
+
+  // ---------- App state ----------
+  var S = {
+    orders: [], couriers: [], pricing: {}, settings: Object.assign({}, DEFAULT_SETTINGS),
+    me: lsGet("dart-me", { customerId: "u-" + rid(10), courierId: "c-" + rid(10), customerName: "", courierName: "", courierVehicle: "scooter", online: false }),
+    c: { tab: "send", track: null, form: { from: "Monti", to: "Trastevere", fromAddr: "", toAddr: "", vehicle: "scooter", notes: "", pay: "card" } },
+    d: { tab: "jobs", proof: null, receiver: "" },
+    a: { tab: "overview", filter: "active", pricingDraft: null, settingsDraft: null, confirmClear: false }
+  };
+  lsSet("dart-me", S.me);
+  function saveMe() { lsSet("dart-me", S.me); }
+
+  Store.watch("orders", function (rows) { rows.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }); S.orders = rows; render(); });
+  Store.watch("couriers", function (rows) { S.couriers = rows; render(); });
+  Store.watch("config", function (rows) {
+    var p = rows.filter(function (r) { return r.id === "pricing"; })[0], s = rows.filter(function (r) { return r.id === "settings"; })[0];
+    S.pricing = p ? stripId(p) : {}; S.settings = merge(DEFAULT_SETTINGS, s ? stripId(s) : {}); render();
+  });
+  function stripId(r) { var o = Object.assign({}, r); delete o.id; return o; }
+
+  // ---------- Map ----------
+  var W = 360, H = 400;
+  function proj(ll) { return [(ll[1] - 12.44) / 0.105 * W, (41.94 - ll[0]) / 0.115 * H]; }
+  var TIBER = [[41.945, 12.468], [41.93, 12.472], [41.918, 12.47], [41.908, 12.475], [41.902, 12.466], [41.896, 12.468], [41.892, 12.471], [41.889, 12.4775], [41.882, 12.477], [41.876, 12.471], [41.868, 12.468], [41.858, 12.474], [41.848, 12.468], [41.838, 12.458], [41.82, 12.45]];
+  var ROADS = [["Prati", "Centro Storico"], ["Centro Storico", "Monti"], ["Monti", "Termini"], ["Termini", "San Lorenzo"], ["San Lorenzo", "Pigneto"], ["Monti", "San Giovanni"], ["San Giovanni", "Pigneto"], ["Centro Storico", "Trastevere"], ["Trastevere", "Testaccio"], ["Testaccio", "Ostiense"], ["Ostiense", "EUR"], ["Termini", "Parioli"], ["Parioli", "Prati"], ["Testaccio", "San Giovanni"], ["Centro Storico", "Parioli"]];
+  function quad(a, b) { var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1]; return [mx - dy * .18, my + dx * .18]; }
+  function onQuad(a, c, b, t) { var u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; }
+  function mapSVG(opt) {
+    opt = opt || {};
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of Rome">';
+    s += '<rect width="' + W + '" height="' + H + '" fill="var(--map-bg)"/>';
+    [[41.914, 12.487, 28, 18], [41.886, 12.452, 22, 26], [41.931, 12.503, 20, 14], [41.873, 12.497, 16, 12]].forEach(function (p) { var c = proj(p); s += '<ellipse cx="' + c[0] + '" cy="' + c[1] + '" rx="' + p[2] + '" ry="' + p[3] + '" fill="var(--map-park)"/>'; });
+    ROADS.forEach(function (r) { var a = proj(AREAS[r[0]]), b = proj(AREAS[r[1]]); s += '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" stroke="var(--map-road)" stroke-width="7" stroke-linecap="round"/>'; });
+    s += '<polyline points="' + TIBER.map(function (p) { return proj(p).join(","); }).join(" ") + '" fill="none" stroke="var(--map-river)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>';
+    if (opt.labels !== false) AREA_NAMES.forEach(function (n) { var c = proj(AREAS[n]); s += '<text x="' + c[0] + '" y="' + (c[1] + 16) + '" text-anchor="middle" font-size="9.5" font-weight="600" fill="var(--muted)" font-family="Schibsted Grotesk, Arial, sans-serif">' + esc(n) + '</text>'; });
+    (opt.routes || []).forEach(function (r) {
+      var a = proj(AREAS[r.from]), b = proj(AREAS[r.to]), c = quad(a, b);
+      s += '<path d="M' + a + ' Q' + c + ' ' + b + '" fill="none" stroke="var(--purple)" stroke-width="' + (r.thin ? 3 : 5) + '" stroke-linecap="round"' + (r.dashed ? ' stroke-dasharray="2 8"' : '') + '/>';
+      s += '<circle cx="' + a[0] + '" cy="' + a[1] + '" r="7" fill="var(--card)" stroke="var(--purple)" stroke-width="4"/>';
+      s += '<rect x="' + (b[0] - 7) + '" y="' + (b[1] - 7) + '" width="14" height="14" rx="3" fill="var(--ink)"/>';
+      if (r.courier != null) {
+        var p = onQuad(a, c, b, r.courier);
+        if (r.approach != null) { var start = [a[0] + 40, a[1] - 50]; p = [start[0] + (a[0] - start[0]) * r.approach, start[1] + (a[1] - start[1]) * r.approach]; }
+        s += '<circle class="pulse" cx="' + p[0] + '" cy="' + p[1] + '" r="8" fill="var(--purple)"/><circle cx="' + p[0] + '" cy="' + p[1] + '" r="9" fill="var(--lilac)" stroke="var(--card)" stroke-width="3"/>';
+      }
+    });
+    return s + "</svg>";
+  }
+  // Simulated courier position from the order's own timestamps (no GPS in the test build).
+  function courierPos(o) {
+    var now = Date.now(), t = o.timeline || {};
+    if (o.status === "assigned") return { courier: 0, approach: Math.min(.95, (now - (t.assigned || now)) / 180000) };
+    if (o.status === "picked_up") return { courier: Math.min(.95, (now - (t.picked_up || now)) / (Math.max(5, o.mins - VEH[o.vehicle].pickup) * 60000)) };
+    if (o.status === "delivered") return { courier: 1 };
+    return {};
+  }
+
+  // ---------- Toast ----------
+  var toastTimer;
+  function toast(msg) {
+    var el = document.querySelector(".toast"); if (!el) { el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+    el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 3200);
+  }
+  function fail(e) { toast(e && e.code === "invalid_argument" ? "You don't have permission to change this." : e && e.code === "quota_exceeded" ? "The test database is full. Clear finished orders in the admin panel." : "That didn't save. Check your connection and try again."); }
+
+  // ---------- Rendering ----------
+  var root = document.getElementById("root"), pending = false;
+  function route() { var h = location.hash.replace("#", ""); return h === "customer" || h === "courier" || h === "admin" ? h : "home"; }
+  function render() {
+    if (Store.mode === "connecting") return;
+    var a = document.activeElement;
+    if (a && root.contains(a) && /INPUT|TEXTAREA/.test(a.tagName) && a.type !== "file") { pending = true; return; }
+    pending = false;
+    var r = route(), y = 0, body = root.querySelector(".app-body, .a-main");
+    if (body) y = body.scrollTop;
+    root.innerHTML = r === "customer" ? customer() : r === "courier" ? courier() : r === "admin" ? admin() : home();
+    var nb = root.querySelector(".app-body"); if (nb && root.dataset.r === r + S.c.tab + S.d.tab) nb.scrollTop = y;
+    root.dataset.r = r + S.c.tab + S.d.tab;
+    document.title = r === "customer" ? "DART" : r === "courier" ? "DART Courier" : r === "admin" ? "DART Admin" : "DART Test Apps";
+  }
+  root.addEventListener("focusout", function () { setTimeout(function () { if (pending) render(); }, 0); });
+  window.addEventListener("hashchange", render);
+  setInterval(function () { if (route() === "customer" && S.c.tab === "track" || route() === "admin" && S.a.tab === "overview") render(); }, 3000);
+
+  function modeChip() { return Store.mode === "live" ? '<span class="mode live"><i></i>Live · shared between devices</span>' : '<span class="mode"><i></i>Offline · this browser only</span>'; }
+  function vehSeg(sel, act, prices) {
+    return '<div class="seg" role="radiogroup">' + Object.keys(VEH).map(function (k) {
+      return '<button type="button" role="radio" aria-checked="' + (sel === k) + '" class="' + (sel === k ? "on" : "") + '" data-act="' + act + '" data-v="' + k + '"><svg><use href="#i-' + k + '"/></svg>' + VEH[k].label + '<small>' + (prices ? eur(prices[k].price) : VEH[k].cap) + '</small></button>';
+    }).join("") + "</div>";
+  }
+  function areaSelect(id, val) { return '<select class="input" id="' + id + '" data-bind="' + id + '">' + AREA_NAMES.map(function (n) { return '<option' + (n === val ? " selected" : "") + ">" + esc(n) + "</option>"; }).join("") + "</select>"; }
+  function stage(inner, label) {
+    return '<div class="stage"><div class="stage-bar"><a href="#home">← All apps</a>' + modeChip() + '</div><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
+  }
+  function steps(o) {
+    var n = { searching: 1, assigned: 2, picked_up: 3, delivered: 4 }[o.status] || 0;
+    return '<div class="steps">' + [1, 2, 3, 4].map(function (i) { return '<i class="' + (i <= n ? "on" : "") + '"></i>'; }).join("") + '</div><div class="steps-l"><span>Booked</span><span>Courier</span><span>Picked up</span><span>Delivered</span></div>';
+  }
+  function legs(o) {
+    return '<div class="legs"><div class="leg"><i></i><span><b>' + esc(o.fromAddr || o.from) + "</b><small>" + esc(o.from) + "</small></span></div>" +
+      '<div class="leg drop"><i></i><span><b>' + esc(o.toAddr || o.to) + "</b><small>" + esc(o.to) + "</small></span></div></div>";
+  }
+  function safeImg(src) { return typeof src === "string" && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(src) ? src : ""; }
+
+  // ----- Launcher -----
+  function home() {
+    return '<div class="home">' +
+      '<div class="row wrap" style="justify-content:space-between"><span class="logo"><svg><use href="#mark"/></svg>DART</span>' + modeChip() + '</div>' +
+      '<h1>Test the DART apps.</h1>' +
+      '<p class="lead">Three working apps on one live system. Book a delivery as a customer, take it as a courier, and run the whole thing from the admin panel. No real payments or couriers.</p>' +
+      '<div class="launch">' +
+      '<a class="l-c" href="#customer"><h2>DART</h2><p>The customer app. Get a price, book a scooter, car or van, and follow it to the door.</p><span class="go">Open customer app →</span></a>' +
+      '<a class="l-d" href="#courier"><h2>DART Courier</h2><p>The courier app. Go online, accept jobs, confirm pickup and deliver with a photo.</p><span class="go">Open courier app →</span></a>' +
+      '<a class="l-a" href="#admin"><h2>Admin</h2><p>Your control room. Live orders, couriers, prices and service settings for both apps.</p><span class="go">Open admin panel →</span></a>' +
+      '</div>' +
+      '<div class="howto"><div><h3>Try a full delivery</h3><ol>' +
+      '<li>Open the customer app on your phone and book a delivery.</li>' +
+      '<li>Open the courier app on a second phone or browser tab, go online and accept the job.</li>' +
+      '<li>Tap through pickup and delivery. Add a photo at the door.</li>' +
+      '<li>Watch the customer app update at each step.</li></ol></div>' +
+      '<div><h3>Try the admin controls</h3><ol>' +
+      '<li>Change the scooter price in Prices and save.</li>' +
+      '<li>The new price appears in the customer app straight away.</li>' +
+      '<li>Turn the service off, or add a message for customers, in Settings.</li>' +
+      '<li>Cancel or clear orders from Orders.</li></ol></div></div>' +
+      (Store.mode === "live" ? '<p class="muted">Anyone you share this link with as a Contributor can test with you. Viewers can look but not book.</p>' : '<p class="muted">Live sync isn\'t available in this view, so everything stays in this browser. Use two tabs here to play customer and courier.</p>') +
+      "</div>";
+  }
+
+  // ----- Customer app -----
+  function myOrders() { return S.orders.filter(function (o) { return o.customer && o.customer.id === S.me.customerId; }); }
+  function customer() {
+    if (!S.me.customerName) {
+      return stage('<div class="app-body"><div class="pad" style="padding-top:40px;gap:18px"><span class="logo" style="font-size:30px"><svg style="width:40px;height:40px"><use href="#mark"/></svg>DART</span>' +
+        '<h2 style="font-size:30px;font-weight:900;letter-spacing:-.02em">Rome, delivered.</h2><p class="muted">Tell us your name so your courier knows who they are delivering for.</p>' +
+        '<form data-form="c-name" class="pad" style="padding:0"><label class="field"><span>Your name</span><input class="input" id="c-name" name="n" autocomplete="given-name" required></label><button class="btn block">Continue</button></form></div></div>', "DART customer app");
+    }
+    var mine = myOrders(), active = mine.filter(function (o) { return o.status !== "delivered" && o.status !== "cancelled"; });
+    var body = S.c.tab === "track" ? cTrack() : S.c.tab === "list" ? cList(mine) : S.c.tab === "account" ? cAccount() : cSend();
+    var tab = function (k, ic, l, b) { return '<button class="' + (S.c.tab === k || (k === "list" && S.c.tab === "track") ? "on" : "") + '" data-act="c-tab" data-v="' + k + '"><svg><use href="#t-' + ic + '"/></svg>' + l + (b ? '<span class="badge">' + b + "</span>" : "") + "</button>"; };
+    return stage(body + '<nav class="tabs">' + tab("send", "send", "Send") + tab("list", "list", "Deliveries", active.length) + tab("account", "user", "Account") + "</nav>", "DART customer app");
+  }
+  function cSend() {
+    var f = S.c.form, q = {}; Object.keys(VEH).forEach(function (k) { q[k] = quote(k, f.from, f.to); });
+    var sel = q[f.vehicle], open = S.settings.open !== false;
+    return '<div class="app-head"><span class="logo"><svg><use href="#mark"/></svg>DART</span><span class="avatar" style="width:32px;height:32px;font-size:12px">' + esc(initials(S.me.customerName)) + "</span></div>" +
+      '<div class="app-body">' +
+      (!open ? '<div class="banner closed">DART is closed right now. You can book again when we reopen.</div>' : S.settings.banner ? '<div class="banner">' + esc(S.settings.banner) + "</div>" : "") +
+      (num(S.settings.surge, 1) > 1 ? '<div class="banner">Busy times: prices are ×' + num(S.settings.surge, 1) + " right now.</div>" : "") +
+      '<div class="map map-md">' + mapSVG({ routes: [{ from: f.from, to: f.to }] }) + "</div>" +
+      '<form class="pad" data-form="c-book" style="padding-top:14px">' +
+      '<div class="grid2"><label class="field"><span>Pickup area</span>' + areaSelect("from", f.from) + '</label><label class="field"><span>Drop-off area</span>' + areaSelect("to", f.to) + "</label></div>" +
+      '<label class="field"><span>Pickup street and number</span><input class="input" id="fromAddr" data-bind="fromAddr" value="' + esc(f.fromAddr) + '" placeholder="e.g. Via Panisperna 41"></label>' +
+      '<label class="field"><span>Drop-off street and number</span><input class="input" id="toAddr" data-bind="toAddr" value="' + esc(f.toAddr) + '" placeholder="e.g. Via Cola di Rienzo 212"></label>' +
+      '<div class="field"><span>Vehicle</span>' + vehSeg(f.vehicle, "c-veh", q) + "</div>" +
+      '<label class="field"><span>Note for the courier</span><textarea class="input" id="notes" data-bind="notes" placeholder="Buzzer, floor, what it is">' + esc(f.notes) + "</textarea></label>" +
+      '<div class="field"><span>Payment</span><div class="seg"><button type="button" class="' + (f.pay === "card" ? "on" : "") + '" data-act="c-pay" data-v="card">Card •• 4242</button><button type="button" class="' + (f.pay === "cash" ? "on" : "") + '" data-act="c-pay" data-v="cash">Cash</button></div></div>' +
+      '<div class="row" style="justify-content:space-between"><span class="muted">' + sel.km.toFixed(1) + " km · about " + sel.mins + ' min</span><span class="price-big num">' + eur(sel.price) + "</span></div>" +
+      '<button class="btn block" ' + (open ? "" : "disabled") + ">Book " + VEH[f.vehicle].label.toLowerCase() + " · " + eur(sel.price) + "</button>" +
+      "</form></div>";
+  }
+  function cList(mine) {
+    var html = '<div class="app-head"><h2>Your deliveries</h2></div><div class="app-body"><div class="pad">';
+    if (!mine.length) html += '<div class="empty"><b>No deliveries yet</b><span>Book one from the Send tab and it will show here.</span><button class="btn sm" data-act="c-tab" data-v="send">Send something</button></div>';
+    else html += '<div class="list">' + mine.map(function (o) {
+      return '<button class="item" data-act="c-open" data-v="' + esc(o.id) + '"><b>' + esc(o.from) + " → " + esc(o.to) + '</b><span class="chip s-' + esc(o.status) + '">' + esc(SHORT[o.status] || o.status) + "</span><small>" + esc(o.id) + " · " + hhmm(o.createdAt) + '</small><small class="num">' + eur(o.price) + "</small></button>";
+    }).join("") + "</div>";
+    return html + "</div></div>";
+  }
+  function cTrack() {
+    var o = S.orders.filter(function (x) { return x.id === S.c.track; })[0];
+    if (!o) return '<div class="app-head"><h2>Delivery</h2></div><div class="app-body"><div class="empty"><b>This delivery is no longer available</b><button class="btn sm" data-act="c-tab" data-v="list">Back to deliveries</button></div></div>';
+    var pos = courierPos(o), t = o.timeline || {}, left = null;
+    if (o.status === "picked_up") left = Math.max(1, Math.round((o.mins - VEH[o.vehicle].pickup) * (1 - (pos.courier || 0))));
+    if (o.status === "assigned") left = Math.max(2, Math.round(o.mins * (1 - (pos.approach || 0) * .3)));
+    var head = o.status === "assigned" && o.courier ? esc(o.courier.name) + " is heading to pickup" : esc(STATUS[o.status] || o.status);
+    var html = '<div class="app-head"><button class="btn ghost sm" data-act="c-tab" data-v="list">← Back</button><span class="mono muted" style="font-size:12px">' + esc(o.id) + "</span></div>" +
+      '<div class="app-body"><div class="map map-lg">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.from, to: o.to }, pos)] }) + "</div>" +
+      '<div class="pad" style="padding-top:14px"><div><h2 style="font-size:22px;font-weight:800">' + head + "</h2>" +
+      (left ? '<p class="muted">About ' + left + " min" + (o.status === "picked_up" ? " to you" : " until delivery") + "</p>" : o.status === "searching" ? '<p class="muted">Usually under a minute. Open the courier app to accept it.</p>' : o.status === "delivered" ? '<p class="muted">Delivered at ' + hhmm(t.delivered) + "</p>" : "") + "</div>" +
+      (o.status !== "cancelled" ? steps(o) : "");
+    if (o.courier && o.status !== "searching") html += '<div class="person"><span class="avatar">' + esc(initials(o.courier.name)) + "</span><div><b>" + esc(o.courier.name) + '</b><div class="muted" style="font-size:13px">' + esc(VEH[o.courier.vehicle] ? VEH[o.courier.vehicle].label : "") + " courier</div></div></div>";
+    if (o.status === "delivered" && o.proof) {
+      var img = safeImg(o.proof.photo);
+      html += '<div class="card proof"><b>Proof of delivery</b>' + (img ? '<img src="' + img + '" alt="Photo taken by the courier at the door">' : "") + '<span class="muted">Received by ' + esc(o.proof.receiver || "recipient") + " at " + hhmm(t.delivered) + "</span></div>";
+      html += '<div class="card"><b>Rate ' + esc(o.courier ? o.courier.name : "your courier") + '</b><div class="stars">' + [1, 2, 3, 4, 5].map(function (n) { return '<button aria-label="' + n + ' stars" class="' + ((o.rating || 0) >= n ? "on" : "") + '" data-act="c-rate" data-v="' + n + '">★</button>'; }).join("") + "</div></div>";
+    }
+    html += '<div class="card">' + legs(o) + '<dl class="kv"><dt>Vehicle</dt><dd>' + esc(VEH[o.vehicle] ? VEH[o.vehicle].label : o.vehicle) + "</dd><dt>Distance</dt><dd>" + (+o.km || 0).toFixed(1) + " km</dd><dt>Payment</dt><dd>" + (o.pay === "cash" ? "Cash" : "Card •• 4242") + '</dd><dt>Price</dt><dd class="num">' + eur(o.price) + "</dd></dl>" + (o.notes ? '<p class="muted">Note: ' + esc(o.notes) + "</p>" : "") + "</div>";
+    if (o.status === "searching") html += '<button class="btn danger block" data-act="c-cancel">Cancel delivery</button>';
+    return html + "</div></div>";
+  }
+  function cAccount() {
+    var mine = myOrders();
+    return '<div class="app-head"><h2>Account</h2></div><div class="app-body"><div class="pad">' +
+      '<div class="person"><span class="avatar">' + esc(initials(S.me.customerName)) + "</span><div><b>" + esc(S.me.customerName) + '</b><div class="muted" style="font-size:13px">' + mine.length + " deliveries</div></div></div>" +
+      '<form data-form="c-rename" class="card"><label class="field"><span>Change your name</span><input class="input" name="n" id="c-rename" value="' + esc(S.me.customerName) + '"></label><button class="btn ghost sm">Save name</button></form>' +
+      '<div class="card"><b>Payment</b><span class="muted">Card •• 4242 (test card, nothing is charged)</span></div>' +
+      '<div class="card"><b>Help</b><span class="muted">In the full app this opens chat with DART support.</span></div>' +
+      "</div></div>";
+  }
+
+  // ----- Courier app -----
+  function myJob() { return S.orders.filter(function (o) { return o.courier && o.courier.id === S.me.courierId && (o.status === "assigned" || o.status === "picked_up"); })[0]; }
+  function payFor(o) { var share = num(merge(DEFAULT_PRICING, S.pricing).courierShare, 75); return Math.round(o.price * share) / 100; }
+  function courier() {
+    if (!S.me.courierName) {
+      return stage('<div class="app-body"><div class="pad" style="padding-top:40px;gap:18px"><span class="logo" style="font-size:26px"><svg style="width:36px;height:36px"><use href="#mark"/></svg>DART Courier</span>' +
+        '<h2 style="font-size:28px;font-weight:900;letter-spacing:-.02em">Ride with DART.</h2><p class="muted">Set up your courier profile to start taking jobs.</p>' +
+        '<form data-form="d-name" class="pad" style="padding:0"><label class="field"><span>Your name</span><input class="input" id="d-name" name="n" required value="' + esc(S.d.nameDraft || "") + '"></label>' +
+        '<div class="field"><span>Your vehicle</span>' + vehSeg(S.me.courierVehicle, "d-veh") + '</div><button class="btn block">Start</button></form></div></div>', "DART Courier app");
+    }
+    var body = S.d.tab === "earn" ? dEarn() : S.d.tab === "account" ? dAccount() : dJobs();
+    var tab = function (k, ic, l) { return '<button class="' + (S.d.tab === k ? "on" : "") + '" data-act="d-tab" data-v="' + k + '"><svg><use href="#t-' + ic + '"/></svg>' + l + "</button>"; };
+    return stage(body + '<nav class="tabs">' + tab("jobs", "send", "Jobs") + tab("earn", "euro", "Earnings") + tab("account", "user", "Account") + "</nav>", "DART Courier app");
+  }
+  function myDone() { return S.orders.filter(function (o) { return o.courier && o.courier.id === S.me.courierId && o.status === "delivered"; }); }
+  function dJobs() {
+    var job = myJob(), done = myDone().filter(function (o) { return isToday(o.timeline && o.timeline.delivered); });
+    var today = done.reduce(function (s, o) { return s + payFor(o); }, 0);
+    var html = '<div class="app-head"><span class="logo"><svg><use href="#mark"/></svg>Courier</span><span class="avatar" style="width:32px;height:32px;font-size:12px">' + esc(initials(S.me.courierName)) + '</span></div><div class="app-body">';
+    if (job) return html + dActive(job) + "</div>";
+    html += '<div class="pad"><div class="online-card ' + (S.me.online ? "on" : "") + '"><div style="flex:1"><b>' + (S.me.online ? "You're online" : "You're offline") + '</b><div style="font-size:13px">' + (S.me.online ? "New jobs show up here" : "Go online to get jobs") + '</div></div><button class="switch ' + (S.me.online ? "on" : "") + '" role="switch" aria-checked="' + !!S.me.online + '" aria-label="Online" data-act="d-online"></button></div>' +
+      '<div class="stat3"><div><b class="num">' + eur(today) + "</b><small>Today</small></div><div><b>" + done.length + "</b><small>Jobs today</small></div><div><b>" + esc(VEH[S.me.courierVehicle].label) + "</b><small>Vehicle</small></div></div>";
+    if (S.settings.open === false) html += '<div class="banner closed" style="margin:0">DART is closed. No new jobs until it reopens.</div>';
+    if (!S.me.online) return html + '<div class="empty"><b>Offline</b><span>Turn on the switch above to see jobs near you.</span></div></div></div>';
+    var rank = VEH[S.me.courierVehicle].rank;
+    var jobs = S.orders.filter(function (o) { return o.status === "searching" && VEH[o.vehicle] && VEH[o.vehicle].rank <= rank; });
+    html += '<b style="font-size:16px">Jobs near you</b>';
+    if (!jobs.length) html += '<div class="empty"><b>No jobs right now</b><span>Book a delivery in the customer app and it will appear here.</span></div>';
+    else html += jobs.map(function (o) {
+      return '<div class="card job"><div class="row" style="justify-content:space-between"><span class="chip s-searching">' + esc(VEH[o.vehicle].label) + " job</span><span class=\"pay num\">" + eur(payFor(o)) + "</span></div>" + legs(o) +
+        '<div class="row muted" style="justify-content:space-between;font-size:13px"><span>' + (+o.km || 0).toFixed(1) + " km · " + (o.pay === "cash" ? "collect cash " + eur(o.price) : "paid by card") + "</span><span>" + hhmm(o.createdAt) + "</span></div>" +
+        (o.notes ? '<p class="muted" style="font-size:13px">Note: ' + esc(o.notes) + "</p>" : "") +
+        '<button class="btn block" data-act="d-accept" data-v="' + esc(o.id) + '">Accept job</button></div>';
+    }).join("");
+    return html + "</div></div>";
+  }
+  function dActive(o) {
+    var html = '<div class="map map-md">' + mapSVG({ labels: false, routes: [{ from: o.from, to: o.to, dashed: o.status === "assigned" }] }) + "</div><div class=\"pad\" style=\"padding-top:14px\">" +
+      '<div class="row" style="justify-content:space-between"><span class="chip s-' + esc(o.status) + '">' + (o.status === "assigned" ? "Go to pickup" : "Deliver") + '</span><span class="pay num">' + eur(payFor(o)) + "</span></div>" + legs(o) +
+      '<div class="person"><span class="avatar">' + esc(initials(o.customer && o.customer.name)) + "</span><div><b>" + esc(o.customer && o.customer.name) + '</b><div class="muted" style="font-size:13px">Customer · ' + esc(o.id) + "</div></div></div>" +
+      (o.notes ? '<div class="card"><b>Note</b><span>' + esc(o.notes) + "</span></div>" : "") +
+      (o.pay === "cash" ? '<div class="banner" style="margin:0">Collect ' + eur(o.price) + " in cash</div>" : "");
+    if (o.status === "assigned") html += '<button class="btn block" data-act="d-pickup">Confirm pickup</button>';
+    else html += '<form class="card" data-form="d-deliver"><b>Confirm delivery</b><label class="field"><span>Received by</span><input class="input" id="d-receiver" name="r" value="' + esc(S.d.receiver) + '" placeholder="Name of the person, or \'Concierge\'"></label>' +
+      (S.d.proof ? '<img class="thumb" src="' + safeImg(S.d.proof) + '" alt="Your delivery photo">' : "") +
+      '<label class="file-btn">' + (S.d.proof ? "Retake photo" : "Take a photo at the door") + '<input type="file" accept="image/*" capture="environment" data-file="proof"></label>' +
+      '<button class="btn ok block">Delivered</button></form>';
+    return html + "</div>";
+  }
+  function dEarn() {
+    var done = myDone(), total = done.reduce(function (s, o) { return s + payFor(o); }, 0);
+    return '<div class="app-head"><h2>Earnings</h2></div><div class="app-body"><div class="pad"><div class="card"><span class="muted">All time</span><span class="price-big num">' + eur(total) + '</span><span class="muted">' + done.length + " deliveries · paid every Monday</span></div>" +
+      (done.length ? '<div class="list">' + done.map(function (o) { return '<div class="item"><b>' + esc(o.from) + " → " + esc(o.to) + '</b><b class="num">' + eur(payFor(o)) + "</b><small>" + hhmm(o.timeline && o.timeline.delivered) + " · " + esc(o.id) + "</small><small>" + (o.rating ? o.rating + "★" : "") + "</small></div>"; }).join("") + "</div>" : '<div class="empty"><b>No deliveries yet</b><span>Completed jobs and what you earned show here.</span></div>') +
+      "</div></div>";
+  }
+  function dAccount() {
+    return '<div class="app-head"><h2>Account</h2></div><div class="app-body"><div class="pad">' +
+      '<div class="person"><span class="avatar">' + esc(initials(S.me.courierName)) + "</span><div><b>" + esc(S.me.courierName) + '</b><div class="muted" style="font-size:13px">' + esc(VEH[S.me.courierVehicle].label) + " courier</div></div></div>" +
+      '<div class="card"><b>Vehicle</b>' + vehSeg(S.me.courierVehicle, "d-veh") + '<span class="muted" style="font-size:13px">Bigger vehicles also see smaller jobs.</span></div>' +
+      '<form data-form="d-rename" class="card"><label class="field"><span>Change your name</span><input class="input" name="n" id="d-rename" value="' + esc(S.me.courierName) + '"></label><button class="btn ghost sm">Save name</button></form>' +
+      '<div class="card"><b>Documents</b><span class="muted">In the full app couriers upload their licence and insurance here for approval.</span></div>' +
+      "</div></div>";
+  }
+
+  // ----- Admin -----
+  function admin() {
+    var nav = [["overview", "Overview"], ["orders", "Orders"], ["prices", "Prices"], ["settings", "Settings"], ["couriers", "Couriers"]];
+    var act = S.orders.filter(function (o) { return o.status === "searching" || o.status === "assigned" || o.status === "picked_up"; }).length;
+    var main = S.a.tab === "orders" ? aOrders() : S.a.tab === "prices" ? aPrices() : S.a.tab === "settings" ? aSettings() : S.a.tab === "couriers" ? aCouriers() : aOverview();
+    return '<div class="admin"><nav class="a-side" aria-label="Admin"><span class="logo"><svg><use href="#mark"/></svg>DART</span>' +
+      nav.map(function (n) { return '<button class="' + (S.a.tab === n[0] ? "on" : "") + '" data-act="a-tab" data-v="' + n[0] + '">' + n[1] + (n[0] === "orders" && act ? "<span>" + act + "</span>" : "") + "</button>"; }).join("") +
+      '<a href="#home">← All apps</a></nav><div class="a-main">' + main + "</div></div>";
+  }
+  function onlineCouriers() { return S.couriers.filter(function (c) { return c.online && Date.now() - (c.updatedAt || 0) < 12 * 3600000; }); }
+  function aOverview() {
+    var today = S.orders.filter(function (o) { return isToday(o.createdAt); });
+    var active = S.orders.filter(function (o) { return o.status === "searching" || o.status === "assigned" || o.status === "picked_up"; });
+    var delivered = today.filter(function (o) { return o.status === "delivered"; });
+    var revenue = delivered.reduce(function (s, o) { return s + (+o.price || 0); }, 0);
+    var routes = active.map(function (o) { return Object.assign({ from: o.from, to: o.to, thin: true }, courierPos(o)); });
+    return '<div class="row wrap" style="justify-content:space-between"><h1>Today in Rome</h1>' + modeChip() + "</div>" +
+      '<div class="kpis"><div class="kpi"><small>Orders today</small><b>' + today.length + '</b></div><div class="kpi"><small>Active now</small><b>' + active.length + '</b></div><div class="kpi"><small>Delivered</small><b>' + delivered.length + '</b></div><div class="kpi"><small>Revenue</small><b>' + eur(revenue) + '</b></div><div class="kpi"><small>Couriers online</small><b>' + onlineCouriers().length + "</b></div></div>" +
+      '<div class="a-cols"><div class="panel"><div class="panel-h">Live map<span class="muted" style="font-weight:500;font-size:13px">' + active.length + " active</span></div><div class=\"map\">" + mapSVG({ routes: routes }) + "</div></div>" +
+      '<div class="panel"><div class="panel-h">Latest orders<button class="btn ghost sm" data-act="a-tab" data-v="orders">All orders</button></div>' + ordersTable(S.orders.slice(0, 8), false) + "</div></div>";
+  }
+  function ordersTable(rows, actions) {
+    if (!rows.length) return '<div class="empty"><b>No orders yet</b><span>Book a delivery in the customer app and it appears here instantly.</span></div>';
+    return '<div class="tbl"><table><thead><tr><th>Order</th><th>Time</th><th>Customer</th><th>Route</th><th>Vehicle</th><th>Courier</th><th>Price</th><th>Status</th>' + (actions ? "<th></th>" : "") + "</tr></thead><tbody>" +
+      rows.map(function (o) {
+        var live = o.status === "searching" || o.status === "assigned" || o.status === "picked_up";
+        return '<tr><td class="mono" style="font-size:12px">' + esc(o.id) + "</td><td>" + hhmm(o.createdAt) + "</td><td>" + esc(o.customer && o.customer.name) + "</td><td>" + esc(o.from) + " → " + esc(o.to) + "</td><td>" + esc(VEH[o.vehicle] ? VEH[o.vehicle].label : "") + "</td><td>" + esc(o.courier ? o.courier.name : "—") + '</td><td class="num">' + eur(o.price) + '</td><td><span class="chip s-' + esc(o.status) + '">' + esc(SHORT[o.status] || o.status) + "</span></td>" +
+          (actions ? "<td>" + (live ? '<button class="btn danger sm" data-act="a-cancel" data-v="' + esc(o.id) + '">Cancel</button>' : '<button class="btn ghost sm" data-act="a-del" data-v="' + esc(o.id) + '">Remove</button>') + "</td>" : "") + "</tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+  function aOrders() {
+    var f = S.a.filter, rows = S.orders.filter(function (o) {
+      return f === "all" ? true : f === "active" ? (o.status === "searching" || o.status === "assigned" || o.status === "picked_up") : o.status === f;
+    });
+    var finished = S.orders.filter(function (o) { return o.status === "delivered" || o.status === "cancelled"; }).length;
+    return '<h1>Orders</h1><div class="row wrap"><div class="seg" style="grid-auto-columns:max-content">' +
+      [["active", "Active"], ["delivered", "Delivered"], ["cancelled", "Cancelled"], ["all", "All"]].map(function (x) { return '<button class="' + (f === x[0] ? "on" : "") + '" data-act="a-filter" data-v="' + x[0] + '" style="padding:8px 14px">' + x[1] + "</button>"; }).join("") + "</div>" +
+      (finished ? (S.a.confirmClear ? '<span>Remove ' + finished + ' finished orders?</span><button class="btn danger sm" data-act="a-clear-yes">Yes, remove</button><button class="btn ghost sm" data-act="a-clear-no">Keep</button>' : '<button class="btn ghost sm" data-act="a-clear">Clear finished orders</button>') : "") + "</div>" +
+      '<div class="panel">' + ordersTable(rows, true) + "</div>";
+  }
+  function aPrices() {
+    var p = S.a.pricingDraft || merge(DEFAULT_PRICING, S.pricing);
+    return '<h1>Prices</h1><p class="muted">Changes go live in the customer and courier apps as soon as you save.</p><form data-form="a-prices" style="display:grid;gap:14px"><div class="p-grid">' +
+      Object.keys(VEH).map(function (k) {
+        return '<div class="card"><h3><svg><use href="#i-' + k + '"/></svg>' + VEH[k].label + "</h3>" +
+          '<label class="field"><span>Base fare (€)</span><input class="input num" inputmode="decimal" name="' + k + '.base" value="' + p[k].base + '"></label>' +
+          '<label class="field"><span>Per km (€)</span><input class="input num" inputmode="decimal" name="' + k + '.km" value="' + p[k].km + '"></label>' +
+          '<label class="field"><span>Minimum price (€)</span><input class="input num" inputmode="decimal" name="' + k + '.min" value="' + p[k].min + '"></label></div>';
+      }).join("") + '</div><div class="card" style="max-width:360px"><label class="field"><span>Courier share of each fare (%)</span><input class="input num" inputmode="decimal" name="courierShare" value="' + p.courierShare + '"></label></div>' +
+      '<div class="row"><button class="btn">Save prices</button><button type="button" class="btn ghost" data-act="a-prices-reset">Back to defaults</button></div></form>';
+  }
+  function aSettings() {
+    var s = S.settings;
+    return '<h1>Settings</h1><form data-form="a-settings" style="display:grid;gap:14px;max-width:620px">' +
+      '<div class="card"><div class="row" style="justify-content:space-between"><div><b>Taking orders</b><div class="muted" style="font-size:14px">Turn off to close DART. Customers can\'t book and couriers get no new jobs.</div></div><button type="button" class="switch ' + (s.open !== false ? "on" : "") + '" role="switch" aria-checked="' + (s.open !== false) + '" aria-label="Taking orders" data-act="a-open"></button></div></div>' +
+      '<div class="card"><label class="field"><span>Message at the top of the customer app</span><input class="input" name="banner" maxlength="140" value="' + esc(s.banner) + '" placeholder="e.g. Free delivery on your first order with code BENVENUTO"></label><span class="muted" style="font-size:13px">Leave empty to show nothing.</span></div>' +
+      '<div class="card"><label class="field"><span>Busy-time pricing</span><select class="input" name="surge">' + [1, 1.2, 1.5, 2].map(function (v) { return '<option value="' + v + '"' + (num(s.surge, 1) === v ? " selected" : "") + ">" + (v === 1 ? "Off" : "×" + v) + "</option>"; }).join("") + "</select></label></div>" +
+      '<div><button class="btn">Save settings</button></div></form>';
+  }
+  function aCouriers() {
+    var rows = S.couriers.slice().sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    var on = onlineCouriers().map(function (c) { return c.id; });
+    return '<h1>Couriers</h1><div class="panel">' + (rows.length ? '<div class="tbl"><table><thead><tr><th>Name</th><th>Vehicle</th><th>Status</th><th>Delivered</th><th>Earned</th><th>Last change</th></tr></thead><tbody>' +
+      rows.map(function (c) {
+        var done = S.orders.filter(function (o) { return o.courier && o.courier.id === c.id && o.status === "delivered"; });
+        var busy = S.orders.some(function (o) { return o.courier && o.courier.id === c.id && (o.status === "assigned" || o.status === "picked_up"); });
+        return "<tr><td><b>" + esc(c.name) + "</b></td><td>" + esc(VEH[c.vehicle] ? VEH[c.vehicle].label : "") + '</td><td><span class="chip ' + (busy ? "s-assigned" : on.indexOf(c.id) >= 0 ? "s-delivered" : "s-cancelled") + '">' + (busy ? "On a job" : on.indexOf(c.id) >= 0 ? "Online" : "Offline") + "</span></td><td>" + done.length + '</td><td class="num">' + eur(done.reduce(function (s, o) { return s + payFor(o); }, 0)) + "</td><td>" + hhmm(c.updatedAt) + "</td></tr>";
+      }).join("") + "</tbody></table></div>" : '<div class="empty"><b>No couriers yet</b><span>Open the courier app, set up a profile and go online.</span></div>') + "</div>";
+  }
+
+  // ---------- Actions ----------
+  function courierDoc(online) {
+    return Store.set("couriers", S.me.courierId, { name: S.me.courierName, vehicle: S.me.courierVehicle, online: online, updatedAt: Date.now() });
+  }
+  var busy = false;
+  function once(p) { busy = true; return p.catch(fail).then(function (v) { busy = false; render(); return v; }); }
+  var ACT = {
+    "c-tab": function (d) { S.c.tab = d.v; render(); },
+    "c-veh": function (d) { S.c.form.vehicle = d.v; render(); },
+    "c-pay": function (d) { S.c.form.pay = d.v; render(); },
+    "c-open": function (d) { S.c.track = d.v; S.c.tab = "track"; render(); },
+    "c-cancel": function () {
+      var id = S.c.track;
+      once(Store.update("orders", id, { status: "cancelled", timeline: { cancelled: Date.now() } }).then(function () { toast("Delivery cancelled"); }));
+    },
+    "c-rate": function (d) { once(Store.update("orders", S.c.track, { rating: +d.v }).then(function () { toast("Thanks for rating"); })); },
+    "d-tab": function (d) { S.d.tab = d.v; render(); },
+    "d-veh": function (d) { S.me.courierVehicle = d.v; saveMe(); if (S.me.courierName) courierDoc(!!S.me.online).catch(fail); render(); },
+    "d-online": function () {
+      var next = !S.me.online;
+      once(courierDoc(next).then(function () { S.me.online = next; saveMe(); toast(next ? "You're online" : "You're offline"); }));
+    },
+    "d-accept": function (d) {
+      if (busy) return;
+      once(Store.claim(d.v, S.me.courierId, { status: "assigned", courier: { id: S.me.courierId, name: S.me.courierName, vehicle: S.me.courierVehicle }, timeline: { assigned: Date.now() } })
+        .then(function (ok) { toast(ok ? "Job accepted. Head to pickup." : "Someone else took that job."); }));
+    },
+    "d-pickup": function () { var j = myJob(); if (j) once(Store.update("orders", j.id, { status: "picked_up", timeline: { picked_up: Date.now() } }).then(function () { toast("Picked up. Deliver to drop-off."); })); },
+    "a-tab": function (d) { S.a.tab = d.v; S.a.pricingDraft = null; S.a.confirmClear = false; render(); },
+    "a-filter": function (d) { S.a.filter = d.v; render(); },
+    "a-cancel": function (d) { once(Store.update("orders", d.v, { status: "cancelled", timeline: { cancelled: Date.now() }, cancelledBy: "admin" }).then(function () { toast("Order cancelled"); })); },
+    "a-del": function (d) { once(Store.del("orders", d.v)); },
+    "a-clear": function () { S.a.confirmClear = true; render(); },
+    "a-clear-no": function () { S.a.confirmClear = false; render(); },
+    "a-clear-yes": function () {
+      S.a.confirmClear = false;
+      var ids = S.orders.filter(function (o) { return o.status === "delivered" || o.status === "cancelled"; }).map(function (o) { return o.id; });
+      once(ids.reduce(function (p, id) { return p.then(function () { return Store.del("orders", id); }); }, Promise.resolve()).then(function () { toast("Finished orders removed"); }));
+    },
+    "a-prices-reset": function () { S.a.pricingDraft = merge(DEFAULT_PRICING, {}); render(); },
+    "a-open": function () {
+      var next = S.settings.open === false;
+      once(Store.set("config", "settings", merge(S.settings, { open: next })).then(function () { toast(next ? "DART is taking orders" : "DART is closed"); }));
+    }
+  };
+  root.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-act]"); if (!el || !root.contains(el)) return;
+    var f = ACT[el.dataset.act]; if (f) { e.preventDefault(); f(el.dataset); }
+  });
+  root.addEventListener("change", function (e) {
+    var b = e.target.dataset && e.target.dataset.bind;
+    if (b && e.target.tagName === "SELECT") { S.c.form[b] = e.target.value; render(); }
+    if (e.target.dataset && e.target.dataset.file === "proof" && e.target.files[0]) shrink(e.target.files[0]);
+  });
+  root.addEventListener("input", function (e) {
+    var b = e.target.dataset && e.target.dataset.bind; if (b && e.target.tagName !== "SELECT") S.c.form[b] = e.target.value;
+    if (e.target.id === "d-receiver") S.d.receiver = e.target.value;
+    if (e.target.id === "d-name") S.d.nameDraft = e.target.value;
+  });
+  function shrink(file) {
+    var img = new Image(), url = URL.createObjectURL(file);
+    img.onload = function () {
+      var max = 640, k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      var q = .7, out = c.toDataURL("image/jpeg", q);
+      while (out.length > 180000 && q > .3) { q -= .1; out = c.toDataURL("image/jpeg", q); }
+      URL.revokeObjectURL(url); S.d.proof = out; render();
+    };
+    img.onerror = function () { toast("That photo couldn't be read. Try another."); };
+    img.src = url;
+  }
+  root.addEventListener("submit", function (e) {
+    var form = e.target, kind = form.dataset.form; if (!kind) return;
+    e.preventDefault();
+    var fd = new FormData(form);
+    if (kind === "c-name" || kind === "c-rename") { var n = String(fd.get("n") || "").trim().slice(0, 40); if (!n) return; S.me.customerName = n; saveMe(); document.activeElement.blur(); render(); if (kind === "c-rename") toast("Name saved"); return; }
+    if (kind === "d-name" || kind === "d-rename") {
+      var m = String(fd.get("n") || "").trim().slice(0, 40); if (!m) return; S.me.courierName = m; saveMe(); document.activeElement.blur();
+      courierDoc(!!S.me.online).catch(fail); render(); if (kind === "d-rename") toast("Name saved"); return;
+    }
+    if (kind === "c-book") {
+      if (busy || S.settings.open === false) return;
+      var f = S.c.form, q = quote(f.vehicle, f.from, f.to), id = "DRT-" + rid(3) + "-" + rid(3);
+      var order = {
+        from: f.from, to: f.to, fromAddr: f.fromAddr.trim().slice(0, 80), toAddr: f.toAddr.trim().slice(0, 80), notes: f.notes.trim().slice(0, 240),
+        vehicle: f.vehicle, pay: f.pay, km: Math.round(q.km * 10) / 10, mins: q.mins, price: q.price, status: "searching",
+        customer: { id: S.me.customerId, name: S.me.customerName }, createdAt: Date.now(), timeline: { booked: Date.now() }
+      };
+      if (document.activeElement) document.activeElement.blur();
+      once(Store.set("orders", id, order).then(function () { S.c.form.notes = ""; S.c.track = id; S.c.tab = "track"; toast("Booked. Finding you a courier."); }));
+      return;
+    }
+    if (kind === "d-deliver") {
+      var j = myJob(); if (!j || busy) return;
+      var proof = { receiver: String(fd.get("r") || "").trim().slice(0, 60) || "Recipient" };
+      if (S.d.proof) proof.photo = S.d.proof;
+      if (document.activeElement) document.activeElement.blur();
+      once(Store.update("orders", j.id, { status: "delivered", proof: proof, timeline: { delivered: Date.now() } }).then(function () { S.d.proof = null; S.d.receiver = ""; toast("Delivered. Nice work."); }));
+      return;
+    }
+    if (kind === "a-prices") {
+      var p = merge(DEFAULT_PRICING, S.pricing);
+      Object.keys(VEH).forEach(function (k) { ["base", "km", "min"].forEach(function (x) { p[k][x] = num(fd.get(k + "." + x), p[k][x]); }); });
+      p.courierShare = Math.min(100, num(fd.get("courierShare"), p.courierShare));
+      if (document.activeElement) document.activeElement.blur();
+      once(Store.set("config", "pricing", p).then(function () { S.a.pricingDraft = null; toast("Prices saved and live in the apps"); }));
+      return;
+    }
+    if (kind === "a-settings") {
+      var s = merge(S.settings, { banner: String(fd.get("banner") || "").trim().slice(0, 140), surge: num(fd.get("surge"), 1) });
+      if (document.activeElement) document.activeElement.blur();
+      once(Store.set("config", "settings", s).then(function () { toast("Settings saved and live in the apps"); }));
+    }
+  });
+
+  // ---------- Boot ----------
+  var settled = false;
+  function go(mode, db) { if (settled && !(mode === "live" && Store.mode === "local")) return; settled = true; Store.start(mode, db); render(); if (mode === "live" && db && route() !== "home") toast("Connected to live data"); }
+  setTimeout(function () { go("local"); }, 2500);
+  try {
+    if (window.claude && window.claude.use) window.claude.use("db").then(function (db) { db ? go("live", db) : go("local"); }, function () { go("local"); });
+    else go("local");
+  } catch (e) { go("local"); }
+})();
+</script>
