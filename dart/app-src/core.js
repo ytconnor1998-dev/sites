@@ -118,6 +118,50 @@ function haversine(a, b) {
   var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.pow(Math.sin(dLng / 2), 2);
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+// ---------- Address lookup (test build) ----------
+// The real apps use Google address search, which returns the exact place. The test build
+// knows the main streets of each area and Rome's postcodes, so typing an address fills in the area.
+var STREETS = {
+  "Centro Storico": ["Via del Corso", "Via del Governo Vecchio", "Corso Vittorio Emanuele II", "Via dei Coronari", "Piazza Navona", "Campo de' Fiori", "Via Giulia", "Via dei Giubbonari", "Piazza Venezia", "Via della Scrofa", "Via del Babuino", "Via Margutta", "Via Condotti", "Via Frattina", "Via del Tritone", "Via Veneto", "Piazza di Spagna", "Via di Ripetta", "Largo di Torre Argentina", "Via del Pellegrino", "Via Arenula", "Via di Monserrato", "Via della Croce", "Via del Plebiscito", "Piazza del Popolo"],
+  "Trastevere": ["Viale di Trastevere", "Via della Lungaretta", "Via della Scala", "Via della Lungara", "Piazza di Santa Maria in Trastevere", "Via di San Francesco a Ripa", "Via Garibaldi", "Via della Paglia", "Vicolo del Cinque", "Via dei Genovesi", "Via Natale del Grande", "Piazza Trilussa", "Via Roma Libera", "Via Luciano Manara", "Piazza di San Cosimato", "Via Anicia", "Via dei Vascellari"],
+  "Prati": ["Via Cola di Rienzo", "Viale Giulio Cesare", "Via Ottaviano", "Via Crescenzio", "Via dei Gracchi", "Piazza Cavour", "Via Marcantonio Colonna", "Via Fabio Massimo", "Via Germanico", "Viale delle Milizie", "Via Boezio", "Via Properzio", "Lungotevere Prati", "Via Vittoria Colonna", "Via Tacito", "Via Pompeo Magno", "Via Ezio", "Piazza del Risorgimento", "Viale Angelico", "Piazza Mazzini", "Via Candia", "Via Andrea Doria", "Via Federico Cesi", "Via Cicerone"],
+  "Monti": ["Via Nazionale", "Via Panisperna", "Via dei Serpenti", "Via del Boschetto", "Via Urbana", "Via Leonina", "Via Baccina", "Via dei Fori Imperiali", "Via Cavour", "Via Milano", "Via degli Zingari", "Piazza della Madonna dei Monti", "Via Labicana", "Via Mazzarino", "Via del Colosseo", "Via Clementina", "Via Ciancaleoni"],
+  "Testaccio": ["Via Marmorata", "Via Galvani", "Via Mastro Giorgio", "Piazza Testaccio", "Via Ginori", "Via Vanvitelli", "Via Nicola Zabaglia", "Via Alessandro Volta", "Via Luca della Robbia", "Via Aldo Manuzio", "Via di Monte Testaccio", "Via Caio Cestio", "Piazza dell'Emporio", "Lungotevere Testaccio", "Via Bodoni", "Via Florio"],
+  "San Lorenzo": ["Via Tiburtina", "Via dei Volsci", "Via degli Equi", "Via dei Sabelli", "Via dei Marsi", "Via degli Ausoni", "Largo degli Osci", "Piazza dell'Immacolata", "Via dei Reti", "Via dei Latini", "Via dello Scalo di San Lorenzo", "Via dei Ramni", "Via dei Taurini", "Via dei Piceni"],
+  "Pigneto": ["Via del Pigneto", "Via Prenestina", "Circonvallazione Casilina", "Via L'Aquila", "Via Fanfulla da Lodi", "Via Ascoli Piceno", "Via Macerata", "Via Braccio da Montone", "Via Casilina", "Via Pesaro", "Via Alberto da Giussano", "Via Gentile da Mogliano", "Via Perugia"],
+  "Parioli": ["Viale Parioli", "Viale Bruno Buozzi", "Via Antonio Bertoloni", "Piazza Euclide", "Via Archimede", "Viale Liegi", "Via Paisiello", "Via Panama", "Piazza Ungheria", "Viale Rossini", "Via Antonio Gramsci", "Via Salaria", "Viale dei Parioli", "Via Denza", "Via Mercalli", "Viale Romania", "Via Nomentana"],
+  "Ostiense": ["Via Ostiense", "Viale Guglielmo Marconi", "Via del Porto Fluviale", "Via Pellegrino Matteucci", "Via Giacomo Bove", "Via Libetta", "Via del Gazometro", "Lungotevere San Paolo", "Piazzale Ostiense", "Via dei Magazzini Generali", "Via Gustavo Bianchi", "Via Antonio Pacinotti"],
+  "San Giovanni": ["Via Appia Nuova", "Via La Spezia", "Via Taranto", "Via Gallia", "Via Magna Grecia", "Via Sannio", "Piazza di San Giovanni in Laterano", "Via Merulana", "Via Emanuele Filiberto", "Via dell'Amba Aradam", "Via Britannia", "Via Pinerolo", "Piazza Re di Roma", "Via Cerveteri", "Via Orvieto", "Via Etruria", "Via Enna", "Via Albalonga"],
+  "Termini": ["Via Marsala", "Via Giolitti", "Piazza dei Cinquecento", "Via Volturno", "Via Milazzo", "Via Principe Amedeo", "Piazza Vittorio Emanuele II", "Via Gioberti", "Via Napoleone III", "Via Carlo Alberto", "Via Filippo Turati", "Via Palestro", "Via Goito", "Via XX Settembre", "Via Solferino", "Piazza della Repubblica", "Via Castelfidardo", "Via Manin", "Via Cernaia"],
+  "EUR": ["Viale Europa", "Via Cristoforo Colombo", "Piazzale Guglielmo Marconi", "Viale America", "Viale dell'Oceano Pacifico", "Viale Beethoven", "Viale della Civiltà del Lavoro", "Viale della Tecnica", "Viale Asia", "Viale Africa", "Viale Egeo", "Via Laurentina", "Viale dell'Arte", "Piazza Pakistan", "Viale Shakespeare"],
+  "Flaminio": ["Via Flaminia", "Viale Tiziano", "Piazza Mancini", "Via Guido Reni", "Viale Pinturicchio", "Via Fracassini", "Lungotevere Flaminio", "Piazza Apollodoro", "Viale del Vignola", "Via Masaccio", "Piazza Gentile da Fabriano", "Via Flaminia Vecchia"],
+  "Monteverde": ["Circonvallazione Gianicolense", "Via di Donna Olimpia", "Via Fonteiana", "Viale dei Quattro Venti", "Via Giacinto Carini", "Via Vitellia", "Piazza Rosolino Pilo", "Via Federico Ozanam", "Via Emilio Dandolo", "Via Carlo Poerio", "Via di Monteverde", "Piazza San Giovanni di Dio", "Via Ludovico di Monreale"],
+  "Garbatella": ["Circonvallazione Ostiense", "Via delle Sette Chiese", "Piazza Benedetto Brin", "Via Rocco da Cesinale", "Largo delle Sette Chiese", "Piazza Damiano Sauli", "Via Ignazio Persico", "Via Giovanni Ansaldo", "Via Edgardo Ferrati", "Via Francesco Passino", "Via Guglielmo Massaia"],
+  "Tuscolano": ["Via Tuscolana", "Viale Furio Camillo", "Via Ponzio Cominio", "Viale Giulio Agricola", "Via Cesare Baronio", "Via dell'Arco di Travertino", "Viale Spartaco", "Via di Porta Furba", "Piazza di Cinecittà", "Via Lucio Sestio", "Via dei Quintili"]
+};
+// Rome postcodes (CAP) and the areas they cover.
+var CAPS = { "00184": ["Monti"], "00186": ["Centro Storico"], "00187": ["Centro Storico"], "00153": ["Trastevere", "Testaccio"], "00185": ["Termini", "San Lorenzo"],
+  "00192": ["Prati"], "00193": ["Prati"], "00195": ["Prati"], "00196": ["Flaminio"], "00197": ["Parioli"], "00198": ["Parioli"], "00199": ["Parioli"],
+  "00176": ["Pigneto"], "00177": ["Pigneto"], "00182": ["San Giovanni"], "00183": ["San Giovanni"], "00181": ["Tuscolano"], "00174": ["Tuscolano"], "00179": ["Tuscolano"],
+  "00144": ["EUR"], "00142": ["EUR"], "00143": ["EUR"], "00152": ["Monteverde"], "00151": ["Monteverde"], "00154": ["Ostiense", "Garbatella"], "00145": ["Garbatella"], "00146": ["Ostiense"], "00147": ["Garbatella"] };
+function fold(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’']/g, "'").toLowerCase().replace(/\s+/g, " ").trim(); }
+var STREET_LIST = []; Object.keys(STREETS).forEach(function (a) { STREETS[a].forEach(function (s) { STREET_LIST.push({ street: s, area: a, key: fold(s) }); }); });
+// Suggestions while typing: streets whose name contains every word typed (house numbers ignored).
+function streetMatches(text, max) {
+  var words = fold(text).replace(/\b\d+[a-z]?\b|,|\b00\d{3}\b/g, " ").split(" ").filter(function (w) { return w.length > 1 && ["via", "viale", "piazza", "largo", "vicolo", "corso", "lungotevere", "piazzale", "circonvallazione"].indexOf(w) < 0; });
+  if (!words.length) return [];
+  return STREET_LIST.filter(function (s) { return words.every(function (w) { return s.key.indexOf(w) >= 0; }); })
+    .sort(function (a, b) { return a.key.indexOf(words[0]) - b.key.indexOf(words[0]) || a.key.length - b.key.length; }).slice(0, max || 6);
+}
+// The area for a typed address: from a known street, else from the postcode. Returns the areas it could be.
+function findArea(text) {
+  var t = fold(text), hit = STREET_LIST.filter(function (s) { return t.indexOf(s.key) === 0 || t.indexOf(s.key + " ") >= 0 || t.indexOf(s.key + ",") >= 0 || t === s.key; }).sort(function (a, b) { return b.key.length - a.key.length; })[0];
+  if (hit) return [hit.area];
+  var cap = (t.match(/\b(00\d{3})\b/) || [])[1];
+  return cap && CAPS[cap] ? CAPS[cap] : [];
+}
+function houseNumber(text) { var m = String(text || "").match(/(?:^|[\s,])(\d+[a-zA-Z]?(?:\/[a-zA-Z0-9]+)?)\s*(?:,|$)/); return m ? m[1] : ""; }
+
 // ---------- Delivery times ----------
 // ASAP promises the trip time plus a buffer; a set time must be at least that far ahead.
 function earliestBy(from, to, now) {

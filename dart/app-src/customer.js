@@ -213,7 +213,7 @@ function addrBlock(key, label, acc) {
   var a = S.c.draft[key], saved = acc ? (acc.addresses || []) : [];
   return '<div class="card"><b>' + label + "</b>" +
     (saved.length ? '<div class="chips">' + saved.map(function (s) { return '<button type="button" class="chipbtn" data-act="c-use-addr" data-k="' + key + '" data-v="' + esc(s.id) + '">' + esc(s.label || s.street) + "</button>"; }).join("") + "</div>" : "") +
-    '<div class="grid2">' + field("Area of Rome", areaSel("c.draft." + key + ".area", a.area)) + field("Street and number", inp("c.draft." + key + ".street", a.street, 'placeholder="e.g. Via Panisperna 41" autocomplete="street-address"')) + "</div>" +
+    addressField("c.draft." + key, a) +
     field(key === "pickup" ? "Pickup instructions" : "Delivery instructions", inp("c.draft." + key + ".notes", a.notes, 'placeholder="' + (key === "pickup" ? "Seller's name, buzzer, floor" : "Buzzer, floor, who receives it") + '"')) + "</div>";
 }
 function newWhere(acc) {
@@ -312,7 +312,7 @@ ACT["c-go"] = function (d) {
 };
 ACT["c-step"] = function (d) {
   var dr = S.c.draft, to = +d.v;
-  if (to >= 2 && !(dr.pickup.area && dr.dropoff.area && clip(dr.pickup.street, 80) && clip(dr.dropoff.street, 80))) { dr.step = 1; render(); return toast("Add an area and a street for both addresses."); }
+  if (to >= 2 && !(dr.pickup.area && dr.dropoff.area && clip(dr.pickup.street, 80) && clip(dr.dropoff.street, 80))) { dr.step = 1; render(); return toast(!clip(dr.pickup.street, 80) || !clip(dr.dropoff.street, 80) ? "Add both addresses." : "Choose the area for each address."); }
   if (to >= 3) { var cls = classify(dr.item); if (!cls.ok) { dr.step = 2; render(); return toast(cls.msg); } }
   dr.step = to; render(); var b = document.querySelector(".app-body"); if (b) b.scrollTop = 0; window.scrollTo(0, 0);
 };
@@ -320,6 +320,46 @@ ACT["c-type"] = function (d) { S.c.draft.item.type = d.v; if (d.v !== "furniture
 ACT["c-furn"] = function (d) { S.c.draft.item.desc = d.v; render(); };
 ACT["c-pay"] = function (d) { S.c.draft.billing = d.v; render(); };
 ACT["c-photo-del"] = function (d) { S.c.draft.item.photos.splice(+d.v, 1); render(); };
+// One address box: type the address, pick a suggestion, and the area fills itself in.
+// The area dropdown only shows when the street isn't known, or if the customer says it's wrong.
+function addressField(base, a) {
+  var typed = clip(a.street, 80), guess = typed ? findArea(typed) : [];
+  var areaLine = a.area && !a.areaOpen ? '<p class="addr-area"><i aria-hidden="true"></i>In <b>' + esc(a.area) + '</b><button type="button" class="link" data-act="c-area-open" data-k="' + base + '">Not right?</button></p>'
+    : typed.length > 4 || a.areaOpen ? '<div class="addr-ask"><span>' + (guess.length > 1 ? "This postcode covers more than one area. Which is it?" : a.areaOpen ? "Which area of Rome is it in?" : "We couldn't place this street. Which area of Rome is it in?") + "</span>" +
+      (guess.length > 1 ? '<div class="chips">' + guess.map(function (g) { return '<button type="button" class="chipbtn" data-act="c-area-set" data-k="' + base + '" data-v="' + esc(g) + '">' + esc(g) + "</button>"; }).join("") + "</div>" : "") +
+      sel(base + ".area", a.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="c-area-chosen" data-k="' + base + '"') + "</div>" : "";
+  return '<div class="field addr"><span>Address</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"><ul class="addr-sug" hidden></ul></div>' + areaLine;
+}
+ACT["c-area-open"] = function (d) { var a = getPath(S, d.k); if (a) { a.areaOpen = true; render(); } };
+ACT["c-area-set"] = function (d) { var a = getPath(S, d.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
+ACT["c-area-chosen"] = function (d, el) { var a = getPath(S, el.dataset.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
+ACT["c-addr-pick"] = function (d) {
+  var a = getPath(S, d.k); if (!a) return;
+  var no = houseNumber(a.street); a.street = d.v + (no ? " " + no : " "); a.area = d.a; a.areaOpen = false; a.areaManual = false; render();
+  // Back into the box so they can add the house number.
+  setTimeout(function () { var el = document.querySelector('[data-addr="' + d.k + '"]'); if (el) { el.focus(); var n = el.value.length; el.setSelectionRange(n, n); } }, 0);
+};
+// Live suggestions and area guessing while typing, without redrawing the page.
+AFTER.push(function (root) {
+  root.querySelectorAll("[data-addr]").forEach(function (el) {
+    var list = el.parentNode.querySelector(".addr-sug"), base = el.dataset.addr;
+    var show = function () {
+      var m = el.value.trim().length >= 3 ? streetMatches(el.value, 6) : [], a = getPath(S, base);
+      if (a && !a.areaManual) { var g = findArea(el.value); var was = a.area; a.area = g.length === 1 ? g[0] : ""; if (was !== a.area) render(); }
+      if (!m.length || (m.length === 1 && fold(el.value).indexOf(m[0].key) === 0)) { list.hidden = true; list.innerHTML = ""; return; }
+      list.innerHTML = m.map(function (s) { return '<li><button type="button" data-act="c-addr-pick" data-k="' + esc(base) + '" data-v="' + esc(s.street) + '" data-a="' + esc(s.area) + '"><b>' + esc(s.street) + "</b><span>" + esc(s.area) + "</span></button></li>"; }).join("");
+      list.hidden = false;
+    };
+    el.addEventListener("input", show);
+    el.addEventListener("focus", show);
+    // Leaving the box redraws, so an unknown street shows the area question straight away.
+    // If focus moves to another text field, wait for that one, so the redraw doesn't replace it mid-tap.
+    el.addEventListener("blur", function (e) {
+      setTimeout(function () { list.hidden = true; }, 200);
+      var to = e.relatedTarget; if (to && (to.tagName === "TEXTAREA" || to.tagName === "INPUT")) pending = true; else render();
+    });
+  });
+});
 ACT["c-use-addr"] = function (d) { var acc = me(), a = byId(acc.addresses || [], d.v); if (a) { S.c.draft[d.k] = { area: a.area, street: a.street, notes: a.notes || "" }; render(); } };
 FILES["item"] = function (file) {
   shrinkImage(file, 520, 36000).then(function (src) { S.c.draft.item.photos.push(src); S.c.draft.item._blobs = (S.c.draft.item._blobs || []).concat([file]); render(); }, function () { toast("That photo couldn't be read. Try another one."); });
@@ -541,10 +581,10 @@ FORMS["c-profile"] = function () {
 function cAddresses(acc) {
   var a = S.c.newAddr, list = acc.addresses || [];
   return head("Saved addresses", "account") + '<div class="pad">' + (list.length ? '<div class="list">' + list.map(function (x) { return '<div class="item"><b>' + esc(x.label || "Address") + '</b><button class="btn ghost sm" data-act="c-addr-del" data-v="' + esc(x.id) + '">Remove</button><small>' + esc(x.street) + ", " + esc(x.area) + "</small><small></small></div>"; }).join("") + "</div>" : '<p class="muted">Save places you use often, like home or the office.</p>') +
-    '<form class="card" data-form="c-addr"><b>Add an address</b>' + field("Name", inp("c.newAddr.label", a.label, 'placeholder="Home, Office, Mum\'s"')) + '<div class="grid2">' + field("Area", areaSel("c.newAddr.area", a.area)) + field("Street and number", inp("c.newAddr.street", a.street)) + "</div>" + field("Instructions", inp("c.newAddr.notes", a.notes, 'placeholder="Buzzer, floor"')) + '<button class="btn">Save address</button></form></div>';
+    '<form class="card" data-form="c-addr"><b>Add an address</b>' + field("Name", inp("c.newAddr.label", a.label, 'placeholder="Home, Office, Mum\'s"')) + '<div class="grid2">' + addressField("c.newAddr", a) + "</div>" + field("Instructions", inp("c.newAddr.notes", a.notes, 'placeholder="Buzzer, floor"')) + '<button class="btn">Save address</button></form></div>';
 }
 FORMS["c-addr"] = function () {
-  var a = S.c.newAddr, acc = me(); if (!a.area || !clip(a.street, 80)) return toast("Add an area and a street.");
+  var a = S.c.newAddr, acc = me(); if (!clip(a.street, 80)) return toast("Add the address."); if (!a.area) return toast("Choose which area of Rome it's in.");
   var list = (acc.addresses || []).concat([{ id: rid(6), label: clip(a.label, 30), area: a.area, street: clip(a.street, 80), notes: clip(a.notes, 120) }]);
   S.c.newAddr = { label: "", area: "", street: "", notes: "" };
   run(Store.update("accounts", acc.id, { addresses: list }), "Address saved");

@@ -495,3 +495,10 @@ IT_PATTERNS.push(
   [/^(\d+) deliveries a day · about (.+) each$/, "$1 consegne al giorno · circa $2 l'una"]
 );
 IT_PATTERNS.push([/^(.+) a month$/, "$1 al mese"]);
+Object.assign(IT, {
+  "Address": "Indirizzo", "Start typing, e.g. Via Cola di Rienzo 212": "Inizia a scrivere, es. Via Cola di Rienzo 212", "Not right?": "Non è giusta?",
+  "This postcode covers more than one area. Which is it?": "Questo CAP copre più zone. Quale?", "Which area of Rome is it in?": "In quale zona di Roma si trova?",
+  "We couldn't place this street. Which area of Rome is it in?": "Non abbiamo trovato questa via. In quale zona di Roma si trova?",
+  "Add both addresses.": "Aggiungi entrambi gli indirizzi.", "Choose the area for each address.": "Scegli la zona per ogni indirizzo.",
+  "Add the address.": "Aggiungi l'indirizzo.", "Choose which area of Rome it's in.": "Scegli in quale zona di Roma si trova.", "In": "A"
+});

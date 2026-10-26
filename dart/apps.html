@@ -296,6 +296,17 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .mh-title h1 { font-size: 30px; font-weight: 900; letter-spacing: -.03em; line-height: 1; max-width: 13ch; color: var(--ink); text-shadow: 0 0 3px var(--map-bg), 0 0 6px var(--map-bg), 0 0 12px var(--map-bg); }
 .mh-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 64%; overflow-y: auto; z-index: 3; background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -14px 34px -14px rgba(30, 10, 80, .45); padding: 8px 16px 16px; display: grid; gap: 12px; align-content: start; }
 /* Courier offer: a pop-up card, or the full details */
+/* Address box with suggestions */
+.field.addr { position: relative; }
+.addr-sug { position: absolute; left: 0; right: 0; top: 100%; z-index: 15; list-style: none; margin: 4px 0 0; padding: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); max-height: 280px; overflow-y: auto; }
+.addr-sug button { width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border: 0; background: none; padding: 10px; border-radius: 7px; text-align: left; color: var(--ink); font-size: 15px; }
+.addr-sug button:hover, .addr-sug button:focus-visible { background: var(--purple-soft); }
+.addr-sug span { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.addr-area { display: flex; align-items: center; gap: 6px; margin: -2px 0 0; font-size: 14px; color: var(--muted); }
+.addr-area b { color: var(--ink); }
+.addr-area i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+.addr-area .link { margin-left: 4px; font-size: 13px; }
+.addr-ask { display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); font-size: 14px; }
 /* Delivery times and routes */
 .bad-t { color: var(--bad); font-weight: 700; }
 .by-line { margin: 2px 0 0; font-weight: 700; color: var(--purple); }
@@ -820,6 +831,50 @@ function haversine(a, b) {
   var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.pow(Math.sin(dLng / 2), 2);
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+// ---------- Address lookup (test build) ----------
+// The real apps use Google address search, which returns the exact place. The test build
+// knows the main streets of each area and Rome's postcodes, so typing an address fills in the area.
+var STREETS = {
+  "Centro Storico": ["Via del Corso", "Via del Governo Vecchio", "Corso Vittorio Emanuele II", "Via dei Coronari", "Piazza Navona", "Campo de' Fiori", "Via Giulia", "Via dei Giubbonari", "Piazza Venezia", "Via della Scrofa", "Via del Babuino", "Via Margutta", "Via Condotti", "Via Frattina", "Via del Tritone", "Via Veneto", "Piazza di Spagna", "Via di Ripetta", "Largo di Torre Argentina", "Via del Pellegrino", "Via Arenula", "Via di Monserrato", "Via della Croce", "Via del Plebiscito", "Piazza del Popolo"],
+  "Trastevere": ["Viale di Trastevere", "Via della Lungaretta", "Via della Scala", "Via della Lungara", "Piazza di Santa Maria in Trastevere", "Via di San Francesco a Ripa", "Via Garibaldi", "Via della Paglia", "Vicolo del Cinque", "Via dei Genovesi", "Via Natale del Grande", "Piazza Trilussa", "Via Roma Libera", "Via Luciano Manara", "Piazza di San Cosimato", "Via Anicia", "Via dei Vascellari"],
+  "Prati": ["Via Cola di Rienzo", "Viale Giulio Cesare", "Via Ottaviano", "Via Crescenzio", "Via dei Gracchi", "Piazza Cavour", "Via Marcantonio Colonna", "Via Fabio Massimo", "Via Germanico", "Viale delle Milizie", "Via Boezio", "Via Properzio", "Lungotevere Prati", "Via Vittoria Colonna", "Via Tacito", "Via Pompeo Magno", "Via Ezio", "Piazza del Risorgimento", "Viale Angelico", "Piazza Mazzini", "Via Candia", "Via Andrea Doria", "Via Federico Cesi", "Via Cicerone"],
+  "Monti": ["Via Nazionale", "Via Panisperna", "Via dei Serpenti", "Via del Boschetto", "Via Urbana", "Via Leonina", "Via Baccina", "Via dei Fori Imperiali", "Via Cavour", "Via Milano", "Via degli Zingari", "Piazza della Madonna dei Monti", "Via Labicana", "Via Mazzarino", "Via del Colosseo", "Via Clementina", "Via Ciancaleoni"],
+  "Testaccio": ["Via Marmorata", "Via Galvani", "Via Mastro Giorgio", "Piazza Testaccio", "Via Ginori", "Via Vanvitelli", "Via Nicola Zabaglia", "Via Alessandro Volta", "Via Luca della Robbia", "Via Aldo Manuzio", "Via di Monte Testaccio", "Via Caio Cestio", "Piazza dell'Emporio", "Lungotevere Testaccio", "Via Bodoni", "Via Florio"],
+  "San Lorenzo": ["Via Tiburtina", "Via dei Volsci", "Via degli Equi", "Via dei Sabelli", "Via dei Marsi", "Via degli Ausoni", "Largo degli Osci", "Piazza dell'Immacolata", "Via dei Reti", "Via dei Latini", "Via dello Scalo di San Lorenzo", "Via dei Ramni", "Via dei Taurini", "Via dei Piceni"],
+  "Pigneto": ["Via del Pigneto", "Via Prenestina", "Circonvallazione Casilina", "Via L'Aquila", "Via Fanfulla da Lodi", "Via Ascoli Piceno", "Via Macerata", "Via Braccio da Montone", "Via Casilina", "Via Pesaro", "Via Alberto da Giussano", "Via Gentile da Mogliano", "Via Perugia"],
+  "Parioli": ["Viale Parioli", "Viale Bruno Buozzi", "Via Antonio Bertoloni", "Piazza Euclide", "Via Archimede", "Viale Liegi", "Via Paisiello", "Via Panama", "Piazza Ungheria", "Viale Rossini", "Via Antonio Gramsci", "Via Salaria", "Viale dei Parioli", "Via Denza", "Via Mercalli", "Viale Romania", "Via Nomentana"],
+  "Ostiense": ["Via Ostiense", "Viale Guglielmo Marconi", "Via del Porto Fluviale", "Via Pellegrino Matteucci", "Via Giacomo Bove", "Via Libetta", "Via del Gazometro", "Lungotevere San Paolo", "Piazzale Ostiense", "Via dei Magazzini Generali", "Via Gustavo Bianchi", "Via Antonio Pacinotti"],
+  "San Giovanni": ["Via Appia Nuova", "Via La Spezia", "Via Taranto", "Via Gallia", "Via Magna Grecia", "Via Sannio", "Piazza di San Giovanni in Laterano", "Via Merulana", "Via Emanuele Filiberto", "Via dell'Amba Aradam", "Via Britannia", "Via Pinerolo", "Piazza Re di Roma", "Via Cerveteri", "Via Orvieto", "Via Etruria", "Via Enna", "Via Albalonga"],
+  "Termini": ["Via Marsala", "Via Giolitti", "Piazza dei Cinquecento", "Via Volturno", "Via Milazzo", "Via Principe Amedeo", "Piazza Vittorio Emanuele II", "Via Gioberti", "Via Napoleone III", "Via Carlo Alberto", "Via Filippo Turati", "Via Palestro", "Via Goito", "Via XX Settembre", "Via Solferino", "Piazza della Repubblica", "Via Castelfidardo", "Via Manin", "Via Cernaia"],
+  "EUR": ["Viale Europa", "Via Cristoforo Colombo", "Piazzale Guglielmo Marconi", "Viale America", "Viale dell'Oceano Pacifico", "Viale Beethoven", "Viale della Civiltà del Lavoro", "Viale della Tecnica", "Viale Asia", "Viale Africa", "Viale Egeo", "Via Laurentina", "Viale dell'Arte", "Piazza Pakistan", "Viale Shakespeare"],
+  "Flaminio": ["Via Flaminia", "Viale Tiziano", "Piazza Mancini", "Via Guido Reni", "Viale Pinturicchio", "Via Fracassini", "Lungotevere Flaminio", "Piazza Apollodoro", "Viale del Vignola", "Via Masaccio", "Piazza Gentile da Fabriano", "Via Flaminia Vecchia"],
+  "Monteverde": ["Circonvallazione Gianicolense", "Via di Donna Olimpia", "Via Fonteiana", "Viale dei Quattro Venti", "Via Giacinto Carini", "Via Vitellia", "Piazza Rosolino Pilo", "Via Federico Ozanam", "Via Emilio Dandolo", "Via Carlo Poerio", "Via di Monteverde", "Piazza San Giovanni di Dio", "Via Ludovico di Monreale"],
+  "Garbatella": ["Circonvallazione Ostiense", "Via delle Sette Chiese", "Piazza Benedetto Brin", "Via Rocco da Cesinale", "Largo delle Sette Chiese", "Piazza Damiano Sauli", "Via Ignazio Persico", "Via Giovanni Ansaldo", "Via Edgardo Ferrati", "Via Francesco Passino", "Via Guglielmo Massaia"],
+  "Tuscolano": ["Via Tuscolana", "Viale Furio Camillo", "Via Ponzio Cominio", "Viale Giulio Agricola", "Via Cesare Baronio", "Via dell'Arco di Travertino", "Viale Spartaco", "Via di Porta Furba", "Piazza di Cinecittà", "Via Lucio Sestio", "Via dei Quintili"]
+};
+// Rome postcodes (CAP) and the areas they cover.
+var CAPS = { "00184": ["Monti"], "00186": ["Centro Storico"], "00187": ["Centro Storico"], "00153": ["Trastevere", "Testaccio"], "00185": ["Termini", "San Lorenzo"],
+  "00192": ["Prati"], "00193": ["Prati"], "00195": ["Prati"], "00196": ["Flaminio"], "00197": ["Parioli"], "00198": ["Parioli"], "00199": ["Parioli"],
+  "00176": ["Pigneto"], "00177": ["Pigneto"], "00182": ["San Giovanni"], "00183": ["San Giovanni"], "00181": ["Tuscolano"], "00174": ["Tuscolano"], "00179": ["Tuscolano"],
+  "00144": ["EUR"], "00142": ["EUR"], "00143": ["EUR"], "00152": ["Monteverde"], "00151": ["Monteverde"], "00154": ["Ostiense", "Garbatella"], "00145": ["Garbatella"], "00146": ["Ostiense"], "00147": ["Garbatella"] };
+function fold(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’']/g, "'").toLowerCase().replace(/\s+/g, " ").trim(); }
+var STREET_LIST = []; Object.keys(STREETS).forEach(function (a) { STREETS[a].forEach(function (s) { STREET_LIST.push({ street: s, area: a, key: fold(s) }); }); });
+// Suggestions while typing: streets whose name contains every word typed (house numbers ignored).
+function streetMatches(text, max) {
+  var words = fold(text).replace(/\b\d+[a-z]?\b|,|\b00\d{3}\b/g, " ").split(" ").filter(function (w) { return w.length > 1 && ["via", "viale", "piazza", "largo", "vicolo", "corso", "lungotevere", "piazzale", "circonvallazione"].indexOf(w) < 0; });
+  if (!words.length) return [];
+  return STREET_LIST.filter(function (s) { return words.every(function (w) { return s.key.indexOf(w) >= 0; }); })
+    .sort(function (a, b) { return a.key.indexOf(words[0]) - b.key.indexOf(words[0]) || a.key.length - b.key.length; }).slice(0, max || 6);
+}
+// The area for a typed address: from a known street, else from the postcode. Returns the areas it could be.
+function findArea(text) {
+  var t = fold(text), hit = STREET_LIST.filter(function (s) { return t.indexOf(s.key) === 0 || t.indexOf(s.key + " ") >= 0 || t.indexOf(s.key + ",") >= 0 || t === s.key; }).sort(function (a, b) { return b.key.length - a.key.length; })[0];
+  if (hit) return [hit.area];
+  var cap = (t.match(/\b(00\d{3})\b/) || [])[1];
+  return cap && CAPS[cap] ? CAPS[cap] : [];
+}
+function houseNumber(text) { var m = String(text || "").match(/(?:^|[\s,])(\d+[a-zA-Z]?(?:\/[a-zA-Z0-9]+)?)\s*(?:,|$)/); return m ? m[1] : ""; }
+
 // ---------- Delivery times ----------
 // ASAP promises the trip time plus a buffer; a set time must be at least that far ahead.
 function earliestBy(from, to, now) {
@@ -1828,6 +1883,13 @@ IT_PATTERNS.push(
   [/^(\d+) deliveries a day · about (.+) each$/, "$1 consegne al giorno · circa $2 l'una"]
 );
 IT_PATTERNS.push([/^(.+) a month$/, "$1 al mese"]);
+Object.assign(IT, {
+  "Address": "Indirizzo", "Start typing, e.g. Via Cola di Rienzo 212": "Inizia a scrivere, es. Via Cola di Rienzo 212", "Not right?": "Non è giusta?",
+  "This postcode covers more than one area. Which is it?": "Questo CAP copre più zone. Quale?", "Which area of Rome is it in?": "In quale zona di Roma si trova?",
+  "We couldn't place this street. Which area of Rome is it in?": "Non abbiamo trovato questa via. In quale zona di Roma si trova?",
+  "Add both addresses.": "Aggiungi entrambi gli indirizzi.", "Choose the area for each address.": "Scegli la zona per ogni indirizzo.",
+  "Add the address.": "Aggiungi l'indirizzo.", "Choose which area of Rome it's in.": "Scegli in quale zona di Roma si trova.", "In": "A"
+});
 
 // ===== DART customer app (phone) and customer website dashboard (web) =====
 
@@ -2044,7 +2106,7 @@ function addrBlock(key, label, acc) {
   var a = S.c.draft[key], saved = acc ? (acc.addresses || []) : [];
   return '<div class="card"><b>' + label + "</b>" +
     (saved.length ? '<div class="chips">' + saved.map(function (s) { return '<button type="button" class="chipbtn" data-act="c-use-addr" data-k="' + key + '" data-v="' + esc(s.id) + '">' + esc(s.label || s.street) + "</button>"; }).join("") + "</div>" : "") +
-    '<div class="grid2">' + field("Area of Rome", areaSel("c.draft." + key + ".area", a.area)) + field("Street and number", inp("c.draft." + key + ".street", a.street, 'placeholder="e.g. Via Panisperna 41" autocomplete="street-address"')) + "</div>" +
+    addressField("c.draft." + key, a) +
     field(key === "pickup" ? "Pickup instructions" : "Delivery instructions", inp("c.draft." + key + ".notes", a.notes, 'placeholder="' + (key === "pickup" ? "Seller's name, buzzer, floor" : "Buzzer, floor, who receives it") + '"')) + "</div>";
 }
 function newWhere(acc) {
@@ -2143,7 +2205,7 @@ ACT["c-go"] = function (d) {
 };
 ACT["c-step"] = function (d) {
   var dr = S.c.draft, to = +d.v;
-  if (to >= 2 && !(dr.pickup.area && dr.dropoff.area && clip(dr.pickup.street, 80) && clip(dr.dropoff.street, 80))) { dr.step = 1; render(); return toast("Add an area and a street for both addresses."); }
+  if (to >= 2 && !(dr.pickup.area && dr.dropoff.area && clip(dr.pickup.street, 80) && clip(dr.dropoff.street, 80))) { dr.step = 1; render(); return toast(!clip(dr.pickup.street, 80) || !clip(dr.dropoff.street, 80) ? "Add both addresses." : "Choose the area for each address."); }
   if (to >= 3) { var cls = classify(dr.item); if (!cls.ok) { dr.step = 2; render(); return toast(cls.msg); } }
   dr.step = to; render(); var b = document.querySelector(".app-body"); if (b) b.scrollTop = 0; window.scrollTo(0, 0);
 };
@@ -2151,6 +2213,46 @@ ACT["c-type"] = function (d) { S.c.draft.item.type = d.v; if (d.v !== "furniture
 ACT["c-furn"] = function (d) { S.c.draft.item.desc = d.v; render(); };
 ACT["c-pay"] = function (d) { S.c.draft.billing = d.v; render(); };
 ACT["c-photo-del"] = function (d) { S.c.draft.item.photos.splice(+d.v, 1); render(); };
+// One address box: type the address, pick a suggestion, and the area fills itself in.
+// The area dropdown only shows when the street isn't known, or if the customer says it's wrong.
+function addressField(base, a) {
+  var typed = clip(a.street, 80), guess = typed ? findArea(typed) : [];
+  var areaLine = a.area && !a.areaOpen ? '<p class="addr-area"><i aria-hidden="true"></i>In <b>' + esc(a.area) + '</b><button type="button" class="link" data-act="c-area-open" data-k="' + base + '">Not right?</button></p>'
+    : typed.length > 4 || a.areaOpen ? '<div class="addr-ask"><span>' + (guess.length > 1 ? "This postcode covers more than one area. Which is it?" : a.areaOpen ? "Which area of Rome is it in?" : "We couldn't place this street. Which area of Rome is it in?") + "</span>" +
+      (guess.length > 1 ? '<div class="chips">' + guess.map(function (g) { return '<button type="button" class="chipbtn" data-act="c-area-set" data-k="' + base + '" data-v="' + esc(g) + '">' + esc(g) + "</button>"; }).join("") + "</div>" : "") +
+      sel(base + ".area", a.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="c-area-chosen" data-k="' + base + '"') + "</div>" : "";
+  return '<div class="field addr"><span>Address</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"><ul class="addr-sug" hidden></ul></div>' + areaLine;
+}
+ACT["c-area-open"] = function (d) { var a = getPath(S, d.k); if (a) { a.areaOpen = true; render(); } };
+ACT["c-area-set"] = function (d) { var a = getPath(S, d.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
+ACT["c-area-chosen"] = function (d, el) { var a = getPath(S, el.dataset.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
+ACT["c-addr-pick"] = function (d) {
+  var a = getPath(S, d.k); if (!a) return;
+  var no = houseNumber(a.street); a.street = d.v + (no ? " " + no : " "); a.area = d.a; a.areaOpen = false; a.areaManual = false; render();
+  // Back into the box so they can add the house number.
+  setTimeout(function () { var el = document.querySelector('[data-addr="' + d.k + '"]'); if (el) { el.focus(); var n = el.value.length; el.setSelectionRange(n, n); } }, 0);
+};
+// Live suggestions and area guessing while typing, without redrawing the page.
+AFTER.push(function (root) {
+  root.querySelectorAll("[data-addr]").forEach(function (el) {
+    var list = el.parentNode.querySelector(".addr-sug"), base = el.dataset.addr;
+    var show = function () {
+      var m = el.value.trim().length >= 3 ? streetMatches(el.value, 6) : [], a = getPath(S, base);
+      if (a && !a.areaManual) { var g = findArea(el.value); var was = a.area; a.area = g.length === 1 ? g[0] : ""; if (was !== a.area) render(); }
+      if (!m.length || (m.length === 1 && fold(el.value).indexOf(m[0].key) === 0)) { list.hidden = true; list.innerHTML = ""; return; }
+      list.innerHTML = m.map(function (s) { return '<li><button type="button" data-act="c-addr-pick" data-k="' + esc(base) + '" data-v="' + esc(s.street) + '" data-a="' + esc(s.area) + '"><b>' + esc(s.street) + "</b><span>" + esc(s.area) + "</span></button></li>"; }).join("");
+      list.hidden = false;
+    };
+    el.addEventListener("input", show);
+    el.addEventListener("focus", show);
+    // Leaving the box redraws, so an unknown street shows the area question straight away.
+    // If focus moves to another text field, wait for that one, so the redraw doesn't replace it mid-tap.
+    el.addEventListener("blur", function (e) {
+      setTimeout(function () { list.hidden = true; }, 200);
+      var to = e.relatedTarget; if (to && (to.tagName === "TEXTAREA" || to.tagName === "INPUT")) pending = true; else render();
+    });
+  });
+});
 ACT["c-use-addr"] = function (d) { var acc = me(), a = byId(acc.addresses || [], d.v); if (a) { S.c.draft[d.k] = { area: a.area, street: a.street, notes: a.notes || "" }; render(); } };
 FILES["item"] = function (file) {
   shrinkImage(file, 520, 36000).then(function (src) { S.c.draft.item.photos.push(src); S.c.draft.item._blobs = (S.c.draft.item._blobs || []).concat([file]); render(); }, function () { toast("That photo couldn't be read. Try another one."); });
@@ -2372,10 +2474,10 @@ FORMS["c-profile"] = function () {
 function cAddresses(acc) {
   var a = S.c.newAddr, list = acc.addresses || [];
   return head("Saved addresses", "account") + '<div class="pad">' + (list.length ? '<div class="list">' + list.map(function (x) { return '<div class="item"><b>' + esc(x.label || "Address") + '</b><button class="btn ghost sm" data-act="c-addr-del" data-v="' + esc(x.id) + '">Remove</button><small>' + esc(x.street) + ", " + esc(x.area) + "</small><small></small></div>"; }).join("") + "</div>" : '<p class="muted">Save places you use often, like home or the office.</p>') +
-    '<form class="card" data-form="c-addr"><b>Add an address</b>' + field("Name", inp("c.newAddr.label", a.label, 'placeholder="Home, Office, Mum\'s"')) + '<div class="grid2">' + field("Area", areaSel("c.newAddr.area", a.area)) + field("Street and number", inp("c.newAddr.street", a.street)) + "</div>" + field("Instructions", inp("c.newAddr.notes", a.notes, 'placeholder="Buzzer, floor"')) + '<button class="btn">Save address</button></form></div>';
+    '<form class="card" data-form="c-addr"><b>Add an address</b>' + field("Name", inp("c.newAddr.label", a.label, 'placeholder="Home, Office, Mum\'s"')) + '<div class="grid2">' + addressField("c.newAddr", a) + "</div>" + field("Instructions", inp("c.newAddr.notes", a.notes, 'placeholder="Buzzer, floor"')) + '<button class="btn">Save address</button></form></div>';
 }
 FORMS["c-addr"] = function () {
-  var a = S.c.newAddr, acc = me(); if (!a.area || !clip(a.street, 80)) return toast("Add an area and a street.");
+  var a = S.c.newAddr, acc = me(); if (!clip(a.street, 80)) return toast("Add the address."); if (!a.area) return toast("Choose which area of Rome it's in.");
   var list = (acc.addresses || []).concat([{ id: rid(6), label: clip(a.label, 30), area: a.area, street: clip(a.street, 80), notes: clip(a.notes, 120) }]);
   S.c.newAddr = { label: "", area: "", street: "", notes: "" };
   run(Store.update("accounts", acc.id, { addresses: list }), "Address saved");
