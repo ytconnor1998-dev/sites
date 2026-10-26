@@ -296,6 +296,9 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .mh-title p { font-weight: 700; font-size: 14px; color: var(--purple); text-shadow: 0 0 3px var(--map-bg), 0 0 8px var(--map-bg); }
 .mh-title h1 { font-size: 30px; font-weight: 900; letter-spacing: -.03em; line-height: 1; max-width: 13ch; color: var(--ink); text-shadow: 0 0 3px var(--map-bg), 0 0 6px var(--map-bg), 0 0 12px var(--map-bg); }
 .mh-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 64%; overflow-y: auto; z-index: 3; background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -14px 34px -14px rgba(30, 10, 80, .45); padding: 8px 16px 16px; display: grid; gap: 12px; align-content: start; }
+/* Inside the phone apps: full screen, no test frame */
+.stage.in-app { padding: 0 !important; min-height: 100dvh; display: block; }
+.stage.in-app .device { width: 100% !important; max-width: none !important; height: 100dvh !important; max-height: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
 /* Courier offer: a pop-up card, or the full details */
 /* Discounts and credit */
 .code-row { gap: 8px; }
@@ -2025,7 +2028,10 @@ function customerApp() {
     !acc ? '<nav class="tabs t3">' + [["home", "Home", "home"], ["track", "Track", "list"], ["auth", "Log in", "user"]].map(function (n) { var on = S.c.view === n[0] || (n[0] === "track" && (S.c.view === "order" || S.c.view === "chat")); return '<button class="' + (on ? "on" : "") + '" data-act="' + (n[0] === "auth" ? "c-auth-open" : "c-go") + '" data-v="' + (n[0] === "auth" ? "login" : n[0]) + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + "</button>"; }).join("") + "</nav>" : "";
   return stage('<div class="app-body" data-scroll="c-' + S.c.view + '">' + body + "</div>" + tabs, "DART customer app");
 }
+// Inside the phone apps (DART_APP is set by the app) the screens fill the phone, with no test frame.
+function inApp() { return typeof window !== "undefined" && !!window.DART_APP; }
 function stage(inner, label) {
+  if (inApp()) return '<div class="stage in-app"><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
   return '<div class="stage"><div class="stage-bar"><a href="#home">← All apps</a>' + modeChip() + '</div><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
 }
 function head(title, back, right) {
@@ -2567,7 +2573,7 @@ function cAccount(acc) {
   var rows = [["profile", "Profile", esc(acc.email)], ["addresses", "Saved addresses", (acc.addresses || []).length + " saved"], ["payments", "Payment methods", (acc.cards || []).length + " cards"], ["prefs", "Notifications", "Push, email, SMS"], ["invoices", "Invoices", myInvoices().length + " invoices"], ["deliveries", "Delivery history", myOrders().length + " deliveries"], ["business", biz ? "Business account" : "Switch to a business account", biz ? esc(acc.business.name) + " · subscription plans" : "Get access to monthly subscription plans"]];
   if (biz && subPlan(acc) && subPlan(acc).bulk) rows.push(["bulk", "Bulk deliveries", "Upload a CSV or Excel file"]);
   rows.push(["help", "Help and support", "FAQ, contact, report a problem"]);
-  return (isWeb() ? '<h1 class="w-title">Account</h1>' : head("Account")) + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(acc.name)) + "</span><div><b>" + esc(acc.name) + '</b><div class="muted sm">' + (biz ? "Business · " + esc(acc.business.name) : "Individual") + (acc.provider === "google" ? " · Google sign-in" : "") + "</div></div></div>" +
+  return (isWeb() ? '<h1 class="w-title">Account</h1>' : head("Account", "", inApp() ? langSwitch() : "")) + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(acc.name)) + "</span><div><b>" + esc(acc.name) + '</b><div class="muted sm">' + (biz ? "Business · " + esc(acc.business.name) : "Individual") + (acc.provider === "google" ? " · Google sign-in" : "") + "</div></div></div>" +
     creditCard(acc) + inviteCard(acc) +
     '<div class="menu">' + rows.map(function (r) { return '<button data-act="c-go" data-v="' + r[0] + '"><b>' + r[1] + "</b><span>" + r[2] + "</span><i>›</i></button>"; }).join("") + "</div>" +
     '<button class="btn ghost block" data-act="c-logout">Log out</button></div>';
@@ -3653,7 +3659,7 @@ function dAccount(c) {
   var rows = [["vehicle", "Vehicle and documents", vLabel(c.vehicle.type) + (c.vehicleStatus === "pending" ? " · change pending" : "")], ["payout", "Payout details", c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "Not set"], ["history", "Delivery history", myJobs().length + " deliveries"], ["notes", "Notifications", ""], ["help", "Help and support", "Report a problem, FAQ"]];
   var rt = courierRating(c.id), revs = myJobs().filter(function (o) { return o.review && o.review.text; }).sort(function (a, b) { return b.review.at - a.review.at; }).slice(0, 3);
   var tips = myJobs().reduce(function (s, o) { return s + tipOf(o); }, 0);
-  return dHead("Account") + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(c.name)) + "</span><div><b>" + esc(c.name) + '</b><div class="muted sm">' + esc(c.email) + " · " + esc(c.phone) + "</div></div></div>" +
+  return dHead("Account", "", inApp() ? langSwitch() : "") + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(c.name)) + "</span><div><b>" + esc(c.name) + '</b><div class="muted sm">' + esc(c.email) + " · " + esc(c.phone) + "</div></div></div>" +
     '<div class="card"><div class="row between"><b>Your rating</b><b class="rating-big">' + (rt ? rt.avg.toFixed(1) + " ★" : "–") + '</b></div><span class="muted sm">' + (rt ? "From " + rt.n + " customer reviews" : "No reviews yet") + (tips ? " · " + eur(tips) + " in tips" : "") + "</span>" +
     revs.map(function (o) { return '<div class="rev"><span>' + "★★★★★".slice(0, o.review.stars) + "</span><p>“" + esc(o.review.text) + "”</p></div>"; }).join("") + "</div>" +
     '<div class="menu">' + rows.map(function (r) { return '<button data-act="d-go" data-v="' + r[0] + '"><b>' + r[1] + "</b><span>" + esc(r[2]) + "</span><i>›</i></button>"; }).join("") + "</div>" + '<button class="btn ghost block" data-act="d-logout">Log out</button></div>';

@@ -296,6 +296,9 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .mh-title p { font-weight: 700; font-size: 14px; color: var(--purple); text-shadow: 0 0 3px var(--map-bg), 0 0 8px var(--map-bg); }
 .mh-title h1 { font-size: 30px; font-weight: 900; letter-spacing: -.03em; line-height: 1; max-width: 13ch; color: var(--ink); text-shadow: 0 0 3px var(--map-bg), 0 0 6px var(--map-bg), 0 0 12px var(--map-bg); }
 .mh-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 64%; overflow-y: auto; z-index: 3; background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -14px 34px -14px rgba(30, 10, 80, .45); padding: 8px 16px 16px; display: grid; gap: 12px; align-content: start; }
+/* Inside the phone apps: full screen, no test frame */
+.stage.in-app { padding: 0 !important; min-height: 100dvh; display: block; }
+.stage.in-app .device { width: 100% !important; max-width: none !important; height: 100dvh !important; max-height: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
 /* Courier offer: a pop-up card, or the full details */
 /* Discounts and credit */
 .code-row { gap: 8px; }

@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "DART",
+    "slug": "dart",
+    "owner": "cdavies12s-team",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#452B94",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "extra": {
+      "site": "https://dart-rome.expo.app",
+      "screen": "customer",
+      "eas": {
+        "projectId": "43fcf3af-2a0f-4f87-a65a-0ca3bdb1c6cf"
+      }
+    }
+  }
+}

@@ -54,7 +54,10 @@ function customerApp() {
     !acc ? '<nav class="tabs t3">' + [["home", "Home", "home"], ["track", "Track", "list"], ["auth", "Log in", "user"]].map(function (n) { var on = S.c.view === n[0] || (n[0] === "track" && (S.c.view === "order" || S.c.view === "chat")); return '<button class="' + (on ? "on" : "") + '" data-act="' + (n[0] === "auth" ? "c-auth-open" : "c-go") + '" data-v="' + (n[0] === "auth" ? "login" : n[0]) + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + "</button>"; }).join("") + "</nav>" : "";
   return stage('<div class="app-body" data-scroll="c-' + S.c.view + '">' + body + "</div>" + tabs, "DART customer app");
 }
+// Inside the phone apps (DART_APP is set by the app) the screens fill the phone, with no test frame.
+function inApp() { return typeof window !== "undefined" && !!window.DART_APP; }
 function stage(inner, label) {
+  if (inApp()) return '<div class="stage in-app"><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
   return '<div class="stage"><div class="stage-bar"><a href="#home">← All apps</a>' + modeChip() + '</div><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
 }
 function head(title, back, right) {
@@ -596,7 +599,7 @@ function cAccount(acc) {
   var rows = [["profile", "Profile", esc(acc.email)], ["addresses", "Saved addresses", (acc.addresses || []).length + " saved"], ["payments", "Payment methods", (acc.cards || []).length + " cards"], ["prefs", "Notifications", "Push, email, SMS"], ["invoices", "Invoices", myInvoices().length + " invoices"], ["deliveries", "Delivery history", myOrders().length + " deliveries"], ["business", biz ? "Business account" : "Switch to a business account", biz ? esc(acc.business.name) + " · subscription plans" : "Get access to monthly subscription plans"]];
   if (biz && subPlan(acc) && subPlan(acc).bulk) rows.push(["bulk", "Bulk deliveries", "Upload a CSV or Excel file"]);
   rows.push(["help", "Help and support", "FAQ, contact, report a problem"]);
-  return (isWeb() ? '<h1 class="w-title">Account</h1>' : head("Account")) + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(acc.name)) + "</span><div><b>" + esc(acc.name) + '</b><div class="muted sm">' + (biz ? "Business · " + esc(acc.business.name) : "Individual") + (acc.provider === "google" ? " · Google sign-in" : "") + "</div></div></div>" +
+  return (isWeb() ? '<h1 class="w-title">Account</h1>' : head("Account", "", inApp() ? langSwitch() : "")) + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(acc.name)) + "</span><div><b>" + esc(acc.name) + '</b><div class="muted sm">' + (biz ? "Business · " + esc(acc.business.name) : "Individual") + (acc.provider === "google" ? " · Google sign-in" : "") + "</div></div></div>" +
     creditCard(acc) + inviteCard(acc) +
     '<div class="menu">' + rows.map(function (r) { return '<button data-act="c-go" data-v="' + r[0] + '"><b>' + r[1] + "</b><span>" + r[2] + "</span><i>›</i></button>"; }).join("") + "</div>" +
     '<button class="btn ghost block" data-act="c-logout">Log out</button></div>';
