@@ -98,6 +98,9 @@ textarea.input { resize: vertical; min-height: 60px; }
 .row.between { justify-content: space-between; }
 .stack { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .grid2, .grid3, .grid4 { display: grid; gap: 10px; }
+/* Fields side by side share rows, so their boxes line up even when one label wraps */
+.grid2 > .field, .grid3 > .field, .grid4 > .field { grid-row: span 3; grid-template-rows: subgrid; row-gap: 5px; align-content: start; }
+.grid2 > .field > span, .grid3 > .field > span, .grid4 > .field > span { align-self: end; }
 .grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -110,7 +113,7 @@ textarea.input { resize: vertical; min-height: 60px; }
 .s-ok { background: var(--ok-soft); color: var(--ok); }
 .s-bad { background: var(--bad-soft); color: var(--bad); }
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
-.seg.inline { grid-auto-columns: max-content; }
+.seg.inline { display: flex; flex-wrap: wrap; }
 .seg button { border: 1.5px solid var(--line); background: var(--card); border-radius: 6px; padding: 9px 12px; font-weight: 600; font-size: 14px; }
 .seg button.on { border-color: var(--purple); background: var(--purple-soft); color: var(--purple); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -659,12 +662,12 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .kpi b { font-size: 26px; font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .kpi em { font-style: normal; color: var(--muted); font-size: 12px; }
 .a-cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; align-items: start; }
-.panel { background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; min-width: 0; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; overflow-x: auto; min-width: 0; }
 .panel-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); font-weight: 800; }
 .panel .map { border-radius: 0; }
 .panel .list .item { border-radius: 10px; }
 .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
-.bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(28px, 1fr); gap: 6px; align-items: end; height: 200px; padding: 26px 14px 10px; overflow-x: auto; }
+.bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(36px, 1fr); gap: 6px; align-items: end; height: 200px; padding: 26px 14px 10px; overflow-x: auto; }
 .bar-c { display: grid; grid-template-rows: auto 1fr auto; height: 100%; align-items: end; justify-items: center; gap: 4px; min-width: 0; }
 .bar-c i { width: 100%; max-width: 44px; background: var(--purple); border-radius: 6px 6px 2px 2px; min-height: 2px; align-self: end; }
 .bar-v { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
