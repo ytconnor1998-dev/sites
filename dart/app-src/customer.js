@@ -41,7 +41,7 @@ function customerApp() {
   if (!web && SITE_VIEWS.indexOf(S.c.view) >= 0) S.c.view = acc ? "home" : "new";
   if (!acc && GUEST_VIEWS.indexOf(S.c.view) < 0) S.c.view = web ? "site-home" : "new";
   var isSite = SITE_VIEWS.indexOf(S.c.view) >= 0;
-  var body = isSite ? sitePage(S.c.view, acc) : !acc ? cGuest() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support at " + esc(settings().supportEmail) + " to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
+  var body = isSite ? sitePage(S.c.view, acc) : !acc ? cGuest() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support from the Help page to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
   var unreadMsgs = acc ? myOrders().reduce(function (s, o) { return s + unread(o, "customer"); }, 0) : 0;
   var active = acc ? myOrders().filter(isActive).length : 0;
   var badge = function (k) { return k === "deliveries" && active ? '<span class="badge">' + active + "</span>" : k === "messages" && unreadMsgs ? '<span class="badge">' + unreadMsgs + "</span>" : ""; };
@@ -692,7 +692,7 @@ function cHelp(acc) {
   return (isWeb() ? '<h1 class="w-title">Help and support</h1>' : head("Help", "account")) + '<div class="pad"><div class="faq">' + FAQ.map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + "</div>" +
     '<form class="card" data-form="c-ticket"><b>Contact DART support</b>' + field("Topic", sel("c.ticket.topic", t.topic, [["delivery", "A delivery"], ["payment", "Payment or invoice"], ["courier", "A courier"], ["account", "My account"], ["other", "Something else"]])) +
     field("Delivery (optional)", sel("c.ticket.orderId", t.orderId, [["", "None"]].concat(myOrders().slice(0, 20).map(function (o) { return [o.id, o.id + " · " + o.pickup.area + " → " + o.dropoff.area]; })))) +
-    field("Message", txt("c.ticket.text", t.text, 'rows="4" maxlength="1000" required')) + '<button class="btn">Send</button><span class="muted sm">Or email ' + esc(settings().supportEmail) + "</span></form>" +
+    field("Message", txt("c.ticket.text", t.text, 'rows="4" maxlength="1000" required')) + '<button class="btn">Send</button>' + (settings().supportEmail ? '<span class="muted sm">Or email ' + esc(settings().supportEmail) + "</span>" : "") + "</form>" +
     (mine.length ? '<div class="sec-h"><h3>Your requests</h3></div>' + mine.map(ticketCard).join("") : "") + "</div>";
 }
 function ticketCard(t) {

@@ -65,8 +65,7 @@ var DEFAULT_PRICING = {
   businessDiscount: 0, vatRate: 22, courierShare: 75
 };
 var DEFAULT_SETTINGS = {
-  open: true, banner: "", company: "DART S.r.l.", companyVat: "IT00000000000", companyAddress: "Via del Corso 1, 00186 Roma",
-  supportEmail: "aiuto@dart.rome", invoicePrefix: "DART"
+  open: true, banner: "", company: "", companyVat: "", companyAddress: "", supportEmail: "", invoicePrefix: "DART"
 };
 
 // ---------- Helpers ----------
@@ -336,7 +335,7 @@ function invoiceHTML(inv) {
   var st = settings(), p = inv.party || {};
   var rows = (inv.lines || []).map(function (l) { return "<tr><td>" + esc(l.label) + "</td><td style='text-align:right'>" + eur(l.amount) + "</td></tr>"; }).join("");
   return "<!doctype html><html><head><meta charset='utf-8'><title>Invoice " + esc(inv.number) + "</title><style>body{font-family:Helvetica,Arial,sans-serif;color:#170F2E;max-width:720px;margin:40px auto;padding:0 20px}h1{font-size:28px;margin:0}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{padding:8px 0;border-bottom:1px solid #ddd;text-align:left}.tot td{font-weight:bold;border-bottom:0}.muted{color:#5E5677}.grid{display:flex;justify-content:space-between;gap:20px;margin-top:24px}</style></head><body>" +
-    "<h1>DART</h1><p class='muted'>" + esc(st.company) + " · P.IVA " + esc(st.companyVat) + " · " + esc(st.companyAddress) + "</p>" +
+    "<h1>DART</h1><p class='muted'>" + esc(st.company || "DART") + (st.companyVat ? " · P.IVA " + esc(st.companyVat) : "") + (st.companyAddress ? " · " + esc(st.companyAddress) : "") + "</p>" +
     "<div class='grid'><div><b>Invoice " + esc(inv.number) + "</b><br>Issued " + dmy(inv.issuedAt) + "<br>Status: " + esc(inv.status === "paid" ? "Paid " + dmy(inv.paidAt) : inv.status) + "</div>" +
     "<div><b>Billed to</b><br>" + esc(p.name) + (p.address ? "<br>" + esc(p.address) : "") + (p.vat ? "<br>P.IVA / CF " + esc(p.vat) : "") + (p.sdi ? "<br>SDI / PEC " + esc(p.sdi) : "") + (p.email ? "<br>" + esc(p.email) : "") + "</div></div>" +
     (inv.ref ? "<p><b>Delivery " + esc(inv.orderId) + "</b><br>" + esc(inv.ref.from) + " → " + esc(inv.ref.to) + "<br>" + esc(inv.ref.item) + " · " + (+inv.ref.km || 0).toFixed(1) + " km · " + dmy(inv.ref.date) + "</p>" : "") +

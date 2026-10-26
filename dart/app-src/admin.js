@@ -394,7 +394,9 @@ function aReports() {
 function aSettings() {
   if (!S.a.settingsDraft) S.a.settingsDraft = clone(settings());
   var s = S.a.settingsDraft, b = "a.settingsDraft.";
+  var missing = ["company", "companyVat", "companyAddress", "supportEmail"].filter(function (k) { return !clip(s[k], 200); });
   return aHead("Settings", '<button class="btn" data-act="a-settings-save">Save settings</button>') + '<div class="stack" style="max-width:720px">' +
+    (missing.length ? '<div class="banner bad">Add your company name, Partita IVA, registered address and support email. Italian websites and invoices must show them, and the website footer only shows what you fill in.</div>' : "") +
     '<div class="card"><div class="row between"><div><b>Taking deliveries</b><div class="muted sm">Turn off to close DART. Customers can\'t book and couriers get no new requests.</div></div>' + sw("a-open", s.open !== false, "Taking deliveries") + "</div></div>" +
     '<div class="card">' + field("Message at the top of the customer app and website", inp(b + "banner", s.banner, 'maxlength="160" placeholder="e.g. Free delivery on your first order"'), "Leave empty to show nothing.") + "</div>" +
     '<div class="card"><b>Invoice details</b><div class="grid2">' + field("Company name", inp(b + "company", s.company)) + field("Partita IVA", inp(b + "companyVat", s.companyVat)) + "</div>" + field("Registered address", inp(b + "companyAddress", s.companyAddress)) + '<div class="grid2">' + field("Invoice number prefix", inp(b + "invoicePrefix", s.invoicePrefix)) + field("Support email", inp(b + "supportEmail", s.supportEmail, 'type="email"')) + "</div></div></div>";
