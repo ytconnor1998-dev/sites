@@ -104,7 +104,7 @@ function aOrderModal(m) {
   var h = '<div class="a-detail"><div class="stack"><div class="row between">' + chip(o.status) + '<span class="mono">' + esc(o.id) + "</span></div>" + legs(o) +
     '<div class="map map-sm">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area }, courierPos(o))] }) + "</div>" +
     '<div class="card"><b>Item</b><span>' + itemSummary(o) + "</span>" + (o.item.photos && o.item.photos.length ? '<div class="phs">' + photoStrip(o.item.photos) + "</div>" : '<span class="muted sm">No photos</span>') +
-    '<dl class="kv"><dt>Classification</dt><dd>' + esc(cLabel(o.cls.category)) + " (from " + esc(o.cls.source) + ")</dd><dt>Eligible vehicles</dt><dd>" + esc((o.cls.vehicles || []).map(vLabel).join(", ")) + "</dd><dt>Couriers needed</dt><dd>" + o.cls.couriers + "</dd>" +
+    '<dl class="kv">' + (o.deliverBy ? "<dt>Deliver by</dt><dd>" + esc(byLabel(o.deliverBy)) + (o.asap ? " (ASAP)" : "") + (o.late ? ' · <span class="bad-t">' + o.late.mins + " min late" + (o.late.decided ? (o.late.penalty ? ", late fee " + eur(o.late.penalty) : ", no fee") : ", not reviewed") + "</span>" : "") + "</dd>" : "") + '<dt>Classification</dt><dd>' + esc(cLabel(o.cls.category)) + " (from " + esc(o.cls.source) + ")</dd><dt>Eligible vehicles</dt><dd>" + esc((o.cls.vehicles || []).map(vLabel).join(", ")) + "</dd><dt>Couriers needed</dt><dd>" + o.cls.couriers + "</dd>" +
     (OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).length ? "<dt>Extras</dt><dd>" + esc(OPTIONS.filter(function (x) { return o.item.options[x.id]; }).map(function (x) { return x.label; }).join(", ")) + "</dd>" : "") + "</dl></div>" +
     '<div class="card"><b>Status history</b>' + timelineList(o) + "</div></div><div class=\"stack\">";
   h += o.customer.guest ? '<div class="card"><b>Customer</b><span>' + esc(o.customer.name) + ' <span class="chip s-pur">Guest</span></span><span class="muted sm">' + esc(o.customer.email) + (o.customer.phone ? " · " + esc(o.customer.phone) : "") + "</span></div>"
@@ -179,9 +179,26 @@ ACT["a-sub-fail"] = function (d) { run(Store.update("accounts", d.v, { subscript
 ACT["a-sub-end"] = function (d) { run(Store.update("accounts", d.v, { subscription: { status: "cancelled", endedAt: Date.now() } }), "Plan ended"); };
 
 // ---------- Couriers ----------
+// Late deliveries waiting for a decision: deduct a fee or waive it. Only before the courier is paid.
+function lateReview() {
+  var list = S.orders.filter(function (o) { return o.status === "delivered" && o.late && !o.late.decided && !o.courierPaid; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; });
+  if (!list.length) return "";
+  var pct = num(pricing().latePenaltyPct, 10);
+  return '<div class="panel"><div class="panel-h">Late deliveries to review <span class="muted sm">Couriers see any fee on that delivery in their earnings.</span></div><div class="tbl"><table><thead><tr><th>Delivery</th><th>Courier</th><th>Deliver by</th><th>Late</th><th>Courier pay</th><th>Late fee €</th><th></th></tr></thead><tbody>' +
+    list.map(function (o) {
+      var k = "a.lateFee." + o.id, v = getPath(S, k); if (v == null) { S.a.lateFee = S.a.lateFee || {}; S.a.lateFee[o.id] = String(r2(payOf(o) * pct / 100)); v = S.a.lateFee[o.id]; }
+      return "<tr><td><button class=\"link\" data-act=\"a-order\" data-v=\"" + esc(o.id) + "\">" + esc(o.id) + "</button></td><td>" + esc(o.courier.name) + "</td><td>" + hhmm(o.deliverBy) + "</td><td>" + o.late.mins + " min</td><td>" + eur(payOf(o)) + "</td><td>" + inp(k, v, 'inputmode="decimal" style="width:90px"') +
+        '</td><td class="row"><button class="btn sm danger" data-act="a-late" data-v="' + esc(o.id) + '">Deduct</button><button class="btn sm ghost" data-act="a-late-waive" data-v="' + esc(o.id) + '">No fee</button></td></tr>';
+    }).join("") + "</tbody></table></div></div>";
+}
+ACT["a-late"] = function (d) {
+  var o = byId(S.orders, d.v), fee = r2(Math.max(0, Math.min(num((S.a.lateFee || {})[d.v], 0), payOf(o || {})))); if (!o) return;
+  run(Store.update("orders", o.id, { late: { mins: o.late.mins, penalty: fee, decided: true, decidedAt: Date.now() } }), "Late fee of " + eur(fee) + " deducted");
+};
+ACT["a-late-waive"] = function (d) { var o = byId(S.orders, d.v); if (!o) return; run(Store.update("orders", o.id, { late: { mins: o.late.mins, penalty: 0, decided: true, decidedAt: Date.now() } }), "No late fee"); };
 function aCouriers() {
   var f = S.a.courStatus || "all", rows = S.couriers.filter(function (c) { return (f === "all" || c.status === f || (f === "vehicle" && c.vehicleStatus === "pending")) && matchQ([c.name, c.email, c.phone, c.vehicle && c.vehicle.plate].join(" ")); }).sort(function (a, b) { return b.createdAt - a.createdAt; });
-  return aHead("Couriers", search("Search name, email, plate")) + '<div class="row wrap">' + segBtns("courStatus", f, [["all", "All"], ["pending", "To approve"], ["vehicle", "Vehicle changes"], ["approved", "Approved"], ["suspended", "Suspended"], ["rejected", "Rejected"]]) + "</div>" +
+  return aHead("Couriers", search("Search name, email, plate")) + lateReview() + '<div class="row wrap">' + segBtns("courStatus", f, [["all", "All"], ["pending", "To approve"], ["vehicle", "Vehicle changes"], ["approved", "Approved"], ["suspended", "Suspended"], ["rejected", "Rejected"]]) + "</div>" +
     '<div class="panel">' + (rows.length ? '<div class="tbl"><table><thead><tr><th>Name</th><th>Vehicle</th><th>Capacity</th><th>Status</th><th>Online</th><th>Delivered</th><th>Pending pay</th><th>Applied</th></tr></thead><tbody>' + rows.map(function (c) {
       var done = S.orders.filter(function (o) { return o.courier && o.courier.id === c.id && o.status === "delivered"; }), pend = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + earnOf(o); }, 0);
       return '<tr class="click" data-act="a-courier" data-v="' + esc(c.id) + '"><td><b>' + esc(c.name) + "</b></td><td>" + esc(vLabel(c.vehicle.type)) + (c.vehicle.plate ? " · " + esc(c.vehicle.plate) : "") + (c.vehicleStatus === "pending" ? ' <span class="chip s-warn">change</span>' : "") + "</td><td>" + c.vehicle.l + "×" + c.vehicle.w + "×" + c.vehicle.h + " · " + c.vehicle.kg + ' kg</td><td><span class="chip ' + (c.status === "approved" ? "s-ok" : c.status === "pending" ? "s-warn" : "s-bad") + '">' + esc(c.status) + "</span></td><td>" + (c.online ? "Yes" + (c.area ? ", " + esc(c.area) : "") : "No") + "</td><td>" + done.length + '</td><td class="num">' + eur(pend) + "</td><td>" + dmy(c.createdAt) + "</td></tr>";
@@ -270,7 +287,9 @@ function aPricing() {
   h += '<div class="card"><b>Size, weight and items</b><span class="muted sm">Category fees are set in Vehicles and items.</span><div class="grid3">' + num2("weightFrom", "Weight charge from kg") + num2("perKgOver", "Per kg over that €") + num2("extraItemFee", "Per extra item €") + "</div>" +
     '<div class="grid3">' + num2("secondCourierFee", "Second courier €", "When 2 people are needed") + num2("businessDiscount", "Business discount %") + num2("vatRate", "VAT %") + "</div></div>";
   h += '<div class="card"><b>Extra services</b><div class="grid3">' + OPTIONS.map(function (o) { return num2("options." + o.id, o.label + " €"); }).join("") + "</div></div>";
-  h += '<div class="card"><b>Courier earnings</b>' + num2("courierShare", "Courier share of the delivery price %") + "</div>";
+  h += '<div class="card"><b>Courier earnings</b>' + num2("courierShare", "Courier share of the delivery price %") + num2("latePenaltyPct", "Suggested late fee %", "Pre-filled when you review a late delivery. Nothing is deducted automatically.") + "</div>";
+  h += '<div class="card"><b>Delivery times and multi-stop</b><div class="grid2">' + num2("asapBufferMins", "ASAP: minutes added to the trip time", "Sets the arrival time customers are promised") + num2("leadMins", "Set times: offer to couriers this many minutes early") + "</div>" +
+    '<div class="grid2">' + num2("maxOrders", "Most deliveries a courier carries at once") + num2("nearKm", "Close enough to add to a route, km", "Pickup near the courier or a stop, or drop-off near one of theirs") + "</div></div>";
   h += '</div><div class="stack sticky"><div class="card"><b>Try a price</b><span class="muted sm">Uses the numbers on this page, before you save.</span><div class="grid2">' + field("From", sel("a.preview.from", pv.from, AREA_NAMES, 'data-live="1"')) + field("To", sel("a.preview.to", pv.to, AREA_NAMES, 'data-live="1"')) + "</div>" +
     field("Category", sel("a.preview.cat", pv.cat, rules().categories.map(function (c) { return [c.id, c.label]; }), 'data-live="1"'));
   var keep = S.cfg.pricing, cat = category(pv.cat);

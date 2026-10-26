@@ -6,11 +6,14 @@ var DOCS = { idcard: "ID card or passport", licence: "Driving licence", insuranc
 function docsFor(type) { return type === "bicycle" ? ["idcard"] : ["idcard", "licence", "insurance", "vehicleReg"]; }
 function myCourier() { return S.me.courierId ? byId(S.couriers, S.me.courierId) : null; }
 function myJobs() { var id = S.me.courierId; return S.orders.filter(function (o) { return o.courier && o.courier.id === id; }); }
+function activeJobs() { return myJobs().filter(function (o) { return JOB_STEPS.indexOf(o.status) >= 0 || (o.status === "issue" && o.issue && JOB_STEPS.indexOf(o.issue.prev) >= 0); }); }
 function activeJob() { return myJobs().filter(function (o) { return JOB_STEPS.indexOf(o.status) >= 0 || (o.status === "issue" && o.issue && JOB_STEPS.indexOf(o.issue.prev) >= 0); })[0] || null; }
 function share() { return num(pricing().courierShare, 75); }
 function payOf(o) { return o.courierPay != null ? o.courierPay : r2(o.price.total * share() / 100); }
 // Delivery pay plus any tip: what the courier is paid out for a finished delivery.
-function earnOf(o) { return r2(payOf(o) + tipOf(o)); }
+function earnOf(o) { return r2(payOf(o) + tipOf(o) - (o.late ? num(o.late.penalty, 0) : 0)); }
+// Late fees are set by admin per delivery; nothing is deducted automatically.
+function lateFee(o) { return o.late ? num(o.late.penalty, 0) : 0; }
 function eligible(c, o) {
   if (o.status !== "awaiting" || !c || !c.vehicle) return false;
   if ((o.cls.vehicles || []).indexOf(c.vehicle.type) < 0) return false;
@@ -19,14 +22,56 @@ function eligible(c, o) {
 // ---------- Offers: each waiting delivery goes to one courier at a time ----------
 var OFFER_SECS = 45, RETRY_SECS = 120;
 function liveOffer(o, now) { return o.offer && o.offer.until > (now || Date.now()) ? o.offer : null; }
-function jobOf(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && (JOB_STEPS.indexOf(o.status) >= 0 || o.status === "issue"); })[0] || null; }
+function jobsOf(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && (JOB_STEPS.indexOf(o.status) >= 0 || o.status === "issue"); }); }
+function jobOf(cid) { return jobsOf(cid)[0] || null; }
 function freeCourier(c, now) {
-  return c.status === "approved" && c.online && !jobOf(c.id) && !S.orders.some(function (x) { var f = liveOffer(x, now); return f && f.to === c.id; });
+  return c.status === "approved" && c.online && !S.orders.some(function (x) { var f = liveOffer(x, now); return f && f.to === c.id; }) && S.orders.some(function (o) { return o.status === "awaiting" && routeCheck(c, o, now); });
+}
+
+// ---------- Routes: what to pick up and drop off, in which order ----------
+function legMins(vtype, a, b) { var v = vehicle(vtype) || {}; return Math.max(3, Math.round(tripKm(a, b) / num(v.speed, 15) * 60)); }
+function stopMins(o) { return o.cls && o.cls.couriers > 1 || /furniture|oversize/.test(o.cls && o.cls.category || "") ? 15 : 6; }
+function needsPickup(o) { var st = o.status === "issue" && o.issue ? o.issue.prev : o.status; return ["awaiting", "assigned", "to_pickup", "at_pickup"].indexOf(st) >= 0; }
+// Greedy plan: go to the nearest next stop, unless a drop-off would otherwise be late.
+function planRoute(vtype, start, orders, now) {
+  var t = now || Date.now(), at = start, stops = [], todo = [], picked = {};
+  orders.forEach(function (o) { if (needsPickup(o)) todo.push({ o: o, kind: "pickup" }); else { picked[o.id] = true; todo.push({ o: o, kind: "dropoff" }); } });
+  while (todo.length) {
+    var best = null, bestScore = Infinity;
+    todo.forEach(function (s) {
+      var place = s.kind === "pickup" ? s.o.pickup.area : s.o.dropoff.area, m = at ? legMins(vtype, at, place) : 0, score = m;
+      if (s.kind === "dropoff" && s.o.deliverBy) { var slack = (s.o.deliverBy - (t + m * 60000)) / 60000; if (slack < 25) score = m - 1000 + slack; }
+      if (score < bestScore) { bestScore = score; best = s; }
+    });
+    var place = best.kind === "pickup" ? best.o.pickup.area : best.o.dropoff.area;
+    t += ((at ? legMins(vtype, at, place) : 0) + stopMins(best.o)) * 60000; at = place;
+    stops.push({ o: best.o, kind: best.kind, area: place, eta: t, late: best.kind === "dropoff" && !!best.o.deliverBy && t > best.o.deliverBy });
+    todo.splice(todo.indexOf(best), 1);
+    if (best.kind === "pickup") todo.push({ o: best.o, kind: "dropoff" });
+  }
+  return { stops: stops, end: t, ok: stops.every(function (s) { return !s.late; }) };
+}
+function myRoute(c) { var jobs = activeJobs(); return jobs.length ? planRoute(c.vehicle.type, c.area || jobs[0].pickup.area, jobs, Date.now()) : null; }
+// Can this courier take this delivery now? Free couriers can take anything that fits.
+// Busy couriers only get it if it's close, fits alongside what they carry, and keeps every deadline.
+function routeCheck(c, o, now) {
+  if (!c || c.status !== "approved" || !c.online || !eligible(c, o)) return null;
+  var P = pricing(), jobs = jobsOf(c.id), start = c.area || o.pickup.area;
+  if (!jobs.length) return { batch: false, mins: legMins(c.vehicle.type, start, o.pickup.area) };
+  if (jobs.length >= num(P.maxOrders, 3) || jobs.some(function (j) { return j.status === "issue" || j.cls.couriers > 1; }) || o.cls.couriers > 1) return null;
+  var v = c.vehicle, all = jobs.concat([o]), kg = 0, vol = 0;
+  all.forEach(function (j) { var q = Math.max(1, num(j.item.qty, 1)), d = dims(j.cls); kg += num(j.cls.kg, 0) * q; vol += d[0] * d[1] * d[2] * q; });
+  var vd = dims(v); if (kg > num(v.kg, 0) || vol > vd[0] * vd[1] * vd[2] * .85) return null;
+  var near = num(P.nearKm, 2.5), pts = [c.area].concat(jobs.filter(needsPickup).map(function (j) { return j.pickup.area; }), jobs.map(function (j) { return j.dropoff.area; })).filter(Boolean);
+  var closePick = pts.some(function (a) { return tripKm(a, o.pickup.area) <= near; }), closeDrop = jobs.some(function (j) { return tripKm(j.dropoff.area, o.dropoff.area) <= near; });
+  if (!closePick && !closeDrop) return null;
+  var before = planRoute(v.type, start, jobs, now), after = planRoute(v.type, start, all, now);
+  if (!after.ok) return null;
+  return { batch: true, mins: Math.max(1, Math.round((after.end - before.end) / 60000)), stops: after.stops.length };
 }
 // The offer showing on this courier's phone, if any.
 function myOffer() {
   var id = S.me.courierId, now = Date.now();
-  if (activeJob()) return null;
   return id ? S.orders.filter(function (o) { var f = o.status === "awaiting" && liveOffer(o, now); return f && f.to === id; }).sort(function (a, b) { return a.offer.at - b.offer.at || (a.id < b.id ? -1 : 1); })[0] || null : null;
 }
 // Runs on every open courier and admin screen. In production this runs on the server.
@@ -39,14 +84,15 @@ function dispatch() {
     .forEach(function (o) { if (!held[o.offer.to]) held[o.offer.to] = o.id; });
   S.orders.forEach(function (o) {
     if (o.status !== "awaiting" || dispatching[o.id]) return;
+    // Set-time deliveries are offered once it's time to start, not hours early.
+    if (!o.asap && o.deliverBy && !o.offer && now < o.deliverBy - (num(o.price.mins, 30) + num(pricing().leadMins, 45)) * 60000) return;
     var f = liveOffer(o, now), holder = f && byId(S.couriers, f.to);
-    if (f && holder && holder.online && holder.status === "approved" && !jobOf(holder.id) && held[f.to] === o.id) return;
+    if (f && holder && held[f.to] === o.id && routeCheck(holder, o, now)) return;
     var dup = f && held[f.to] !== o.id;
     var declined = (o.declinedBy || []).slice();
     if (o.offer && !dup && declined.indexOf(o.offer.to) < 0) declined.push(o.offer.to);
-    var next = S.couriers.filter(function (c) { return declined.indexOf(c.id) < 0 && !held[c.id] && c.status === "approved" && c.online && !jobOf(c.id) && eligible(c, o); }).sort(function (a, b) {
-      return (a.area ? tripKm(a.area, o.pickup.area) : 99) - (b.area ? tripKm(b.area, o.pickup.area) : 99);
-    })[0];
+    var next = S.couriers.map(function (c) { return declined.indexOf(c.id) < 0 && !held[c.id] ? { c: c, chk: routeCheck(c, o, now) } : null; })
+      .filter(function (x) { return x && x.chk; }).sort(function (a, b) { return a.chk.mins - b.chk.mins; }).map(function (x) { return x.c; })[0];
     var patch;
     if (next) { held[next.id] = o.id; patch = { offer: { to: next.id, at: now, until: now + OFFER_SECS * 1000 }, declinedBy: declined }; }
     else if (declined.length && now - (o.lastDeclineAt || (o.offer && o.offer.until) || 0) > RETRY_SECS * 1000) patch = { offer: null, declinedBy: [] };
@@ -199,11 +245,13 @@ function offerSheet(c, o) {
   var f = o.offer, total = OFFER_SECS, left = Math.max(0, Math.ceil((f.until - Date.now()) / 1000)), more = S.d.offerMore === o.id;
   // Animate in only the first time this offer is drawn; the countdown redraws it every second.
   var enter = S.d.offerSeen !== o.id + (more ? ":more" : "") ? " enter" : ""; S.d.offerSeen = o.id + (more ? ":more" : "");
-  var away = c.area ? tripKm(c.area, o.pickup.area) : null, extras = OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).map(function (x) { return x.label; });
+  var chk = routeCheck(c, o, Date.now()), away = c.area ? tripKm(c.area, o.pickup.area) : null, extras = OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).map(function (x) { return x.label; });
   var timer = '<div class="offer-timer" aria-hidden="true"><i style="animation-duration:' + total + "s;animation-delay:-" + (total - left) + 's"></i></div>';
   var top = '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay" id="offer-pay">' + eur(payOf(o)) + '</b></div><span class="offer-left"><b>' + left + "</b> s</span></div>" +
     '<p class="offer-route"><b>' + esc(o.pickup.area) + "</b> → <b>" + esc(o.dropoff.area) + "</b></p>" +
-    '<p class="offer-meta">' + o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min" + (away != null ? " · " + away.toFixed(1) + " km to pickup" : "") + "</p>";
+    '<p class="offer-meta">' + o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min" + (away != null ? " · " + away.toFixed(1) + " km to pickup" : "") + "</p>" +
+    (o.deliverBy ? '<p class="offer-by"><b>Deliver ' + byLabel(o.deliverBy).replace(/^Today by /, "by ").replace(/^Tomorrow by /, "tomorrow by ") + "</b>" + (o.asap ? " · ASAP" : "") + "</p>" : "") +
+    (chk && chk.batch ? '<p class="offer-batch">Adds to your route: ' + chk.stops + " stops in total, about +" + chk.mins + " min. Your other deliveries stay on time.</p>" : "");
   var acts = '<div class="offer-act"><button class="btn ghost" data-act="d-decline" data-v="' + esc(o.id) + '">Decline</button><button class="btn ghost" data-act="d-offer-more" data-v="' + esc(o.id) + '">' + (more ? "Show less" : "Show more") + '</button><button class="btn" data-act="d-accept" data-v="' + esc(o.id) + '"' + (busy ? " disabled" : "") + ">Accept</button></div>";
   var map = '<div class="offer-map">' + mapSVG({ vb: fitVB([o.pickup.area, o.dropoff.area].concat(c.area ? [c.area] : []), more ? 1.7 : 2.4, 34), labels: false, routes: [{ from: o.pickup.area, to: o.dropoff.area }], dots: c.area ? [{ area: c.area, color: "var(--ok)" }] : [] }) + '<span class="offer-tag">New delivery</span></div>';
   if (!more) return '<div class="offer-scrim' + enter + '"><div class="offer-card" role="dialog" aria-modal="true" aria-labelledby="offer-pay">' + map + timer + '<div class="offer-in">' + top + acts + "</div></div></div>";
@@ -221,7 +269,8 @@ ACT["d-decline"] = function (d) {
   run(Store.claim("orders", o.id, c.id, function (x) { return x.offer && x.offer.to === c.id; }, { offer: null, declinedBy: declined, lastDeclineAt: Date.now() }), "Declined. It goes to the next courier.");
 };
 ACT["d-accept"] = function (d) {
-  var c = myCourier(), o = byId(S.orders, d.v); if (!c || !o || busy || activeJob()) return;
+  var c = myCourier(), o = byId(S.orders, d.v); if (!c || !o || busy) return;
+  if (!routeCheck(c, o, Date.now())) return toast("This one no longer fits your route.");
   var now = Date.now();
   var patch = { status: "assigned", offer: null, courier: { id: c.id, name: c.name, vehicle: c.vehicle.type, plate: c.vehicle.plate || "", phone: c.phone }, courierPay: r2(o.price.total * share() / 100), timeline: { assigned: now } };
   run(Store.claim("orders", o.id, c.id, function (x) { return x.status === "awaiting" && x.offer && x.offer.to === c.id && x.offer.until > Date.now(); }, patch).then(function (ok) {
@@ -237,8 +286,9 @@ function dJob(c) {
   var h = dHead('<span class="mono">' + esc(o.id) + "</span>", "home", '<button class="btn ghost sm" data-act="d-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "courier") ? ' <span class="badge in">1</span>' : "") + "</button>") +
     '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, dashed: toPickup }, courierPos(o))] }) + '</div><div class="pad">';
   h += '<div class="row between">' + chip(o.status) + '<span class="price-big">' + eur(payOf(o)) + "</span></div>";
+  if (o.deliverBy && JOB_STEPS.indexOf(st) >= 0) { var lateNow = Date.now() > o.deliverBy; h += '<div class="by-card' + (lateNow ? " late" : Date.now() > o.deliverBy - 15 * 60000 ? " soon" : "") + '"><span>Deliver by</span><b>' + hhmm(o.deliverBy) + "</b><small>" + leftLabel(o.deliverBy) + (lateNow ? " · DART may deduct a late fee" : "") + "</small></div>"; }
   if (o.status === "cancelled") return h + '<div class="banner bad">This delivery was cancelled' + (o.cancelledBy === "admin" ? " by DART" : " by the customer") + ".</div>" + '<button class="btn block" data-act="d-go" data-v="home">Back to requests</button></div>';
-  if (o.status === "delivered") return h + (o.review ? '<div class="card"><b>' + "★★★★★".slice(0, o.review.stars) + '<span class="muted">' + "★★★★★".slice(o.review.stars) + "</span></b>" + (o.review.text ? "<span>“" + esc(o.review.text) + "”</span>" : "") + (o.tip ? '<span class="ok-t">' + esc(o.customer.name) + " tipped you " + eur(o.tip.amount) + "</span>" : "") + "</div>" : "") + '<div class="card ok"><b>Delivered at ' + hhmm(o.timeline.delivered) + "</b><span>You earned " + eur(earnOf(o)) + ". It's paid out with your next weekly payment.</span></div>" + '<button class="btn block" data-act="d-go" data-v="home">Back to requests</button></div>';
+  if (o.status === "delivered") return h + (o.review ? '<div class="card"><b>' + "★★★★★".slice(0, o.review.stars) + '<span class="muted">' + "★★★★★".slice(o.review.stars) + "</span></b>" + (o.review.text ? "<span>“" + esc(o.review.text) + "”</span>" : "") + (o.tip ? '<span class="ok-t">' + esc(o.customer.name) + " tipped you " + eur(o.tip.amount) + "</span>" : "") + "</div>" : "") + '<div class="card ok"><b>Delivered at ' + hhmm(o.timeline.delivered) + "</b>" + (o.late ? '<span class="bad-t">' + o.late.mins + " min late" + (lateFee(o) ? " · Late fee −" + eur(lateFee(o)) : "") + "</span>" : "") + "<span>You earned " + eur(earnOf(o)) + ". It's paid out with your next weekly payment.</span></div>" + '<button class="btn block" data-act="d-go" data-v="home">Back to requests</button></div>';
   var target = toPickup ? o.pickup : o.dropoff;
   h += '<div class="card"><span class="muted sm">' + (toPickup ? "Pickup" : "Delivery") + "</span><b>" + esc(target.street) + ", " + esc(target.area) + "</b>" + (target.notes ? "<span>" + esc(target.notes) + "</span>" : "") +
     '<a class="btn ghost sm" href="' + mapsLink(target.area, target.street) + '" target="_blank" rel="noopener">Navigate with Google Maps</a></div>';
@@ -322,10 +372,11 @@ FORMS["d-deliver"] = function () {
   if (o.item.options && o.item.options.signature && !p.sig) return toast("Ask the person receiving it to sign.");
   var now = Date.now(), acc = byId(S.accounts, o.customer.id) || { id: o.customer.id, name: o.customer.name, email: "" };
   var proof = { receiver: clip(p.receiver, 60), at: now, photo: p.photo, codeOk: !!o.code }; if (p.sig) proof.sig = p.sig;
+  var late = o.deliverBy && now > o.deliverBy ? { mins: Math.round((now - o.deliverBy) / 60000), penalty: 0 } : null;
   var done = Object.assign({}, o, { timeline: Object.assign({}, o.timeline, { delivered: now }) });
   var invStatus = o.billing && o.billing.status === "to_invoice" ? "outstanding" : "paid";
   var invId = "I-" + rid(8), inv = deliveryInvoice(done, acc, invStatus);
-  run(Store.update("orders", o.id, { status: "delivered", proof: proof, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
+  run(Store.update("orders", o.id, { status: "delivered", proof: proof, late: late, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
 };
 
 // ---------- Messages, history, earnings ----------
@@ -349,7 +400,8 @@ function dEarnings(c) {
   return dHead("Earnings") + '<div class="pad"><div class="stat3"><div><b class="num">' + eur(sum(done)) + '</b><small>All time</small></div><div><b class="num">' + eur(sum(pend)) + '</b><small>Pending</small></div><div><b class="num">' + eur(sum(paid)) + "</b><small>Paid</small></div></div>" +
     '<p class="muted sm">You keep ' + share() + "% of each delivery price. Pending earnings are paid every Monday to " + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") + ".</p>" +
     (Object.keys(payouts).length ? '<div class="sec-h"><h3>Payments</h3></div><div class="list">' + Object.keys(payouts).map(function (k) { var p = payouts[k]; return '<div class="item"><b>Paid ' + dmy(p.at) + '</b><b class="num">' + eur(p.total) + "</b><small>" + p.n + " deliveries</small><small></small></div>"; }).join("") + "</div>" : "") +
-    '<div class="sec-h"><h3>Completed deliveries</h3></div>' + (done.length ? '<div class="list">' + done.map(function (o) { return '<button class="item" data-act="d-job" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num">' + eur(payOf(o)) + "</b><small>" + when(o.timeline.delivered) + " · " + esc(o.id) + "</small><small>" + (o.courierPaid ? "Paid" : "Pending") + (o.rating ? " · " + o.rating + "★" : "") + "</small></button>"; }).join("") + "</div>" : emptyState("No deliveries yet", "Completed deliveries and what you earned show up here.")) + "</div>";
+    '<div class="sec-h"><h3>Completed deliveries</h3></div>' + (done.length ? '<div class="list">' + done.map(function (o) { return '<button class="item" data-act="d-job" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num">' + eur(earnOf(o)) + "</b><small>" + when(o.timeline.delivered) + " · " + esc(o.id) + "</small><small>" + (o.courierPaid ? "Paid" : "Pending") + ((o.review || o.rating) ? " · " + (o.review ? o.review.stars : o.rating) + "★" : "") + "</small>" +
+      '<span class="earn-lines"><span>Delivery ' + eur(payOf(o)) + "</span>" + (tipOf(o) ? '<span class="ok-t">Tip +' + eur(tipOf(o)) + "</span>" : "") + (lateFee(o) ? '<span class="bad-t">Late fee −' + eur(lateFee(o)) + "</span>" : "") + "</span></button>"; }).join("") + "</div>" : emptyState("No deliveries yet", "Completed deliveries and what you earned show up here.")) + "</div>";
 }
 function dHistory() {
   var list = myJobs().sort(function (a, b) { return b.createdAt - a.createdAt; });
@@ -409,6 +461,14 @@ FORMS["d-ticket"] = function () {
 };
 
 
+// Every stop in the planned order; the first one is where to go next.
+function routeCard(plan) {
+  return '<div class="route"><div class="row between"><b>Your route</b><span class="muted sm">' + plan.stops.length + " stops · done about " + hhmm(plan.end) + "</span></div><ol>" + plan.stops.map(function (s, i) {
+    var o = s.o, place = s.kind === "pickup" ? o.pickup : o.dropoff;
+    return '<li class="' + (i === 0 ? "next" : "") + (s.late ? " late" : "") + '"><button data-act="d-job" data-v="' + esc(o.id) + '"><i class="' + s.kind + '" aria-hidden="true"></i><span><b>' + (s.kind === "pickup" ? "Pick up" : "Drop off") + " · " + esc(place.street || place.area) + "</b><small>" + esc(place.area) + " · " + esc(cLabel(o.cls.category)) + (s.kind === "dropoff" && o.deliverBy ? " · by " + hhmm(o.deliverBy) : "") + "</small></span><em>" + hhmm(s.eta) + "</em></button></li>";
+  }).join("") + "</ol>" + (plan.ok ? "" : '<p class="bad-t sm">At this pace one delivery will be late. Message the customer or DART support.</p>') + "</div>";
+}
+
 // ---------- Courier home: a full map with a sheet over it ----------
 function dMapHome(c) {
   var job = activeJob(), done = myJobs().filter(function (o) { return o.status === "delivered"; });
@@ -416,8 +476,9 @@ function dMapHome(c) {
   var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + earnOf(o); }, 0);
   var pins = [];
   if (c.online && c.area) pins.unshift({ area: c.area, text: tr("You"), tone: "green", dy: 44 });
-  var routes = job ? [Object.assign({ from: job.pickup.area, to: job.dropoff.area }, courierPos(job))] : [];
-  var title = !c.online ? "You're offline" : job ? "On a delivery" : "Waiting for a delivery";
+  var jobs = activeJobs(), plan = myRoute(c);
+  var routes = jobs.map(function (j) { return Object.assign({ from: j.pickup.area, to: j.dropoff.area }, courierPos(j)); });
+  var title = !c.online && !job ? "You're offline" : jobs.length > 1 ? jobs.length + " deliveries on your route" : job ? "On a delivery" : "Waiting for a delivery";
   var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Set your area below";
   var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
     '<div class="mh-top"><button class="mh-online ' + (c.online ? "on" : "") + '" data-act="d-online" role="switch" aria-checked="' + !!c.online + '"><i></i>' + (c.online ? "Online" : "Offline") + "</button>" +
@@ -427,7 +488,8 @@ function dMapHome(c) {
     '<div class="stat3"><div><b class="num">' + eur(earned) + "</b><small>Today</small></div><div><b>" + today.length + '</b><small>Jobs today</small></div><div><b class="num">' + eur(pending) + "</b><small>To be paid</small></div></div>";
   if (c.vehicleStatus === "pending") h += '<div class="banner">Your vehicle change is waiting for approval. You get requests for your current vehicle until then.</div>';
   if (settings().open === false) h += '<div class="banner bad">DART is closed. No new requests until it reopens.</div>';
-  if (job) h += '<button class="item job-card" data-act="d-job" data-v="' + esc(job.id) + '"><b>' + esc(job.pickup.area) + " → " + esc(job.dropoff.area) + "</b>" + chip(job.status) + "<small>" + itemSummary(job) + '</small><small class="num">' + eur(payOf(job)) + "</small></button>";
+  if (plan && plan.stops.length > 2) h += routeCard(plan);
+  else if (job) h += '<button class="item job-card" data-act="d-job" data-v="' + esc(job.id) + '"><b>' + esc(job.pickup.area) + " → " + esc(job.dropoff.area) + "</b>" + chip(job.status) + "<small>" + itemSummary(job) + (job.deliverBy ? " · by " + hhmm(job.deliverBy) : "") + '</small><small class="num">' + eur(payOf(job)) + "</small></button>";
   if (!c.online) h += '<button class="btn block big" data-act="d-online">Go online</button>';
   else {
     h += field("Where are you now?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'));

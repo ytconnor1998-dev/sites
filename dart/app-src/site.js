@@ -273,7 +273,8 @@ function siteLegal(kind) {
     ["What you can send", "Letters, documents, parcels and furniture that you're allowed to send. We don't carry cash, weapons, illegal items, prescription medicines, or alcohol for anyone under 18."],
     ["Cancellations and refunds", "You can cancel free of charge until the courier collects the item. Card payments are refunded in full."],
     ["Business plans", "Plans renew monthly until you cancel. Cancelling stops the next renewal; your allowance stays until the end of the period."],
-    ["Couriers", "Couriers are independent and approved by DART after checking their identity, vehicle and documents."]
+    ["Couriers", "Couriers are independent and approved by DART after checking their identity, vehicle and documents."],
+    ["Delivery times and late fees for couriers", "Every delivery shows a deliver-by time before the courier accepts it. If a delivery arrives after that time, DART reviews it and may deduct a late fee from the courier's pay for that delivery, usually a small percentage of it. Any fee is shown on the delivery in the courier's earnings before payout. Delays caused by the customer or by DART are not charged."]
   ] : [
     ["What we collect", "Your name, email, phone number, addresses, item details and photos, payment status, messages with your courier, and delivery history. For couriers, also identity and vehicle documents and payout details."],
     ["Why", "To arrange and complete deliveries, take payment, issue invoices, provide support, and keep the service safe."],

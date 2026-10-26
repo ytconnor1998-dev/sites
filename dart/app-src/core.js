@@ -75,7 +75,9 @@ var DEFAULT_PRICING = {
   minFee: 6.9, perKm: 0.95, minKm: 2, method: "road", roadFactor: 1.35,
   longFrom: 15, longFee: 0.5, weightFrom: 20, perKgOver: 0.25, extraItemFee: 1.5, secondCourierFee: 18,
   options: { fragile: 2, stairs: 8, assembly: 15, helper: 18, scheduled: 2, signature: 0 },
-  businessDiscount: 0, vatRate: 22, courierShare: 75
+  businessDiscount: 0, vatRate: 22, courierShare: 75,
+  // Timing and multi-stop
+  asapBufferMins: 30, leadMins: 45, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
 };
 var DEFAULT_SETTINGS = {
   open: true, banner: "", company: "", companyVat: "", companyAddress: "", supportEmail: "", invoicePrefix: "DART"
@@ -116,6 +118,22 @@ function haversine(a, b) {
   var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.pow(Math.sin(dLng / 2), 2);
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+// ---------- Delivery times ----------
+// ASAP promises the trip time plus a buffer; a set time must be at least that far ahead.
+function earliestBy(from, to, now) {
+  var v = vehicle("scooter") || {}, mins = num(v.pickup, 12) + tripKm(from, to) / num(v.speed, 15) * 60;
+  return (now || Date.now()) + Math.round(mins + num(pricing().asapBufferMins, 30)) * 60000;
+}
+// Choices for "By a set time": half-hour steps today and tomorrow, 08:00 to 21:00.
+function deliverySlots(from, to, now) {
+  var first = earliestBy(from, to, now), out = [], d = new Date(now || Date.now()); d.setHours(0, 0, 0, 0);
+  for (var day = 0; day < 2; day++) for (var m = 8 * 60; m <= 21 * 60; m += 30) {
+    var t = d.getTime() + day * 864e5 + m * 60000; if (t >= first) out.push(t);
+  }
+  return out;
+}
+function byLabel(t) { var d = new Date(t), today = new Date(); return (d.toDateString() === today.toDateString() ? "Today" : "Tomorrow") + " by " + hhmm(t); }
+function leftLabel(t) { var m = Math.round((t - Date.now()) / 60000); return m >= 0 ? (m >= 60 ? Math.floor(m / 60) + " h " + (m % 60) + " min left" : m + " min left") : Math.abs(m) + " min late"; }
 function tripKm(from, to) {
   var p = pricing(), f = p.method === "straight" ? 1 : num(p.roadFactor, 1.35);
   if (!AREAS[from] || !AREAS[to]) return 0;

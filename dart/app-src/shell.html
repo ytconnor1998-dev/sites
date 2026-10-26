@@ -296,6 +296,34 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .mh-title h1 { font-size: 30px; font-weight: 900; letter-spacing: -.03em; line-height: 1; max-width: 13ch; color: var(--ink); text-shadow: 0 0 3px var(--map-bg), 0 0 6px var(--map-bg), 0 0 12px var(--map-bg); }
 .mh-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 64%; overflow-y: auto; z-index: 3; background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -14px 34px -14px rgba(30, 10, 80, .45); padding: 8px 16px 16px; display: grid; gap: 12px; align-content: start; }
 /* Courier offer: a pop-up card, or the full details */
+/* Delivery times and routes */
+.bad-t { color: var(--bad); font-weight: 700; }
+.by-line { margin: 2px 0 0; font-weight: 700; color: var(--purple); }
+.when-row { border-top: 1px solid var(--line); padding-top: 10px; gap: 10px; }
+.when-row span { color: var(--muted); }
+.when-row b { flex: 1; text-align: right; }
+.offer-by { margin: -4px 0 0; font-size: 15px; }
+.offer-batch { margin: 0; font-size: 14px; background: var(--ok-soft); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
+.by-card { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; align-items: baseline; padding: 10px 14px; border-radius: 10px; background: var(--paper-2); }
+.by-card span { color: var(--muted); font-size: 13px; }
+.by-card b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.by-card small { grid-column: 1 / -1; color: var(--muted); }
+.by-card.soon { background: var(--warn-soft); }
+.by-card.late { background: var(--bad-soft); }
+.by-card.late small { color: var(--bad); font-weight: 700; }
+.route { display: grid; gap: 8px; }
+.route ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.route li button { width: 100%; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 10px 12px; color: var(--ink); }
+.route li.next button { border-color: var(--purple); box-shadow: inset 3px 0 0 var(--purple); }
+.route li.late em { color: var(--bad); }
+.route li span { display: grid; min-width: 0; }
+.route li b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route li small { color: var(--muted); font-size: 13px; }
+.route li em { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
+.route i { width: 12px; height: 12px; border-radius: 50%; }
+.route i.pickup { border: 3px solid var(--purple); }
+.route i.dropoff { background: var(--ink); border-radius: 2px; }
+.earn-lines { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
 /* Delivery proof: location check, code, signature */
 .ok-t { color: var(--ok); font-weight: 700; }
 .rating-big { font-size: 22px; color: var(--purple); }
