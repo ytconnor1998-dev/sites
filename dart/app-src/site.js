@@ -32,7 +32,7 @@ function siteShell(acc, body, isSite, accNav) {
 }
 function siteFooter() {
   var st = settings();
-  return '<footer class="ws-foot"><div class="ws-wrap"><div class="ws-foot-top"><div><span class="ws-logo light"><svg><use href="#mark"/></svg>DART</span><p>Same-day delivery inside Rome’s GRA, from envelopes to wardrobes.</p></div>' +
+  return '<footer class="ws-foot"><div class="ws-wrap"><div class="ws-foot-top"><div><span class="ws-logo light"><svg><use href="#mark"/></svg>DART</span><p>Delivered within ' + hoursText() + ' inside Rome’s GRA, from envelopes to wardrobes.</p></div>' +
     '<nav aria-label="Footer"><button data-act="w-book">Book a delivery</button><button data-act="c-go" data-v="track">Track a delivery</button><button data-act="w-page" data-v="site-pricing">Pricing</button><button data-act="w-page" data-v="site-business">Business</button><button data-act="w-page" data-v="site-couriers">Become a courier</button><button data-act="w-page" data-v="site-help">Help and contact</button><button data-act="w-page" data-v="site-terms">Terms and conditions</button><button data-act="w-page" data-v="site-privacy">Privacy policy</button></nav></div>' +
     '<div class="ws-legal"><span>© ' + new Date().getFullYear() + " " + esc(st.company || "DART") + (st.companyVat ? " · P.IVA " + esc(st.companyVat) : "") + (st.companyAddress ? " · " + esc(st.companyAddress) : "") + (st.supportEmail ? " · " + esc(st.supportEmail) : "") + '</span><span>Test build · ' + (Store.mode === "live" ? "live data" : "this browser only") + "</span></div></div></footer>";
 }
@@ -116,11 +116,11 @@ function costLine(what, from, to, price, extra) { return '<li><span class="ws-c-
 // ---------- Home ----------
 function siteHome(acc) {
   var P = pricing(), plans = S.plans.filter(function (p) { return p.active !== false; }).sort(function (a, b) { return a.price - b.price; });
-  var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><p class="ws-kicker">Same-day delivery inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' + heroQuote() +
+  var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><p class="ws-kicker">Delivered within ' + hoursText() + ' inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' + heroQuote() +
     '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. No account needed.</span></p></div></section>';
   h += '<div class="ws-wrap ws-read">';
   h += sec("Why DART exists", '<p class="ws-intro">Sometimes you need to get something across Rome, but you don\'t have a car, the time, or an easy way to do it.</p>' +
-    "<p>That's the problem DART was started to solve. We're building a local delivery network for the city, for people and for businesses. Tell us what it is and where it's going, and a nearby courier with the right vehicle collects it the same day, whether it's a second-hand find, a shop purchase, or documents for another office.</p>" +
+    "<p>That's the problem DART was started to solve. We're building a local delivery network for the city, for people and for businesses. Tell us what it is and where it's going, and a nearby courier with the right vehicle delivers it within " + hoursText() + ", often much sooner, whether it's a second-hand find, a shop purchase, or documents for another office.</p>" +
     "<p>No contract, no account unless you want one, and you see the full price before you book.</p>");
   h += sec("Who uses DART", '<div class="ws-who">' +
     who("Boxes.", "People who just moved to Rome.", "New flat, no car, and boxes or a mattress to get home. Book a car or a van and it's done.") +
@@ -158,6 +158,7 @@ function siteHow() {
     step("See the full price.", "A distance charge, the size category fee, any weight or extra-item charges, the vehicle, and the extras you ticked. Every line is shown.") +
     step("Book.", "Pay by card. Guests only need a name, email and phone number. Businesses on a plan use their monthly allowance.") +
     step("A courier accepts.", "Nearby couriers with a suitable vehicle see the request. When one accepts, you see their name and vehicle and can message them.") +
+    step("It arrives on time.", "As soon as possible means within " + hoursText() + " of booking, usually much sooner. Or choose a set time and it arrives by then.") +
     step("Follow it.", "Travelling to pickup, collected, in transit, arrived. You get a notification at each step.") +
     step("Delivered.", "The courier records who received it and adds a photo. Your invoice is ready straight away.") +
     '</ol><p><button class="ws-btn" data-act="w-book">Book a delivery</button></p>') + "</div>";
@@ -184,7 +185,7 @@ function siteBusiness(acc) {
   return pageHead("Business", "DART for shops, offices and studios", "Send documents, stock and supplies across Rome from the account you already use. There's no separate business app.") +
     '<div class="ws-wrap ws-read">' +
     sec("Getting started", '<ol class="ws-steps">' + step("Create a DART account.", "Or log in to the one you have.") + step("Switch to business.", "In Settings, add your business name, address, Partita IVA and SDI code. Your invoices show them from then on.") + step("Choose a plan, or don't.", "A plan gives you a set number of deliveries each month for one price. Without one, you pay per delivery.") + step("Send.", "Book deliveries one at a time, or, on plans that include it, upload a CSV or Excel file and book every row at once.") + "</ol><p>" + cta + "</p>") +
-    sec("Plans", plans.length ? '<ul class="ws-plain">' + plans.map(function (p) { return planLine(p).replace("</li>", ' <span class="ws-sub">' + "Covers" + " " + esc((p.categories || []).map(cLabel).join(", ")) + (p.bulk ? " · " + "bulk upload" : "") + "</span></li>"); }).join("") + "</ul><p>Categories a plan doesn't cover, such as furniture, are charged at the normal price. The app shows this before you confirm.</p>" : "<p>Plans will be listed here. You can already use DART as a business and pay per delivery.</p>") + "</div>";
+    sec("Plans", plans.length ? '<ul class="ws-plain">' + plans.map(function (p) { return planLine(p).replace("</li>", ' <span class="ws-note">' + "Covers" + " " + esc((p.categories || []).map(cLabel).join(", ")) + (p.bulk ? " · " + "bulk upload" : "") + "</span></li>"); }).join("") + "</ul><p>Categories a plan doesn't cover, such as furniture, are charged at the normal price. The app shows this before you confirm.</p>" : "<p>Plans will be listed here. You can already use DART as a business and pay per delivery.</p>") + "</div>";
 }
 
 // ---------- Couriers: information ----------
@@ -198,6 +199,21 @@ var COURIER_JOBS = {
   largevan: { what: "Wardrobe", from: "San Giovanni", to: "EUR", item: { type: "furniture", l: 200, w: 100, h: 60, kg: 90, qty: 1, options: { stairs: true } } },
   cargovan: { what: "Small office move", from: "Ostiense", to: "Prati", item: { type: "furniture", l: 300, w: 150, h: 120, kg: 400, qty: 1, options: {} } }
 };
+function eurWhole(n) { var t = Math.round(n).toLocaleString(locale(), { maximumFractionDigits: 0 }); return lang() === "it" ? t + " €" : "€" + t; }
+// A month of work per vehicle, from the typical jobs that vehicle can carry.
+var MONTH_PLAN = [["scooter", 12], ["car", 8], ["van", 6]];
+function monthLines(share) {
+  var vs = rules().vehicles, order = vs.map(function (v) { return v.id; });
+  return '<ul class="ws-costs">' + MONTH_PLAN.map(function (m) {
+    var v = vehicle(m[0]); if (!v || v.active === false) return "";
+    var upto = order.indexOf(m[0]), pays = Object.keys(COURIER_JOBS).filter(function (k) { return order.indexOf(k) >= 0 && order.indexOf(k) <= upto; }).map(function (k) {
+      var j = COURIER_JOBS[k], cls = classify(j.item); if (!cls.ok) return null; return quote(j.from, j.to, j.item, Object.assign({}, cls, { minVehicle: m[0] }), null).total * share / 100;
+    }).filter(function (x) { return x != null; });
+    if (!pays.length) return "";
+    var avg = pays.reduce(function (a, b) { return a + b; }, 0) / pays.length, month = Math.round(avg * m[1] * 22 / 10) * 10;
+    return '<li><span class="ws-c-what">' + esc(v.label) + '</span> <span class="ws-c-route">' + m[1] + " deliveries a day · about " + eur(avg) + ' each</span> <b class="ws-c-amt">' + eurWhole(month) + " a month</b></li>";
+  }).join("") + "</ul>";
+}
 function siteCouriers() {
   var P = pricing(), R = rules(), share = num(P.courierShare, 75), vs = R.vehicles.filter(function (v) { return v.active !== false; });
   var pay = routeLines(vs.map(function (v) {
@@ -207,8 +223,11 @@ function siteCouriers() {
     return { what: esc(v.label) + " · " + j.what, from: j.from, to: j.to, km: q.km, price: q.total * share / 100 };
   }));
   return pageHead("Couriers", "Deliver with DART", "Use your own bicycle, scooter, motorbike, car or van to deliver across Rome. You choose when you work, and you only get jobs your vehicle can carry.") +
-    '<div class="ws-wrap ws-read"><div class="ws-stat"><b>' + share + '%</b><p><span>of every delivery price is yours, paid every Monday.</span></p></div><p><button class="ws-btn" data-act="w-page" data-v="site-courier-apply">Apply to deliver</button></p>' +
+    '<div class="ws-wrap ws-read"><div class="ws-stat"><b>' + share + '%</b><p><span>of every delivery price is yours, paid every Monday.</span></p></div>' +
+    '<p><b>Better paid than food delivery.</b> On apps like Glovo and Deliveroo you carry one meal for a few euros. At DART you carry parcels, boxes and furniture, which pay more per job, and you keep ' + share + '% of the price. Nearby jobs are added to your route, so you earn more per hour on the road.</p><p><button class="ws-btn" data-act="w-page" data-v="site-courier-apply">Apply to deliver</button></p>' +
     sec("What you earn", "<p>Each job shows its pay before you accept. Here's what a typical job pays on each vehicle, with today's prices.</p>" + pay + "<p>Bigger vehicles also see smaller jobs. Furniture and heavy items pay more, and some need two people.</p>") +
+    sec("An example month", "<p>What a month can look like at today's prices, working 22 days. Bigger vehicles also take smaller jobs, so their example mixes both.</p>" + monthLines(share) +
+      '<p class="ws-note">Before tax and your own vehicle costs. What you actually earn depends on how many hours you work and how busy DART is.</p>') +
     sec("From application to first job", '<ol class="ws-steps">' +
       step("Apply online.", "Your name, phone and address, your vehicle with its loading space and weight limit, photos of your documents, and the IBAN you want to be paid to. It takes about ten minutes.") +
       step("We check your documents.", "DART reviews your identity and, for motor vehicles, your licence, insurance and libretto. You'll get a notification when you're approved, or a note telling you what to fix.") +
@@ -234,7 +253,7 @@ function siteCourierApply() {
   var h = pageHead("Apply", "Apply to deliver with DART", "");
   if (c) {
     var st = { pending: ["We're checking your application", "You'll get a notification in the courier app when you're approved, or a note telling you what to fix."], approved: ["You're approved", "Open the courier app, go online and start taking jobs."], rejected: ["Your application wasn't approved", c.decisionNote || "Contact DART support to find out why."], suspended: ["Your account is paused", c.decisionNote || "Contact DART support."] }[c.status] || ["Application received", ""];
-    return h + '<div class="ws-wrap ws-read">' + sec(st[0], "<p>" + esc(st[1]) + '</p><p class="ws-sub"><b>' + esc(c.name) + "</b> · " + esc(c.email) + " · " + esc(vLabel(c.vehicle.type)) + (c.vehicle.plate ? " · " + esc(c.vehicle.plate) : "") + '</p><p><a class="ws-btn" href="#courier">Open the courier app</a></p>') + "</div>";
+    return h + '<div class="ws-wrap ws-read">' + sec(st[0], "<p>" + esc(st[1]) + '</p><p class="ws-note"><b>' + esc(c.name) + "</b> · " + esc(c.email) + " · " + esc(vLabel(c.vehicle.type)) + (c.vehicle.plate ? " · " + esc(c.vehicle.plate) : "") + '</p><p><a class="ws-btn" href="#courier">Open the courier app</a></p>') + "</div>";
   }
   var r = S.d.reg = S.d.reg || newReg(), steps = ["About you", "Your vehicle", "Documents", "Payouts"];
   var form = "";
@@ -243,7 +262,7 @@ function siteCourierApply() {
   if (r.step === 3) form = docsForm(r.vehicle.type, r.docs, "reg") + '<div class="row"><button class="btn ghost" data-act="d-reg-step" data-v="2">Back</button><button class="btn" data-act="d-reg-step" data-v="4"' + (docsFor(r.vehicle.type).every(function (k) { return r.docs[k]; }) ? "" : " disabled") + ">Next: payouts</button></div>";
   if (r.step === 4) form = '<form class="stack" data-form="d-reg-4"><div class="card"><b>Where should we pay you?</b><span class="muted">Earnings are paid every Monday by bank transfer.</span>' + field("Account holder", inp("d.reg.holder", r.holder || r.name, "required")) + field("IBAN", inp("d.reg.iban", r.iban, 'required placeholder="IT60 X054 2811 1010 0000 0123 456"')) + '</div><div class="row"><button type="button" class="btn ghost" data-act="d-reg-step" data-v="3">Back</button><button class="btn">Send my application</button></div></form>';
   return h + '<div class="ws-wrap ws-read"><p class="ws-progress">' + steps.map(function (t, i) { return '<span class="' + (r.step === i + 1 ? "on" : r.step > i + 1 ? "done" : "") + '">' + (i + 1) + ". " + t + "</span>"; }).join("") + "</p>" +
-    '<div class="stack ws-apply">' + form + '</div><p class="ws-sub">Want the details first? Read <button class="ws-more" data-act="w-page" data-v="site-couriers">what being a DART courier involves</button>.</p></div>';
+    '<div class="stack ws-apply">' + form + '</div><p class="ws-note">Want the details first? Read <button class="ws-more" data-act="w-page" data-v="site-couriers">what being a DART courier involves</button>.</p></div>';
 }
 
 // ---------- Help and contact ----------

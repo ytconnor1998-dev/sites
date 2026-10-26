@@ -51,6 +51,7 @@ function aDash() {
   S.couriers.forEach(function (c) { events.push({ at: c.createdAt, text: "Courier application: " + c.name, sub: vLabel(c.vehicle && c.vehicle.type), cour: c.id }); });
   events.sort(function (a, b) { return b.at - a.at; });
   var issues = S.orders.filter(function (o) { return o.status === "issue" || (o.issue && o.issue.open); });
+  var risky = S.orders.map(function (o) { return { o: o, why: riskOf(o) }; }).filter(function (x) { return x.why; }).sort(function (a, b) { return a.o.deliverBy - b.o.deliverBy; });
   var n = aCounts();
   var h = aHead("Dashboard") + '<div class="kpis">' +
     kpi("Customers", S.accounts.length, S.accounts.filter(function (a) { return a.business && a.business.active; }).length + " business · " + S.orders.filter(function (o) { return o.customer.guest; }).length + " guest bookings") +
@@ -58,11 +59,19 @@ function aDash() {
     kpi("Registered vehicles", S.couriers.filter(function (c) { return c.vehicle; }).length, n.couriers ? n.couriers + " waiting for approval" : "") +
     kpi("Active deliveries", act.length, S.orders.filter(function (o) { return o.status === "awaiting"; }).length + " awaiting courier") +
     kpi("Completed", done.length, canc.length + " cancelled") +
+    (function () {
+      var wk = Date.now() - 7 * 864e5, recent = done.filter(function (o) { return o.timeline.delivered >= wk && o.deliverBy; });
+      var onTime = recent.filter(function (o) { return o.timeline.delivered <= o.deliverBy; }).length, avg = recent.length ? recent.reduce(function (s, o) { return s + (o.timeline.delivered - o.createdAt); }, 0) / recent.length / 60000 : 0;
+      return kpi("Delivered on time", recent.length ? Math.round(onTime / recent.length * 100) + "%" : "–", "Last 7 days · " + recent.length + " deliveries") + kpi("Average delivery time", recent.length ? minsText(avg) : "–", "Booking to door · target under " + hoursText());
+    })() +
     kpi("Delivery revenue", eur(sumT(paidInv("delivery"))), "") + kpi("Subscription revenue", eur(sumT(paidInv("subscription"))), S.accounts.filter(activeSub).length + " active plans") +
     kpi("Outstanding", eur(sumT(outstanding)), outstanding.length + " invoices") + "</div>";
   h += '<div class="a-cols"><div class="panel"><div class="panel-h">Live map<span class="muted sm">' + act.length + " active · " + onlineCouriers().length + " couriers online</span></div><div class=\"map map-lg\">" +
     mapSVG({ routes: act.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, thin: true }, courierPos(o)); }), dots: onlineCouriers().filter(function (c) { return c.area; }).map(function (c, i) { return { area: c.area, dx: (i % 3) * 6 - 6, dy: -10, color: "var(--ok)" }; }) }) + "</div></div>";
   h += '<div class="stack">';
+  if (risky.length) h += '<div class="panel risk"><div class="panel-h">Running late <span class="muted sm">Deliveries that may miss their deliver-by time</span></div><div class="list pad-s">' + risky.map(function (x) {
+    var o = x.o; return '<button class="item" data-act="a-order" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><span class="chip ' + (x.why === "Late" ? "s-bad" : "s-warn") + '">' + esc(x.why) + "</span><small>" + esc(o.id) + " · due " + hhmm(o.deliverBy) + " · " + leftLabel(o.deliverBy) + "</small><small>" + esc(o.courier ? o.courier.name : "No courier") + "</small></button>";
+  }).join("") + "</div></div>";
   h += '<div class="panel"><div class="panel-h">Needs attention</div><div class="list pad-s">' +
     (issues.map(function (o) { return '<button class="item" data-act="a-order" data-v="' + esc(o.id) + '"><b>Delivery issue · ' + esc(o.id) + '</b><span class="chip s-bad">' + esc(o.issue ? o.issue.reason : "Issue") + "</span><small>" + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + "</small><small>" + when(o.issue && o.issue.at) + "</small></button>"; }).join("") +
       S.couriers.filter(function (c) { return c.status === "pending"; }).map(function (c) { return '<button class="item" data-act="a-courier" data-v="' + esc(c.id) + '"><b>Courier to approve: ' + esc(c.name) + '</b><span class="chip s-warn">Pending</span><small>' + esc(vLabel(c.vehicle.type)) + "</small><small>" + when(c.createdAt) + "</small></button>"; }).join("") +
@@ -288,7 +297,7 @@ function aPricing() {
     '<div class="grid3">' + num2("secondCourierFee", "Second courier €", "When 2 people are needed") + num2("businessDiscount", "Business discount %") + num2("vatRate", "VAT %") + "</div></div>";
   h += '<div class="card"><b>Extra services</b><div class="grid3">' + OPTIONS.map(function (o) { return num2("options." + o.id, o.label + " €"); }).join("") + "</div></div>";
   h += '<div class="card"><b>Courier earnings</b>' + num2("courierShare", "Courier share of the delivery price %") + num2("latePenaltyPct", "Suggested late fee %", "Pre-filled when you review a late delivery. Nothing is deducted automatically.") + "</div>";
-  h += '<div class="card"><b>Delivery times and multi-stop</b><div class="grid2">' + num2("asapBufferMins", "ASAP: minutes added to the trip time", "Sets the arrival time customers are promised") + num2("showHours", "Set times: couriers can book ahead from this many hours before") + num2("leadMins", "Set times: if nobody has booked it, pop it up this many minutes before setting off") + "</div>" +
+  h += '<div class="card"><b>Delivery times and multi-stop</b><div class="grid2">' + num2("maxHours", "Longest delivery promise, hours", "As soon as possible never promises later than this") + num2("asapBufferMins", "ASAP: minutes added to the trip time", "Sets the arrival time customers are promised") + num2("showHours", "Set times: couriers can book ahead from this many hours before") + num2("leadMins", "Set times: if nobody has booked it, pop it up this many minutes before setting off") + "</div>" +
     '<div class="grid2">' + num2("maxOrders", "Most deliveries a courier carries at once") + num2("nearKm", "Close enough to add to a route, km", "Pickup near the courier or a stop, or drop-off near one of theirs") + "</div></div>";
   h += '</div><div class="stack sticky"><div class="card"><b>Try a price</b><span class="muted sm">Uses the numbers on this page, before you save.</span><div class="grid2">' + field("From", sel("a.preview.from", pv.from, AREA_NAMES, 'data-live="1"')) + field("To", sel("a.preview.to", pv.to, AREA_NAMES, 'data-live="1"')) + "</div>" +
     field("Category", sel("a.preview.cat", pv.cat, rules().categories.map(function (c) { return [c.id, c.label]; }), 'data-live="1"'));

@@ -233,7 +233,7 @@ function whenCard(d) {
     (w.mode === "set" ? field("Deliver by", sel("c.draft.when.by", w.by, slots.map(function (t) { return [String(t), byLabel(t)]; }), 'data-live="1"')) : "") + "</div>";
 }
 ACT["c-when"] = function (d) { var w = S.c.draft.when; w.mode = d.v; render(); };
-function deliverByOf(d, mins) { return d.when && d.when.mode === "set" && +d.when.by ? +d.when.by : Date.now() + Math.round(mins + num(pricing().asapBufferMins, 45)) * 60000; }
+function deliverByOf(d, mins) { return d.when && d.when.mode === "set" && +d.when.by ? +d.when.by : Date.now() + Math.min(Math.round(mins + num(pricing().asapBufferMins, 45)), maxMins()) * 60000; }
 function newWhat(acc) {
   var d = S.c.draft, it = d.item, cls = classify(it);
   var h = '<div class="card"><b>What are you sending?</b><div class="chips">' + ITEM_TYPES.map(function (t) { return '<button type="button" class="chipbtn ' + (it.type === t.id ? "on" : "") + '" data-act="c-type" data-v="' + t.id + '">' + t.label + "</button>"; }).join("") + "</div>";
@@ -733,6 +733,7 @@ ACT["c-bulk-go"] = function () {
 
 // ---------- Help and support ----------
 var FAQ = [
+  ["How fast is it?", "As soon as possible means within 3 hours of booking, and usually much sooner. You see the time it will arrive by before you pay. If you need it at a particular time, choose a time when you book."],
   ["What can DART carry?", "Letters, documents, parcels of every size, furniture and large items. When you add measurements and photos, DART tells you if it fits and which vehicle is needed before you pay."],
   ["How is the price worked out?", "By distance between pickup and delivery, with a minimum fee. Size, weight, number of items, the vehicle needed and extra services like stairs or assembly are added on top. You see the full breakdown before you book."],
   ["Can I cancel?", "Yes, free of charge until the courier collects the item. Card payments are refunded in full."],
@@ -797,7 +798,7 @@ function cMapHome(acc) {
   var h = '<div class="mh"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
     '<div class="mh-top"><span class="mh-chip"><svg><use href="#mark"/></svg>DART</span>' +
     (acc ? '<button class="mh-chip icon" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button>" : '<button class="mh-chip" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>" +
-    '<div class="mh-title"><p>' + (acc ? "Hi " + esc(acc.name.split(" ")[0]) : "Same-day delivery in Rome") + "</p><h1>" + esc(title) + "</h1></div>";
+    '<div class="mh-title"><p>' + (acc ? "Hi " + esc(acc.name.split(" ")[0]) : "Delivered within " + hoursText() + " in Rome") + "</p><h1>" + esc(title) + "</h1></div>";
   h += '<div class="mh-sheet"><div class="grab" aria-hidden="true"></div>';
   if (st.open === false) h += '<div class="banner bad">DART is closed right now. You can book again when we reopen.</div>';
   else if (st.banner) h += '<div class="banner">' + esc(st.banner) + "</div>";

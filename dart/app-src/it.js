@@ -468,3 +468,30 @@ IT_PATTERNS.push(
   [/^Your courier is booked and will set off around (\d\d:\d\d)$/, "Il tuo corriere è prenotato e partirà verso le $1"],
   [/^Late fee of (.+) deducted$/, "Penale di $1 detratta"], [/^(.+) \(ASAP\)$/, "$1 (ASAP)"], [/^ · by (\d\d:\d\d)$/, " · entro le $1"], [/^by (\d\d:\d\d)$/, "entro le $1"]
 );
+Object.assign(IT, {
+  "Delivered on time": "Consegnate in orario", "Average delivery time": "Tempo medio di consegna", "Running late": "In ritardo",
+  "Deliveries that may miss their deliver-by time": "Consegne che potrebbero superare l'orario previsto", "Late": "In ritardo", "No courier yet": "Ancora nessun corriere",
+  "On track to be late": "Rischia il ritardo", "No courier": "Nessun corriere", "Longest delivery promise, hours": "Promessa di consegna massima, ore",
+  "As soon as possible never promises later than this": "Il prima possibile non promette mai oltre questo limite"
+});
+IT_PATTERNS.push(
+  [/^Delivered within (\d+) hours? inside Rome's GRA$/, "Consegna entro $1 ore dentro il GRA di Roma"],
+  [/^Delivered within (\d+) hours? inside Rome’s GRA, from envelopes to wardrobes\.$/, "Consegna entro $1 ore dentro il GRA di Roma, dalle buste agli armadi."],
+  [/^Delivered within (\d+) hours? in Rome$/, "Consegna entro $1 ore a Roma"],
+  [/^That's the problem DART was started to solve\. We're building a local delivery network for the city, for people and for businesses\. Tell us what it is and where it's going, and a nearby courier with the right vehicle delivers it within (\d+) hours?, often much sooner, whether it's a second-hand find, a shop purchase, or documents for another office\.$/, "DART è nato per risolvere proprio questo. Stiamo costruendo una rete di consegne locale per la città, per privati e aziende. Dicci cos'è e dove deve andare, e un corriere vicino con il veicolo giusto lo consegna entro $1 ore, spesso molto prima: che sia un affare dell'usato, un acquisto in negozio o dei documenti per un altro ufficio."],
+  [/^Last 7 days · (\d+) deliveries$/, "Ultimi 7 giorni · $1 consegne"], [/^Booking to door · target under (\d+) hours?$/, "Dalla prenotazione alla porta · obiettivo sotto le $1 ore"],
+  [/^(\d+) h (\d+) min$/, "$1 h $2 min"], [/^(\d+) h $/, "$1 h"], [/^(.+) · due (\d\d:\d\d) · (.+)$/, function (m, id, t, l) { return id + " · entro le " + t + " · " + trItem(l); }]
+);
+Object.assign(IT, {
+  "How fast is it?": "Quanto è veloce?",
+  "As soon as possible means within 3 hours of booking, and usually much sooner. You see the time it will arrive by before you pay. If you need it at a particular time, choose a time when you book.": "Il prima possibile significa entro 3 ore dalla prenotazione, di solito molto prima. Vedi l'orario di arrivo prima di pagare. Se ti serve a un'ora precisa, scegli un orario quando prenoti.",
+  "It arrives on time.": "Arriva in orario.", "Better paid than food delivery.": "Pagato meglio del food delivery.", "An example month": "Un mese di esempio",
+  "What a month can look like at today's prices, working 22 days. Bigger vehicles also take smaller jobs, so their example mixes both.": "Come può essere un mese con i prezzi di oggi, lavorando 22 giorni. I veicoli più grandi fanno anche lavori piccoli, quindi il loro esempio li mescola.",
+  "Before tax and your own vehicle costs. What you actually earn depends on how many hours you work and how busy DART is.": "Al lordo delle tasse e dei costi del tuo veicolo. Quanto guadagni davvero dipende da quante ore lavori e da quanto lavoro c'è su DART."
+});
+IT_PATTERNS.push(
+  [/^As soon as possible means within (\d+) hours? of booking, usually much sooner\. Or choose a set time and it arrives by then\.$/, "Il prima possibile significa entro $1 ore dalla prenotazione, di solito molto prima. Oppure scegli un orario e arriva entro quell'ora."],
+  [/^On apps like Glovo and Deliveroo you carry one meal for a few euros\. At DART you carry parcels, boxes and furniture, which pay more per job, and you keep (\d+)% of the price\. Nearby jobs are added to your route, so you earn more per hour on the road\.$/, "Con app come Glovo e Deliveroo porti un pasto per pochi euro. Con DART porti pacchi, scatoloni e mobili, che pagano di più a lavoro, e ti spetta il $1% del prezzo. I lavori vicini si aggiungono al tuo percorso, così guadagni di più per ogni ora su strada."],
+  [/^(\d+) deliveries a day · about (.+) each$/, "$1 consegne al giorno · circa $2 l'una"]
+);
+IT_PATTERNS.push([/^(.+) a month$/, "$1 al mese"]);

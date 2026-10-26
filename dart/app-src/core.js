@@ -77,7 +77,7 @@ var DEFAULT_PRICING = {
   options: { fragile: 2, stairs: 8, assembly: 15, helper: 18, scheduled: 2, signature: 0 },
   businessDiscount: 0, vatRate: 22, courierShare: 75,
   // Timing and multi-stop
-  asapBufferMins: 45, leadMins: 45, showHours: 3, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
+  maxHours: 3, asapBufferMins: 45, leadMins: 45, showHours: 3, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
 };
 var DEFAULT_SETTINGS = {
   open: true, banner: "", company: "", companyVat: "", companyAddress: "", supportEmail: "", invoicePrefix: "DART"
@@ -122,7 +122,25 @@ function haversine(a, b) {
 // ASAP promises the trip time plus a buffer; a set time must be at least that far ahead.
 function earliestBy(from, to, now) {
   var v = vehicle("scooter") || {}, mins = num(v.pickup, 12) + tripKm(from, to) / num(v.speed, 15) * 60;
-  return (now || Date.now()) + Math.round(mins + num(pricing().asapBufferMins, 45)) * 60000;
+  return (now || Date.now()) + Math.min(Math.round(mins + num(pricing().asapBufferMins, 45)), maxMins()) * 60000;
+}
+// The longest DART ever promises for an as-soon-as-possible delivery.
+function maxMins() { return Math.round(num(pricing().maxHours, 3) * 60); }
+function hoursText() { var h = num(pricing().maxHours, 3); return h === 1 ? "1 hour" : h + " hours"; }
+function minsText(m) { m = Math.round(m); return m >= 60 ? Math.floor(m / 60) + " h " + (m % 60 ? (m % 60) + " min" : "") : m + " min"; }
+// Is a delivery at risk of missing its deliver-by time? Returns a short reason, or null.
+function riskOf(o, now) {
+  now = now || Date.now();
+  if (!o.deliverBy || ACTIVE.indexOf(o.status) < 0) return null;
+  if (now > o.deliverBy) return "Late";
+  if (o.status === "awaiting") return (o.asap || now >= startAt(o)) && now + num(o.price.mins, 30) * 60000 > o.deliverBy - 20 * 60000 ? "No courier yet" : null;
+  var c = o.courier && byId(S.couriers, o.courier.id);
+  if (c && c.vehicle && typeof planRoute === "function" && !bookedAhead(o, now)) {
+    var jobs = S.orders.filter(function (j) { return j.courier && j.courier.id === c.id && ACTIVE.indexOf(j.status) >= 0 && j.status !== "awaiting" && !bookedAhead(j, now); });
+    var plan = planRoute(c.vehicle.type, c.area || o.pickup.area, jobs, now), stop = plan.stops.filter(function (s) { return s.o.id === o.id && s.kind === "dropoff"; })[0];
+    if (stop && stop.eta > o.deliverBy) return "On track to be late";
+  }
+  return null;
 }
 // Choices for "By a set time": half-hour steps today and tomorrow, 08:00 to 21:00.
 function deliverySlots(from, to, now) {
