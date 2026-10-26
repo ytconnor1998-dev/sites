@@ -13,8 +13,9 @@
   --ink: #170F2E;
   --muted: #5E5677;
   --line: #DCD5EA;
-  --purple: #6A2BE0;
-  --purple-soft: #EDE4FF;
+  --purple: #452B94;
+  --brand: #452B94;
+  --purple-soft: #ECE7F8;
   --lilac: #CDB6FF;
   --on-lilac: #170F2E;
   --on-purple: #FFFFFF;
@@ -36,7 +37,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #0E0A1A; --paper-2: #161028; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE;
-    --line: #2C2444; --purple: #8A55F5; --purple-soft: #2A1D4F; --lilac: #B79BFF;
+    --line: #2C2444; --purple: #7B5CE0; --purple-soft: #2A1D4F; --lilac: #B79BFF;
     --ok: #4CD38A; --ok-soft: #123425; --warn: #F2B14C; --warn-soft: #3A2A10; --bad: #FF6B7D; --bad-soft: #3D1820;
     --map-bg: #1A1430; --map-road: #2D2548; --map-river: #263A6E; --map-park: #1C3328;
     --frame: #000000; --shadow: 0 30px 60px -30px rgba(0, 0, 0, .9);
@@ -45,7 +46,7 @@
 }
 :root[data-theme="dark"] {
   --paper: #0E0A1A; --paper-2: #161028; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE;
-  --line: #2C2444; --purple: #8A55F5; --purple-soft: #2A1D4F; --lilac: #B79BFF;
+  --line: #2C2444; --purple: #7B5CE0; --purple-soft: #2A1D4F; --lilac: #B79BFF;
   --ok: #4CD38A; --ok-soft: #123425; --warn: #F2B14C; --warn-soft: #3A2A10; --bad: #FF6B7D; --bad-soft: #3D1820;
   --map-bg: #1A1430; --map-road: #2D2548; --map-river: #263A6E; --map-park: #1C3328;
   --frame: #000000; --shadow: 0 30px 60px -30px rgba(0, 0, 0, .9);
@@ -224,7 +225,7 @@ textarea.input { resize: vertical; min-height: 60px; }
 .menu i { grid-row: 1 / 3; grid-column: 2; align-self: center; font-style: normal; font-size: 20px; color: var(--muted); }
 .sec-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .sec-h h3 { font-size: 17px; font-weight: 800; }
-.hero-card { display: grid; gap: 4px; text-align: left; border: 0; border-radius: 8px; padding: 18px; background: var(--purple); color: #fff; position: relative; }
+.hero-card { display: grid; gap: 4px; text-align: left; border: 0; border-radius: 8px; padding: 18px; background: var(--brand); color: #fff; position: relative; }
 .hero-card b { font-size: 22px; font-weight: 900; font-style: italic; letter-spacing: -.02em; }
 .hero-card span { max-width: 32ch; color: #F1EAFF; padding-right: 36px; }
 .hero-card i { position: absolute; right: 18px; top: 50%; translate: 0 -50%; font-style: normal; font-size: 28px; }
@@ -440,7 +441,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .launch a h2 { font-size: 24px; font-weight: 900; letter-spacing: -.02em; }
 .launch a p { font-size: 15px; }
 .launch a .go { margin-top: auto; font-weight: 700; }
-.launch .l-c { background: var(--purple); color: #fff; }
+.launch .l-c { background: var(--brand); color: #fff; }
 .launch .l-w { background: var(--card); color: var(--ink); border: 2px solid var(--purple); }
 .launch .l-d { background: var(--lilac); color: var(--on-lilac); }
 .launch .l-a { background: var(--ink); color: var(--paper); }
@@ -476,9 +477,9 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 /* Customer website */
 .web { min-height: 100%; }
 .w-wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.w-head { background: var(--purple); color: #fff; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
+.w-head { background: var(--brand); color: #fff; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
 .w-head .w-wrap { display: flex; align-items: center; gap: 18px; min-height: 64px; flex-wrap: wrap; padding-block: 8px; }
-.w-head .logo svg rect { stroke: #fff; stroke-width: 2.5; }
+.w-head .logo { --mark: #fff; }
 .w-nav { display: flex; gap: 4px; flex-wrap: wrap; }
 .w-nav button { border: 0; background: none; color: #EDE4FF; font-weight: 600; padding: 8px 10px; border-radius: 8px; position: relative; display: inline-flex; gap: 6px; align-items: center; }
 .w-nav button.on { background: rgba(255,255,255,.16); color: #fff; }
@@ -503,11 +504,11 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 :root { --night: #170F2E; --night-fg: #F1EDFA; --night-muted: #B8B0D2; }
 .ws { min-height: 100%; background: var(--paper); }
 .ws-wrap { max-width: 1180px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
-.ws-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--purple); color: #fff; }
+.ws-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--brand); color: #fff; }
 .ws-bar { display: flex; align-items: center; gap: 22px; min-height: 68px; }
 .ws-logo { display: inline-flex; align-items: center; gap: 9px; border: 0; background: none; color: #fff; font-weight: 900; font-style: italic; font-size: 24px; letter-spacing: -.02em; padding: 0; }
 .ws-logo svg { width: 30px; height: 30px; }
-.ws-logo svg rect { stroke: #fff; stroke-width: 2.5; }
+.ws-logo { --mark: #fff; }
 .ws-nav { display: flex; gap: 2px; }
 .ws-nav button { border: 0; background: none; color: #EDE4FF; font-weight: 600; font-size: 15px; padding: 8px 11px; border-radius: 8px; }
 .ws-nav button:hover, .ws-nav button.on { color: #fff; background: rgba(255,255,255,.14); }
@@ -524,7 +525,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 @media (max-width: 1000px) {
   .ws-burger { display: flex; }
   .ws-hide-m { display: none; }
-  .ws-nav { display: none; position: absolute; left: 0; right: 0; top: 68px; background: var(--purple); flex-direction: column; padding: 8px max(20px, env(safe-area-inset-left, 0px)) 16px; box-shadow: var(--shadow); }
+  .ws-nav { display: none; position: absolute; left: 0; right: 0; top: 68px; background: var(--brand); flex-direction: column; padding: 8px max(20px, env(safe-area-inset-left, 0px)) 16px; box-shadow: var(--shadow); }
   .ws-nav.open { display: flex; }
   .ws-nav button { text-align: left; padding: 12px; font-size: 17px; }
   .ws-only-m { display: block; }
@@ -535,7 +536,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .ws-lead { font-size: clamp(18px, 2vw, 21px); max-width: 46ch; }
 .ws-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 4px; padding: 14px 22px; font-weight: 800; font-size: 16px; background: var(--purple); color: #fff; text-decoration: none; }
 .ws-more { border: 0; background: none; color: var(--purple); font-weight: 700; font-size: inherit; padding: 0; text-align: left; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
-.ws-hero { background: var(--purple); color: #fff; position: relative; overflow: hidden; }
+.ws-hero { background: var(--brand); color: #fff; position: relative; overflow: hidden; }
 .ws-hero-route { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .45; pointer-events: none; }
 .ws-hero .ws-wrap { position: relative; padding-block: 64px 56px; }
 .ws-hero h1 { font-size: clamp(56px, 10vw, 132px); font-weight: 900; font-style: italic; letter-spacing: -.055em; line-height: .86; margin: 0 0 36px -.04em; }
@@ -649,7 +650,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 /* Admin */
 .admin { display: grid; grid-template-columns: 228px minmax(0, 1fr); min-height: 100%; }
 .a-side { background: var(--ink); color: var(--paper); padding: 18px 12px; display: grid; gap: 2px; align-content: start; position: sticky; top: 0; height: 100dvh; overflow-y: auto; }
-.a-side .logo { padding: 0 8px 16px; color: var(--paper); }
+.a-side .logo { padding: 0 8px 16px; color: var(--paper); --mark: var(--lilac); }
 .a-side button { border: 0; background: none; text-align: left; padding: 9px 12px; border-radius: 8px; color: color-mix(in srgb, var(--paper) 72%, var(--ink)); font-weight: 600; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; }
 .a-side button span { background: var(--lilac); color: var(--on-lilac); border-radius: 9px; font-size: 11px; min-width: 18px; padding: 1px 6px; text-align: center; }
 .a-side button.on { background: color-mix(in srgb, var(--paper) 14%, var(--ink)); color: var(--paper); }
@@ -694,12 +695,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="mark" viewBox="0 0 40 40">
-      <rect width="40" height="40" rx="9" fill="var(--purple)"/>
-      <path d="M9 29 L27 11" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-      <path d="M19 10 H30 V21" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M8 22 L14 28 M12 18 L18 24" stroke="var(--lilac)" stroke-width="3" stroke-linecap="round"/>
-    </symbol>
+    <symbol id="mark" viewBox="0 0 100 100"><path fill="var(--mark, var(--purple))" d="M12.61 0.6Q21.04 0.37 30.45 0.37Q39.85 0.37 46.34 0.67Q52.84 0.97 56.87 1.57Q60.9 2.16 62.76 2.61Q64.63 3.06 66.64 3.73Q68.66 4.4 69.93 4.93Q71.19 5.45 73.51 6.64Q75.82 7.84 77.31 8.81Q78.81 9.78 80.75 11.34Q82.69 12.91 85.52 15.82Q88.36 18.73 89.7 20.45Q91.04 22.16 92.69 24.7Q94.33 27.24 95.52 29.63Q96.72 32.01 97.54 34.25Q98.36 36.49 98.73 37.91Q99.1 39.33 99.48 41.64Q99.85 43.96 99.85 48.81Q99.85 53.66 99.63 55.37Q99.4 57.09 98.66 60.3Q97.91 63.51 97.01 66.04Q96.12 68.58 95 70.9Q93.88 73.21 91.79 76.42Q89.7 79.63 87.76 81.87Q85.82 84.1 84.48 85.37Q83.13 86.64 81.34 88.06Q79.55 89.48 77.24 90.97Q74.93 92.46 72.39 93.73Q69.85 95 66.94 96.04Q64.03 97.09 61.19 97.76Q58.36 98.43 54.7 98.88Q51.04 99.33 47.84 99.48Q44.63 99.63 25.3 99.55Q5.97 99.48 4.55 99.18Q3.13 98.88 2.61 98.58Q2.09 98.28 1.49 97.69Q0.9 97.09 0.45 95.97Q0 94.85 0 79.55Q0 64.25 0.37 63.51Q0.75 62.76 1.34 62.16Q1.94 61.57 2.84 61.27Q3.73 60.97 21.94 60.97Q40.15 60.97 36.12 67.16Q32.09 73.36 32.01 74.03Q31.94 74.7 32.09 75.07Q32.24 75.45 32.61 75.9Q32.99 76.34 33.43 76.57Q33.88 76.79 42.24 76.79Q50.6 76.79 51.72 76.49Q52.84 76.19 53.96 75.6Q55.07 75 61.79 69.78Q68.51 64.55 73.96 59.93Q79.4 55.3 80.97 53.66Q82.54 52.01 82.99 51.04Q83.43 50.07 83.43 49.33Q83.43 48.58 83.06 47.54Q82.69 46.49 80.82 44.63Q78.96 42.76 72.76 37.69Q66.57 32.61 62.24 29.55Q57.91 26.49 56.12 25.07Q54.33 23.66 53.28 23.13Q52.24 22.61 42.91 22.61Q33.58 22.61 32.99 23.13Q32.39 23.66 32.24 24.03Q32.09 24.4 32.16 25.07Q32.24 25.75 34.63 29.03Q37.01 32.31 38.58 34.7Q40.15 37.09 22.69 37.09Q5.22 37.09 4.33 37.01Q3.43 36.94 2.84 36.64Q2.24 36.34 1.72 35.75Q1.19 35.15 0.9 34.48Q0.6 33.81 0.3 32.16Q0 30.52 0 17.84Q0 5.15 0.3 3.88Q0.6 2.61 1.04 2.09Q1.49 1.57 2.01 1.34Q2.54 1.12 3.36 0.97Q4.18 0.82 12.61 0.6Z"/></symbol>
     <symbol id="i-scooter" viewBox="0 0 48 32"><circle cx="10" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="38" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="3"/><path d="M10 24 H26 L32 10 H38 M32 10 L38 24 M16 16 H26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="12" y="6" width="12" height="9" rx="2" fill="currentColor"/></symbol>
     <symbol id="i-car" viewBox="0 0 48 32"><path d="M4 22 V17 L10 9 H32 L40 16 L45 18 V22" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M4 22 H45" stroke="currentColor" stroke-width="3"/><circle cx="13" cy="24" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="3"/><circle cx="35" cy="24" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="3"/></symbol>
     <symbol id="i-van" viewBox="0 0 48 32"><path d="M3 23 V6 H31 V23 M31 11 H39 L45 18 V23" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M3 23 H45" stroke="currentColor" stroke-width="3"/><circle cx="12" cy="25" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="3"/><circle cx="37" cy="25" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="3"/></symbol>

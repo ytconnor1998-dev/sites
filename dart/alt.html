@@ -7,17 +7,17 @@
 /* Layout: a parcel label as the hero, then a city price list, Roman street plaques and one purple closing band. */
 :root {
   --paper: #F7F5FB; --card: #FFFFFF; --ink: #170F2E; --muted: #5E5676; --line: #DCD5EA;
-  --purple: #6A2BE0; --lilac: #CDB6FF; --on-purple: #FFFFFF; --night: #170F2E; --night-fg: #F1EDFA; --night-muted: #B8B0D2;
+  --purple: #452B94; --lilac: #CDB6FF; --on-purple: #FFFFFF; --night: #170F2E; --night-fg: #F1EDFA; --night-muted: #B8B0D2;
   --marble: #F4F2EE; --marble-ink: #2A2530; --marble-line: #3A3340;
   --display: "Archivo", "Arial Narrow", Arial, sans-serif;
   --body: "Figtree", "Helvetica Neue", Arial, sans-serif;
   --plaque: "Cinzel", "Times New Roman", serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --paper: #0E0A1A; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE; --line: #2C2444; --purple: #8A55F5; --lilac: #B79BFF;
+  --paper: #0E0A1A; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE; --line: #2C2444; --purple: #9C82F0; --lilac: #B79BFF;
   --marble: #E6E2DC; color-scheme: dark; } }
 :root[data-theme="dark"] {
-  --paper: #0E0A1A; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE; --line: #2C2444; --purple: #8A55F5; --lilac: #B79BFF;
+  --paper: #0E0A1A; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE; --line: #2C2444; --purple: #9C82F0; --lilac: #B79BFF;
   --marble: #E6E2DC; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.55; }
@@ -127,7 +127,7 @@ footer a:hover { color: var(--night-fg); }
 </style>
 
 <header class="top"><div class="wrap">
-  <a class="logo" href="#top" aria-label="DART"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="5" fill="currentColor"/><path d="M10 22 L22 10 M14 10 H22 V18" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>DART</a>
+  <a class="logo" href="#top" aria-label="DART"><svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M12.61 0.6Q21.04 0.37 30.45 0.37Q39.85 0.37 46.34 0.67Q52.84 0.97 56.87 1.57Q60.9 2.16 62.76 2.61Q64.63 3.06 66.64 3.73Q68.66 4.4 69.93 4.93Q71.19 5.45 73.51 6.64Q75.82 7.84 77.31 8.81Q78.81 9.78 80.75 11.34Q82.69 12.91 85.52 15.82Q88.36 18.73 89.7 20.45Q91.04 22.16 92.69 24.7Q94.33 27.24 95.52 29.63Q96.72 32.01 97.54 34.25Q98.36 36.49 98.73 37.91Q99.1 39.33 99.48 41.64Q99.85 43.96 99.85 48.81Q99.85 53.66 99.63 55.37Q99.4 57.09 98.66 60.3Q97.91 63.51 97.01 66.04Q96.12 68.58 95 70.9Q93.88 73.21 91.79 76.42Q89.7 79.63 87.76 81.87Q85.82 84.1 84.48 85.37Q83.13 86.64 81.34 88.06Q79.55 89.48 77.24 90.97Q74.93 92.46 72.39 93.73Q69.85 95 66.94 96.04Q64.03 97.09 61.19 97.76Q58.36 98.43 54.7 98.88Q51.04 99.33 47.84 99.48Q44.63 99.63 25.3 99.55Q5.97 99.48 4.55 99.18Q3.13 98.88 2.61 98.58Q2.09 98.28 1.49 97.69Q0.9 97.09 0.45 95.97Q0 94.85 0 79.55Q0 64.25 0.37 63.51Q0.75 62.76 1.34 62.16Q1.94 61.57 2.84 61.27Q3.73 60.97 21.94 60.97Q40.15 60.97 36.12 67.16Q32.09 73.36 32.01 74.03Q31.94 74.7 32.09 75.07Q32.24 75.45 32.61 75.9Q32.99 76.34 33.43 76.57Q33.88 76.79 42.24 76.79Q50.6 76.79 51.72 76.49Q52.84 76.19 53.96 75.6Q55.07 75 61.79 69.78Q68.51 64.55 73.96 59.93Q79.4 55.3 80.97 53.66Q82.54 52.01 82.99 51.04Q83.43 50.07 83.43 49.33Q83.43 48.58 83.06 47.54Q82.69 46.49 80.82 44.63Q78.96 42.76 72.76 37.69Q66.57 32.61 62.24 29.55Q57.91 26.49 56.12 25.07Q54.33 23.66 53.28 23.13Q52.24 22.61 42.91 22.61Q33.58 22.61 32.99 23.13Q32.39 23.66 32.24 24.03Q32.09 24.4 32.16 25.07Q32.24 25.75 34.63 29.03Q37.01 32.31 38.58 34.7Q40.15 37.09 22.69 37.09Q5.22 37.09 4.33 37.01Q3.43 36.94 2.84 36.64Q2.24 36.34 1.72 35.75Q1.19 35.15 0.9 34.48Q0.6 33.81 0.3 32.16Q0 30.52 0 17.84Q0 5.15 0.3 3.88Q0.6 2.61 1.04 2.09Q1.49 1.57 2.01 1.34Q2.54 1.12 3.36 0.97Q4.18 0.82 12.61 0.6Z"/></svg>DART</a>
   <nav class="nav"><a href="#how" data-t="nav-how"></a><a href="#prices" data-t="nav-prices"></a><a href="#business" data-t="nav-biz"></a><a href="#couriers" data-t="nav-couriers"></a><a href="#help" data-t="nav-help"></a></nav>
   <div class="right"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="it">IT</button><button type="button" data-lang="en">EN</button></div><a class="btn" href="#top" data-t="book"></a></div>
 </div></header>
