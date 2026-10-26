@@ -9,9 +9,9 @@ Local delivery for Rome: letters, parcels and furniture, for people and business
   - `#customer`: the customer app, in a phone frame.
   - `#web`: the public DART website (home, how it works, pricing, business, couriers, help, terms, privacy), with booking, tracking, login and the customer dashboard built in.
   - `#courier`: the courier app.
+  - `#admin`: the admin portal.
 
 Everything is in Italian and English. The IT/EN switch is in each header, and the first visit follows the browser's language.
-  - `#admin`: the admin portal.
 
 ## Editing the apps
 
