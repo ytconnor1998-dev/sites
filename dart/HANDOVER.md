@@ -16,6 +16,11 @@ Read this first in a new session. Everything so far is in this folder on branch 
 
 Check them first: `npm view expo version` should print a version, and the three variables should be set. Never ask the owner to paste keys into the chat.
 
+npm note: this container's settings tell npm to skip the proxy for registry.npmjs.org, which then fails. Run npm with the proxy forced on:
+`env -u npm_config_noproxy -u NO_PROXY -u no_proxy npm <command> --https-proxy="$HTTPS_PROXY" --proxy="$HTTPS_PROXY" --noproxy="localhost,127.0.0.1"`
+
+Supabase note: the project's own address (`<project>.supabase.co`) must be allowed in Network access, e.g. `*.supabase.co`; plain `supabase.co` is not enough.
+
 ## The plan, in order
 
 1. **Database.** Create the Supabase tables for accounts, couriers, orders (with messages), invoices, tickets, plans and config, with row-level security: customers see their own data, couriers see their own jobs and open offers, admin sees everything. Move the dispatch (offers, multi-stop routing, referral rewards) into a database function or Edge Function so it runs on the server, not on phones.
