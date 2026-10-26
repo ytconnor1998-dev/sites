@@ -368,3 +368,10 @@ Object.assign(IT, {
   "Use your own bicycle, scooter, motorbike, car or van, choose your hours, and only get jobs your vehicle can carry.": "Usi la tua bici, scooter, moto, auto o furgone, scegli i tuoi orari e ricevi solo lavori che il tuo veicolo può portare.",
   "of every delivery price is yours, paid every Monday.": "del prezzo di ogni consegna è tuo, pagato ogni lunedì."
 });
+Object.assign(IT, { "Become a courier": "Diventa corriere", "Got a bike, a scooter or a van?": "Hai una bici, uno scooter o un furgone?", "Deliver across Rome on your own hours. Find out how it works, what you earn and what you need.": "Consegna a Roma con i tuoi orari. Scopri come funziona, quanto guadagni e cosa ti serve." });
+Object.assign(IT, {
+  "Why DART exists": "Perché esiste DART",
+  "Sometimes you need to get something across Rome, but you don't have a car, the time, or an easy way to do it.": "A volte devi portare qualcosa dall'altra parte di Roma, ma non hai un'auto, il tempo o un modo semplice per farlo.",
+  "That's the problem DART was started to solve. We're building a local delivery network for the city, for people and for businesses. Tell us what it is and where it's going, and a nearby courier with the right vehicle collects it the same day, whether it's a second-hand find, a shop purchase, or documents for another office.": "DART è nato per risolvere proprio questo. Stiamo costruendo una rete di consegne locale per la città, per privati e aziende. Dicci cos'è e dove deve andare, e un corriere vicino con il veicolo giusto lo ritira in giornata: che sia un affare dell'usato, un acquisto in negozio o dei documenti per un altro ufficio.",
+  "No contract, no account unless you want one, and you see the full price before you book.": "Nessun contratto, nessun account se non lo vuoi, e vedi il prezzo completo prima di prenotare."
+});

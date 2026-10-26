@@ -119,6 +119,9 @@ function siteHome(acc) {
   var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><p class="ws-kicker">Same-day delivery inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' + heroQuote() +
     '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. No account needed.</span></p></div></section>';
   h += '<div class="ws-wrap ws-read">';
+  h += sec("Why DART exists", '<p class="ws-intro">Sometimes you need to get something across Rome, but you don\'t have a car, the time, or an easy way to do it.</p>' +
+    "<p>That's the problem DART was started to solve. We're building a local delivery network for the city, for people and for businesses. Tell us what it is and where it's going, and a nearby courier with the right vehicle collects it the same day, whether it's a second-hand find, a shop purchase, or documents for another office.</p>" +
+    "<p>No contract, no account unless you want one, and you see the full price before you book.</p>");
   h += sec("Who uses DART", '<div class="ws-who">' +
     who("Boxes.", "People who just moved to Rome.", "New flat, no car, and boxes or a mattress to get home. Book a car or a van and it's done.") +
     who("Armchair.", "Anyone who found a deal across town.", "The chair on Facebook Marketplace is perfect, but the seller is in EUR and you're in Prati. We collect it and carry it in.") +
@@ -135,11 +138,13 @@ function siteHome(acc) {
     '</ol><p><button class="ws-btn" data-act="w-book">Book a delivery</button></p>');
   h += sec("For businesses", "<p>Use your normal DART account. Switch it to business in Settings, add your Partita IVA and SDI code, and choose a monthly plan or keep paying per delivery.</p>" +
     (plans.length ? '<ul class="ws-plain">' + plans.map(planLine).join("") + "</ul>" : "") + '<p><button class="ws-more" data-act="w-page" data-v="site-business">Business details →</button></p>');
-  h += sec("Deliver with DART", '<div class="ws-stat"><b>' + num(P.courierShare, 75) + '%</b><p><span>of every delivery price goes to the courier.</span> <span>Use your own bicycle, scooter, motorbike, car or van, choose your hours, and only get jobs your vehicle can carry.</span></p></div>' +
-    '<p><button class="ws-more" data-act="w-page" data-v="site-couriers">What being a courier involves →</button></p>');
   h += sec("Where we deliver", "<p>Anywhere inside the Grande Raccordo Anulare. These are the areas you can choose when booking:</p><p class=\"ws-arealist\">" + AREA_NAMES.join(", ") + ".</p>");
   h += sec("Questions", '<div class="ws-faq">' + FAQ.slice(0, 4).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + '</div><p><button class="ws-more" data-act="w-page" data-v="site-help">More answers and contact →</button></p>');
-  return h + "</div>";
+  h += "</div>";
+  // Closing band that sends would-be couriers to the courier page.
+  h += '<section class="ws-join"><div class="ws-wrap"><p class="ws-kicker">Become a courier</p><h2>Got a bike, a scooter or a van?</h2><p>Deliver across Rome on your own hours. Find out how it works, what you earn and what you need.</p>' +
+    '<button class="ws-btn" data-act="w-page" data-v="site-couriers">Become a courier</button></div></section>';
+  return h;
 }
 function planLine(p) { return '<li><b>' + esc(p.name) + "</b>: <span>" + eur(p.price) + "</span> <span>a month for</span> <span>" + p.allowance + "</span> <span>deliveries</span>. <span>Extra deliveries</span> <span>" + eur(p.overageFee) + "</span> <span>each.</span></li>"; }
 
