@@ -548,6 +548,8 @@ function toast(msg) {
   el.textContent = tr(msg); el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 3400);
 }
 function fail(e) {
+  // Errors written for people (e.show) are shown as they are.
+  if (e && e.show && e.message) return toast(e.message);
   toast(e && e.code === "invalid_argument" ? "You don't have permission to change this." : e && e.code === "quota_exceeded" ? "The test database is full. Clear old orders in the admin portal." : "That didn't save. Check your connection and try again.");
 }
 var busy = false;

@@ -109,10 +109,10 @@ function liveSession() {
   });
 }
 function liveAuth(mode, email, pw) {
-  if (!pw || pw.length < 8) return Promise.reject({ message: "Use a password of at least 8 characters." });
+  if (!pw || pw.length < 8) return Promise.reject({ show: true, message: "Use a password of at least 8 characters." });
   var call = mode === "register" ? SB.auth.signUp({ email: email, password: pw }) : SB.auth.signInWithPassword({ email: email, password: pw });
   return call.then(function (r) {
-    if (r.error) throw { message: /invalid login/i.test(r.error.message) ? "That email and password don't match." : /already registered/i.test(r.error.message) ? "That email already has an account. Log in instead." : r.error.message };
+    if (r.error) throw { show: true, message: /invalid login/i.test(r.error.message) ? "That email and password don't match. First time? Tap Create password." : /already registered/i.test(r.error.message) ? "That email already has an account. Log in instead." : /rate limit/i.test(r.error.message) ? "Too many tries. Wait a minute and try again." : "That didn't work: " + r.error.message };
     return liveSession().then(function () { return r.data.user; });
   });
 }
