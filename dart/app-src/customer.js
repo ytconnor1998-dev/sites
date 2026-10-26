@@ -420,7 +420,7 @@ ACT["c-book"] = function () {
   var k = checkout(acc, d, x), amount = k.charge;
   if (d.code && !k.disc) return toast(k.bad || "That code isn't valid.");
   var billing = { method: method, amount: r2(amount), status: method === "invoice" ? "to_invoice" : amount === 0 ? (method === "subscription" ? "included" : "paid") : "paid" };
-  if (k.disc) billing.discount = { code: k.disc.code, amount: k.disc.amount };
+  if (k.disc) billing.discount = { code: k.disc.code, amount: k.disc.amount }; if (k.disc && k.disc.referrer) billing.discount.referrer = k.disc.referrer;
   if (k.credit) billing.credit = k.credit;
   if (method === "subscription" && x.sub) { billing.planId = x.sub.plan.id; billing.planName = x.sub.plan.name; billing.included = x.sub.included; }
   var item = { type: d.item.type, desc: clip(d.item.desc, 120), qty: Math.max(1, Math.round(num(d.item.qty, 1))), l: num(d.item.l, 0), w: num(d.item.w, 0), h: num(d.item.h, 0), kg: num(d.item.kg, 0), photos: d.item.photos.slice(0, 3), options: Object.assign({}, d.item.options), ai: !!d.item.ai };
@@ -597,10 +597,22 @@ function cAccount(acc) {
   if (biz && subPlan(acc) && subPlan(acc).bulk) rows.push(["bulk", "Bulk deliveries", "Upload a CSV or Excel file"]);
   rows.push(["help", "Help and support", "FAQ, contact, report a problem"]);
   return (isWeb() ? '<h1 class="w-title">Account</h1>' : head("Account")) + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(acc.name)) + "</span><div><b>" + esc(acc.name) + '</b><div class="muted sm">' + (biz ? "Business · " + esc(acc.business.name) : "Individual") + (acc.provider === "google" ? " · Google sign-in" : "") + "</div></div></div>" +
-    creditCard(acc) +
+    creditCard(acc) + inviteCard(acc) +
     '<div class="menu">' + rows.map(function (r) { return '<button data-act="c-go" data-v="' + r[0] + '"><b>' + r[1] + "</b><span>" + r[2] + "</span><i>›</i></button>"; }).join("") + "</div>" +
     '<button class="btn ghost block" data-act="c-logout">Log out</button></div>';
 }
+// Invite friends: share your code, they save on their first delivery, you get credit when it's delivered.
+function inviteCard(acc) {
+  var P = pricing(); if (P.referrals === false) return "";
+  var code = refCodeOf(acc), done = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.referrer === acc.id && o.refRewarded; }).length;
+  return '<div class="card invite"><b>Invite friends</b><span>Give friends ' + eur(P.referralDiscount) + " off their first delivery. You get " + eur(P.referralReward) + " credit when it's delivered.</span>" +
+    '<div class="row invite-row"><b class="invite-code">' + esc(code) + '</b><button type="button" class="btn sm" data-act="c-ref-copy" data-v="' + esc(code) + '">Copy code</button></div>' +
+    (done ? '<span class="muted sm">' + done + (done === 1 ? " friend has" : " friends have") + " used your code.</span>" : "") + "</div>";
+}
+ACT["c-ref-copy"] = function (d) {
+  var text = tr("Use my code") + " " + d.v + " " + tr("for money off your first DART delivery in Rome.");
+  try { navigator.clipboard.writeText(text).then(function () { toast("Copied. Paste it to a friend."); }, function () { toast(text); }); } catch (e) { toast(text); }
+};
 function creditCard(acc) {
   var bal = num(acc.credit, 0), log = (acc.creditLog || []).slice(-4).reverse();
   if (!bal && !log.length) return "";

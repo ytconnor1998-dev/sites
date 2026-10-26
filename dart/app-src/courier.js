@@ -379,6 +379,16 @@ ACT["d-next"] = function () {
   }
   run(Store.update("orders", o.id, patch).then(function () { if (to === "collected") S.d.pickupPhoto = null; }), STATUS[to]);
 };
+// The friend who shared a referral code gets credit once the first delivery is delivered.
+function rewardReferral(oid) {
+  var o = byId(S.orders, oid), ref = o && o.billing && o.billing.discount && o.billing.discount.referrer;
+  if (!ref || o.refRewarded) return Promise.resolve();
+  var amt = r2(num(pricing().referralReward, 5));
+  return Store.claim("orders", oid, "referral", function (x) { return !x.refRewarded; }, { refRewarded: Date.now() }).then(function (ok) {
+    var a = ok && byId(S.accounts, ref); if (!a || !(amt > 0)) return;
+    return Store.update("accounts", a.id, { credit: r2(num(a.credit, 0) + amt), creditLog: (a.creditLog || []).concat([{ amount: amt, reason: "Friend's first delivery: " + String(o.customer.name || "").split(" ")[0], at: Date.now() }]).slice(-50) });
+  });
+}
 FILES["pickup"] = function (file) { var id = S.d.job; shrinkImage(file, 640, 60000).then(function (src) { S.d.pickupPhoto = { id: id, src: src }; render(); }, function () { toast("That photo couldn't be read."); }); };
 // Signature pad: strokes are kept as an image so a redraw doesn't lose them.
 ACT["d-sig-clear"] = function () { S.d.proof.sig = null; render(); };
@@ -415,7 +425,7 @@ FORMS["d-deliver"] = function () {
   var done = Object.assign({}, o, { timeline: Object.assign({}, o.timeline, { delivered: now }) });
   var invStatus = o.billing && o.billing.status === "to_invoice" ? "outstanding" : "paid";
   var invId = "I-" + rid(8), inv = deliveryInvoice(done, acc, invStatus);
-  run(Store.update("orders", o.id, { status: "delivered", proof: proof, late: late, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
+  run(Store.update("orders", o.id, { status: "delivered", proof: proof, late: late, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { return rewardReferral(o.id); }).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
 };
 
 // ---------- Messages, history, earnings ----------

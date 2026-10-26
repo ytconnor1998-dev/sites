@@ -797,6 +797,7 @@ var DEFAULT_PRICING = {
   options: { fragile: 2, stairs: 8, assembly: 15, helper: 18, scheduled: 2, signature: 0 },
   businessDiscount: 0, vatRate: 22, courierShare: 75,
   // Timing and multi-stop
+  referrals: true, referralDiscount: 5, referralReward: 5,
   maxHours: 3, asapBufferMins: 45, leadMins: 45, showHours: 3, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
 };
 var DEFAULT_SETTINGS = {
@@ -1134,10 +1135,26 @@ function normCode(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g
 function codeUses(code, who) {
   return S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.code === code && o.status !== "cancelled" && (!who || o.customer.id === who.id || (who.email && slugEmail(o.customer.email || "") === slugEmail(who.email))); }).length;
 }
+// Every customer's personal referral code: first name plus three characters from their account.
+function refCodeOf(acc) {
+  if (!acc) return "";
+  if (acc.refCode) return acc.refCode;
+  var name = fold(String(acc.name || "").split(" ")[0]).toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6) || "DART";
+  return name + String(acc.id || "").replace(/[^A-Za-z0-9]/g, "").slice(-3).toUpperCase();
+}
+function referrerFor(code) { return code ? S.accounts.filter(function (a) { return refCodeOf(a) === code; })[0] || null : null; }
+function hasBooked(who) { return S.orders.some(function (o) { return o.status !== "cancelled" && ((who.id && o.customer.id === who.id) || (who.email && slugEmail(o.customer.email || "") === slugEmail(who.email))); }); }
 // Is this code valid for this booking? Returns the discount in euros, or why not.
 function checkCode(raw, total, who) {
   var code = normCode(raw), d = discounts().filter(function (x) { return x.code === code; })[0];
   if (!code) return null;
+  var ref = !d && referrerFor(code), P = pricing();
+  if (ref) {
+    if (P.referrals === false) return { ok: false, msg: "Referral codes aren't available right now." };
+    if (who && ((who.id && who.id === ref.id) || (who.email && slugEmail(who.email) === slugEmail(ref.email)))) return { ok: false, msg: "That's your own code. Share it with friends instead." };
+    if (who && (who.id || who.email) && hasBooked(who)) return { ok: false, msg: "Referral codes are for your first delivery." };
+    return { ok: true, code: code, referrer: ref.id, amount: r2(Math.min(total, num(P.referralDiscount, 5))), label: "from " + String(ref.name || "").split(" ")[0] };
+  }
   if (!d || d.active === false) return { ok: false, msg: "That code isn't valid." };
   if (d.until && Date.now() > new Date(d.until + "T23:59:59").getTime()) return { ok: false, msg: "That code has expired." };
   if (num(d.minOrder, 0) && total < num(d.minOrder, 0)) return { ok: false, msg: "This code needs a delivery of at least " + eur(d.minOrder) + "." };
@@ -1941,6 +1958,20 @@ IT_PATTERNS.push(
   [/^Used on (.+)$/, "Usato per $1"], [/^Returned from cancelled (.+)$/, "Restituito da $1 annullata"], [/^Min (.+)$/, "Min $1"], [/^Until (.+)$/, "Fino al $1"],
   [/^(.+) goes back to your DART credit\.$/, "$1 tornano nel tuo credito DART."]
 );
+Object.assign(IT, {
+  "Invite friends": "Invita gli amici", "Copy code": "Copia codice", "Use my code": "Usa il mio codice", "for money off your first DART delivery in Rome.": "per uno sconto sulla tua prima consegna DART a Roma.",
+  "Copied. Paste it to a friend.": "Copiato. Incollalo a un amico.", "Referral codes aren't available right now.": "I codici invito non sono disponibili al momento.",
+  "That's your own code. Share it with friends instead.": "È il tuo codice. Condividilo con gli amici.", "Referral codes are for your first delivery.": "I codici invito valgono per la prima consegna.",
+  "Referrals": "Inviti", "Every customer has a personal code on their Account page": "Ogni cliente ha un codice personale nella pagina Account", "Referrals are off.": "Gli inviti sono disattivati.",
+  "Change the amounts in Pricing.": "Modifica gli importi in Prezzi.", "Referral bookings": "Prenotazioni da invito", "Credit paid out": "Credito pagato", "Referral code": "Codice invito",
+  "Referral codes are on": "Codici invito attivi", "Friend's discount on their first delivery €": "Sconto per l'amico sulla prima consegna €", "Credit for the customer who shared the code €": "Credito per chi ha condiviso il codice €"
+});
+IT_PATTERNS.push(
+  [/^Give friends (.+) off their first delivery\. You get (.+) credit when it's delivered\.$/, "Regala agli amici $1 di sconto sulla prima consegna. Tu ricevi $2 di credito quando viene consegnata."],
+  [/^Friends get (.+) off their first delivery\. The customer who shared the code gets (.+) credit when it's delivered\.$/, "Gli amici ricevono $1 di sconto sulla prima consegna. Chi ha condiviso il codice riceve $2 di credito alla consegna."],
+  [/^(\d+) friends? (?:has|have) used your code\.$/, "$1 amici hanno usato il tuo codice."], [/^(\d+) friends? (?:has|have) booked with it$/, "$1 amici hanno prenotato con questo codice"],
+  [/^from (.+)$/, "da $1"], [/^Friend's first delivery: (.+)$/, "Prima consegna di un amico: $1"], [/^(\d+) delivered$/, "$1 consegnate"]
+);
 
 // ===== DART customer app (phone) and customer website dashboard (web) =====
 
@@ -2364,7 +2395,7 @@ ACT["c-book"] = function () {
   var k = checkout(acc, d, x), amount = k.charge;
   if (d.code && !k.disc) return toast(k.bad || "That code isn't valid.");
   var billing = { method: method, amount: r2(amount), status: method === "invoice" ? "to_invoice" : amount === 0 ? (method === "subscription" ? "included" : "paid") : "paid" };
-  if (k.disc) billing.discount = { code: k.disc.code, amount: k.disc.amount };
+  if (k.disc) billing.discount = { code: k.disc.code, amount: k.disc.amount }; if (k.disc && k.disc.referrer) billing.discount.referrer = k.disc.referrer;
   if (k.credit) billing.credit = k.credit;
   if (method === "subscription" && x.sub) { billing.planId = x.sub.plan.id; billing.planName = x.sub.plan.name; billing.included = x.sub.included; }
   var item = { type: d.item.type, desc: clip(d.item.desc, 120), qty: Math.max(1, Math.round(num(d.item.qty, 1))), l: num(d.item.l, 0), w: num(d.item.w, 0), h: num(d.item.h, 0), kg: num(d.item.kg, 0), photos: d.item.photos.slice(0, 3), options: Object.assign({}, d.item.options), ai: !!d.item.ai };
@@ -2541,10 +2572,22 @@ function cAccount(acc) {
   if (biz && subPlan(acc) && subPlan(acc).bulk) rows.push(["bulk", "Bulk deliveries", "Upload a CSV or Excel file"]);
   rows.push(["help", "Help and support", "FAQ, contact, report a problem"]);
   return (isWeb() ? '<h1 class="w-title">Account</h1>' : head("Account")) + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(acc.name)) + "</span><div><b>" + esc(acc.name) + '</b><div class="muted sm">' + (biz ? "Business · " + esc(acc.business.name) : "Individual") + (acc.provider === "google" ? " · Google sign-in" : "") + "</div></div></div>" +
-    creditCard(acc) +
+    creditCard(acc) + inviteCard(acc) +
     '<div class="menu">' + rows.map(function (r) { return '<button data-act="c-go" data-v="' + r[0] + '"><b>' + r[1] + "</b><span>" + r[2] + "</span><i>›</i></button>"; }).join("") + "</div>" +
     '<button class="btn ghost block" data-act="c-logout">Log out</button></div>';
 }
+// Invite friends: share your code, they save on their first delivery, you get credit when it's delivered.
+function inviteCard(acc) {
+  var P = pricing(); if (P.referrals === false) return "";
+  var code = refCodeOf(acc), done = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.referrer === acc.id && o.refRewarded; }).length;
+  return '<div class="card invite"><b>Invite friends</b><span>Give friends ' + eur(P.referralDiscount) + " off their first delivery. You get " + eur(P.referralReward) + " credit when it's delivered.</span>" +
+    '<div class="row invite-row"><b class="invite-code">' + esc(code) + '</b><button type="button" class="btn sm" data-act="c-ref-copy" data-v="' + esc(code) + '">Copy code</button></div>' +
+    (done ? '<span class="muted sm">' + done + (done === 1 ? " friend has" : " friends have") + " used your code.</span>" : "") + "</div>";
+}
+ACT["c-ref-copy"] = function (d) {
+  var text = tr("Use my code") + " " + d.v + " " + tr("for money off your first DART delivery in Rome.");
+  try { navigator.clipboard.writeText(text).then(function () { toast("Copied. Paste it to a friend."); }, function () { toast(text); }); } catch (e) { toast(text); }
+};
 function creditCard(acc) {
   var bal = num(acc.credit, 0), log = (acc.creditLog || []).slice(-4).reverse();
   if (!bal && !log.length) return "";
@@ -3525,6 +3568,16 @@ ACT["d-next"] = function () {
   }
   run(Store.update("orders", o.id, patch).then(function () { if (to === "collected") S.d.pickupPhoto = null; }), STATUS[to]);
 };
+// The friend who shared a referral code gets credit once the first delivery is delivered.
+function rewardReferral(oid) {
+  var o = byId(S.orders, oid), ref = o && o.billing && o.billing.discount && o.billing.discount.referrer;
+  if (!ref || o.refRewarded) return Promise.resolve();
+  var amt = r2(num(pricing().referralReward, 5));
+  return Store.claim("orders", oid, "referral", function (x) { return !x.refRewarded; }, { refRewarded: Date.now() }).then(function (ok) {
+    var a = ok && byId(S.accounts, ref); if (!a || !(amt > 0)) return;
+    return Store.update("accounts", a.id, { credit: r2(num(a.credit, 0) + amt), creditLog: (a.creditLog || []).concat([{ amount: amt, reason: "Friend's first delivery: " + String(o.customer.name || "").split(" ")[0], at: Date.now() }]).slice(-50) });
+  });
+}
 FILES["pickup"] = function (file) { var id = S.d.job; shrinkImage(file, 640, 60000).then(function (src) { S.d.pickupPhoto = { id: id, src: src }; render(); }, function () { toast("That photo couldn't be read."); }); };
 // Signature pad: strokes are kept as an image so a redraw doesn't lose them.
 ACT["d-sig-clear"] = function () { S.d.proof.sig = null; render(); };
@@ -3561,7 +3614,7 @@ FORMS["d-deliver"] = function () {
   var done = Object.assign({}, o, { timeline: Object.assign({}, o.timeline, { delivered: now }) });
   var invStatus = o.billing && o.billing.status === "to_invoice" ? "outstanding" : "paid";
   var invId = "I-" + rid(8), inv = deliveryInvoice(done, acc, invStatus);
-  run(Store.update("orders", o.id, { status: "delivered", proof: proof, late: late, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
+  run(Store.update("orders", o.id, { status: "delivered", proof: proof, late: late, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { return rewardReferral(o.id); }).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
 };
 
 // ---------- Messages, history, earnings ----------
@@ -3863,6 +3916,8 @@ function aCustomerModal(m) {
   var os = S.orders.filter(function (o) { return o.customer.id === a.id; }), invs = S.invoices.filter(function (i) { return i.accountId === a.id; }), b = a.business, sub = a.subscription, plan = sub ? byId(S.plans, sub.planId) : null;
   var h = '<div class="a-detail"><div class="stack"><div class="card"><b>' + esc(a.name) + '</b><span class="muted sm">' + esc(a.email) + (a.phone ? " · " + esc(a.phone) : "") + " · signed up with " + esc(a.provider) + " on " + dmy(a.createdAt) + "</span>" +
     '<span class="chip ' + (a.status === "suspended" ? "s-bad" : "s-ok") + '">' + esc(a.status || "active") + "</span></div>";
+  var nref = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.referrer === a.id && o.status !== "cancelled"; }).length;
+  h += '<div class="card"><div class="row between"><b>Referral code</b><b class="mono">' + esc(refCodeOf(a)) + '</b></div><span class="muted sm">' + nref + (nref === 1 ? " friend has" : " friends have") + " booked with it</span></div>";
   var cr = S.a.credit && S.a.credit.id === a.id ? S.a.credit : (S.a.credit = { id: a.id, amount: "", reason: "" });
   h += '<div class="card"><div class="row between"><b>DART credit</b><b>' + eur(num(a.credit, 0)) + "</b></div>" +
     (a.creditLog || []).slice(-5).reverse().map(function (l) { return '<div class="row between sm"><span>' + esc(l.reason || "") + ' <span class="muted">· ' + dmy(l.at) + (l.by ? " · " + esc(l.by) : "") + "</span></span><b>" + (l.amount < 0 ? "−" + eur(-l.amount) : "+" + eur(l.amount)) + "</b></div>"; }).join("") +
@@ -3895,6 +3950,10 @@ ACT["a-credit"] = function (d) {
 function aDiscounts() {
   var list = discounts(), f = S.a.disc || (S.a.disc = { code: "", type: "percent", value: "", minOrder: "", maxUses: "", once: true, newOnly: false, until: "" });
   var h = aHead("Discounts") + '<p class="muted">Codes customers type at checkout. Couriers are still paid on the full price.</p>';
+  var P = pricing(), refs = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.referrer && o.status !== "cancelled"; }), paid = refs.filter(function (o) { return o.refRewarded; });
+  h += '<div class="panel pad-m"><div class="panel-h">Referrals <span class="muted sm">Every customer has a personal code on their Account page</span></div>' +
+    '<p>' + (P.referrals === false ? "Referrals are off." : "Friends get " + eur(P.referralDiscount) + " off their first delivery. The customer who shared the code gets " + eur(P.referralReward) + " credit when it's delivered.") + ' <span class="muted">Change the amounts in Pricing.</span></p>' +
+    '<div class="kpis">' + kpi("Referral bookings", refs.length, paid.length + " delivered") + kpi("Discount given", eur(refs.reduce(function (s, o) { return s + num(o.billing.discount.amount, 0); }, 0)), "") + kpi("Credit paid out", eur(paid.length * num(P.referralReward, 5)), "") + "</div></div>";
   h += '<div class="panel">' + (list.length ? '<div class="tbl"><table><thead><tr><th>Code</th><th>Discount</th><th>Rules</th><th>Used</th><th>Discount given</th><th>Status</th><th></th></tr></thead><tbody>' + list.map(function (x) {
     var used = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.code === x.code && o.status !== "cancelled"; });
     var given = used.reduce(function (s, o) { return s + num(o.billing.discount.amount, 0); }, 0);
@@ -4033,6 +4092,7 @@ function aPricing() {
     '<div class="grid3">' + num2("secondCourierFee", "Second courier €", "When 2 people are needed") + num2("businessDiscount", "Business discount %") + num2("vatRate", "VAT %") + "</div></div>";
   h += '<div class="card"><b>Extra services</b><div class="grid3">' + OPTIONS.map(function (o) { return num2("options." + o.id, o.label + " €"); }).join("") + "</div></div>";
   h += '<div class="card"><b>Courier earnings</b>' + num2("courierShare", "Courier share of the delivery price %") + num2("latePenaltyPct", "Suggested late fee %", "Pre-filled when you review a late delivery. Nothing is deducted automatically.") + "</div>";
+  h += '<div class="card"><b>Referrals</b>' + check("a.pricingDraft.referrals", P.referrals !== false, "Referral codes are on") + '<div class="grid2">' + num2("referralDiscount", "Friend's discount on their first delivery €") + num2("referralReward", "Credit for the customer who shared the code €") + "</div></div>";
   h += '<div class="card"><b>Delivery times and multi-stop</b><div class="grid2">' + num2("maxHours", "Longest delivery promise, hours", "As soon as possible never promises later than this") + num2("asapBufferMins", "ASAP: minutes added to the trip time", "Sets the arrival time customers are promised") + num2("showHours", "Set times: couriers can book ahead from this many hours before") + num2("leadMins", "Set times: if nobody has booked it, pop it up this many minutes before setting off") + "</div>" +
     '<div class="grid2">' + num2("maxOrders", "Most deliveries a courier carries at once") + num2("nearKm", "Close enough to add to a route, km", "Pickup near the courier or a stop, or drop-off near one of theirs") + "</div></div>";
   h += '</div><div class="stack sticky"><div class="card"><b>Try a price</b><span class="muted sm">Uses the numbers on this page, before you save.</span><div class="grid2">' + field("From", sel("a.preview.from", pv.from, AREA_NAMES, 'data-live="1"')) + field("To", sel("a.preview.to", pv.to, AREA_NAMES, 'data-live="1"')) + "</div>" +

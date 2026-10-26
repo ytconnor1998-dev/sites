@@ -175,6 +175,8 @@ function aCustomerModal(m) {
   var os = S.orders.filter(function (o) { return o.customer.id === a.id; }), invs = S.invoices.filter(function (i) { return i.accountId === a.id; }), b = a.business, sub = a.subscription, plan = sub ? byId(S.plans, sub.planId) : null;
   var h = '<div class="a-detail"><div class="stack"><div class="card"><b>' + esc(a.name) + '</b><span class="muted sm">' + esc(a.email) + (a.phone ? " · " + esc(a.phone) : "") + " · signed up with " + esc(a.provider) + " on " + dmy(a.createdAt) + "</span>" +
     '<span class="chip ' + (a.status === "suspended" ? "s-bad" : "s-ok") + '">' + esc(a.status || "active") + "</span></div>";
+  var nref = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.referrer === a.id && o.status !== "cancelled"; }).length;
+  h += '<div class="card"><div class="row between"><b>Referral code</b><b class="mono">' + esc(refCodeOf(a)) + '</b></div><span class="muted sm">' + nref + (nref === 1 ? " friend has" : " friends have") + " booked with it</span></div>";
   var cr = S.a.credit && S.a.credit.id === a.id ? S.a.credit : (S.a.credit = { id: a.id, amount: "", reason: "" });
   h += '<div class="card"><div class="row between"><b>DART credit</b><b>' + eur(num(a.credit, 0)) + "</b></div>" +
     (a.creditLog || []).slice(-5).reverse().map(function (l) { return '<div class="row between sm"><span>' + esc(l.reason || "") + ' <span class="muted">· ' + dmy(l.at) + (l.by ? " · " + esc(l.by) : "") + "</span></span><b>" + (l.amount < 0 ? "−" + eur(-l.amount) : "+" + eur(l.amount)) + "</b></div>"; }).join("") +
@@ -207,6 +209,10 @@ ACT["a-credit"] = function (d) {
 function aDiscounts() {
   var list = discounts(), f = S.a.disc || (S.a.disc = { code: "", type: "percent", value: "", minOrder: "", maxUses: "", once: true, newOnly: false, until: "" });
   var h = aHead("Discounts") + '<p class="muted">Codes customers type at checkout. Couriers are still paid on the full price.</p>';
+  var P = pricing(), refs = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.referrer && o.status !== "cancelled"; }), paid = refs.filter(function (o) { return o.refRewarded; });
+  h += '<div class="panel pad-m"><div class="panel-h">Referrals <span class="muted sm">Every customer has a personal code on their Account page</span></div>' +
+    '<p>' + (P.referrals === false ? "Referrals are off." : "Friends get " + eur(P.referralDiscount) + " off their first delivery. The customer who shared the code gets " + eur(P.referralReward) + " credit when it's delivered.") + ' <span class="muted">Change the amounts in Pricing.</span></p>' +
+    '<div class="kpis">' + kpi("Referral bookings", refs.length, paid.length + " delivered") + kpi("Discount given", eur(refs.reduce(function (s, o) { return s + num(o.billing.discount.amount, 0); }, 0)), "") + kpi("Credit paid out", eur(paid.length * num(P.referralReward, 5)), "") + "</div></div>";
   h += '<div class="panel">' + (list.length ? '<div class="tbl"><table><thead><tr><th>Code</th><th>Discount</th><th>Rules</th><th>Used</th><th>Discount given</th><th>Status</th><th></th></tr></thead><tbody>' + list.map(function (x) {
     var used = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.code === x.code && o.status !== "cancelled"; });
     var given = used.reduce(function (s, o) { return s + num(o.billing.discount.amount, 0); }, 0);
@@ -345,6 +351,7 @@ function aPricing() {
     '<div class="grid3">' + num2("secondCourierFee", "Second courier €", "When 2 people are needed") + num2("businessDiscount", "Business discount %") + num2("vatRate", "VAT %") + "</div></div>";
   h += '<div class="card"><b>Extra services</b><div class="grid3">' + OPTIONS.map(function (o) { return num2("options." + o.id, o.label + " €"); }).join("") + "</div></div>";
   h += '<div class="card"><b>Courier earnings</b>' + num2("courierShare", "Courier share of the delivery price %") + num2("latePenaltyPct", "Suggested late fee %", "Pre-filled when you review a late delivery. Nothing is deducted automatically.") + "</div>";
+  h += '<div class="card"><b>Referrals</b>' + check("a.pricingDraft.referrals", P.referrals !== false, "Referral codes are on") + '<div class="grid2">' + num2("referralDiscount", "Friend's discount on their first delivery €") + num2("referralReward", "Credit for the customer who shared the code €") + "</div></div>";
   h += '<div class="card"><b>Delivery times and multi-stop</b><div class="grid2">' + num2("maxHours", "Longest delivery promise, hours", "As soon as possible never promises later than this") + num2("asapBufferMins", "ASAP: minutes added to the trip time", "Sets the arrival time customers are promised") + num2("showHours", "Set times: couriers can book ahead from this many hours before") + num2("leadMins", "Set times: if nobody has booked it, pop it up this many minutes before setting off") + "</div>" +
     '<div class="grid2">' + num2("maxOrders", "Most deliveries a courier carries at once") + num2("nearKm", "Close enough to add to a route, km", "Pickup near the courier or a stop, or drop-off near one of theirs") + "</div></div>";
   h += '</div><div class="stack sticky"><div class="card"><b>Try a price</b><span class="muted sm">Uses the numbers on this page, before you save.</span><div class="grid2">' + field("From", sel("a.preview.from", pv.from, AREA_NAMES, 'data-live="1"')) + field("To", sel("a.preview.to", pv.to, AREA_NAMES, 'data-live="1"')) + "</div>" +

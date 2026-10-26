@@ -77,6 +77,7 @@ var DEFAULT_PRICING = {
   options: { fragile: 2, stairs: 8, assembly: 15, helper: 18, scheduled: 2, signature: 0 },
   businessDiscount: 0, vatRate: 22, courierShare: 75,
   // Timing and multi-stop
+  referrals: true, referralDiscount: 5, referralReward: 5,
   maxHours: 3, asapBufferMins: 45, leadMins: 45, showHours: 3, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
 };
 var DEFAULT_SETTINGS = {
@@ -414,10 +415,26 @@ function normCode(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g
 function codeUses(code, who) {
   return S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.code === code && o.status !== "cancelled" && (!who || o.customer.id === who.id || (who.email && slugEmail(o.customer.email || "") === slugEmail(who.email))); }).length;
 }
+// Every customer's personal referral code: first name plus three characters from their account.
+function refCodeOf(acc) {
+  if (!acc) return "";
+  if (acc.refCode) return acc.refCode;
+  var name = fold(String(acc.name || "").split(" ")[0]).toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6) || "DART";
+  return name + String(acc.id || "").replace(/[^A-Za-z0-9]/g, "").slice(-3).toUpperCase();
+}
+function referrerFor(code) { return code ? S.accounts.filter(function (a) { return refCodeOf(a) === code; })[0] || null : null; }
+function hasBooked(who) { return S.orders.some(function (o) { return o.status !== "cancelled" && ((who.id && o.customer.id === who.id) || (who.email && slugEmail(o.customer.email || "") === slugEmail(who.email))); }); }
 // Is this code valid for this booking? Returns the discount in euros, or why not.
 function checkCode(raw, total, who) {
   var code = normCode(raw), d = discounts().filter(function (x) { return x.code === code; })[0];
   if (!code) return null;
+  var ref = !d && referrerFor(code), P = pricing();
+  if (ref) {
+    if (P.referrals === false) return { ok: false, msg: "Referral codes aren't available right now." };
+    if (who && ((who.id && who.id === ref.id) || (who.email && slugEmail(who.email) === slugEmail(ref.email)))) return { ok: false, msg: "That's your own code. Share it with friends instead." };
+    if (who && (who.id || who.email) && hasBooked(who)) return { ok: false, msg: "Referral codes are for your first delivery." };
+    return { ok: true, code: code, referrer: ref.id, amount: r2(Math.min(total, num(P.referralDiscount, 5))), label: "from " + String(ref.name || "").split(" ")[0] };
+  }
   if (!d || d.active === false) return { ok: false, msg: "That code isn't valid." };
   if (d.until && Date.now() > new Date(d.until + "T23:59:59").getTime()) return { ok: false, msg: "That code has expired." };
   if (num(d.minOrder, 0) && total < num(d.minOrder, 0)) return { ok: false, msg: "This code needs a delivery of at least " + eur(d.minOrder) + "." };

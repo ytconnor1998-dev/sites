@@ -526,3 +526,17 @@ IT_PATTERNS.push(
   [/^Used on (.+)$/, "Usato per $1"], [/^Returned from cancelled (.+)$/, "Restituito da $1 annullata"], [/^Min (.+)$/, "Min $1"], [/^Until (.+)$/, "Fino al $1"],
   [/^(.+) goes back to your DART credit\.$/, "$1 tornano nel tuo credito DART."]
 );
+Object.assign(IT, {
+  "Invite friends": "Invita gli amici", "Copy code": "Copia codice", "Use my code": "Usa il mio codice", "for money off your first DART delivery in Rome.": "per uno sconto sulla tua prima consegna DART a Roma.",
+  "Copied. Paste it to a friend.": "Copiato. Incollalo a un amico.", "Referral codes aren't available right now.": "I codici invito non sono disponibili al momento.",
+  "That's your own code. Share it with friends instead.": "È il tuo codice. Condividilo con gli amici.", "Referral codes are for your first delivery.": "I codici invito valgono per la prima consegna.",
+  "Referrals": "Inviti", "Every customer has a personal code on their Account page": "Ogni cliente ha un codice personale nella pagina Account", "Referrals are off.": "Gli inviti sono disattivati.",
+  "Change the amounts in Pricing.": "Modifica gli importi in Prezzi.", "Referral bookings": "Prenotazioni da invito", "Credit paid out": "Credito pagato", "Referral code": "Codice invito",
+  "Referral codes are on": "Codici invito attivi", "Friend's discount on their first delivery €": "Sconto per l'amico sulla prima consegna €", "Credit for the customer who shared the code €": "Credito per chi ha condiviso il codice €"
+});
+IT_PATTERNS.push(
+  [/^Give friends (.+) off their first delivery\. You get (.+) credit when it's delivered\.$/, "Regala agli amici $1 di sconto sulla prima consegna. Tu ricevi $2 di credito quando viene consegnata."],
+  [/^Friends get (.+) off their first delivery\. The customer who shared the code gets (.+) credit when it's delivered\.$/, "Gli amici ricevono $1 di sconto sulla prima consegna. Chi ha condiviso il codice riceve $2 di credito alla consegna."],
+  [/^(\d+) friends? (?:has|have) used your code\.$/, "$1 amici hanno usato il tuo codice."], [/^(\d+) friends? (?:has|have) booked with it$/, "$1 amici hanno prenotato con questo codice"],
+  [/^from (.+)$/, "da $1"], [/^Friend's first delivery: (.+)$/, "Prima consegna di un amico: $1"], [/^(\d+) delivered$/, "$1 consegnate"]
+);
