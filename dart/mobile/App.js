@@ -37,7 +37,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.page} edges={['top', 'bottom']}>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
         {failed ? (
           <View style={styles.center}>
             <Text style={styles.title}>No connection</Text>

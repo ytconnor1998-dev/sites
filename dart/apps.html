@@ -33,17 +33,9 @@
   --shadow: 0 30px 60px -30px rgba(30, 10, 80, .45);
   --font: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #0E0A1A; --paper-2: #161028; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE;
-    --line: #2C2444; --purple: #7B5CE0; --purple-soft: #2A1D4F; --lilac: #B79BFF;
-    --ok: #4CD38A; --ok-soft: #123425; --warn: #F2B14C; --warn-soft: #3A2A10; --bad: #FF6B7D; --bad-soft: #3D1820;
-    --map-bg: #1A1430; --map-road: #2D2548; --map-river: #263A6E; --map-park: #1C3328;
-    --frame: #000000; --shadow: 0 30px 60px -30px rgba(0, 0, 0, .9);
-    color-scheme: dark;
-  }
-}
+/* Always light; dark only if a page sets data-theme="dark" */
 :root[data-theme="dark"] {
   --paper: #0E0A1A; --paper-2: #161028; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE;
   --line: #2C2444; --purple: #7B5CE0; --purple-soft: #2A1D4F; --lilac: #B79BFF;
