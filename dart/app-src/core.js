@@ -1,6 +1,8 @@
 // ===== DART core: reference data, store, rules engine, pricing, invoices, shared UI helpers =====
 "use strict";
 
+var ACT = {}, FORMS = {}, FILES = {};
+
 // ---------- Reference data (Rome areas; road distance is estimated from these) ----------
 var AREAS = {
   "Centro Storico": [41.8986, 12.4769], "Trastevere": [41.8867, 12.4700], "Prati": [41.9065, 12.4625],
@@ -70,10 +72,10 @@ var DEFAULT_SETTINGS = {
 
 // ---------- Helpers ----------
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-function eur(n) { var v = Math.round((Number(n) || 0) * 100) / 100; return (v < 0 ? "−€" : "€") + Math.abs(v).toFixed(2); }
+function eur(n) { var v = Math.round((Number(n) || 0) * 100) / 100, a = Math.abs(v).toFixed(2); return lang() === "it" ? (v < 0 ? "−" : "") + a.replace(".", ",") + " €" : (v < 0 ? "−€" : "€") + a; }
 function r2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
-function hhmm(t) { return t ? new Date(t).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""; }
-function dmy(t) { return t ? new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""; }
+function hhmm(t) { return t ? new Date(t).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) : ""; }
+function dmy(t) { return t ? new Date(t).toLocaleDateString(locale(), { day: "numeric", month: "short", year: "numeric" }) : ""; }
 function when(t) { if (!t) return ""; return isToday(t) ? "Today " + hhmm(t) : dmy(t) + " " + hhmm(t); }
 function isToday(t) { return t && new Date(t).toDateString() === new Date().toDateString(); }
 function initials(n) { return String(n || "?").trim().split(/\s+/).map(function (w) { return w[0] || ""; }).join("").slice(0, 2).toUpperCase() || "?"; }
@@ -200,7 +202,7 @@ window.addEventListener("storage", function (e) { if (e.key === LS && Store.mode
 var S = {
   orders: [], accounts: [], couriers: [], invoices: [], tickets: [], plans: [],
   cfg: { rules: null, pricing: null, settings: null },
-  me: lsGet("dart-v2-me", { customerId: null, courierId: null, read: {}, seen: {}, declined: {} }),
+  me: Object.assign({ customerId: null, courierId: null, read: {}, seen: {}, declined: {} }, lsGet("dart-v2-me", {})),
   modal: null,
   c: {}, d: {}, a: {}
 };
@@ -355,8 +357,9 @@ function quad(a, b) { var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b
 function onQuad(a, c, b, t) { var u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; }
 function mapSVG(opt) {
   opt = opt || {};
-  var s = '<svg viewBox="0 0 ' + MW + " " + MH + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of Rome">';
-  s += '<rect width="' + MW + '" height="' + MH + '" fill="var(--map-bg)"/>';
+  var s = '<svg viewBox="' + (opt.vb || "0 0 " + MW + " " + MH) + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of Rome">';
+  s += '<rect x="-400" y="-400" width="' + (MW + 800) + '" height="' + (MH + 1200) + '" fill="var(--map-bg)"/>';
+  if (opt.vb) s += '<g stroke="var(--map-road)" stroke-width="3" opacity=".7">' + [-200, -120, -40, 420, 500, 580].map(function (y) { return '<line x1="-400" y1="' + y + '" x2="800" y2="' + (y + 30) + '"/>'; }).join("") + [-60, 420].map(function (x) { return '<line x1="' + x + '" y1="-400" x2="' + (x + 20) + '" y2="900"/>'; }).join("") + "</g>";
   [[41.914, 12.487, 26, 16], [41.886, 12.452, 20, 24], [41.931, 12.503, 18, 12], [41.873, 12.497, 14, 10]].forEach(function (p) { var c = proj(p); s += '<ellipse cx="' + c[0] + '" cy="' + c[1] + '" rx="' + p[2] + '" ry="' + p[3] + '" fill="var(--map-park)"/>'; });
   ROADS.forEach(function (r) { var a = proj(AREAS[r[0]]), b = proj(AREAS[r[1]]); s += '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" stroke="var(--map-road)" stroke-width="6" stroke-linecap="round"/>'; });
   s += '<polyline points="' + TIBER.map(function (p) { return proj(p).join(","); }).join(" ") + '" fill="none" stroke="var(--map-river)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -372,6 +375,12 @@ function mapSVG(opt) {
       var p = r.approach != null ? [a[0] + 40 * (1 - r.approach), a[1] - 50 * (1 - r.approach)] : onQuad(a, c, b, r.t);
       s += '<circle class="pulse" cx="' + p[0] + '" cy="' + p[1] + '" r="8" fill="var(--purple)"/><circle cx="' + p[0] + '" cy="' + p[1] + '" r="9" fill="var(--lilac)" stroke="var(--card)" stroke-width="3"/>';
     }
+  });
+  (opt.pins || []).forEach(function (p) {
+    if (!AREAS[p.area]) return;
+    var c = proj(AREAS[p.area]), x = c[0] + (p.dx || 0), y = c[1] + (p.dy || 0), w = Math.max(30, String(p.text).length * 6.4 + 14);
+    var bg = p.tone === "green" ? "var(--ok)" : p.tone === "ink" ? "var(--ink)" : "var(--purple)", fg = p.tone === "ink" ? "var(--paper)" : "#fff";
+    s += '<g><circle cx="' + c[0] + '" cy="' + c[1] + '" r="5" fill="' + bg + '" stroke="var(--card)" stroke-width="2"/><rect x="' + (x - w / 2) + '" y="' + (y - 26) + '" width="' + w + '" height="18" rx="4" fill="' + bg + '"/><path d="M' + (x - 4) + " " + (y - 8) + " L" + x + " " + (y - 3) + " L" + (x + 4) + " " + (y - 8) + 'z" fill="' + bg + '"/><text x="' + x + '" y="' + (y - 13.5) + '" text-anchor="middle" font-size="10.5" font-weight="800" fill="' + fg + '" font-family="JetBrains Mono, ui-monospace, monospace">' + esc(p.text) + "</text></g>";
   });
   return s + "</svg>";
 }
@@ -392,7 +401,7 @@ var toastTimer;
 function toast(msg) {
   var el = document.querySelector(".toast");
   if (!el) { el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
-  el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 3400);
+  el.textContent = tr(msg); el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 3400);
 }
 function fail(e) {
   toast(e && e.code === "invalid_argument" ? "You don't have permission to change this." : e && e.code === "quota_exceeded" ? "The test database is full. Clear old orders in the admin portal." : "That didn't save. Check your connection and try again.");
@@ -402,7 +411,7 @@ function run(p, okMsg) { busy = true; return Promise.resolve(p).then(function (v
 
 // ---------- Shared UI pieces ----------
 function chip(s) { return '<span class="chip ' + statusClass(s) + '">' + esc(STATUS[s] || s) + "</span>"; }
-function modeChip() { return Store.mode === "live" ? '<span class="mode live"><i></i>Live · shared</span>' : '<span class="mode"><i></i>This browser only</span>'; }
+function modeChip() { return langSwitch() + (Store.mode === "live" ? '<span class="mode live"><i></i>Live · shared</span>' : '<span class="mode"><i></i>This browser only</span>'); }
 function field(label, inner, hint) { return '<label class="field"><span>' + label + "</span>" + inner + (hint ? '<small class="hint">' + hint + "</small>" : "") + "</label>"; }
 function inp(bind, val, attrs) { return '<input class="input" data-bind="' + bind + '" value="' + esc(val == null ? "" : val) + '" ' + (attrs || "") + ">"; }
 function txt(bind, val, attrs) { return '<textarea class="input" data-bind="' + bind + '" ' + (attrs || "") + ">" + esc(val || "") + "</textarea>"; }
@@ -447,7 +456,7 @@ function invoiceModal(inv) {
 }
 var Caps = { downloads: null, sample: null, sampleImages: false };
 function downloadInvoice(inv) {
-  var html = invoiceHTML(inv);
+  var html = translateHTML(invoiceHTML(inv));
   if (!Caps.downloads) { toast("Downloads aren't available in this view."); return; }
   Caps.downloads.save({ filename: inv.number + ".html", data: html }).then(function () { toast("Invoice saved"); }, function (e) { if (e && e.code !== "declined") toast("The invoice couldn't be saved here."); });
 }

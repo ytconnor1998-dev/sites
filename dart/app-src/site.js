@@ -1,7 +1,7 @@
 // ===== DART public website (the #web view): marketing pages around the working booking flow =====
 S.c.hq = { from: "", to: "", type: "parcel" };
 S.c.contact = { name: "", email: "", topic: "question", text: "", sent: false };
-var SITE_VIEWS = ["site-home", "site-how", "site-pricing", "site-business", "site-couriers", "site-help", "site-terms", "site-privacy"];
+var SITE_VIEWS = ["site-home", "site-how", "site-pricing", "site-business", "site-couriers", "site-courier-apply", "site-help", "site-terms", "site-privacy"];
 GUEST_VIEWS.push.apply(GUEST_VIEWS, SITE_VIEWS);
 var SITE_NAV = [["site-how", "How it works"], ["site-pricing", "Pricing"], ["site-business", "Business"], ["site-couriers", "Couriers"], ["site-help", "Help"]];
 // Typical items used for "from" prices and the instant quote.
@@ -23,7 +23,7 @@ function siteShell(acc, body, isSite, accNav) {
   h += '<header class="ws-head"><div class="ws-wrap ws-bar"><button class="ws-logo" data-act="w-page" data-v="site-home" aria-label="DART home"><svg><use href="#mark"/></svg>DART</button>' +
     '<nav class="ws-nav' + (open ? " open" : "") + '" aria-label="Main">' + SITE_NAV.map(function (n) { return '<button class="' + (v === n[0] ? "on" : "") + '" data-act="w-page" data-v="' + n[0] + '">' + n[1] + "</button>"; }).join("") +
     '<button class="ws-only-m" data-act="c-go" data-v="track">Track a delivery</button>' + (acc ? '<button class="ws-only-m" data-act="c-go" data-v="home">My DART</button>' : '<button class="ws-only-m" data-act="c-auth-open" data-v="login">Log in</button>') + "</nav>" +
-    '<div class="ws-right"><button class="ws-link ws-hide-m" data-act="c-go" data-v="track">Track</button>' +
+    '<div class="ws-right">' + langSwitch("on-dark") + '<button class="ws-link ws-hide-m" data-act="c-go" data-v="track">Track</button>' +
     (acc ? '<button class="ws-link ws-hide-m" data-act="c-go" data-v="home"><span class="avatar sm">' + esc(initials(acc.name)) + "</span> My DART</button>" : '<button class="ws-link ws-hide-m" data-act="c-auth-open" data-v="login">Log in</button>') +
     '<button class="ws-cta" data-act="w-book">Book a delivery</button><button class="ws-burger" data-act="w-nav" aria-label="Menu" aria-expanded="' + !!open + '"><i></i><i></i><i></i></button></div></div>' +
     (acc && !isSite ? '<div class="ws-sub"><div class="ws-wrap">' + accNav + "</div></div>" : "") + "</header>";
@@ -34,7 +34,7 @@ function siteFooter() {
   var st = settings();
   return '<footer class="ws-foot"><div class="ws-wrap"><div class="ws-foot-top"><div><span class="ws-logo light"><svg><use href="#mark"/></svg>DART</span><p>Same-day delivery inside Rome’s GRA, from envelopes to wardrobes.</p></div>' +
     '<div><h4>Send</h4><button data-act="w-book">Book a delivery</button><button data-act="c-go" data-v="track">Track a delivery</button><button data-act="w-page" data-v="site-pricing">Pricing</button><button data-act="w-page" data-v="site-how">How it works</button></div>' +
-    '<div><h4>Work with DART</h4><button data-act="w-page" data-v="site-business">Business plans</button><button data-act="w-page" data-v="site-couriers">Become a courier</button><a href="#courier">Courier app</a></div>' +
+    '<div><h4>Work with DART</h4><button data-act="w-page" data-v="site-business">Business plans</button><button data-act="w-page" data-v="site-couriers">Become a courier</button><button data-act="w-page" data-v="site-courier-apply">Apply to deliver</button><a href="#courier">Courier app log in</a></div>' +
     '<div><h4>Help</h4><button data-act="w-page" data-v="site-help">Help and contact</button><button data-act="w-page" data-v="site-terms">Terms and conditions</button><button data-act="w-page" data-v="site-privacy">Privacy policy</button>' + (st.supportEmail ? "<span>" + esc(st.supportEmail) + "</span>" : "") + "</div></div>" +
     '<div class="ws-word" aria-hidden="true">DART</div><div class="ws-legal"><span>© ' + new Date().getFullYear() + " " + esc(st.company || "DART") + (st.companyVat ? " · P.IVA " + esc(st.companyVat) : "") + (st.companyAddress ? " · " + esc(st.companyAddress) : "") + '</span><span>Test build · ' + (Store.mode === "live" ? "live data" : "this browser only") + "</span></div></div></footer>";
 }
@@ -44,6 +44,7 @@ function sitePage(v, acc) {
     case "site-pricing": return sitePricing();
     case "site-business": return siteBusiness(acc);
     case "site-couriers": return siteCouriers();
+    case "site-courier-apply": return siteCourierApply();
     case "site-help": return siteHelp(acc);
     case "site-terms": return siteLegal("terms");
     case "site-privacy": return siteLegal("privacy");
@@ -78,7 +79,7 @@ function heroQuote() {
     '<label><span>To</span>' + sel("c.hq.to", hq.to, [["", "Delivery area"]].concat(AREA_NAMES), 'data-live="1"') + "</label></div>" +
     '<div class="ws-q-types" role="radiogroup" aria-label="What are you sending">' + Object.keys(TYPICAL).map(function (k) { var on = hq.type === k; return '<button type="button" role="radio" aria-checked="' + on + '" class="' + (on ? "on" : "") + '" data-act="w-hq-type" data-v="' + k + '">' + TYPICAL[k].label.split(" and")[0] + "<small>" + hint[k] + "</small></button>"; }).join("") + "</div>" +
     '<div class="ws-q-out">' + (x ? '<div><span class="ws-q-price">' + eur(x.q.total) + '</span><span class="ws-q-meta">' + x.q.km.toFixed(1) + " km by road, " + esc(vLabel(x.cls.minVehicle).toLowerCase()) + ", about " + x.q.mins + " min</span></div>" : '<div><span class="ws-q-price muted-l">from ' + eur(pricing().minFee) + '</span><span class="ws-q-meta">Pick two areas to see a price</span></div>') +
-    '<button class="ws-btn" data-act="w-hq-book">Book now</button></div><p class="ws-q-note">Based on a typical ' + TYPICAL[hq.type].label.toLowerCase().replace(" and documents", "").replace(" and heavy", " item") + ". Your exact price comes from your addresses and measurements.</p></div>";
+    '<button class="ws-btn" data-act="w-hq-book">Book now</button></div><p class="ws-q-note">' + { letter: "Based on a typical letter.", parcel: "Based on a typical parcel.", large: "Based on a typical large item.", furniture: "Based on a typical piece of furniture." }[hq.type] + " Your exact price comes from your addresses and measurements.</p></div>";
 }
 function heroPhone() {
   return '<div class="ws-phone" aria-hidden="true"><div class="ws-phone-s"><div class="ws-ph-top"><span class="logo"><svg><use href="#mark"/></svg>DART</span><span class="chip s-pur">In transit</span></div>' +
@@ -105,7 +106,7 @@ function siteHome(acc) {
   h += '<section class="ws-band dark"><div class="ws-wrap ws-split"><div class="ws-split-l"><h2 class="ws-h2">Monthly plans for shops and offices</h2><p>Use your normal DART account. Switch it to business in Settings, add your Partita IVA and SDI code, and pick a plan. Anything a plan doesn\'t cover is charged at the normal price, shown before you confirm.</p><button class="ws-btn lilac" data-act="w-page" data-v="site-business">Business details</button></div>' +
     (plans.length ? '<table class="ws-plantbl"><thead><tr><th>Plan</th><th>Per month</th><th>Deliveries</th><th>Each extra</th></tr></thead><tbody>' + plans.map(function (p) { return "<tr><td>" + esc(p.name) + "</td><td>" + eur(p.price) + "</td><td>" + p.allowance + "</td><td>" + eur(p.overageFee) + "</td></tr>"; }).join("") + "</tbody></table>" : "<p>Plans will be listed here. Until then, businesses pay per delivery.</p>") + "</div></section>";
   var arm = examplePrice(EXAMPLES[3]);
-  h += '<section class="ws-band lilac"><div class="ws-wrap ws-split"><div class="ws-split-l"><h2 class="ws-h2">Deliver with DART</h2><a class="ws-btn dark" href="#courier">Apply in the courier app</a></div><div class="ws-courier"><p>Couriers keep ' + num(P.courierShare, 75) + "% of each delivery price" + (arm ? ". On the armchair above, that's " + eur(arm.q.total * num(P.courierShare, 75) / 100) + "." : ".") + " You choose when you're online, see the pickup, destination and pay before accepting, and are paid weekly by bank transfer.</p>" +
+  h += '<section class="ws-band lilac"><div class="ws-wrap ws-split"><div class="ws-split-l"><h2 class="ws-h2">Deliver with DART</h2><button class="ws-btn dark" data-act="w-page" data-v="site-couriers">Courier details</button><button class="ws-more" data-act="w-page" data-v="site-courier-apply">Apply now →</button></div><div class="ws-courier"><p>Couriers keep ' + num(P.courierShare, 75) + "% of each delivery price" + (arm ? ". On the armchair above, that's " + eur(arm.q.total * num(P.courierShare, 75) / 100) + "." : ".") + " You choose when you're online, see the pickup, destination and pay before accepting, and are paid weekly by bank transfer.</p>" +
     "<p>Register a bicycle, scooter, motorbike, car or van. For motor vehicles we check your licence, insurance and libretto before your first job.</p></div></div></section>";
   h += '<section class="ws-sec"><div class="ws-wrap ws-cover"><div class="ws-split-l"><h2 class="ws-h2">Where we deliver</h2><p class="ws-p">Anywhere inside the Grande Raccordo Anulare. These are the areas you can choose when booking:</p><p class="ws-arealist">' + AREA_NAMES.join(", ") + '.</p></div><div class="ws-cover-map">' + mapSVG({ dots: AREA_NAMES.map(function (a) { return { area: a, color: "var(--purple)" }; }) }) + "</div></div></section>";
   h += '<section class="ws-sec alt"><div class="ws-wrap ws-split"><div class="ws-split-l"><h2 class="ws-h2">Questions</h2><button class="ws-more" data-act="w-page" data-v="site-help">More answers and contact →</button></div><div class="ws-faq">' + FAQ.slice(0, 4).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + "</div></div></section>";
@@ -155,14 +156,70 @@ function siteBusiness(acc) {
   return h;
 }
 
-// ---------- Couriers ----------
+// ---------- Couriers: information ----------
+// A typical job for each vehicle, priced live, so courier earnings on the page are real numbers.
+var COURIER_JOBS = {
+  bicycle: { what: "Contract", from: "Prati", to: "Centro Storico", item: { type: "document", l: 32, w: 24, h: 1, kg: 0.2, qty: 1, options: {} } },
+  scooter: { what: "Shop order", from: "Monti", to: "Parioli", item: { type: "parcel", l: 35, w: 25, h: 15, kg: 2, qty: 1, options: {} } },
+  motorcycle: { what: "Shoebox parcel", from: "Testaccio", to: "San Lorenzo", item: { type: "parcel", l: 50, w: 40, h: 30, kg: 8, qty: 1, options: {} } },
+  smallcar: { what: "Two boxes", from: "Termini", to: "Monteverde", item: { type: "parcel", l: 55, w: 40, h: 35, kg: 9, qty: 2, options: {} } },
+  car: { what: "Armchair", from: "Trastevere", to: "Pigneto", item: { type: "furniture", l: 95, w: 85, h: 90, kg: 22, qty: 1, options: {} } },
+  van: { what: "Sofa, three seats", from: "Garbatella", to: "Flaminio", item: { type: "furniture", l: 210, w: 90, h: 85, kg: 60, qty: 1, options: {} } },
+  largevan: { what: "Wardrobe", from: "San Giovanni", to: "EUR", item: { type: "furniture", l: 200, w: 100, h: 60, kg: 90, qty: 1, options: { stairs: true } } },
+  cargovan: { what: "Small office move", from: "Ostiense", to: "Prati", item: { type: "furniture", l: 300, w: 150, h: 120, kg: 400, qty: 1, options: {} } }
+};
 function siteCouriers() {
-  var P = pricing(), vs = rules().vehicles.filter(function (v) { return v.active !== false; });
-  var h = pageHead("Couriers", "Deliver with DART", "Use your own bicycle, scooter, motorbike, car or van, and choose when you work.");
-  h += '<section class="ws-sec"><div class="ws-wrap ws-two"><div><h2 class="ws-h2">How it works for couriers</h2><ol class="ws-how">' + step("Apply", "Add your details, your vehicle and its loading space, photos of your documents, and your IBAN.") + step("Get approved", "DART checks your documents and vehicle before your first job.") + step("Go online", "Requests that fit your vehicle appear, nearest first, with the pay shown before you accept.") + step("Get paid", "You keep " + num(P.courierShare, 75) + "% of each delivery price, paid weekly by bank transfer.") + '</ol><a class="ws-btn dark" href="#courier">Apply in the courier app</a></div>' +
-    '<div><h2 class="ws-h2">Documents</h2><p class="ws-p">ID card or passport for everyone. For motor vehicles, also your driving licence, insurance and vehicle registration (libretto).</p></div></div></section>';
-  h += '<section class="ws-sec alt"><div class="ws-wrap"><h2 class="ws-h2">Vehicles</h2><p class="ws-p">Typical loading space for each type. You enter your own vehicle\'s measurements when you apply.</p><div class="tbl ws-tbl"><table><thead><tr><th>Vehicle</th><th>Loading space</th><th>Up to</th></tr></thead><tbody>' + vs.map(function (v) { return "<tr><td><b>" + esc(v.label) + "</b></td><td>" + v.l + " × " + v.w + " × " + v.h + " cm</td><td>" + v.kg + " kg</td></tr>"; }).join("") + "</tbody></table></div></div></section>";
-  return h;
+  var P = pricing(), R = rules(), share = num(P.courierShare, 75), vs = R.vehicles.filter(function (v) { return v.active !== false; });
+  var h = pageHead("Couriers", "Deliver with DART", "Use your own bicycle, scooter, motorbike, car or van to deliver across Rome. You choose when you work, and you only get jobs your vehicle can carry.") +
+    '<section class="ws-sec"><div class="ws-wrap"><div class="ws-facts flat"><dl><div><dt>You keep</dt><dd>' + share + "% of the price</dd></div><div><dt>Paid</dt><dd>Every Monday</dd></div><div><dt>Hours</dt><dd>Your choice</dd></div><div><dt>Area</dt><dd>Inside the GRA</dd></div></dl></div>" +
+    '<button class="ws-btn" data-act="w-page" data-v="site-courier-apply">Apply to deliver</button></div></section>';
+  h += '<section class="ws-sec alt"><div class="ws-wrap"><h2 class="ws-h2">What you earn</h2><p class="ws-p">Each job shows its pay before you accept. These are typical jobs for each vehicle, worked out with today\'s prices.</p><div class="tbl ws-tbl"><table><thead><tr><th>Vehicle</th><th>Typical job</th><th>Route</th><th>Delivery price</th><th>You earn</th></tr></thead><tbody>' +
+    vs.map(function (v) {
+      var j = COURIER_JOBS[v.id]; if (!j) return "";
+      var cls = classify(j.item); if (!cls.ok) return "";
+      var q = quote(j.from, j.to, j.item, Object.assign({}, cls, { minVehicle: v.id }), null);
+      return "<tr><td><b>" + esc(v.label) + "</b></td><td>" + j.what + "</td><td>" + j.from + " → " + j.to + " · " + q.km.toFixed(1) + ' km</td><td class="mono">' + eur(q.total) + '</td><td class="mono"><b>' + eur(q.total * share / 100) + "</b></td></tr>";
+    }).join("") + "</tbody></table></div><p class=\"ws-p sm\">Bigger vehicles also see smaller jobs. Furniture and heavy items pay more, and some need two people.</p></div></section>";
+  h += '<section class="ws-sec"><div class="ws-wrap ws-split"><div class="ws-split-l"><h2 class="ws-h2">From application to first job</h2><button class="ws-btn dark" data-act="w-page" data-v="site-courier-apply">Start your application</button></div><ol class="ws-how">' +
+    step("Apply online", "Your name, phone and address, your vehicle with its loading space and weight limit, photos of your documents, and the IBAN you want to be paid to. It takes about ten minutes.") +
+    step("We check your documents", "DART reviews your identity and, for motor vehicles, your licence, insurance and libretto. You'll get a notification when you're approved, or a note telling you what to fix.") +
+    step("Go online in the courier app", "Switch to online and set the area you're in. Requests that fit your vehicle appear, nearest first.") +
+    step("Take a job", "You see the pickup, the destination, the item with its size, weight and photos, any extras like stairs, and what you'll earn. Accept or decline.") +
+    step("Deliver", "Navigate with Google Maps, update each step, message the customer if you need to, and finish with a photo and the name of who received it.") +
+    step("Get paid", "Completed jobs show as pending in Earnings and are paid every Monday by bank transfer.") + "</ol></div></section>";
+  h += '<section class="ws-sec alt"><div class="ws-wrap"><h2 class="ws-h2">What you need</h2><div class="tbl ws-tbl"><table><thead><tr><th>Vehicle</th><th>Typical loading space</th><th>Up to</th><th>Documents</th><th>Can carry</th></tr></thead><tbody>' +
+    vs.map(function (v) {
+      var cats = R.categories.filter(function (c) { return c.active !== false && (c.vehicles || []).indexOf(v.id) >= 0; }).map(function (c) { return c.label; });
+      var docs = v.id === "bicycle" ? "ID card or passport" : "ID, driving licence, insurance, libretto";
+      return "<tr><td><b>" + esc(v.label) + "</b></td><td>" + v.l + " × " + v.w + " × " + v.h + " cm</td><td>" + v.kg + ' kg</td><td class="sm">' + docs + '</td><td class="sm">' + esc(cats.length > 1 ? cats[0] + " to " + cats[cats.length - 1] : cats.join("")) + "</td></tr>";
+    }).join("") + '</tbody></table></div><ul class="ws-ticks sm"><li>A smartphone with mobile data, for the courier app and photos</li><li>An Italian or EU bank account (IBAN) for payouts</li><li>Your own vehicle insurance for motor vehicles</li><li>You must be 18 or over</li></ul></div></section>';
+  h += '<section class="ws-sec"><div class="ws-wrap ws-split"><div class="ws-split-l"><h2 class="ws-h2">Courier questions</h2></div><div class="ws-faq">' + [
+    ["Do I have to work set hours?", "No. You go online when you want to take jobs and offline when you don't. There are no shifts."],
+    ["Why don't I see every request?", "DART only shows you items that fit your registered vehicle's loading space and weight limit. Bigger vehicles see smaller jobs too."],
+    ["Can I change my vehicle later?", "Yes. Send the new vehicle from the courier app. DART approves it, and you keep getting jobs for your current vehicle until then."],
+    ["What if something goes wrong on a job?", "Use Report a problem on the delivery. DART support sees it straight away, and the customer is told there's an issue."],
+    ["How am I paid and taxed?", "Earnings are paid every Monday to your IBAN. You work as an independent courier and are responsible for your own tax position. We'll confirm the contract terms with you before your first job."],
+    ["Can I give a job back?", "Yes, before you collect the item. It goes back to other couriers. Doing it often may affect your account."]
+  ].map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + "</div></div></section>";
+  return h + '<section class="ws-sec alt"><div class="ws-wrap ws-split"><div class="ws-split-l"><h2 class="ws-h2">Ready to apply?</h2></div><div class="ws-split-l"><p class="ws-p">The application takes about ten minutes. Have your documents and IBAN to hand.</p><button class="ws-btn" data-act="w-page" data-v="site-courier-apply">Apply to deliver</button><p class="ws-p sm">Already applied? Open the <a href="#courier">courier app</a> and log in with your email.</p></div></div></section>';
+}
+
+// ---------- Couriers: apply on the website ----------
+function siteCourierApply() {
+  var c = myCourier();
+  var h = pageHead("Apply", "Apply to deliver with DART", "");
+  if (c) {
+    var st = { pending: ["We're checking your application", "You'll get a notification in the courier app when you're approved, or a note telling you what to fix."], approved: ["You're approved", "Open the courier app, go online and start taking jobs."], rejected: ["Your application wasn't approved", c.decisionNote || "Contact DART support to find out why."], suspended: ["Your account is paused", c.decisionNote || "Contact DART support."] }[c.status] || ["Application received", ""];
+    return h + '<section class="ws-sec"><div class="ws-wrap ws-split"><div class="ws-split-l"><h2 class="ws-h2">' + st[0] + '</h2><p class="ws-p">' + esc(st[1]) + '</p><a class="ws-btn dark" href="#courier">Open the courier app</a></div><div class="card"><b>' + esc(c.name) + '</b><span class="muted">' + esc(c.email) + " · " + esc(vLabel(c.vehicle.type)) + (c.vehicle.plate ? " · " + esc(c.vehicle.plate) : "") + '</span><span class="chip ' + (c.status === "approved" ? "s-ok" : c.status === "pending" ? "s-warn" : "s-bad") + '">' + esc(c.status) + "</span></div></div></section>";
+  }
+  var r = S.d.reg = S.d.reg || newReg(), steps = ["About you", "Your vehicle", "Documents", "Payouts"];
+  var form = "";
+  if (r.step === 1) form = '<form class="stack" data-form="d-reg-1">' + '<div class="grid2">' + field("Full name", inp("d.reg.name", r.name, 'autocomplete="name" required')) + field("Email", inp("d.reg.email", r.email, 'type="email" autocomplete="email" required')) + "</div>" + '<div class="grid2">' + field("Phone", inp("d.reg.phone", r.phone, 'type="tel" autocomplete="tel" required')) + field("Password", '<input class="input" type="password" autocomplete="new-password">', "Test build: not stored.") + "</div>" + field("Home address", inp("d.reg.address", r.address, 'autocomplete="street-address" required placeholder="Street, number, CAP"')) + '<button class="btn">Next: your vehicle</button></form>';
+  if (r.step === 2) form = vehicleForm("d.reg.vehicle", r.vehicle) + '<div class="row"><button class="btn ghost" data-act="d-reg-step" data-v="1">Back</button><button class="btn" data-act="d-reg-step" data-v="3">Next: documents</button></div>';
+  if (r.step === 3) form = docsForm(r.vehicle.type, r.docs, "reg") + '<div class="row"><button class="btn ghost" data-act="d-reg-step" data-v="2">Back</button><button class="btn" data-act="d-reg-step" data-v="4"' + (docsFor(r.vehicle.type).every(function (k) { return r.docs[k]; }) ? "" : " disabled") + ">Next: payouts</button></div>";
+  if (r.step === 4) form = '<form class="stack" data-form="d-reg-4"><div class="card"><b>Where should we pay you?</b><span class="muted">Earnings are paid every Monday by bank transfer.</span>' + field("Account holder", inp("d.reg.holder", r.holder || r.name, "required")) + field("IBAN", inp("d.reg.iban", r.iban, 'required placeholder="IT60 X054 2811 1010 0000 0123 456"')) + '</div><div class="row"><button type="button" class="btn ghost" data-act="d-reg-step" data-v="3">Back</button><button class="btn">Send my application</button></div></form>';
+  return h + '<section class="ws-sec"><div class="ws-wrap ws-split"><div class="ws-split-l"><ol class="ws-how ws-apply-steps">' + steps.map(function (t, i) { return '<li class="' + (r.step === i + 1 ? "on" : r.step > i + 1 ? "done" : "") + '"><b>' + t + "</b><p>" + ["Name, contact details and address", "Type, plate and loading space", "Photos of ID and vehicle papers", "Your IBAN for weekly payouts"][i] + "</p></li>"; }).join("") +
+    '</ol><p class="ws-p sm">Want the details first? Read <button class="ws-more" data-act="w-page" data-v="site-couriers">what being a DART courier involves</button>.</p></div><div class="stack ws-apply">' + form + "</div></div></section>";
 }
 
 // ---------- Help and contact ----------

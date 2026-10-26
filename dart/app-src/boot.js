@@ -27,10 +27,12 @@ function render() {
   var r = route(), html = r === "customer" || r === "web" ? customerApp() : r === "courier" ? courierApp() : r === "admin" ? adminApp() : launcher();
   if (S.modal) html += modalHTML(S.modal);
   root.innerHTML = html;
+  translateDOM(root);
+  document.documentElement.lang = lang();
   root.querySelectorAll("[data-scroll]").forEach(function (el) { if (scroll[el.dataset.scroll] != null) el.scrollTop = scroll[el.dataset.scroll]; });
   var nb = root.querySelector(".modal-b"); if (nb && root.dataset.mkey === mkey) nb.scrollTop = mscroll;
   root.dataset.mkey = mkey;
-  document.title = r === "customer" ? "DART" : r === "web" ? "DART · Your deliveries" : r === "courier" ? "DART Courier" : r === "admin" ? "DART Admin" : "DART Test Platform";
+  document.title = tr(r === "customer" ? "DART" : r === "web" ? "DART · Delivery in Rome" : r === "courier" ? "DART Courier" : r === "admin" ? "DART Admin" : "DART Test Platform");
 }
 function modalHTML(m) {
   switch (m.kind) {
@@ -115,6 +117,7 @@ function subscribeAll() {
 
 (function boot() {
   root = document.getElementById("root");
+  try { if (localStorage.getItem("dart-i18n-collect")) { MISS = {}; window.__dartMiss = function () { return MISS; }; window.__dartAct = function (n, d) { ACT[n](d || {}); }; window.__dartModal = function (m) { S.modal = m; render(); }; } } catch (e) { }
   wire(); subscribeAll();
   var settled = false;
   function go(mode, db) {

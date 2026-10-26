@@ -9,6 +9,8 @@ Local delivery for Rome: letters, parcels and furniture, for people and business
   - `#customer`: the customer app, in a phone frame.
   - `#web`: the public DART website (home, how it works, pricing, business, couriers, help, terms, privacy), with booking, tracking, login and the customer dashboard built in.
   - `#courier`: the courier app.
+
+Everything is in Italian and English. The IT/EN switch is in each header, and the first visit follows the browser's language.
   - `#admin`: the admin portal.
 
 ## Editing the apps
@@ -22,6 +24,8 @@ python3 dart/app-src/build.py
 | File | What it holds |
 |---|---|
 | `app-src/shell.html` | Page skeleton, styles and icons |
+| `app-src/i18n.js` | Language switch and the translation layer (screens are written in English and translated after each render) |
+| `app-src/it.js` | Italian dictionary and patterns for text with numbers or names |
 | `app-src/core.js` | Data store, rules, item classification, vehicle eligibility, pricing, subscriptions, invoices, map, messenger |
 | `app-src/customer.js` | Customer app and website dashboard |
 | `app-src/site.js` | Public website pages |

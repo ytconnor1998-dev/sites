@@ -1,5 +1,4 @@
 // ===== DART customer app (phone) and customer website dashboard (web) =====
-var ACT = {}, FORMS = {}, FILES = {};
 
 function newDraft() {
   return {
@@ -13,7 +12,7 @@ S.c = { view: "home", listTab: "active", order: null, draft: newDraft(), auth: {
 S.me.guestOrders = S.me.guestOrders || [];
 S.c.guest = { name: "", email: "", phone: "", create: false };
 S.c.trk = { code: "", email: "" };
-var GUEST_VIEWS = ["new", "track", "order", "chat", "auth"];
+var GUEST_VIEWS = ["home", "new", "track", "order", "chat", "auth"];
 function me() { return S.me.customerId ? byId(S.accounts, S.me.customerId) : null; }
 function myOrders() { var id = S.me.customerId; return S.orders.filter(function (o) { return o.customer && o.customer.id === id; }); }
 function myInvoices() { var id = S.me.customerId; return S.invoices.filter(function (i) { return i.accountId === id; }).sort(function (a, b) { return b.issuedAt - a.issuedAt; }); }
@@ -38,8 +37,8 @@ var C_NAV = [["home", "Home", "home"], ["new", "Send", "send"], ["deliveries", "
 function customerApp() {
   var acc = me(), web = isWeb();
   if (web && !S.c.webInit) { S.c.webInit = true; if (!acc || S.c.view === "home") S.c.view = "site-home"; }
-  if (!web && SITE_VIEWS.indexOf(S.c.view) >= 0) S.c.view = acc ? "home" : "new";
-  if (!acc && GUEST_VIEWS.indexOf(S.c.view) < 0) S.c.view = web ? "site-home" : "new";
+  if (!web && SITE_VIEWS.indexOf(S.c.view) >= 0) S.c.view = "home";
+  if (!acc && GUEST_VIEWS.indexOf(S.c.view) < 0) S.c.view = web ? "site-home" : "home";
   var isSite = SITE_VIEWS.indexOf(S.c.view) >= 0;
   var body = isSite ? sitePage(S.c.view, acc) : !acc ? cGuest() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support from the Help page to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
   var unreadMsgs = acc ? myOrders().reduce(function (s, o) { return s + unread(o, "customer"); }, 0) : 0;
@@ -52,7 +51,7 @@ function customerApp() {
     return siteShell(acc, body, isSite, accNav);
   }
   var tabs = acc && acc.status !== "suspended" ? '<nav class="tabs t5">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + badge(n[0]) + "</button>"; }).join("") + "</nav>" :
-    !acc ? '<nav class="tabs t3">' + [["new", "Send", "send"], ["track", "Track", "list"], ["auth", "Log in", "user"]].map(function (n) { var on = S.c.view === n[0] || (n[0] === "track" && (S.c.view === "order" || S.c.view === "chat")); return '<button class="' + (on ? "on" : "") + '" data-act="' + (n[0] === "auth" ? "c-auth-open" : "c-go") + '" data-v="' + (n[0] === "auth" ? "login" : n[0]) + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + "</button>"; }).join("") + "</nav>" : "";
+    !acc ? '<nav class="tabs t3">' + [["home", "Home", "home"], ["track", "Track", "list"], ["auth", "Log in", "user"]].map(function (n) { var on = S.c.view === n[0] || (n[0] === "track" && (S.c.view === "order" || S.c.view === "chat")); return '<button class="' + (on ? "on" : "") + '" data-act="' + (n[0] === "auth" ? "c-auth-open" : "c-go") + '" data-v="' + (n[0] === "auth" ? "login" : n[0]) + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + "</button>"; }).join("") + "</nav>" : "";
   return stage('<div class="app-body" data-scroll="c-' + S.c.view + '">' + body + "</div>" + tabs, "DART customer app");
 }
 function stage(inner, label) {
@@ -67,7 +66,8 @@ function cGuest() {
     case "track": return cTrack(null);
     case "order": return cOrder(null);
     case "chat": return cChat(null);
-    default: return cNew(null);
+    case "new": return cNew(null);
+    default: return isWeb() ? cNew(null) : cMapHome(null);
   }
 }
 ACT["c-auth-open"] = function (d) { S.c.auth.mode = d.v; S.c.view = "auth"; closeChat(); render(); };
@@ -89,7 +89,7 @@ function cView(acc) {
     case "help": return cHelp(acc);
     case "notes": return cNotesView();
     case "track": return cTrack(acc);
-    default: return cHome(acc);
+    default: return isWeb() ? cHome(acc) : cMapHome(acc);
   }
 }
 
@@ -152,7 +152,7 @@ FORMS["c-google"] = function () {
   if (found) { S.me.customerId = found.id; saveMe(); S.c.view = "home"; render(); return toast("Signed in with Google"); }
   createAccount({ name: clip(m.name, 60) || email.split("@")[0], email: email, provider: "google", type: "individual" });
 };
-ACT["c-logout"] = function () { S.me.customerId = null; saveMe(); S.c = Object.assign(S.c, { view: isWeb() ? "site-home" : "new", draft: newDraft() }); closeChat(); render(); };
+ACT["c-logout"] = function () { S.me.customerId = null; saveMe(); S.c = Object.assign(S.c, { view: isWeb() ? "site-home" : "home", draft: newDraft() }); closeChat(); render(); };
 
 // ---------- Home ----------
 function cHome(acc) {
@@ -163,7 +163,7 @@ function cHome(acc) {
   if (st.open === false) h += '<div class="banner bad">DART is closed right now. You can book again when we reopen.</div>';
   else if (st.banner) h += '<div class="banner">' + esc(st.banner) + "</div>";
   if (acc.subscription && acc.subscription.status === "past_due") h += '<div class="banner bad">Your plan payment failed. <button class="link" data-act="c-go" data-v="business">Update payment</button></div>';
-  h += '<button class="hero-card" data-act="c-go" data-v="new"><b>Send something</b><span>Letters, parcels, furniture. Priced by distance, booked in a minute.</span><i aria-hidden="true">→</i></button>';
+  h += '<button class="hero-card" data-act="c-go" data-v="new"><b>Book a delivery</b><span>From ' + eur(pricing().minFee) + ', priced by distance. You see the full price before you pay.</span><i aria-hidden="true">→</i></button>';
   h += '<div class="' + (web ? "w-cols" : "stack") + '"><div class="stack">';
   h += '<div class="sec-h"><h3>Active deliveries</h3>' + (active.length ? '<button class="link" data-act="c-go" data-v="deliveries">See all</button>' : "") + "</div>";
   h += active.length ? '<div class="list">' + active.map(orderRow).join("") + "</div>" : '<p class="muted">Nothing on the move right now.</p>';
@@ -191,8 +191,8 @@ function orderRow(o) {
 function cNew(acc) {
   var d = S.c.draft, web = isWeb(), st = settings();
   var steps = ["Where", "What", "Review"];
-  var back = d.step > 1 ? '<button class="btn ghost sm" data-act="c-step" data-v="' + (d.step - 1) + '">← Back</button>' : acc ? '<button class="btn ghost sm" data-act="c-go" data-v="home">← Back</button>' : '<span class="logo"><svg><use href="#mark"/></svg>DART</span>';
-  var title = acc ? "New delivery" : d.step > 1 ? "Send something" : "";
+  var back = d.step > 1 ? '<button class="btn ghost sm" data-act="c-step" data-v="' + (d.step - 1) + '">← Back</button>' : '<button class="btn ghost sm" data-act="c-go" data-v="home">← Back</button>';
+  var title = acc ? "New delivery" : "Send something";
   var h = (web ? '<h1 class="w-title">' + (acc ? "New delivery" : "Send something across Rome") + "</h1>" + (acc ? "" : '<p class="muted">No account needed. Get a price, book and track with just your email.</p>') : '<div class="app-head">' + back + "<h2>" + title + "</h2>" + (acc ? "" : '<button class="btn ghost sm" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>") + '<div class="pad">';
   if (st.open === false) return h + '<div class="banner bad">DART is closed right now. Bookings open again soon.</div></div>';
   h += '<ol class="stepper">' + steps.map(function (s, i) { return '<li class="' + (d.step === i + 1 ? "on" : d.step > i + 1 ? "done" : "") + '"><button data-act="c-step" data-v="' + (i + 1) + '"' + (i + 1 > d.step ? " disabled" : "") + ">" + (i + 1) + ". " + s + "</button></li>"; }).join("") + "</ol>";
@@ -727,3 +727,33 @@ FORMS["c-track"] = function () {
   if (o.customer.guest) { S.me.guestOrders = [o.id].concat(S.me.guestOrders.filter(function (x) { return x !== o.id; })).slice(0, 30); saveMe(); }
   S.c.order = o.id; S.c.view = "order"; render();
 };
+
+
+// ---------- Phone home: a full map with a sheet over it ----------
+var MAP_PIN = { awaiting: "Searching", assigned: "To pickup", to_pickup: "To pickup", at_pickup: "At pickup", collected: "Collected", at_dest: "Arrived", issue: "Issue" };
+function cMapHome(acc) {
+  var orders = acc ? myOrders() : S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);
+  var active = orders.filter(isActive), hq = S.c.hq, st = settings();
+  var x = hq.from && hq.to ? typicalQuote(hq.type, hq.from, hq.to) : null;
+  var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, thin: active.length > 1 }, courierPos(o)); });
+  var pins = active.map(function (o) {
+    var moving = o.status === "in_transit", pos = courierPos(o);
+    return { area: moving || o.status === "at_dest" ? o.dropoff.area : o.pickup.area, text: moving ? Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min" : tr(MAP_PIN[o.status] || "") };
+  });
+  if (!active.length && x) { routes = [{ from: hq.from, to: hq.to }]; pins = [{ area: hq.to, text: eur(x.q.total) }]; }
+  var title = active.length === 1 ? STATUS[active[0].status] : active.length > 1 ? active.length + " deliveries in progress" : "What are we sending today?";
+  var h = '<div class="mh"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
+    '<div class="mh-top"><span class="mh-chip"><svg><use href="#mark"/></svg>DART</span>' +
+    (acc ? '<button class="mh-chip icon" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button>" : '<button class="mh-chip" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>" +
+    '<div class="mh-title"><p>' + (acc ? "Hi " + esc(acc.name.split(" ")[0]) : "Same-day delivery in Rome") + "</p><h1>" + esc(title) + "</h1></div>";
+  h += '<div class="mh-sheet"><div class="grab" aria-hidden="true"></div>';
+  if (st.open === false) h += '<div class="banner bad">DART is closed right now. You can book again when we reopen.</div>';
+  else if (st.banner) h += '<div class="banner">' + esc(st.banner) + "</div>";
+  if (active.length) h += '<div class="list">' + active.slice(0, 3).map(orderRow).join("") + "</div>";
+  h += '<div class="mh-q"><div class="grid2">' + field("From", sel("c.hq.from", hq.from, [["", "Pickup area"]].concat(AREA_NAMES), 'data-live="1"')) + field("To", sel("c.hq.to", hq.to, [["", "Delivery area"]].concat(AREA_NAMES), 'data-live="1"')) + "</div>" +
+    '<div class="mh-types" role="radiogroup" aria-label="What are you sending">' + Object.keys(TYPICAL).map(function (k) { var on = hq.type === k; return '<button type="button" role="radio" aria-checked="' + on + '" class="' + (on ? "on" : "") + '" data-act="w-hq-type" data-v="' + k + '">' + TYPICAL[k].label.split(" and")[0] + "</button>"; }).join("") + "</div>" +
+    '<div class="row between"><div><span class="mh-price">' + (x ? eur(x.q.total) : "from " + eur(pricing().minFee)) + '</span><span class="muted sm">' + (x ? x.q.km.toFixed(1) + " km · about " + x.q.mins + " min" : "Pick two areas to see a price") + '</span></div><button class="btn" data-act="w-hq-book">Continue</button></div></div>';
+  h += acc ? '<div class="quick"><button data-act="c-go" data-v="deliveries"><b>Deliveries</b><span>' + orders.length + " total</span></button><button data-act=\"c-go\" data-v=\"invoices\"><b>Invoices</b><span>" + myInvoices().length + " total</span></button></div>"
+    : '<div class="quick"><button data-act="c-go" data-v="track"><b>Track a delivery</b><span>Code and email</span></button><button data-act="c-auth-open" data-v="register"><b>Create an account</b><span>History and invoices</span></button></div>';
+  return h + "</div></div>";
+}

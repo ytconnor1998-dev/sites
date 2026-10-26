@@ -60,7 +60,7 @@ function dView(c) {
     case "history": return dHistory();
     case "help": return dHelp(c);
     case "notes": return dNotesView();
-    default: return dHome(c);
+    default: return dMapHome(c);
   }
 }
 
@@ -68,7 +68,7 @@ function dView(c) {
 function newReg() { var v = vehicle("scooter") || rules().vehicles[0]; return { step: 1, name: "", email: "", phone: "", address: "", vehicle: { type: v.id, model: "", plate: "", l: v.l, w: v.w, h: v.h, kg: v.kg }, docs: {}, iban: "", holder: "" }; }
 function dAuth() {
   if (S.d.mode === "register") return dRegister();
-  return '<div class="auth"><span class="logo xl"><svg><use href="#mark"/></svg>DART Courier</span><h1>Ride with DART.</h1><p class="muted">Deliver letters, parcels and furniture across Rome with your own bicycle, scooter, car or van. Pick your hours.</p>' +
+  return '<div class="auth"><span class="logo xl"><svg><use href="#mark"/></svg>DART Courier</span><h1>Deliver with DART</h1><p class="muted">Take delivery jobs across Rome with your own bicycle, scooter, car or van, whenever it suits you.</p>' +
     '<form class="stack" data-form="d-login">' + field("Email", inp("d.login.email", S.d.login.email, 'type="email" autocomplete="email" required')) + field("Password", '<input class="input" type="password" autocomplete="current-password">', "Test build: passwords aren't checked or stored.") + '<button class="btn block">Log in</button></form>' +
     '<p class="center">New courier? <button class="link" data-act="d-reg-start">Apply to ride with DART</button></p></div>';
 }
@@ -321,3 +321,34 @@ FORMS["d-ticket"] = function () {
   S.d.ticket = { topic: "delivery", orderId: "", text: "" };
   run(Store.set("tickets", "T-" + rid(6), { from: "courier", courierId: c.id, name: c.name, orderId: t.orderId || null, topic: t.topic, subject: labels[t.topic], text: text, status: "open", replies: [], createdAt: Date.now() }), "Sent to DART support");
 };
+
+
+// ---------- Courier home: a full map with a sheet over it ----------
+function dMapHome(c) {
+  var job = activeJob(), reqs = c.online && !job ? requestsFor(c) : [], done = myJobs().filter(function (o) { return o.status === "delivered"; });
+  var today = done.filter(function (o) { return isToday(o.timeline.delivered); }), earned = today.reduce(function (s, o) { return s + payOf(o); }, 0);
+  var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + payOf(o); }, 0);
+  var pins = reqs.slice(0, 8).map(function (o, i) { return { area: o.pickup.area, text: eur(payOf(o)), dy: -(i % 2) * 22 }; });
+  if (c.online && c.area) pins.unshift({ area: c.area, text: tr("You"), tone: "green", dy: 44 });
+  var routes = job ? [Object.assign({ from: job.pickup.area, to: job.dropoff.area }, courierPos(job))] : [];
+  var title = !c.online ? "You're offline" : job ? "On a delivery" : reqs.length === 1 ? "1 request near you" : reqs.length + " requests near you";
+  var sub = !c.online ? "Go online to see requests near you" : c.area ? "In " + c.area : "Set your area below";
+  var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
+    '<div class="mh-top"><button class="mh-online ' + (c.online ? "on" : "") + '" data-act="d-online" role="switch" aria-checked="' + !!c.online + '"><i></i>' + (c.online ? "Online" : "Offline") + "</button>" +
+    '<button class="mh-chip icon" data-act="d-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (courierUnseen() ? '<span class="badge">' + courierUnseen() + "</span>" : "") + "</button></div>" +
+    '<div class="mh-title"><p>' + esc(sub) + "</p><h1>" + esc(title) + "</h1></div>";
+  h += '<div class="mh-sheet"><div class="grab" aria-hidden="true"></div>' +
+    '<div class="stat3"><div><b class="num">' + eur(earned) + "</b><small>Today</small></div><div><b>" + today.length + '</b><small>Jobs today</small></div><div><b class="num">' + eur(pending) + "</b><small>To be paid</small></div></div>";
+  if (c.vehicleStatus === "pending") h += '<div class="banner">Your vehicle change is waiting for approval. You get requests for your current vehicle until then.</div>';
+  if (settings().open === false) h += '<div class="banner bad">DART is closed. No new requests until it reopens.</div>';
+  if (job) h += '<button class="item job-card" data-act="d-job" data-v="' + esc(job.id) + '"><b>' + esc(job.pickup.area) + " → " + esc(job.dropoff.area) + "</b>" + chip(job.status) + "<small>" + itemSummary(job) + '</small><small class="num">' + eur(payOf(job)) + "</small></button>";
+  if (!c.online) h += '<button class="btn block big" data-act="d-online">Go online</button>';
+  else {
+    h += field("Where are you now?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'));
+    if (!job) h += reqs.length ? '<div class="list">' + reqs.map(function (o) {
+      var away = c.area ? tripKm(c.area, o.pickup.area).toFixed(1) + " km away · " : "";
+      return '<button class="item req" data-act="d-req" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num pay">' + eur(payOf(o)) + "</b><small>" + away + o.price.km.toFixed(1) + " km trip · " + esc(cLabel(o.cls.category)) + (o.cls.couriers > 1 ? " · 2 people" : "") + "</small><small>" + hhmm(o.createdAt) + "</small></button>";
+    }).join("") + "</div>" : emptyState("No requests right now", "Book something in the customer app and it shows up here if it fits your vehicle.");
+  }
+  return h + "</div></div>";
+}
