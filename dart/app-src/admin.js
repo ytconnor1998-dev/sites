@@ -29,7 +29,7 @@ function adminApp() {
   }
   return '<div class="admin"><nav class="a-side" aria-label="Admin"><span class="logo"><svg><use href="#mark"/></svg>DART <small>Admin</small></span>' +
     A_NAV.map(function (x) { return '<button class="' + (t === x[0] ? "on" : "") + '" data-act="a-tab" data-v="' + x[0] + '">' + x[1] + (n[x[0]] ? "<span>" + n[x[0]] + "</span>" : "") + "</button>"; }).join("") +
-    '<a href="#home">← All apps</a></nav><div class="a-main" data-scroll="a-' + t + '">' + main + "</div></div>";
+    (LIVE ? '<a href="#web">← DART website</a>' : '<a href="#home">← All apps</a>') + '</nav><div class="a-main" data-scroll="a-' + t + '">' + main + "</div></div>";
 }
 ACT["a-tab"] = function (d) { S.a.tab = d.v; S.a.q = ""; S.a.confirmClear = false; closeChat(); render(); };
 function aHead(title, right) { return '<div class="row between wrap"><h1>' + title + '</h1><div class="row wrap">' + (right || "") + modeChip() + "</div></div>"; }

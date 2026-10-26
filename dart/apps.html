@@ -1453,7 +1453,7 @@ Object.assign(IT, {
   "envelope": "busta", "up to 40 cm": "fino a 40 cm", "up to 1 m": "fino a 1 m", "chair to sofa": "da sedia a divano",
   // Common UI
   "Home": "Home", "Send": "Invia", "Deliveries": "Consegne", "Messages": "Messaggi", "Account": "Account", "Invoices": "Fatture", "Track": "Traccia", "Log in": "Accedi", "Log out": "Esci",
-  "Back": "Indietro", "← Back": "← Indietro", "← All apps": "← Tutte le app", "← Log in": "← Accedi", "← Track another": "← Traccia un'altra", "Close": "Chiudi", "Go back": "Torna indietro", "Continue": "Continua", "Save": "Salva", "Cancel": "Annulla", "Edit": "Modifica", "Hide": "Nascondi", "View": "Vedi", "Open": "Apri", "Yes": "Sì", "No": "No", "None": "Nessuno", "none": "nessuno", "or": "oppure", "Default": "Predefinita", "default": "predefinito", "All": "Tutte", "Any status": "Qualsiasi stato", "Search": "Cerca", "Details": "Dettagli", "Message": "Messaggio", "Photo": "Foto", "Send message": "Invia messaggio", "Menu": "Menu", "Main": "Principale",
+  "Back": "Indietro", "← Back": "← Indietro", "← All apps": "← Tutte le app", "← DART website": "← Sito DART", "Downloads aren't available in this view.": "I download non sono disponibili in questa vista.", "← Log in": "← Accedi", "← Track another": "← Traccia un'altra", "Close": "Chiudi", "Go back": "Torna indietro", "Continue": "Continua", "Save": "Salva", "Cancel": "Annulla", "Edit": "Modifica", "Hide": "Nascondi", "View": "Vedi", "Open": "Apri", "Yes": "Sì", "No": "No", "None": "Nessuno", "none": "nessuno", "or": "oppure", "Default": "Predefinita", "default": "predefinito", "All": "Tutte", "Any status": "Qualsiasi stato", "Search": "Cerca", "Details": "Dettagli", "Message": "Messaggio", "Photo": "Foto", "Send message": "Invia messaggio", "Menu": "Menu", "Main": "Principale",
   "Notifications": "Notifiche", "Status": "Stato", "Total": "Totale", "Today": "Oggi", "Item": "Oggetto", "Price": "Prezzo", "Payment": "Pagamento", "Vehicle": "Veicolo", "Distance": "Distanza", "Customer": "Cliente", "Courier": "Corriere", "Route": "Percorso", "Created": "Creata", "Ref": "Rif.", "Reference": "Riferimento", "Type": "Tipo", "Number": "Numero", "Issued": "Emessa", "Subject": "Oggetto", "Replies": "Risposte", "Joined": "Iscritto", "Spent": "Speso", "Online": "Online", "Plan": "Piano", "Plans": "Piani", "Used": "Usate", "Renews": "Si rinnova", "Paid so far": "Pagato finora", "Topic": "Argomento", "About": "Riguardo a", "Area": "Zona", "Hours": "Orari", "Name": "Nome", "Email": "Email", "Phone": "Telefono", "Password": "Password", "Address": "Indirizzo", "Description": "Descrizione", "Instructions": "Istruzioni", "Brand": "Circuito", "Expiry": "Scadenza", "Covers": "Copre", "Capacity": "Capacità", "Applied": "Candidato il", "Pending": "In attesa", "Paid": "Pagato", "Approved": "Approvato", "Rejected": "Rifiutato", "Suspended": "Sospeso", "Resolved": "Risolta", "Refunded": "Rimborsata", "Outstanding": "Da pagare", "Active": "Attive", "Previous": "Precedenti", "Completed": "Completate", "Issues": "Problemi", "Delivery": "Consegna", "Pickup": "Ritiro", "From": "Da", "To": "A", "Yes, Monti": "Sì, Monti", "h": "h", "l": "l", "w": "l", "speed": "velocità", "surcharge": "supplemento", "kg": "kg",
   "This browser only": "Solo questo browser", "Live · shared": "Live · condivisi", "Map of Rome": "Mappa di Roma", "Bar chart": "Grafico a barre", "Item photo": "Foto dell'oggetto", "Remove photo": "Rimuovi foto", "Move up": "Sposta su", "Move down": "Sposta giù",
   "DART home": "Home DART", "DART customer app": "App clienti DART", "DART Courier app": "App corrieri DART", "DART Courier": "DART Corrieri", "DART Admin": "DART Admin", "DART Test Platform": "Piattaforma di prova DART", "DART · Delivery in Rome": "DART · Consegne a Roma", "My DART": "Il mio DART", "Courier": "Corriere",
@@ -2032,6 +2032,7 @@ function customerApp() {
 function inApp() { return typeof window !== "undefined" && !!window.DART_APP; }
 function stage(inner, label) {
   if (inApp()) return '<div class="stage in-app"><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
+  if (LIVE) return '<div class="stage"><div class="stage-bar"><a href="#web">← DART website</a>' + langSwitch() + '</div><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
   return '<div class="stage"><div class="stage-bar"><a href="#home">← All apps</a>' + modeChip() + '</div><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
 }
 function head(title, back, right) {
@@ -2724,7 +2725,7 @@ function cBulk(acc) {
   var h = (isWeb() ? '<h1 class="w-title">Bulk deliveries</h1>' : head("Bulk deliveries", "account")) + '<div class="pad">';
   if (!plan || !plan.bulk) return h + '<div class="card"><b>Bulk deliveries come with selected plans</b><span>Choose a plan with bulk deliveries to upload many orders at once.</span><button class="btn sm" data-act="c-go" data-v="business">See plans</button></div></div>';
   h += '<div class="card"><b>Upload a list</b><span class="muted">One delivery per row. Columns: ' + BULK_COLS.join(", ") + '. Item type is letter, document, parcel, furniture or other. Areas must match DART\'s list of Rome areas.</span>' +
-    '<div class="row wrap"><label class="btn ghost sm file-mini">Choose CSV or Excel file<input type="file" accept=".csv,.xlsx,.xls,text/csv" data-file="bulk"></label><button class="btn ghost sm" data-act="c-bulk-template">Download template</button><button class="btn ghost sm" data-act="c-bulk-sample">Fill with sample rows</button></div>' +
+    '<div class="row wrap"><label class="btn ghost sm file-mini">Choose CSV or Excel file<input type="file" accept=".csv,.xlsx,.xls,text/csv" data-file="bulk"></label><button class="btn ghost sm" data-act="c-bulk-template">Download template</button>' + (LIVE ? "" : '<button class="btn ghost sm" data-act="c-bulk-sample">Fill with sample rows</button>') + '</div>' +
     field("Or paste rows", txt("c.bulk.text", b.text, 'rows="6" placeholder="' + BULK_COLS.join(",") + '"')) + '<button class="btn" data-act="c-bulk-check">Check rows</button></div>';
   if (b.rows) {
     var ok = b.rows.filter(function (r) { return r.ok; }), total = ok.reduce(function (s, r) { return s + r.amount; }, 0);
@@ -2772,7 +2773,7 @@ ACT["c-bulk-sample"] = function () {
   render();
 };
 ACT["c-bulk-template"] = function () {
-  if (!Caps.downloads) return toast("Downloads aren't available in this view. Use 'Fill with sample rows' instead.");
+  if (!Caps.downloads) return toast(LIVE ? "Downloads aren't available in this view." : "Downloads aren't available in this view. Use 'Fill with sample rows' instead.");
   Caps.downloads.save({ filename: "dart-bulk-template.csv", data: BULK_COLS.join(",") + "\nMonti,Via Panisperna 41,Prati,Via Cola di Rienzo 212,parcel,Box of books,40,30,30,8,1,Buzzer 4\n" }).catch(function (e) { if (e && e.code !== "declined") toast("The template couldn't be saved here."); });
 };
 FILES["bulk"] = function (file) {
@@ -3774,7 +3775,7 @@ function adminApp() {
   }
   return '<div class="admin"><nav class="a-side" aria-label="Admin"><span class="logo"><svg><use href="#mark"/></svg>DART <small>Admin</small></span>' +
     A_NAV.map(function (x) { return '<button class="' + (t === x[0] ? "on" : "") + '" data-act="a-tab" data-v="' + x[0] + '">' + x[1] + (n[x[0]] ? "<span>" + n[x[0]] + "</span>" : "") + "</button>"; }).join("") +
-    '<a href="#home">← All apps</a></nav><div class="a-main" data-scroll="a-' + t + '">' + main + "</div></div>";
+    (LIVE ? '<a href="#web">← DART website</a>' : '<a href="#home">← All apps</a>') + '</nav><div class="a-main" data-scroll="a-' + t + '">' + main + "</div></div>";
 }
 ACT["a-tab"] = function (d) { S.a.tab = d.v; S.a.q = ""; S.a.confirmClear = false; closeChat(); render(); };
 function aHead(title, right) { return '<div class="row between wrap"><h1>' + title + '</h1><div class="row wrap">' + (right || "") + modeChip() + "</div></div>"; }
@@ -4480,7 +4481,8 @@ function liveStart(go) {
 }
 
 // ===== Router, rendering, events, startup =====
-function route() { var h = location.hash.replace("#", ""); return ["customer", "web", "courier", "admin"].indexOf(h) >= 0 ? h : "home"; }
+function route() { var h = location.hash.replace("#", ""); return ["customer", "web", "courier", "admin"].indexOf(h) >= 0 ? h : LIVE ? "web" : "home"; }
+// The live site has no test launcher: the address on its own opens the website.
 
 function launcher() {
   return '<div class="home"><div class="row between wrap"><span class="logo xl"><svg><use href="#mark"/></svg>DART</span>' + modeChip() + "</div>" +

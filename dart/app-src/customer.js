@@ -58,6 +58,7 @@ function customerApp() {
 function inApp() { return typeof window !== "undefined" && !!window.DART_APP; }
 function stage(inner, label) {
   if (inApp()) return '<div class="stage in-app"><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
+  if (LIVE) return '<div class="stage"><div class="stage-bar"><a href="#web">← DART website</a>' + langSwitch() + '</div><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
   return '<div class="stage"><div class="stage-bar"><a href="#home">← All apps</a>' + modeChip() + '</div><div class="device" aria-label="' + label + '">' + inner + "</div></div>";
 }
 function head(title, back, right) {
@@ -750,7 +751,7 @@ function cBulk(acc) {
   var h = (isWeb() ? '<h1 class="w-title">Bulk deliveries</h1>' : head("Bulk deliveries", "account")) + '<div class="pad">';
   if (!plan || !plan.bulk) return h + '<div class="card"><b>Bulk deliveries come with selected plans</b><span>Choose a plan with bulk deliveries to upload many orders at once.</span><button class="btn sm" data-act="c-go" data-v="business">See plans</button></div></div>';
   h += '<div class="card"><b>Upload a list</b><span class="muted">One delivery per row. Columns: ' + BULK_COLS.join(", ") + '. Item type is letter, document, parcel, furniture or other. Areas must match DART\'s list of Rome areas.</span>' +
-    '<div class="row wrap"><label class="btn ghost sm file-mini">Choose CSV or Excel file<input type="file" accept=".csv,.xlsx,.xls,text/csv" data-file="bulk"></label><button class="btn ghost sm" data-act="c-bulk-template">Download template</button><button class="btn ghost sm" data-act="c-bulk-sample">Fill with sample rows</button></div>' +
+    '<div class="row wrap"><label class="btn ghost sm file-mini">Choose CSV or Excel file<input type="file" accept=".csv,.xlsx,.xls,text/csv" data-file="bulk"></label><button class="btn ghost sm" data-act="c-bulk-template">Download template</button>' + (LIVE ? "" : '<button class="btn ghost sm" data-act="c-bulk-sample">Fill with sample rows</button>') + '</div>' +
     field("Or paste rows", txt("c.bulk.text", b.text, 'rows="6" placeholder="' + BULK_COLS.join(",") + '"')) + '<button class="btn" data-act="c-bulk-check">Check rows</button></div>';
   if (b.rows) {
     var ok = b.rows.filter(function (r) { return r.ok; }), total = ok.reduce(function (s, r) { return s + r.amount; }, 0);
@@ -798,7 +799,7 @@ ACT["c-bulk-sample"] = function () {
   render();
 };
 ACT["c-bulk-template"] = function () {
-  if (!Caps.downloads) return toast("Downloads aren't available in this view. Use 'Fill with sample rows' instead.");
+  if (!Caps.downloads) return toast(LIVE ? "Downloads aren't available in this view." : "Downloads aren't available in this view. Use 'Fill with sample rows' instead.");
   Caps.downloads.save({ filename: "dart-bulk-template.csv", data: BULK_COLS.join(",") + "\nMonti,Via Panisperna 41,Prati,Via Cola di Rienzo 212,parcel,Box of books,40,30,30,8,1,Buzzer 4\n" }).catch(function (e) { if (e && e.code !== "declined") toast("The template couldn't be saved here."); });
 };
 FILES["bulk"] = function (file) {

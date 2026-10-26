@@ -1,5 +1,6 @@
 // ===== Router, rendering, events, startup =====
-function route() { var h = location.hash.replace("#", ""); return ["customer", "web", "courier", "admin"].indexOf(h) >= 0 ? h : "home"; }
+function route() { var h = location.hash.replace("#", ""); return ["customer", "web", "courier", "admin"].indexOf(h) >= 0 ? h : LIVE ? "web" : "home"; }
+// The live site has no test launcher: the address on its own opens the website.
 
 function launcher() {
   return '<div class="home"><div class="row between wrap"><span class="logo xl"><svg><use href="#mark"/></svg>DART</span>' + modeChip() + "</div>" +
