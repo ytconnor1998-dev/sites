@@ -6,7 +6,8 @@ var DOCS = { idcard: "ID card or passport", licence: "Driving licence", insuranc
 function docsFor(type) { return type === "bicycle" ? ["idcard"] : ["idcard", "licence", "insurance", "vehicleReg"]; }
 function myCourier() { return S.me.courierId ? byId(S.couriers, S.me.courierId) : null; }
 function myJobs() { var id = S.me.courierId; return S.orders.filter(function (o) { return o.courier && o.courier.id === id; }); }
-function activeJobs() { return myJobs().filter(function (o) { return JOB_STEPS.indexOf(o.status) >= 0 || (o.status === "issue" && o.issue && JOB_STEPS.indexOf(o.issue.prev) >= 0); }); }
+function activeJobs() { return myJobs().filter(function (o) { return !bookedAhead(o) && (JOB_STEPS.indexOf(o.status) >= 0 || (o.status === "issue" && o.issue && JOB_STEPS.indexOf(o.issue.prev) >= 0)); }); }
+function bookedJobs(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === (cid || S.me.courierId) && bookedAhead(o); }).sort(function (a, b) { return startAt(a) - startAt(b); }); }
 function activeJob() { return myJobs().filter(function (o) { return JOB_STEPS.indexOf(o.status) >= 0 || (o.status === "issue" && o.issue && JOB_STEPS.indexOf(o.issue.prev) >= 0); })[0] || null; }
 function share() { return num(pricing().courierShare, 75); }
 function payOf(o) { return o.courierPay != null ? o.courierPay : r2(o.price.total * share() / 100); }
@@ -22,15 +23,50 @@ function eligible(c, o) {
 // ---------- Offers: each waiting delivery goes to one courier at a time ----------
 var OFFER_SECS = 45, RETRY_SECS = 120;
 function liveOffer(o, now) { return o.offer && o.offer.until > (now || Date.now()) ? o.offer : null; }
-function jobsOf(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && (JOB_STEPS.indexOf(o.status) >= 0 || o.status === "issue"); }); }
+function jobsOf(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && !bookedAhead(o) && (JOB_STEPS.indexOf(o.status) >= 0 || o.status === "issue"); }); }
 function jobOf(cid) { return jobsOf(cid)[0] || null; }
 function freeCourier(c, now) {
   return c.status === "approved" && c.online && !S.orders.some(function (x) { var f = liveOffer(x, now); return f && f.to === c.id; }) && S.orders.some(function (o) { return o.status === "awaiting" && routeCheck(c, o, now); });
 }
 
+// ---------- Set-time jobs couriers can book ahead, the same day ----------
+function openScheduled(c, now) {
+  now = now || Date.now();
+  var mine = bookedJobs(c.id);
+  return S.orders.filter(function (o) {
+    if (o.status !== "awaiting" || o.asap || !o.deliverBy || liveOffer(o, now) || now < visibleFrom(o) || now >= startAt(o) || !eligible(c, o)) return false;
+    if (mine.length >= num(pricing().maxOrders, 3)) return false;
+    // No two booked jobs whose time on the road overlaps.
+    return mine.every(function (b) { return o.deliverBy <= startAt(b) || startAt(o) >= b.deliverBy; });
+  }).sort(function (a, b) { return a.deliverBy - b.deliverBy; });
+}
+function schedRow(o, act) {
+  return '<button class="item" data-act="' + act + '" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num">' + eur(payOf(o)) + "</b><small>" + (o.status === "awaiting" ? "Deliver by " + hhmm(o.deliverBy) : "Start by " + hhmm(startAt(o)) + " · deliver by " + hhmm(o.deliverBy)) + "</small><small>" + esc(cLabel(o.cls.category)) + " · " + o.price.km.toFixed(1) + " km</small></button>";
+}
+ACT["d-sched"] = function (d) { S.d.job = d.v; S.d.view = "sched"; render(); };
+function dSched(c) {
+  var o = byId(S.orders, S.d.job), now = Date.now();
+  if (!o || o.status !== "awaiting") return dHead("Scheduled job", "home") + '<div class="pad">' + emptyState("This job is gone", "Another courier booked it or the customer cancelled.", '<button class="btn sm" data-act="d-go" data-v="home">Back</button>') + "</div>";
+  var can = openScheduled(c, now).some(function (x) { return x.id === o.id; }), extras = OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).map(function (x) { return x.label; });
+  return dHead("Scheduled job", "home") + '<div class="map map-md">' + mapSVG({ vb: fitVB([o.pickup.area, o.dropoff.area], 1.7, 34), labels: false, routes: [{ from: o.pickup.area, to: o.dropoff.area }] }) + '</div><div class="pad">' +
+    '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay">' + eur(payOf(o)) + '</b></div></div><p class="offer-meta">' + o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min</p>" +
+    '<div class="by-card"><span>Deliver by</span><b>' + hhmm(o.deliverBy) + "</b><small>Start by " + hhmm(startAt(o)) + ". Be at the pickup in time to make it.</small></div>" +
+    '<div class="offer-legs"><div><i class="dot a"></i><span class="muted sm">Pickup</span><b>' + esc(o.pickup.street || o.pickup.area) + "</b><small>" + esc(o.pickup.area) + (o.pickup.notes ? " · " + esc(o.pickup.notes) : "") + '</small></div><div><i class="dot b"></i><span class="muted sm">Delivery</span><b>' + esc(o.dropoff.street || o.dropoff.area) + "</b><small>" + esc(o.dropoff.area) + (o.dropoff.notes ? " · " + esc(o.dropoff.notes) : "") + "</small></div></div>" +
+    '<div class="offer-item"><b>' + esc(cLabel(o.cls.category)) + "</b><span>" + itemSummary(o) + "</span>" + (o.item.photos && o.item.photos.length ? '<div class="phs">' + photoStrip(o.item.photos) + "</div>" : "") + (extras.length ? '<span class="muted sm">Extras: ' + extras.join(", ") + "</span>" : "") + "</div>" +
+    (can ? '<button class="btn block big" data-act="d-book" data-v="' + esc(o.id) + '"' + (busy ? " disabled" : "") + ">Book this job for " + hhmm(o.deliverBy) + '</button><p class="muted sm center">Once booked it\'s yours. If you can\'t make it, give it back from the job screen as early as you can.</p>'
+      : '<div class="banner">This one clashes with a job you\'ve already booked.</div>') + "</div>";
+}
+ACT["d-book"] = function (d) {
+  var c = myCourier(), o = byId(S.orders, d.v); if (!c || !o || busy) return;
+  var patch = { status: "assigned", offer: null, bookedAhead: true, courier: { id: c.id, name: c.name, vehicle: c.vehicle.type, plate: c.vehicle.plate || "", phone: c.phone }, courierPay: r2(o.price.total * share() / 100), timeline: { assigned: Date.now() } };
+  run(Store.claim("orders", o.id, c.id, function (x) { return x.status === "awaiting" && !(x.offer && x.offer.until > Date.now()); }, patch).then(function (ok) {
+    S.d.view = "home"; toast(ok ? "Booked. Start by " + hhmm(startAt(o)) + "." : "Another courier booked it first.");
+  }));
+};
+
 // ---------- Routes: what to pick up and drop off, in which order ----------
-function legMins(vtype, a, b) { var v = vehicle(vtype) || {}; return Math.max(3, Math.round(tripKm(a, b) / num(v.speed, 15) * 60)); }
-function stopMins(o) { return o.cls && o.cls.couriers > 1 || /furniture|oversize/.test(o.cls && o.cls.category || "") ? 15 : 6; }
+function legMins(vtype, a, b) { var v = vehicle(vtype) || {}; return a === b ? 3 : Math.max(3, Math.round(tripKm(a, b) / num(v.speed, 15) * 60)); }
+function stopMins(o) { return o.cls && o.cls.couriers > 1 || /furniture|oversize/.test(o.cls && o.cls.category || "") ? 15 : 5; }
 function needsPickup(o) { var st = o.status === "issue" && o.issue ? o.issue.prev : o.status; return ["awaiting", "assigned", "to_pickup", "at_pickup"].indexOf(st) >= 0; }
 // Greedy plan: go to the nearest next stop, unless a drop-off would otherwise be late.
 function planRoute(vtype, start, orders, now) {
@@ -57,7 +93,8 @@ function myRoute(c) { var jobs = activeJobs(); return jobs.length ? planRoute(c.
 function routeCheck(c, o, now) {
   if (!c || c.status !== "approved" || !c.online || !eligible(c, o)) return null;
   var P = pricing(), jobs = jobsOf(c.id), start = c.area || o.pickup.area;
-  if (!jobs.length) return { batch: false, mins: legMins(c.vehicle.type, start, o.pickup.area) };
+  var booked = bookedJobs(c.id), fitsBooked = function (end) { return booked.every(function (b) { return end + legMins(c.vehicle.type, o.dropoff.area, b.pickup.area) * 60000 <= startAt(b) + 10 * 60000; }); };
+  if (!jobs.length) return fitsBooked(planRoute(c.vehicle.type, start, [o], now).end) ? { batch: false, mins: legMins(c.vehicle.type, start, o.pickup.area) } : null;
   if (jobs.length >= num(P.maxOrders, 3) || jobs.some(function (j) { return j.status === "issue" || j.cls.couriers > 1; }) || o.cls.couriers > 1) return null;
   var v = c.vehicle, all = jobs.concat([o]), kg = 0, vol = 0;
   all.forEach(function (j) { var q = Math.max(1, num(j.item.qty, 1)), d = dims(j.cls); kg += num(j.cls.kg, 0) * q; vol += d[0] * d[1] * d[2] * q; });
@@ -66,7 +103,7 @@ function routeCheck(c, o, now) {
   var closePick = pts.some(function (a) { return tripKm(a, o.pickup.area) <= near; }), closeDrop = jobs.some(function (j) { return tripKm(j.dropoff.area, o.dropoff.area) <= near; });
   if (!closePick && !closeDrop) return null;
   var before = planRoute(v.type, start, jobs, now), after = planRoute(v.type, start, all, now);
-  if (!after.ok) return null;
+  if (!after.ok || !fitsBooked(after.end)) return null;
   return { batch: true, mins: Math.max(1, Math.round((after.end - before.end) / 60000)), stops: after.stops.length };
 }
 // The offer showing on this courier's phone, if any.
@@ -85,7 +122,7 @@ function dispatch() {
   S.orders.forEach(function (o) {
     if (o.status !== "awaiting" || dispatching[o.id]) return;
     // Set-time deliveries are offered once it's time to start, not hours early.
-    if (!o.asap && o.deliverBy && !o.offer && now < o.deliverBy - (num(o.price.mins, 30) + num(pricing().leadMins, 45)) * 60000) return;
+    if (!o.asap && o.deliverBy && !o.offer && now < startAt(o)) return;
     var f = liveOffer(o, now), holder = f && byId(S.couriers, f.to);
     if (f && holder && held[f.to] === o.id && routeCheck(holder, o, now)) return;
     var dup = f && held[f.to] !== o.id;
@@ -124,7 +161,7 @@ var D_NAV = [["home", "Jobs", "send"], ["earnings", "Earnings", "euro"], ["messa
 function courierApp() {
   var c = myCourier();
   var body = !c ? dAuth() : dView(c);
-  var cur = S.d.view === "job" || S.d.view === "req" ? "home" : S.d.view === "chat" ? "messages" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
+  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "messages" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
   var un = c ? myJobs().reduce(function (s, o) { return s + unread(o, "courier"); }, 0) : 0;
   var tabs = c && c.status === "approved" ? '<nav class="tabs t4">' + D_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="d-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + (n[0] === "messages" && un ? '<span class="badge">' + un + "</span>" : "") + "</button>"; }).join("") + "</nav>" : "";
   var offer = c && c.status === "approved" ? myOffer() : null;
@@ -135,6 +172,7 @@ function dView(c) {
   if (c.status === "pending" || c.status === "rejected" || c.status === "suspended") return dWaiting(c);
   switch (S.d.view) {
         case "job": return dJob(c);
+    case "sched": return dSched(c);
     case "earnings": return dEarnings(c);
     case "messages": return dMessages();
     case "chat": return dChat(c);
@@ -286,6 +324,7 @@ function dJob(c) {
   var h = dHead('<span class="mono">' + esc(o.id) + "</span>", "home", '<button class="btn ghost sm" data-act="d-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "courier") ? ' <span class="badge in">1</span>' : "") + "</button>") +
     '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, dashed: toPickup }, courierPos(o))] }) + '</div><div class="pad">';
   h += '<div class="row between">' + chip(o.status) + '<span class="price-big">' + eur(payOf(o)) + "</span></div>";
+  if (bookedAhead(o)) h += '<div class="banner">Booked ahead. Start by ' + hhmm(startAt(o)) + " to deliver by " + hhmm(o.deliverBy) + ".</div>";
   if (o.deliverBy && JOB_STEPS.indexOf(st) >= 0) { var lateNow = Date.now() > o.deliverBy; h += '<div class="by-card' + (lateNow ? " late" : Date.now() > o.deliverBy - 15 * 60000 ? " soon" : "") + '"><span>Deliver by</span><b>' + hhmm(o.deliverBy) + "</b><small>" + leftLabel(o.deliverBy) + (lateNow ? " · DART may deduct a late fee" : "") + "</small></div>"; }
   if (o.status === "cancelled") return h + '<div class="banner bad">This delivery was cancelled' + (o.cancelledBy === "admin" ? " by DART" : " by the customer") + ".</div>" + '<button class="btn block" data-act="d-go" data-v="home">Back to requests</button></div>';
   if (o.status === "delivered") return h + (o.review ? '<div class="card"><b>' + "★★★★★".slice(0, o.review.stars) + '<span class="muted">' + "★★★★★".slice(o.review.stars) + "</span></b>" + (o.review.text ? "<span>“" + esc(o.review.text) + "”</span>" : "") + (o.tip ? '<span class="ok-t">' + esc(o.customer.name) + " tipped you " + eur(o.tip.amount) + "</span>" : "") + "</div>" : "") + '<div class="card ok"><b>Delivered at ' + hhmm(o.timeline.delivered) + "</b>" + (o.late ? '<span class="bad-t">' + o.late.mins + " min late" + (lateFee(o) ? " · Late fee −" + eur(lateFee(o)) : "") + "</span>" : "") + "<span>You earned " + eur(earnOf(o)) + ". It's paid out with your next weekly payment.</span></div>" + '<button class="btn block" data-act="d-go" data-v="home">Back to requests</button></div>';
@@ -493,6 +532,9 @@ function dMapHome(c) {
   if (!c.online) h += '<button class="btn block big" data-act="d-online">Go online</button>';
   else {
     h += field("Where are you now?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'));
+    var later = bookedJobs(c.id), board = openScheduled(c);
+    if (later.length) h += '<div class="sec-h"><h3>Later today</h3></div><div class="list">' + later.map(function (o) { return schedRow(o, "d-job"); }).join("") + "</div>";
+    if (board.length) h += '<div class="sec-h"><h3>Scheduled today</h3><span class="muted sm">Book ahead</span></div><div class="list">' + board.map(function (o) { return schedRow(o, "d-sched"); }).join("") + "</div>";
     if (!job) h += '<div class="wait-card"><span class="pulse" aria-hidden="true"></span><div><b>You\'re in the queue</b><span>New deliveries that fit your ' + esc(vLabel(c.vehicle.type).toLowerCase()) + " pop up on this screen. You have " + OFFER_SECS + " seconds to accept or decline.</span></div></div>";
   }
   return h + "</div></div>";

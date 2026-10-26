@@ -123,7 +123,7 @@ function subscribeAll() {
 
 (function boot() {
   root = document.getElementById("root");
-  try { if (localStorage.getItem("dart-i18n-collect")) { MISS = {}; window.__dartMiss = function () { return MISS; }; window.__dartAct = function (n, d) { ACT[n](d || {}); }; window.__dartModal = function (m) { S.modal = m; render(); }; } } catch (e) { }
+  try { if (localStorage.getItem("dart-i18n-collect")) { MISS = {}; window.__dartMiss = function () { return MISS; }; window.__dartAct = function (n, d) { ACT[n](d || {}); }; window.__dartModal = function (m) { S.modal = m; render(); }; window.__dartEval = function (src) { return eval(src); }; } } catch (e) { }
   wire(); subscribeAll();
   var settled = false;
   function go(mode, db) {

@@ -77,7 +77,7 @@ var DEFAULT_PRICING = {
   options: { fragile: 2, stairs: 8, assembly: 15, helper: 18, scheduled: 2, signature: 0 },
   businessDiscount: 0, vatRate: 22, courierShare: 75,
   // Timing and multi-stop
-  asapBufferMins: 30, leadMins: 45, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
+  asapBufferMins: 45, leadMins: 45, showHours: 3, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
 };
 var DEFAULT_SETTINGS = {
   open: true, banner: "", company: "", companyVat: "", companyAddress: "", supportEmail: "", invoicePrefix: "DART"
@@ -122,7 +122,7 @@ function haversine(a, b) {
 // ASAP promises the trip time plus a buffer; a set time must be at least that far ahead.
 function earliestBy(from, to, now) {
   var v = vehicle("scooter") || {}, mins = num(v.pickup, 12) + tripKm(from, to) / num(v.speed, 15) * 60;
-  return (now || Date.now()) + Math.round(mins + num(pricing().asapBufferMins, 30)) * 60000;
+  return (now || Date.now()) + Math.round(mins + num(pricing().asapBufferMins, 45)) * 60000;
 }
 // Choices for "By a set time": half-hour steps today and tomorrow, 08:00 to 21:00.
 function deliverySlots(from, to, now) {
@@ -132,6 +132,11 @@ function deliverySlots(from, to, now) {
   }
   return out;
 }
+// When a courier should set off for a set-time delivery, and when couriers can first see it.
+function startAt(o) { return o.deliverBy - (num(o.price && o.price.mins, 30) + num(pricing().leadMins, 45)) * 60000; }
+function visibleFrom(o) { return o.deliverBy - num(pricing().showHours, 3) * 3600000; }
+// A set-time delivery a courier has accepted ahead but doesn't need to start yet.
+function bookedAhead(o, now) { return !o.asap && o.deliverBy && o.status === "assigned" && (now || Date.now()) < startAt(o); }
 function byLabel(t) { var d = new Date(t), today = new Date(); return (d.toDateString() === today.toDateString() ? "Today" : "Tomorrow") + " by " + hhmm(t); }
 function leftLabel(t) { var m = Math.round((t - Date.now()) / 60000); return m >= 0 ? (m >= 60 ? Math.floor(m / 60) + " h " + (m % 60) + " min left" : m + " min left") : Math.abs(m) + " min late"; }
 function tripKm(from, to) {

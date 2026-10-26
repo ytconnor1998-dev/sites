@@ -233,7 +233,7 @@ function whenCard(d) {
     (w.mode === "set" ? field("Deliver by", sel("c.draft.when.by", w.by, slots.map(function (t) { return [String(t), byLabel(t)]; }), 'data-live="1"')) : "") + "</div>";
 }
 ACT["c-when"] = function (d) { var w = S.c.draft.when; w.mode = d.v; render(); };
-function deliverByOf(d, mins) { return d.when && d.when.mode === "set" && +d.when.by ? +d.when.by : Date.now() + Math.round(mins + num(pricing().asapBufferMins, 30)) * 60000; }
+function deliverByOf(d, mins) { return d.when && d.when.mode === "set" && +d.when.by ? +d.when.by : Date.now() + Math.round(mins + num(pricing().asapBufferMins, 45)) * 60000; }
 function newWhat(acc) {
   var d = S.c.draft, it = d.item, cls = classify(it);
   var h = '<div class="card"><b>What are you sending?</b><div class="chips">' + ITEM_TYPES.map(function (t) { return '<button type="button" class="chipbtn ' + (it.type === t.id ? "on" : "") + '" data-act="c-type" data-v="' + t.id + '">' + t.label + "</button>"; }).join("") + "</div>";
@@ -396,7 +396,7 @@ function cOrder(acc) {
   if (!o) return head("Delivery", backTo) + '<div class="pad">' + emptyState("This delivery isn't available", "It may have been removed.", '<button class="btn sm" data-act="c-go" data-v="deliveries">Back to deliveries</button>') + "</div>";
   var pos = courierPos(o), idx = FLOW.indexOf(o.status), web = isWeb();
   var eta = "";
-  if (o.status === "to_pickup" || o.status === "assigned") eta = "Courier heading to pickup";
+  if (o.status === "to_pickup" || o.status === "assigned") eta = bookedAhead(o) ? "Your courier is booked and will set off around " + hhmm(startAt(o)) : "Courier heading to pickup";
   if (o.status === "in_transit") eta = "About " + Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min to delivery";
   var top = (web ? '<div class="row between"><h1 class="w-title">Delivery ' + esc(o.id) + '</h1><button class="btn ghost sm" data-act="c-go" data-v="' + backTo + '">← ' + (acc ? "All deliveries" : "Track another") + "</button></div>" : head('<span class="mono">' + esc(o.id) + "</span>", backTo));
   if (!acc && o.customer.guest && o.status === "awaiting") top += '<div class="' + (web ? "" : "pad") + '"><div class="banner">Keep your tracking code <b class="mono">' + esc(o.id) + "</b>. You can track it any time with your email.</div></div>";

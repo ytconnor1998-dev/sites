@@ -430,3 +430,41 @@ IT_PATTERNS.push(
   [/^Test build: I'm in (.+)$/, "Versione di prova: sono a $1"], [/^Received by (.+) · code confirmed$/, "Ricevuto da $1 · codice confermato"],
   [/^(\d+) deliveries · (.+) earned, tips included$/, "$1 consegne · $2 guadagnati, mance incluse"], [/^Review: (\d) ★$/, "Recensione: $1 ★"], [/^Tip (.+) to the courier$/, "Mancia di $1 al corriere"]
 );
+Object.assign(IT, {
+  "ASAP: minutes added to the trip time": "ASAP: minuti aggiunti al tempo di viaggio", "Sets the arrival time customers are promised": "Stabilisce l'orario di arrivo promesso ai clienti",
+  "Close enough to add to a route, km": "Distanza per aggiungere a un percorso, km", "Pickup near the courier or a stop, or drop-off near one of theirs": "Ritiro vicino al corriere o a una tappa, o consegna vicina a una delle sue",
+  "Delivery times and multi-stop": "Orari di consegna e più tappe", "Most deliveries a courier carries at once": "Consegne massime che un corriere porta insieme",
+  "Set times: couriers can book ahead from this many hours before": "Orari fissi: i corrieri possono prenotare da queste ore prima",
+  "Set times: if nobody has booked it, pop it up this many minutes before setting off": "Orari fissi: se nessuno l'ha prenotata, proponila questi minuti prima della partenza",
+  "Suggested late fee %": "Penale di ritardo suggerita %", "Pre-filled when you review a late delivery. Nothing is deducted automatically.": "Precompilata quando controlli una consegna in ritardo. Niente viene detratto in automatico.",
+  "Signature on delivery €": "Firma alla consegna €", "Delivery times and late fees for couriers": "Orari di consegna e penali di ritardo per i corrieri",
+  "Every delivery shows a deliver-by time before the courier accepts it. If a delivery arrives after that time, DART reviews it and may deduct a late fee from the courier's pay for that delivery, usually a small percentage of it. Any fee is shown on the delivery in the courier's earnings before payout. Delays caused by the customer or by DART are not charged.": "Ogni consegna mostra un orario entro cui consegnare prima che il corriere la accetti. Se una consegna arriva dopo quell'orario, DART la verifica e può detrarre una penale dal compenso del corriere per quella consegna, di solito una piccola percentuale. Ogni penale è indicata sulla consegna nei guadagni del corriere prima del pagamento. I ritardi causati dal cliente o da DART non vengono addebitati.",
+  "When should it arrive?": "Quando deve arrivare?", "As soon as possible": "Il prima possibile", "By a set time": "Entro un orario", "Pick when it needs to be there, today or tomorrow": "Scegli entro quando deve arrivare, oggi o domani",
+  "Deliver by": "Consegna entro", "Arrives": "Arriva", "Change": "Modifica", "Your route": "Il tuo percorso", "Pick up": "Ritira", "Drop off": "Consegna",
+  "At this pace one delivery will be late. Message the customer or DART support.": "A questo ritmo una consegna arriverà in ritardo. Scrivi al cliente o all'assistenza DART.",
+  "Later today": "Più tardi oggi", "Scheduled today": "In programma oggi", "Book ahead": "Prenota in anticipo", "Scheduled job": "Lavoro programmato",
+  "This job is gone": "Questo lavoro non c'è più", "Another courier booked it or the customer cancelled.": "Un altro corriere l'ha prenotato o il cliente ha annullato.",
+  "This one clashes with a job you've already booked.": "Si sovrappone a un lavoro che hai già prenotato.", "Another courier booked it first.": "Un altro corriere l'ha prenotato prima.",
+  "Once booked it's yours. If you can't make it, give it back from the job screen as early as you can.": "Una volta prenotato è tuo. Se non ce la fai, restituiscilo dalla schermata del lavoro il prima possibile.",
+  "This one no longer fits your route.": "Non rientra più nel tuo percorso.", "ASAP": "ASAP", "Today": "Oggi", "Tomorrow": "Domani",
+  "Late deliveries to review": "Consegne in ritardo da verificare", "Couriers see any fee on that delivery in their earnings.": "I corrieri vedono la penale su quella consegna nei loro guadagni.",
+  "Late": "Ritardo", "Courier pay": "Compenso corriere", "Late fee €": "Penale €", "Deduct": "Detrai", "No fee": "Nessuna penale", "No late fee": "Nessuna penale di ritardo",
+  "Show set-time jobs to couriers this many hours early": "Mostra ai corrieri i lavori a orario queste ore prima"
+});
+IT_PATTERNS.push(
+  [/^Usually by (\d\d:\d\d)$/, "Di solito entro le $1"], [/^(Today|Tomorrow) by (\d\d:\d\d)$/, function (m, d, t) { return (d === "Today" ? "Oggi" : "Domani") + " entro le " + t; }],
+  [/^As soon as possible · by about (\d\d:\d\d)$/, "Il prima possibile · entro le $1 circa"], [/^Arrives by about (\d\d:\d\d)$/, "Arriva entro le $1 circa"],
+  [/^Arrives by (\d\d:\d\d)$/, "Arriva entro le $1"], [/^Arrives tomorrow by (\d\d:\d\d)$/, "Arriva domani entro le $1"],
+  [/^Deliver by (\d\d:\d\d)$/, "Consegna entro le $1"], [/^Deliver tomorrow by (\d\d:\d\d)$/, "Consegna domani entro le $1"],
+  [/^Adds to your route: (\d+) stops in total, about \+(\d+) min\. Your other deliveries stay on time\.$/, "Si aggiunge al tuo percorso: $1 tappe in tutto, circa +$2 min. Le altre consegne restano in orario."],
+  [/^(\d+) deliveries on your route$/, "$1 consegne nel tuo percorso"], [/^(\d+) stops · done about (\d\d:\d\d)$/, "$1 tappe · finito verso le $2"],
+  [/^(\d+) min left$/, "$1 min rimasti"], [/^(\d+) h (\d+) min left$/, "$1 h $2 min rimasti"], [/^(\d+) min late$/, "$1 min di ritardo"],
+  [/^(\d+) min late · DART may deduct a late fee$/, "$1 min di ritardo · DART può detrarre una penale"],
+  [/^(.+) min left · DART may deduct a late fee$/, "$1 · DART può detrarre una penale"],
+  [/^(\d+) min late · Late fee −(.+)$/, "$1 min di ritardo · Penale −$2"], [/^Late fee −(.+)$/, "Penale −$1"], [/^Tip \+(.+)$/, "Mancia +$1"], [/^Delivery (\d.*|€.*)$/, "Consegna $1"],
+  [/^Start by (\d\d:\d\d) · deliver by (\d\d:\d\d)$/, "Parti entro le $1 · consegna entro le $2"], [/^Start by (\d\d:\d\d)\. Be at the pickup in time to make it\.$/, "Parti entro le $1. Arriva al ritiro in tempo per farcela."],
+  [/^Book this job for (\d\d:\d\d)$/, "Prenota questo lavoro per le $1"], [/^Booked\. Start by (\d\d:\d\d)\.$/, "Prenotato. Parti entro le $1."],
+  [/^Booked ahead\. Start by (\d\d:\d\d) to deliver by (\d\d:\d\d)\.$/, "Prenotato in anticipo. Parti entro le $1 per consegnare entro le $2."],
+  [/^Your courier is booked and will set off around (\d\d:\d\d)$/, "Il tuo corriere è prenotato e partirà verso le $1"],
+  [/^Late fee of (.+) deducted$/, "Penale di $1 detratta"], [/^(.+) \(ASAP\)$/, "$1 (ASAP)"], [/^ · by (\d\d:\d\d)$/, " · entro le $1"], [/^by (\d\d:\d\d)$/, "entro le $1"]
+);
