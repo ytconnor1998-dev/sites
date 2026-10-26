@@ -27,6 +27,7 @@ function render() {
   if (S.modal) html += modalHTML(S.modal);
   root.innerHTML = html;
   translateDOM(root);
+  AFTER.forEach(function (f) { f(root); });
   document.documentElement.lang = lang();
   root.querySelectorAll("[data-scroll]").forEach(function (el) { if (scroll[el.dataset.scroll] != null) el.scrollTop = scroll[el.dataset.scroll]; });
   var nb = root.querySelector(".modal-b"); if (nb && root.dataset.mkey === mkey) nb.scrollTop = mscroll;

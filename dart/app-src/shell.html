@@ -296,6 +296,27 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .mh-title h1 { font-size: 30px; font-weight: 900; letter-spacing: -.03em; line-height: 1; max-width: 13ch; color: var(--ink); text-shadow: 0 0 3px var(--map-bg), 0 0 6px var(--map-bg), 0 0 12px var(--map-bg); }
 .mh-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 64%; overflow-y: auto; z-index: 3; background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -14px 34px -14px rgba(30, 10, 80, .45); padding: 8px 16px 16px; display: grid; gap: 12px; align-content: start; }
 /* Courier offer: a pop-up card, or the full details */
+/* Delivery proof: location check, code, signature */
+.ok-t { color: var(--ok); font-weight: 700; }
+.rating-big { font-size: 22px; color: var(--purple); }
+.rev { border-top: 1px solid var(--line); padding-top: 8px; display: grid; gap: 2px; }
+.rev span { color: var(--purple); letter-spacing: 2px; }
+.rev p { margin: 0; font-size: 14px; }
+.where { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 6px 10px; align-items: center; padding: 12px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--ink); font-size: 14px; }
+.where i { width: 12px; height: 12px; border-radius: 50%; background: var(--warn); }
+.where .btn { grid-column: 2; justify-self: start; }
+.where.ok { background: var(--ok-soft); }
+.where.ok i { background: var(--ok); }
+.sig { display: grid; gap: 6px; }
+.sig canvas { width: 100%; height: auto; aspect-ratio: 64 / 26; background: #fff; border: 1.5px dashed var(--line); border-radius: 8px; touch-action: none; cursor: crosshair; }
+.sig-img { width: 100%; max-width: 320px; background: #fff; border-radius: 6px; border: 1px solid var(--line); }
+.field-l { font-size: 12px; font-weight: 700; color: var(--muted); }
+.code-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 16px; align-items: center; padding: 14px 16px; border-radius: 12px; background: var(--purple-soft); }
+.code-card > div { display: grid; grid-row: span 2; }
+.code-card p { margin: 0; font-size: 14px; }
+.code-big { font-size: 34px; font-weight: 900; letter-spacing: .14em; color: var(--purple); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stars.static span { font-size: 24px; color: var(--line); }
+.stars.static span.on { color: var(--purple); }
 .offer-scrim { position: absolute; inset: 0; z-index: 20; background: rgba(14, 8, 30, .45); display: flex; align-items: flex-end; padding: 12px; }
 .offer-scrim.enter { animation: fade .2s ease-out; }
 .offer-scrim.enter .offer-card, .offer.enter { animation: offer-in .28s ease-out; }

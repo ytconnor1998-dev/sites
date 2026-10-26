@@ -9,6 +9,8 @@ function myJobs() { var id = S.me.courierId; return S.orders.filter(function (o)
 function activeJob() { return myJobs().filter(function (o) { return JOB_STEPS.indexOf(o.status) >= 0 || (o.status === "issue" && o.issue && JOB_STEPS.indexOf(o.issue.prev) >= 0); })[0] || null; }
 function share() { return num(pricing().courierShare, 75); }
 function payOf(o) { return o.courierPay != null ? o.courierPay : r2(o.price.total * share() / 100); }
+// Delivery pay plus any tip: what the courier is paid out for a finished delivery.
+function earnOf(o) { return r2(payOf(o) + tipOf(o)); }
 function eligible(c, o) {
   if (o.status !== "awaiting" || !c || !c.vehicle) return false;
   if ((o.cls.vehicles || []).indexOf(c.vehicle.type) < 0) return false;
@@ -64,7 +66,7 @@ function courierNotes() {
   myJobs().forEach(function (o) {
     if (o.lastMsg && o.lastMsg.from !== "courier") out.push({ at: o.lastMsg.at, text: "Message from " + (o.lastMsg.from === "admin" ? "DART support" : o.customer.name), sub: o.lastMsg.text, chat: o.id });
     if (o.status === "cancelled" && o.timeline.cancelled) out.push({ at: o.timeline.cancelled, text: "Delivery cancelled", sub: o.id, job: o.id });
-    if (o.courierPaidAt) out.push({ at: o.courierPaidAt, text: "Earnings paid out", sub: eur(payOf(o)) + " for " + o.id });
+    if (o.courierPaidAt) out.push({ at: o.courierPaidAt, text: "Earnings paid out", sub: eur(earnOf(o)) + " for " + o.id });
   });
   S.tickets.filter(function (t) { return t.courierId === S.me.courierId; }).forEach(function (t) { (t.replies || []).forEach(function (r) { if (r.by === "admin") out.push({ at: r.at, text: "DART support replied", sub: r.text, help: true }); }); });
   return out.sort(function (a, b) { return b.at - a.at; }).slice(0, 60);
@@ -236,7 +238,7 @@ function dJob(c) {
     '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, dashed: toPickup }, courierPos(o))] }) + '</div><div class="pad">';
   h += '<div class="row between">' + chip(o.status) + '<span class="price-big">' + eur(payOf(o)) + "</span></div>";
   if (o.status === "cancelled") return h + '<div class="banner bad">This delivery was cancelled' + (o.cancelledBy === "admin" ? " by DART" : " by the customer") + ".</div>" + '<button class="btn block" data-act="d-go" data-v="home">Back to requests</button></div>';
-  if (o.status === "delivered") return h + '<div class="card ok"><b>Delivered at ' + hhmm(o.timeline.delivered) + "</b><span>You earned " + eur(payOf(o)) + ". It's paid out with your next weekly payment.</span></div>" + '<button class="btn block" data-act="d-go" data-v="home">Back to requests</button></div>';
+  if (o.status === "delivered") return h + (o.review ? '<div class="card"><b>' + "★★★★★".slice(0, o.review.stars) + '<span class="muted">' + "★★★★★".slice(o.review.stars) + "</span></b>" + (o.review.text ? "<span>“" + esc(o.review.text) + "”</span>" : "") + (o.tip ? '<span class="ok-t">' + esc(o.customer.name) + " tipped you " + eur(o.tip.amount) + "</span>" : "") + "</div>" : "") + '<div class="card ok"><b>Delivered at ' + hhmm(o.timeline.delivered) + "</b><span>You earned " + eur(earnOf(o)) + ". It's paid out with your next weekly payment.</span></div>" + '<button class="btn block" data-act="d-go" data-v="home">Back to requests</button></div>';
   var target = toPickup ? o.pickup : o.dropoff;
   h += '<div class="card"><span class="muted sm">' + (toPickup ? "Pickup" : "Delivery") + "</span><b>" + esc(target.street) + ", " + esc(target.area) + "</b>" + (target.notes ? "<span>" + esc(target.notes) + "</span>" : "") +
     '<a class="btn ghost sm" href="' + mapsLink(target.area, target.street) + '" target="_blank" rel="noopener">Navigate with Google Maps</a></div>';
@@ -244,23 +246,65 @@ function dJob(c) {
   h += '<div class="person"><span class="avatar">' + esc(initials(o.customer.name)) + "</span><div><b>" + esc(o.customer.businessName || o.customer.name) + '</b><div class="muted sm">Customer</div></div></div>';
   if (o.status === "issue") {
     h += '<div class="banner bad">You reported: ' + esc(o.issue.reason) + ". DART support will contact you.</div>" + '<button class="btn block" data-act="d-resume">Problem solved, continue</button>';
+  } else if (o.status === "at_pickup") {
+    var pp = S.d.pickupPhoto && S.d.pickupPhoto.id === o.id ? S.d.pickupPhoto.src : null;
+    h += whereCheck(c, o.pickup, "pickup") + '<div class="card"><b>Photo of the item</b><span class="muted">Take a photo showing you have it, before you leave the pickup.</span>' +
+      (pp ? '<img class="proof" src="' + safeImg(pp) + '" alt="Your pickup photo">' : "") +
+      '<label class="file-btn">' + (pp ? "Retake photo" : "Take a photo of the item") + '<input type="file" accept="image/*" capture="environment" data-file="pickup"></label></div>' +
+      '<button class="btn block big" data-act="d-next"' + (busy || !pp || !atPlace(c, o.pickup) ? " disabled" : "") + ">" + NEXT[o.status][1] + "</button>";
   } else if (NEXT[o.status]) {
-    h += '<button class="btn block big" data-act="d-next"' + (busy ? " disabled" : "") + ">" + NEXT[o.status][1] + "</button>";
+    var place = GATE[o.status] === "pickup" ? o.pickup : GATE[o.status] === "dropoff" ? o.dropoff : null;
+    h += (place ? whereCheck(c, place, GATE[o.status]) : "") + '<button class="btn block big" data-act="d-next"' + (busy || (place && !atPlace(c, place)) ? " disabled" : "") + ">" + NEXT[o.status][1] + "</button>";
   } else if (o.status === "at_dest") {
-    var p = S.d.proof;
-    h += '<form class="card" data-form="d-deliver"><b>Proof of delivery</b>' + field("Received by", inp("d.proof.receiver", p.receiver, 'placeholder="Name, or \'Left with concierge\'" required')) +
+    var p = S.d.proof, needSig = !!(o.item.options && o.item.options.signature), here = atPlace(c, o.dropoff);
+    h += whereCheck(c, o.dropoff, "dropoff") + '<form class="card" data-form="d-deliver"><b>Proof of delivery</b>' +
+      (o.code ? field("Delivery code from the customer", inp("d.proof.code", p.code, 'inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="4 digits" required'), "The customer has it in their DART app or email. Ask the person receiving it.") : "") +
+      field("Received by", inp("d.proof.receiver", p.receiver, 'placeholder="Name, or \'Left with concierge\'" required')) +
       (p.photo ? '<img class="proof" src="' + safeImg(p.photo) + '" alt="Your delivery photo">' : "") +
       '<label class="file-btn">' + (p.photo ? "Retake photo" : "Take a photo of the delivered item") + '<input type="file" accept="image/*" capture="environment" data-file="proof"></label>' +
-      '<button class="btn ok block">Complete delivery</button></form>';
+      (needSig ? '<div class="sig"><div class="row between"><span class="field-l">Signature of the person receiving it</span><button type="button" class="link" data-act="d-sig-clear">Clear</button></div><canvas id="sig-pad" width="640" height="260" aria-label="Signature pad"></canvas><small class="hint">Ask them to sign with a finger.</small></div>' : "") +
+      '<button class="btn ok block"' + (here ? "" : " disabled") + ">Complete delivery</button></form>";
   }
   h += '<div class="row wrap"><button class="btn ghost sm" data-act="d-issue" data-v="' + esc(o.id) + '">Report a problem</button>' + (["assigned", "to_pickup", "at_pickup"].indexOf(o.status) >= 0 ? '<button class="btn ghost sm" data-act="d-release" data-v="' + esc(o.id) + '">Give this delivery back</button>' : "") + "</div>";
   return h + '<div class="card"><b>Status history</b>' + timelineList(o) + "</div></div>";
 }
+// Steps that can only be confirmed at a place. Production checks the phone's GPS (within about 150 m);
+// the test build uses the area the courier says they're in.
+var GATE = { to_pickup: "pickup", at_pickup: "pickup", in_transit: "dropoff" };
+function atPlace(c, place) { return !!(c && place && c.area === place.area); }
+function whereCheck(c, place, kind) {
+  var ok = atPlace(c, place), label = kind === "pickup" ? "pickup" : "delivery address";
+  if (ok) return '<div class="where ok"><i aria-hidden="true"></i><span>You\'re at the ' + label + "</span></div>";
+  var away = c.area ? tripKm(c.area, place.area).toFixed(1) + " km away" : "location unknown";
+  return '<div class="where"><i aria-hidden="true"></i><span><b>You need to be at the ' + label + "</b> (" + away + "). DART checks your GPS before you can confirm.</span>" +
+    '<button class="btn ghost sm" data-act="d-area" data-v="' + esc(place.area) + '">Test build: I\'m in ' + esc(place.area) + "</button></div>";
+}
 ACT["d-next"] = function () {
-  var o = byId(S.orders, S.d.job); if (!o || !NEXT[o.status] || busy) return;
+  var o = byId(S.orders, S.d.job), c = myCourier(); if (!o || !NEXT[o.status] || busy) return;
+  var g = GATE[o.status]; if (g && !atPlace(c, g === "pickup" ? o.pickup : o.dropoff)) return toast("You need to be there first.");
   var to = NEXT[o.status][0], patch = { status: to, timeline: {} }; patch.timeline[to] = Date.now();
-  run(Store.update("orders", o.id, patch), STATUS[to]);
+  if (o.status === "at_pickup") {
+    var pp = S.d.pickupPhoto && S.d.pickupPhoto.id === o.id ? S.d.pickupPhoto.src : null;
+    if (!pp) return toast("Take a photo of the item first.");
+    patch.pickupProof = { photo: pp, at: Date.now() };
+  }
+  run(Store.update("orders", o.id, patch).then(function () { if (to === "collected") S.d.pickupPhoto = null; }), STATUS[to]);
 };
+FILES["pickup"] = function (file) { var id = S.d.job; shrinkImage(file, 640, 60000).then(function (src) { S.d.pickupPhoto = { id: id, src: src }; render(); }, function () { toast("That photo couldn't be read."); }); };
+// Signature pad: strokes are kept as an image so a redraw doesn't lose them.
+ACT["d-sig-clear"] = function () { S.d.proof.sig = null; render(); };
+AFTER.push(function (root) {
+  var cv = root.querySelector("#sig-pad"); if (!cv) return;
+  var g = cv.getContext("2d"), drawing = false, last = null;
+  g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height);
+  g.lineWidth = 5; g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = "#170F2E";
+  if (S.d.proof.sig) { var im = new Image(); im.onload = function () { g.drawImage(im, 0, 0); }; im.src = S.d.proof.sig; }
+  var pt = function (e) { var r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+  cv.addEventListener("pointerdown", function (e) { holdRender = true; drawing = true; last = pt(e); cv.setPointerCapture(e.pointerId); e.preventDefault(); });
+  cv.addEventListener("pointermove", function (e) { if (!drawing) return; var p = pt(e); g.beginPath(); g.moveTo(last[0], last[1]); g.lineTo(p[0], p[1]); g.stroke(); last = p; });
+  var end = function () { if (!drawing) return; drawing = false; S.d.proof.sig = cv.toDataURL("image/jpeg", 0.8); };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+});
 ACT["d-resume"] = function () { var o = byId(S.orders, S.d.job); if (!o) return; run(Store.update("orders", o.id, { status: o.issue.prev || "assigned", issue: { open: false, resolvedAt: Date.now() } }), "Back on track"); };
 ACT["d-release"] = function (d) { S.modal = { kind: "confirm", title: "Give this delivery back?", body: "It goes back to other couriers. Do this only if you can't do it.", yes: "Give it back", act: "d-release-yes", v: d.v }; render(); };
 ACT["d-release-yes"] = function (d) {
@@ -271,13 +315,17 @@ ACT["d-issue"] = function (d) { S.modal = { kind: "issue", order: d.v, reason: "
 FILES["proof"] = function (file) { shrinkImage(file, 640, 60000).then(function (src) { S.d.proof.photo = src; render(); }, function () { toast("That photo couldn't be read."); }); };
 FORMS["d-deliver"] = function () {
   var o = byId(S.orders, S.d.job), p = S.d.proof; if (!o || busy) return;
+  if (!atPlace(myCourier(), o.dropoff)) return toast("You need to be at the delivery address.");
+  if (o.code && String(p.code || "").trim() !== o.code) return toast("That code doesn't match. Ask for the 4-digit code in the customer's DART app.");
   if (!clip(p.receiver, 60)) return toast("Add who received it.");
+  if (!p.photo) return toast("Take a photo of the delivered item.");
+  if (o.item.options && o.item.options.signature && !p.sig) return toast("Ask the person receiving it to sign.");
   var now = Date.now(), acc = byId(S.accounts, o.customer.id) || { id: o.customer.id, name: o.customer.name, email: "" };
-  var proof = { receiver: clip(p.receiver, 60), at: now }; if (p.photo) proof.photo = p.photo;
+  var proof = { receiver: clip(p.receiver, 60), at: now, photo: p.photo, codeOk: !!o.code }; if (p.sig) proof.sig = p.sig;
   var done = Object.assign({}, o, { timeline: Object.assign({}, o.timeline, { delivered: now }) });
   var invStatus = o.billing && o.billing.status === "to_invoice" ? "outstanding" : "paid";
   var invId = "I-" + rid(8), inv = deliveryInvoice(done, acc, invStatus);
-  run(Store.update("orders", o.id, { status: "delivered", proof: proof, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { S.d.proof = { photo: null, receiver: "" }; }), "Delivered. Nice work.");
+  run(Store.update("orders", o.id, { status: "delivered", proof: proof, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
 };
 
 // ---------- Messages, history, earnings ----------
@@ -296,8 +344,8 @@ function dChat(c) {
 function dEarnings(c) {
   var done = myJobs().filter(function (o) { return o.status === "delivered"; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; });
   var pend = done.filter(function (o) { return !o.courierPaid; }), paid = done.filter(function (o) { return o.courierPaid; });
-  var sum = function (l) { return l.reduce(function (s, o) { return s + payOf(o); }, 0); };
-  var payouts = {}; paid.forEach(function (o) { var k = o.courierPayout || dmy(o.courierPaidAt); payouts[k] = payouts[k] || { at: o.courierPaidAt, total: 0, n: 0 }; payouts[k].total += payOf(o); payouts[k].n++; });
+  var sum = function (l) { return l.reduce(function (s, o) { return s + earnOf(o); }, 0); };
+  var payouts = {}; paid.forEach(function (o) { var k = o.courierPayout || dmy(o.courierPaidAt); payouts[k] = payouts[k] || { at: o.courierPaidAt, total: 0, n: 0 }; payouts[k].total += earnOf(o); payouts[k].n++; });
   return dHead("Earnings") + '<div class="pad"><div class="stat3"><div><b class="num">' + eur(sum(done)) + '</b><small>All time</small></div><div><b class="num">' + eur(sum(pend)) + '</b><small>Pending</small></div><div><b class="num">' + eur(sum(paid)) + "</b><small>Paid</small></div></div>" +
     '<p class="muted sm">You keep ' + share() + "% of each delivery price. Pending earnings are paid every Monday to " + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") + ".</p>" +
     (Object.keys(payouts).length ? '<div class="sec-h"><h3>Payments</h3></div><div class="list">' + Object.keys(payouts).map(function (k) { var p = payouts[k]; return '<div class="item"><b>Paid ' + dmy(p.at) + '</b><b class="num">' + eur(p.total) + "</b><small>" + p.n + " deliveries</small><small></small></div>"; }).join("") + "</div>" : "") +
@@ -317,7 +365,11 @@ function dNotesView() {
 // ---------- Account, vehicle, payout, help ----------
 function dAccount(c) {
   var rows = [["vehicle", "Vehicle and documents", vLabel(c.vehicle.type) + (c.vehicleStatus === "pending" ? " · change pending" : "")], ["payout", "Payout details", c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "Not set"], ["history", "Delivery history", myJobs().length + " deliveries"], ["notes", "Notifications", ""], ["help", "Help and support", "Report a problem, FAQ"]];
+  var rt = courierRating(c.id), revs = myJobs().filter(function (o) { return o.review && o.review.text; }).sort(function (a, b) { return b.review.at - a.review.at; }).slice(0, 3);
+  var tips = myJobs().reduce(function (s, o) { return s + tipOf(o); }, 0);
   return dHead("Account") + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(c.name)) + "</span><div><b>" + esc(c.name) + '</b><div class="muted sm">' + esc(c.email) + " · " + esc(c.phone) + "</div></div></div>" +
+    '<div class="card"><div class="row between"><b>Your rating</b><b class="rating-big">' + (rt ? rt.avg.toFixed(1) + " ★" : "–") + '</b></div><span class="muted sm">' + (rt ? "From " + rt.n + " customer reviews" : "No reviews yet") + (tips ? " · " + eur(tips) + " in tips" : "") + "</span>" +
+    revs.map(function (o) { return '<div class="rev"><span>' + "★★★★★".slice(0, o.review.stars) + "</span><p>“" + esc(o.review.text) + "”</p></div>"; }).join("") + "</div>" +
     '<div class="menu">' + rows.map(function (r) { return '<button data-act="d-go" data-v="' + r[0] + '"><b>' + r[1] + "</b><span>" + esc(r[2]) + "</span><i>›</i></button>"; }).join("") + "</div>" + '<button class="btn ghost block" data-act="d-logout">Log out</button></div>';
 }
 function dVehicle(c) {
@@ -360,8 +412,8 @@ FORMS["d-ticket"] = function () {
 // ---------- Courier home: a full map with a sheet over it ----------
 function dMapHome(c) {
   var job = activeJob(), done = myJobs().filter(function (o) { return o.status === "delivered"; });
-  var today = done.filter(function (o) { return isToday(o.timeline.delivered); }), earned = today.reduce(function (s, o) { return s + payOf(o); }, 0);
-  var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + payOf(o); }, 0);
+  var today = done.filter(function (o) { return isToday(o.timeline.delivered); }), earned = today.reduce(function (s, o) { return s + earnOf(o); }, 0);
+  var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + earnOf(o); }, 0);
   var pins = [];
   if (c.online && c.area) pins.unshift({ area: c.area, text: tr("You"), tone: "green", dy: 44 });
   var routes = job ? [Object.assign({ from: job.pickup.area, to: job.dropoff.area }, courierPos(job))] : [];

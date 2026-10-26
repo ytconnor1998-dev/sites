@@ -401,3 +401,32 @@ IT_PATTERNS.push(
   [/^(Apple Pay|Google Pay) · charged now: (.+)$/, "$1 · addebito ora: $2"], [/^(Apple Pay|Google Pay), paid$/, "$1, pagato"], [/^(Apple Pay|Google Pay), refunded$/, "$1, rimborsato"]
 );
 Object.assign(IT, { "Show more": "Mostra di più", "Show less": "Mostra meno" });
+Object.assign(IT, {
+  "Signature on delivery": "Firma alla consegna", "free": "gratis", "New courier": "Nuovo corriere", "Delivery code": "Codice di consegna",
+  "Give this code to the courier when they arrive. They can't finish the delivery without it. If someone else is receiving it, send them the code.": "Dai questo codice al corriere quando arriva. Senza, non può completare la consegna. Se a ricevere è un'altra persona, invia il codice a lei.",
+  "The person receiving it will also be asked to sign on the courier's phone.": "Alla persona che riceve verrà chiesto anche di firmare sul telefono del corriere.",
+  "Signature": "Firma", "Your review": "La tua recensione", "Add a comment (optional)": "Aggiungi un commento (facoltativo)", "On time, careful with the stairs…": "Puntuale, attento con le scale…",
+  "No tip": "Nessuna mancia", "Tips go to your courier in full and are charged to your card.": "Le mance vanno interamente al corriere e sono addebitate sulla tua carta.",
+  "Send review": "Invia recensione", "Thanks for your review": "Grazie per la recensione",
+  "Photo of the item": "Foto dell'oggetto", "Take a photo showing you have it, before you leave the pickup.": "Scatta una foto che mostri che lo hai, prima di lasciare il ritiro.",
+  "Take a photo of the item": "Scatta una foto dell'oggetto", "Retake photo": "Rifai la foto", "Take a photo of the item first.": "Prima scatta una foto dell'oggetto.",
+  "Delivery code from the customer": "Codice di consegna del cliente", "4 digits": "4 cifre",
+  "The customer has it in their DART app or email. Ask the person receiving it.": "Il cliente lo trova nell'app DART o nell'email. Chiedilo a chi riceve.",
+  "Signature of the person receiving it": "Firma di chi riceve", "Clear": "Cancella", "Ask them to sign with a finger.": "Chiedi di firmare con un dito.",
+  "You need to be there first.": "Prima devi essere sul posto.", "You need to be at the delivery address.": "Devi essere all'indirizzo di consegna.",
+  "That code doesn't match. Ask for the 4-digit code in the customer's DART app.": "Il codice non corrisponde. Chiedi il codice di 4 cifre nell'app DART del cliente.",
+  "Take a photo of the delivered item.": "Scatta una foto dell'oggetto consegnato.", "Ask the person receiving it to sign.": "Chiedi a chi riceve di firmare.",
+  "Your rating": "La tua valutazione", "No reviews yet": "Ancora nessuna recensione", "Pickup photo": "Foto al ritiro",
+  "Give it to the courier only if the customer has confirmed by phone.": "Dallo al corriere solo se il cliente ha confermato al telefono.", "Rating": "Valutazione"
+});
+IT_PATTERNS.push(
+  [/^How was (.+)\?$/, "Com'è andata con $1?"], [/^Add a tip for (.+)$/, "Aggiungi una mancia per $1"],
+  [/^Send review and (.+) tip$/, "Invia recensione e mancia di $1"], [/^You tipped (.+)\. All of it goes to (.+)\.$/, "Hai lasciato $1 di mancia. Va tutta a $2."],
+  [/^Thanks\. Your tip goes to (.+)\.$/, "Grazie. La tua mancia va a $1."], [/^(.+) tipped you (.+)$/, "$1 ti ha lasciato $2 di mancia"],
+  [/^From (\d+) customer reviews$/, "Da $1 recensioni dei clienti"], [/^(.+) in tips$/, "$1 di mance"],
+  [/^You're at the (pickup|delivery address)$/, function (m, k) { return k === "pickup" ? "Sei al ritiro" : "Sei all'indirizzo di consegna"; }],
+  [/^You need to be at the (pickup|delivery address)$/, function (m, k) { return k === "pickup" ? "Devi essere al ritiro" : "Devi essere all'indirizzo di consegna"; }],
+  [/^\((.+) km away\)\. DART checks your GPS before you can confirm\.$/, "(a $1 km). DART controlla il GPS prima che tu possa confermare."],
+  [/^Test build: I'm in (.+)$/, "Versione di prova: sono a $1"], [/^Received by (.+) · code confirmed$/, "Ricevuto da $1 · codice confermato"],
+  [/^(\d+) deliveries · (.+) earned, tips included$/, "$1 consegne · $2 guadagnati, mance incluse"], [/^Review: (\d) ★$/, "Recensione: $1 ★"], [/^Tip (.+) to the courier$/, "Mancia di $1 al corriere"]
+);

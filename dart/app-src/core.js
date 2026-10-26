@@ -1,7 +1,7 @@
 // ===== DART core: reference data, store, rules engine, pricing, invoices, shared UI helpers =====
 "use strict";
 
-var ACT = {}, FORMS = {}, FILES = {};
+var ACT = {}, FORMS = {}, FILES = {}, AFTER = [];
 
 // ---------- Reference data (Rome areas; road distance is estimated from these) ----------
 var AREAS = {
@@ -33,8 +33,19 @@ var FURNITURE = ["Chair", "Table", "Desk", "Sofa", "Bed", "Mattress", "Cabinet",
 var OPTIONS = [
   { id: "fragile", label: "Fragile, handle with care" }, { id: "stairs", label: "Stairs, no lift" },
   { id: "assembly", label: "Assembly or disassembly" }, { id: "helper", label: "Extra helper" },
-  { id: "scheduled", label: "Scheduled time window" }
+  { id: "scheduled", label: "Scheduled time window" }, { id: "signature", label: "Signature on delivery" }
 ];
+// Four-digit code the customer gives the courier; the courier can't complete without it.
+function newCode() { var a = new Uint32Array(1); (window.crypto || window.msCrypto).getRandomValues(a); return String(1000 + a[0] % 9000); }
+// What the courier earns on a delivery, tip included.
+function tipOf(o) { return o && o.tip ? num(o.tip.amount, 0) : 0; }
+// A courier's average star rating from customer reviews.
+function courierRating(cid) {
+  var stars = function (o) { return o.review ? o.review.stars : o.rating; };
+  var r = S.orders.filter(function (o) { return o.courier && o.courier.id === cid && stars(o); });
+  return r.length ? { avg: Math.round(r.reduce(function (s, o) { return s + stars(o); }, 0) / r.length * 10) / 10, n: r.length } : null;
+}
+function ratingText(cid) { var r = courierRating(cid); return r ? r.avg.toFixed(1) + " ★ (" + r.n + ")" : "New courier"; }
 
 // Admin-editable defaults. The live values come from config/rules and config/pricing.
 var DEFAULT_RULES = {
@@ -63,7 +74,7 @@ var DEFAULT_RULES = {
 var DEFAULT_PRICING = {
   minFee: 6.9, perKm: 0.95, minKm: 2, method: "road", roadFactor: 1.35,
   longFrom: 15, longFee: 0.5, weightFrom: 20, perKgOver: 0.25, extraItemFee: 1.5, secondCourierFee: 18,
-  options: { fragile: 2, stairs: 8, assembly: 15, helper: 18, scheduled: 2 },
+  options: { fragile: 2, stairs: 8, assembly: 15, helper: 18, scheduled: 2, signature: 0 },
   businessDiscount: 0, vatRate: 22, courierShare: 75
 };
 var DEFAULT_SETTINGS = {

@@ -166,7 +166,7 @@ function siteHow() {
 // ---------- Pricing ----------
 function sitePricing() {
   var P = pricing();
-  var extras = OPTIONS.map(function (o) { return "<li><span>" + o.label + "</span> <b>+" + eur(P.options[o.id]) + "</b></li>"; }).join("") +
+  var extras = OPTIONS.map(function (o) { return "<li><span>" + o.label + "</span> <b>" + (num(P.options[o.id], 0) ? "+" : "") + (num(P.options[o.id], 0) ? eur(P.options[o.id]) : "free") + "</b></li>"; }).join("") +
     "<li><span>Each extra item in the same delivery</span> <b>+" + eur(P.extraItemFee) + "</b></li><li><span>Second courier, when needed</span> <b>+" + eur(P.secondCourierFee) + "</b></li>";
   return pageHead("Pricing", "What a delivery costs", "Every delivery has a distance charge with a minimum fee. Size, weight and extras are added on top, and you see each line before you book.") +
     '<div class="ws-wrap ws-read">' +

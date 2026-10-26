@@ -349,7 +349,7 @@ ACT["c-book"] = function () {
     customer: null,
     pickup: { area: d.pickup.area, street: clip(d.pickup.street, 80), notes: clip(d.pickup.notes, 160) },
     dropoff: { area: d.dropoff.area, street: clip(d.dropoff.street, 80), notes: clip(d.dropoff.notes, 160) },
-    item: item, cls: x.cls, price: x.q, billing: billing, status: "awaiting", createdAt: now, timeline: { requested: now, awaiting: now }
+    item: item, cls: x.cls, price: x.q, billing: billing, code: newCode(), status: "awaiting", createdAt: now, timeline: { requested: now, awaiting: now }
   };
   var start = Promise.resolve(acc ? Object.assign({ id: acc.id }, acc) : null);
   if (!acc && g.create) {
@@ -391,12 +391,17 @@ function cOrder(acc) {
   var a = '<div class="stack"><div><h2 class="status-h">' + esc(STATUS[o.status]) + "</h2>" + (eta ? '<p class="muted">' + eta + "</p>" : o.status === "awaiting" ? '<p class="muted">We\'re offering it to couriers with a suitable vehicle.</p>' : "") + "</div>" +
     (idx >= 0 ? '<div class="progress">' + FLOW.map(function (k, i) { return '<i class="' + (i <= idx ? "on" : "") + '"></i>'; }).join("") + "</div>" : "");
   if (o.status === "issue" || (o.issue && o.issue.open)) a += '<div class="banner bad">' + esc(o.issue && o.issue.by === "courier" ? "Your courier reported: " + o.issue.reason : "You reported a problem: " + (o.issue ? o.issue.reason : "")) + ". DART support is looking at it.</div>";
-  if (o.courier) a += '<div class="person"><span class="avatar">' + esc(initials(o.courier.name)) + "</span><div><b>" + esc(o.courier.name) + '</b><div class="muted sm">' + esc(vLabel(o.courier.vehicle)) + (o.courier.plate ? " · " + esc(o.courier.plate) : "") + "</div></div>" +
+  if (o.code && ACTIVE.indexOf(o.status) >= 0) a += '<div class="code-card"><div><span class="muted sm">Delivery code</span><b class="code-big">' + esc(o.code) + "</b></div><p>Give this code to the courier when they arrive. They can't finish the delivery without it. If someone else is receiving it, send them the code.</p>" +
+    (o.item.options && o.item.options.signature ? '<p class="muted sm">The person receiving it will also be asked to sign on the courier\'s phone.</p>' : "") + "</div>";
+  if (o.courier) a += '<div class="person"><span class="avatar">' + esc(initials(o.courier.name)) + "</span><div><b>" + esc(o.courier.name) + '</b><div class="muted sm">' + esc(ratingText(o.courier.id)) + " · " + esc(vLabel(o.courier.vehicle)) + (o.courier.plate ? " · " + esc(o.courier.plate) : "") + "</div></div>" +
     '<button class="btn sm" data-act="c-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "customer") ? ' <span class="badge in">1</span>' : "") + "</button></div>";
   if (o.status === "delivered") {
     var img = o.proof && safeImg(o.proof.photo);
-    a += '<div class="card"><b>Proof of delivery</b>' + (img ? '<img class="proof" src="' + img + '" alt="Photo taken by the courier at delivery">' : "") + '<span class="muted">Received by ' + esc(o.proof ? o.proof.receiver : "recipient") + " · " + when(o.timeline.delivered) + "</span></div>" +
-      '<div class="card"><b>Rate ' + esc(o.courier ? o.courier.name : "your courier") + '</b><div class="stars">' + [1, 2, 3, 4, 5].map(function (n) { return '<button aria-label="' + n + ' stars" class="' + ((o.rating || 0) >= n ? "on" : "") + '" data-act="c-rate" data-v="' + n + '">★</button>'; }).join("") + "</div></div>";
+    var sig = o.proof && safeImg(o.proof.sig);
+    a += '<div class="card"><b>Proof of delivery</b>' + (img ? '<img class="proof" src="' + img + '" alt="Photo taken by the courier at delivery">' : "") +
+      '<span class="muted">Received by ' + esc(o.proof ? o.proof.receiver : "recipient") + " · " + when(o.timeline.delivered) + (o.proof && o.proof.codeOk ? " · code confirmed" : "") + "</span>" +
+      (sig ? '<span class="muted sm">Signature</span><img class="sig-img" src="' + sig + '" alt="Signature of the person who received it">' : "") + "</div>";
+    a += reviewCard(o);
   }
   var b = '<div class="stack"><div class="card">' + legs(o) + "<span>" + itemSummary(o) + "</span>" + (o.item.photos && o.item.photos.length ? '<div class="phs">' + photoStrip(o.item.photos) + "</div>" : "") + "</div>" +
     '<div class="card"><b>Price</b>' + breakdown(o.price, o.billing && o.billing.method === "subscription" ? o.billing : null) + '<span class="muted">Payment: ' + esc(payLabel(o.billing)) + "</span></div>" +
@@ -412,7 +417,28 @@ function cOrder(acc) {
 }
 var WALLETS = { applepay: "Apple Pay", googlepay: "Google Pay" };
 function payLabel(b) { if (!b) return "Card"; if (WALLETS[b.method]) return WALLETS[b.method] + (b.status === "refunded" ? ", refunded" : ", paid"); return b.method === "subscription" ? (b.included ? "Included in " + b.planName : b.planName + " plan, extra charge") : b.method === "invoice" ? "Monthly business invoice" : b.status === "refunded" ? "Card, refunded" : "Card, paid"; }
-ACT["c-rate"] = function (d) { run(Store.update("orders", S.c.order, { rating: +d.v }), "Thanks for rating your courier"); };
+// Review and tip, once, after delivery. Tips go to the courier in full.
+var TIPS = [0, 1, 2, 5, 10];
+function reviewCard(o) {
+  var name = o.courier ? o.courier.name : "your courier";
+  if (o.review) return '<div class="card"><b>Your review</b><div class="stars static" aria-label="' + o.review.stars + ' stars">' + [1, 2, 3, 4, 5].map(function (n) { return '<span class="' + (o.review.stars >= n ? "on" : "") + '">★</span>'; }).join("") + "</div>" +
+    (o.review.text ? "<p>“" + esc(o.review.text) + "”</p>" : "") + (o.tip ? '<span class="muted">You tipped ' + eur(o.tip.amount) + ". All of it goes to " + esc(name) + ".</span>" : "") + "</div>";
+  var r = S.c.rv && S.c.rv.id === o.id ? S.c.rv : (S.c.rv = { id: o.id, stars: 0, text: "", tip: 0 });
+  return '<form class="card" data-form="c-review"><b>How was ' + esc(name) + "?</b>" +
+    '<div class="stars" role="radiogroup" aria-label="Rating">' + [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" role="radio" aria-checked="' + (r.stars === n) + '" aria-label="' + n + ' stars" class="' + (r.stars >= n ? "on" : "") + '" data-act="c-rate" data-v="' + n + '">★</button>'; }).join("") + "</div>" +
+    field("Add a comment (optional)", txt("c.rv.text", r.text, 'rows="2" maxlength="300" placeholder="On time, careful with the stairs…"')) +
+    '<span class="field-l">Add a tip for ' + esc(name) + '</span><div class="chips">' + TIPS.map(function (t) { return '<button type="button" class="chipbtn ' + (r.tip === t ? "on" : "") + '" data-act="c-tip" data-v="' + t + '">' + (t ? eur(t) : "No tip") + "</button>"; }).join("") + "</div>" +
+    '<span class="muted sm">Tips go to your courier in full and are charged to your card.</span>' +
+    '<button class="btn block"' + (r.stars ? "" : " disabled") + ">" + (r.tip ? "Send review and " + eur(r.tip) + " tip" : "Send review") + "</button></form>";
+}
+ACT["c-rate"] = function (d) { var o = byId(S.orders, S.c.order); if (!o) return; if (!S.c.rv || S.c.rv.id !== o.id) S.c.rv = { id: o.id, stars: 0, text: "", tip: 0 }; S.c.rv.stars = +d.v; render(); };
+ACT["c-tip"] = function (d) { if (S.c.rv) { S.c.rv.tip = +d.v; render(); } };
+FORMS["c-review"] = function () {
+  var o = byId(S.orders, S.c.order), r = S.c.rv; if (!o || !r || r.id !== o.id || !r.stars || o.review) return;
+  var now = Date.now(), patch = { review: { stars: r.stars, text: clip(r.text, 300), at: now } };
+  if (r.tip > 0) patch.tip = { amount: r.tip, at: now };
+  run(Store.claim("orders", o.id, "review", function (x) { return !x.review; }, patch).then(function () { S.c.rv = null; }), r.tip ? "Thanks. Your tip goes to " + (o.courier ? o.courier.name : "your courier") + "." : "Thanks for your review");
+};
 ACT["c-cancel"] = function (d) {
   var o = byId(S.orders, d.v); if (!o) return;
   S.modal = { kind: "confirm", title: "Cancel this delivery?", body: o.billing && o.billing.status === "paid" ? "You'll get a full refund of " + eur(o.billing.amount) + " to your card." : "It won't count towards your plan or invoice.", yes: "Cancel delivery", act: "c-cancel-yes", v: o.id }; render();
