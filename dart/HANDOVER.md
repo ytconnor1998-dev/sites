@@ -21,6 +21,12 @@ npm note: this container's settings tell npm to skip the proxy for registry.npmj
 
 Supabase note: the project's own address (`<project>.supabase.co`) must be allowed in Network access, e.g. `*.supabase.co`; plain `supabase.co` is not enough.
 
+## What is live
+
+- Website and admin: https://dart-rome.expo.app (admin at `#admin`), on EAS Hosting, project `@cdavies12s-team/dart`. To update: `python3 dart/app-src/build.py`, copy `dart/dist/live.html` to `dart/mobile/dist/index.html`, then in `dart/mobile` run `npx eas-cli@26.0.0 deploy --prod --non-interactive --export-dir dist`.
+- Android test apps (`dart/mobile`): one Expo project, two apps. `eas build -p android --profile preview` (DART, customers) and `--profile preview-courier` (DART Courier). They show the hosted site full screen.
+- Network access also needs `*.expo.dev` and `*.expo.app` for deploys.
+
 ## The plan, in order
 
 1. **Database.** Create the Supabase tables for accounts, couriers, orders (with messages), invoices, tickets, plans and config, with row-level security: customers see their own data, couriers see their own jobs and open offers, admin sees everything. Move the dispatch (offers, multi-stop routing, referral rewards) into a database function or Edge Function so it runs on the server, not on phones.
