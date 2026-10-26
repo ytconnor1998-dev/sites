@@ -162,7 +162,7 @@ var D_NAV = [["home", "Jobs", "send"], ["earnings", "Earnings", "euro"], ["accou
 function courierApp() {
   var c = myCourier();
   var body = !c ? dAuth() : dView(c);
-  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "home" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
+  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "home" : ["payments", "invreq"].indexOf(S.d.view) >= 0 ? "earnings" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
   var un = c ? myJobs().reduce(function (s, o) { return s + unread(o, "courier"); }, 0) : 0;
   var tabs = c && c.status === "approved" ? '<nav class="tabs t3">' + D_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="d-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + (n[0] === "messages" && un ? '<span class="badge">' + un + "</span>" : "") + "</button>"; }).join("") + "</nav>" : "";
   var offer = c && c.status === "approved" ? myOffer() : null;
@@ -180,6 +180,8 @@ function dView(c) {
     case "account": return dAccount(c);
     case "vehicle": return dVehicle(c);
     case "payout": return dPayout(c);
+    case "payments": return dPayments(c);
+    case "invreq": return dInvoiceRequest(c);
     case "history": return dHistory();
     case "help": return dHelp(c);
     case "notes": return dNotesView();
@@ -272,7 +274,7 @@ function dWaiting(c) {
 }
 ACT["d-logout"] = function () { var c = myCourier(); if (c && c.online) Store.update("couriers", c.id, { online: false, updatedAt: Date.now() }).catch(function () { }); S.me.courierId = null; saveMe(); S.d.view = "home"; closeChat(); render(); };
 
-ACT["d-go"] = function (d) { if (d.v !== "chat") closeChat(); S.d.view = d.v || "home"; if (d.v === "notes") { S.me.seen.courier = Date.now(); saveMe(); } render(); };
+ACT["d-go"] = function (d) { if (d.v !== "chat") closeChat(); S.modal = null; S.d.view = d.v || "home"; if (d.v === "notes") { S.me.seen.courier = Date.now(); saveMe(); } render(); };
 ACT["d-area"] = function (d) { var c = myCourier(); if (LIVE && settings().gpsTest === false) return; if (c) run(Store.update("couriers", c.id, { area: d.v, updatedAt: Date.now() })); };
 ACT["d-online"] = function () {
   var c = myCourier(); if (!c) return;
@@ -477,17 +479,86 @@ function dChat(c) {
   if (Chat.orderId !== o.id) openChat(o.id);
   return dHead(esc(o.customer.businessName || o.customer.name), "job", '<button class="btn ghost sm" data-act="d-job" data-v="' + esc(o.id) + '">Delivery</button>') + chatView(o, "courier", c.name);
 }
-function dEarnings(c) {
-  var done = myJobs().filter(function (o) { return o.status === "delivered"; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; });
-  var pend = done.filter(function (o) { return !o.courierPaid; }), paid = done.filter(function (o) { return o.courierPaid; });
-  var sum = function (l) { return l.reduce(function (s, o) { return s + earnOf(o); }, 0); };
-  var payouts = {}; paid.forEach(function (o) { var k = o.courierPayout || dmy(o.courierPaidAt); payouts[k] = payouts[k] || { at: o.courierPaidAt, total: 0, n: 0 }; payouts[k].total += earnOf(o); payouts[k].n++; });
-  return dHead("Earnings") + '<div class="pad"><div class="stat3"><div><b class="num">' + eur(sum(done)) + '</b><small>All time</small></div><div><b class="num">' + eur(sum(pend)) + '</b><small>Pending</small></div><div><b class="num">' + eur(sum(paid)) + "</b><small>Paid</small></div></div>" +
-    '<p class="muted sm">You earn the amount shown on each delivery. Pending earnings are paid every Monday to ' + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") + ".</p>" +
-    (Object.keys(payouts).length ? '<div class="sec-h"><h3>Payments</h3></div><div class="list">' + Object.keys(payouts).map(function (k) { var p = payouts[k]; return '<div class="item"><b>Paid ' + dmy(p.at) + '</b><b class="num">' + eur(p.total) + "</b><small>" + p.n + " deliveries</small><small></small></div>"; }).join("") + "</div>" : "") +
-    '<div class="sec-h"><h3>Completed deliveries</h3></div>' + (done.length ? '<div class="list">' + done.map(function (o) { return '<button class="item" data-act="d-job" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num">' + eur(earnOf(o)) + "</b><small>" + when(o.timeline.delivered) + " · " + esc(o.id) + "</small><small>" + (o.courierPaid ? "Paid" : "Pending") + ((o.review || o.rating) ? " · " + (o.review ? o.review.stars : o.rating) + "★" : "") + "</small>" +
-      '<span class="earn-lines"><span>Delivery ' + eur(payOf(o)) + "</span>" + (tipOf(o) ? '<span class="ok-t">Tip +' + eur(tipOf(o)) + "</span>" : "") + (lateFee(o) ? '<span class="bad-t">Late fee −' + eur(lateFee(o)) + "</span>" : "") + "</span></button>"; }).join("") + "</div>" : emptyState("No deliveries yet", "Completed deliveries and what you earned show up here.")) + "</div>";
+// ---------- Earnings ----------
+// Totals for a chosen period (like the big food-delivery apps), the deliveries behind them,
+// then statements: what's owed now, past payments, and a way to ask DART for an invoice.
+var EARN_P = [["today", "Today"], ["week", "This week"], ["lastweek", "Last week"], ["month", "This month"], ["lastmonth", "Last month"]];
+function dayStart(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+function weekStart(t) { var d = new Date(dayStart(t)); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.getTime(); }
+function monthStart(t, back) { var d = new Date(dayStart(t)); d.setDate(1); if (back) d.setMonth(d.getMonth() - back); return d.getTime(); }
+function earnRange(k, now) {
+  if (k === "today") return [dayStart(now), Infinity];
+  if (k === "week") return [weekStart(now), Infinity];
+  if (k === "lastweek") { var a = new Date(weekStart(now)); a.setDate(a.getDate() - 7); return [a.getTime(), weekStart(now)]; }
+  if (k === "lastmonth") return [monthStart(now, 1), monthStart(now)];
+  return [monthStart(now), Infinity];
 }
+function nextMonday(now) { var d = new Date(dayStart(now)); d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); return d.getTime(); }
+function bigEur(v) { var c = eur(v), m = c.match(/^(.*?)(\d[\d.,]*)([.,])(\d\d)(.*)$/); return m ? m[1] + m[2] + "<sup>" + m[3] + m[4] + "</sup>" + m[5] : c; }
+function doneJobs() { return myJobs().filter(function (o) { return o.status === "delivered"; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; }); }
+function jobTitle(o) { return o.customer.businessName || o.pickup.street || o.pickup.area; }
+function earnRow(o) {
+  return '<button class="earn-row" data-act="d-job" data-v="' + esc(o.id) + '"><span><b>' + esc(jobTitle(o)) + "</b><small>" + (isToday(o.timeline.delivered) ? hhmm(o.timeline.delivered) : when(o.timeline.delivered)) + " · " + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</small></span><b class="num">' + eur(earnOf(o)) + '</b><i aria-hidden="true">›</i></button>';
+}
+function dEarnings(c) {
+  var k = S.d.earnP || "week", r = earnRange(k, Date.now()), done = doneJobs();
+  var list = done.filter(function (o) { return o.timeline.delivered >= r[0] && o.timeline.delivered < r[1]; });
+  var sum = function (l, f) { return r2(l.reduce(function (s, o) { return s + f(o); }, 0)); };
+  var fees = sum(list, payOf), tips = sum(list, tipOf), late = sum(list, lateFee), total = sum(list, earnOf);
+  var pend = done.filter(function (o) { return !o.courierPaid; }), owed = sum(pend, earnOf), paidRuns = payoutRuns(done);
+  var shown = S.d.earnAll ? list : list.slice(0, 3);
+  return dHead("Earnings") + '<div class="pad">' +
+    '<div class="seg inline earn-p">' + EARN_P.map(function (p) { return '<button class="' + (k === p[0] ? "on" : "") + '" data-act="d-earn-p" data-v="' + p[0] + '">' + p[1] + "</button>"; }).join("") + "</div>" +
+    '<div class="card earn-sum"><div class="earn-top"><div><b class="earn-big num">' + bigEur(total) + '</b><small>Total earnings</small></div><div><b class="earn-big num">' + list.length + "</b><small>" + (list.length === 1 ? "Delivery" : "Deliveries") + "</small></div></div>" +
+    '<p class="earn-break">Delivery fees <b class="num">' + eur(fees) + "</b> · Tips <b class=\"num\">" + eur(tips) + "</b>" + (late ? ' · Late fees <b class="num bad-t">−' + eur(late) + "</b>" : "") + "</p></div>" +
+    (list.length ? '<div class="earn-list">' + shown.map(earnRow).join("") + (list.length > 3 ? '<button class="link earn-more" data-act="d-earn-all">' + (S.d.earnAll ? "Show less" : "See all " + list.length) + "</button>" : "") + "</div>"
+      : '<p class="muted center">No deliveries in this period.</p>') +
+    '<div class="sec-h"><h3>Statements</h3></div><div class="menu">' +
+    '<div class="menu-row"><b>Current balance</b><b class="num">' + eur(owed) + '</b><span>' + (owed ? "Paid on " + dmy(nextMonday(Date.now())) + " to " + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") : "Nothing waiting to be paid") + "</span></div>" +
+    '<button data-act="d-go" data-v="payments"><b>Previous payments</b><span>' + (paidRuns.length ? paidRuns.length + (paidRuns.length === 1 ? " payment" : " payments") + " · last " + dmy(paidRuns[0].at) : "None yet") + "</span><i>›</i></button>" +
+    '<button data-act="d-go" data-v="invreq"><b>Request an invoice</b><span>For a month, sent to you by DART</span><i>›</i></button></div>' +
+    '<p class="muted sm">You earn the amount shown on each delivery. Payments go out every Monday.</p></div>';
+}
+ACT["d-earn-p"] = function (d) { S.d.earnP = d.v; S.d.earnAll = false; render(); };
+ACT["d-earn-all"] = function () { S.d.earnAll = !S.d.earnAll; render(); };
+// Each payout DART records groups the deliveries it covered.
+function payoutRuns(done) {
+  var runs = {};
+  done.filter(function (o) { return o.courierPaid; }).forEach(function (o) { var k = o.courierPayout || dmy(o.courierPaidAt); runs[k] = runs[k] || { id: k, at: o.courierPaidAt, jobs: [] }; runs[k].jobs.push(o); });
+  return Object.keys(runs).map(function (k) { return runs[k]; }).sort(function (a, b) { return b.at - a.at; });
+}
+function dPayments(c) {
+  var runs = payoutRuns(doneJobs());
+  return dHead("Previous payments", "earnings") + '<div class="pad">' + (runs.length ? '<div class="menu">' + runs.map(function (p) {
+    return '<button data-act="d-statement" data-v="' + esc(p.id) + '"><b>' + dmy(p.at) + '</b><span>' + p.jobs.length + (p.jobs.length === 1 ? " delivery" : " deliveries") + " · " + eur(r2(p.jobs.reduce(function (s, o) { return s + earnOf(o); }, 0))) + "</span><i>›</i></button>";
+  }).join("") + "</div>" : emptyState("No payments yet", "Each Monday's payment shows up here with the deliveries it covers.")) + "</div>";
+}
+ACT["d-statement"] = function (d) { S.modal = { kind: "d-statement", id: d.v }; render(); };
+function statementModal(m) {
+  var p = payoutRuns(doneJobs()).filter(function (x) { return x.id === m.id; })[0]; if (!p) return "";
+  var sum = function (f) { return r2(p.jobs.reduce(function (s, o) { return s + f(o); }, 0)); };
+  return modalShell("Payment " + dmy(p.at),
+    '<div class="card"><dl class="kv">' + p.jobs.map(function (o) { return "<dt>" + esc(o.id) + " · " + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '<br><span class="muted sm">' + when(o.timeline.delivered) + '</span></dt><dd class="num">' + eur(earnOf(o)) + "</dd>"; }).join("") +
+    '<dt class="muted">Delivery fees</dt><dd class="muted num">' + eur(sum(payOf)) + '</dd><dt class="muted">Tips</dt><dd class="muted num">' + eur(sum(tipOf)) + "</dd>" + (sum(lateFee) ? '<dt class="muted">Late fees</dt><dd class="muted num">−' + eur(sum(lateFee)) + "</dd>" : "") +
+    '<dt class="tot">Paid</dt><dd class="tot num">' + eur(sum(earnOf)) + "</dd></dl></div>",
+    '<button class="btn" data-act="d-go" data-v="invreq">Request an invoice</button>');
+}
+function dInvoiceRequest(c) {
+  var done = doneJobs(), months = [];
+  for (var i = 0; i < 12; i++) { var a = monthStart(Date.now(), i), b = i ? monthStart(Date.now(), i - 1) : Infinity, n = done.filter(function (o) { return o.timeline.delivered >= a && o.timeline.delivered < b; }); if (n.length || i < 2) months.push([String(a), new Date(a).toLocaleDateString(locale(), { month: "long", year: "numeric" }) + " · " + n.length + (n.length === 1 ? " delivery" : " deliveries")]); }
+  if (!S.d.invreq) S.d.invreq = { month: months[0][0], note: "" };
+  var mine = (S.tickets || []).filter(function (t) { return t.courierId === c.id && t.topic === "invoice"; }).sort(function (a, b) { return b.createdAt - a.createdAt; });
+  return dHead("Request an invoice", "earnings") + '<div class="pad"><form class="card stack" data-form="d-invreq"><p class="muted sm">DART prepares an invoice for your deliveries in the month you choose and sends it to ' + esc(c.email) + ".</p>" +
+    field("Month", sel("d.invreq.month", S.d.invreq.month, months)) + field("Anything to add? (optional)", txt("d.invreq.note", S.d.invreq.note, 'rows="2" placeholder="e.g. My Partita IVA, or a different email"')) + '<button class="btn">Send request</button></form>' +
+    (mine.length ? '<div class="sec-h"><h3>Your requests</h3></div>' + mine.map(ticketCard).join("") : "") + "</div>";
+}
+FORMS["d-invreq"] = function () {
+  var c = myCourier(), q = S.d.invreq, a = +q.month, label = new Date(a).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  var end = monthStart(a, -1), jobs = doneJobs().filter(function (o) { return o.timeline.delivered >= a && o.timeline.delivered < end; });
+  var text = "Please send an invoice for " + label + ": " + jobs.length + " deliveries, " + eur(r2(jobs.reduce(function (s, o) { return s + earnOf(o); }, 0))) + "." + (clip(q.note, 500) ? "\n" + clip(q.note, 500) : "");
+  S.d.invreq = null;
+  run(Store.set("tickets", "T-" + rid(6), { from: "courier", courierId: c.id, name: c.name, orderId: null, topic: "invoice", subject: "Invoice request: " + label, text: text, status: "open", replies: [], createdAt: Date.now() }), "Request sent. DART will email your invoice.");
+};
 function dHistory() {
   var list = myJobs().sort(function (a, b) { return b.createdAt - a.createdAt; });
   return dHead("Delivery history", "account") + '<div class="pad">' + (list.length ? '<div class="list">' + list.map(function (o) { return '<button class="item" data-act="d-job" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + "</b>" + chip(o.status) + "<small>" + when(o.createdAt) + " · " + esc(o.id) + '</small><small class="num">' + eur(payOf(o)) + "</small></button>"; }).join("") + "</div>" : emptyState("No deliveries yet", "")) + "</div>";

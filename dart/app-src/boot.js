@@ -45,6 +45,7 @@ function modalHTML(m) {
     case "a-customer": return aCustomerModal(m);
     case "a-courier": return aCourierModal(m);
     case "a-ticket": return aTicketModal(m);
+    case "d-statement": return statementModal(m);
   }
   return "";
 }

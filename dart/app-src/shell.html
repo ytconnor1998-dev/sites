@@ -230,6 +230,27 @@ textarea.input { resize: vertical; min-height: 60px; }
 .online-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 8px; background: var(--paper-2); }
 .online-card.on { background: var(--ok-soft); color: var(--ok); }
 .online-card b { font-size: 16px; }
+/* Courier earnings */
+.earn-p { margin-bottom: 2px; }
+.earn-sum { gap: 0; padding: 18px 16px 12px; }
+.earn-top { display: grid; grid-template-columns: 1.4fr 1fr; text-align: center; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.earn-top div { display: grid; gap: 2px; }
+.earn-big { font-size: 38px; font-weight: 900; color: var(--purple); letter-spacing: -.03em; line-height: 1.05; }
+.earn-big sup { font-size: .45em; vertical-align: top; position: relative; top: .25em; margin-left: 1px; }
+.earn-top small { color: var(--muted); font-size: 14px; }
+.earn-break { text-align: center; color: var(--muted); font-size: 13px; padding-top: 10px; }
+.earn-break b { color: var(--ink); white-space: nowrap; }
+.earn-list { display: grid; border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
+.earn-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; text-align: left; padding: 13px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: inherit; }
+.earn-row span { display: grid; gap: 2px; min-width: 0; }
+.earn-row span b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.earn-row small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.earn-row i { font-style: normal; font-size: 20px; color: var(--purple); }
+.earn-more { padding: 12px 14px; text-align: left; font-weight: 700; }
+.earn-list .earn-row:last-of-type { border-bottom: 0; }
+.earn-list .earn-more { border-top: 1px solid var(--line); }
+.menu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 13px 14px; border-bottom: 1px solid var(--line); }
+.menu-row span { color: var(--muted); font-size: 13px; grid-column: 1 / -1; }
 .stat3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .stat3 div { background: var(--paper-2); border-radius: 6px; padding: 10px; display: grid; min-width: 0; }
 .stat3 b { font-size: 17px; font-weight: 800; overflow-wrap: anywhere; }

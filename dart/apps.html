@@ -230,6 +230,27 @@ textarea.input { resize: vertical; min-height: 60px; }
 .online-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 8px; background: var(--paper-2); }
 .online-card.on { background: var(--ok-soft); color: var(--ok); }
 .online-card b { font-size: 16px; }
+/* Courier earnings */
+.earn-p { margin-bottom: 2px; }
+.earn-sum { gap: 0; padding: 18px 16px 12px; }
+.earn-top { display: grid; grid-template-columns: 1.4fr 1fr; text-align: center; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.earn-top div { display: grid; gap: 2px; }
+.earn-big { font-size: 38px; font-weight: 900; color: var(--purple); letter-spacing: -.03em; line-height: 1.05; }
+.earn-big sup { font-size: .45em; vertical-align: top; position: relative; top: .25em; margin-left: 1px; }
+.earn-top small { color: var(--muted); font-size: 14px; }
+.earn-break { text-align: center; color: var(--muted); font-size: 13px; padding-top: 10px; }
+.earn-break b { color: var(--ink); white-space: nowrap; }
+.earn-list { display: grid; border: 1px solid var(--line); border-radius: 8px; background: var(--card); overflow: hidden; }
+.earn-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; text-align: left; padding: 13px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: inherit; }
+.earn-row span { display: grid; gap: 2px; min-width: 0; }
+.earn-row span b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.earn-row small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.earn-row i { font-style: normal; font-size: 20px; color: var(--purple); }
+.earn-more { padding: 12px 14px; text-align: left; font-weight: 700; }
+.earn-list .earn-row:last-of-type { border-bottom: 0; }
+.earn-list .earn-more { border-top: 1px solid var(--line); }
+.menu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 13px 14px; border-bottom: 1px solid var(--line); }
+.menu-row span { color: var(--muted); font-size: 13px; grid-column: 1 / -1; }
 .stat3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .stat3 div { background: var(--paper-2); border-radius: 6px; padding: 10px; display: grid; min-width: 0; }
 .stat3 b { font-size: 17px; font-weight: 800; overflow-wrap: anywhere; }
@@ -1731,7 +1752,7 @@ Object.assign(IT, {
   "Problem reported. DART support will get back to you.": "Problema segnalato. L'assistenza DART ti ricontatterà.", "Profile saved": "Profilo salvato", "Refund recorded": "Rimborso registrato", "Reply sent": "Risposta inviata", "Request updated": "Richiesta aggiornata", "Rules saved and live": "Regole salvate e attive", "Sent to DART for approval": "Inviato a DART per l'approvazione", "Sent to DART support": "Inviato all'assistenza DART",
   "Sent. DART support will reply here.": "Inviato. L'assistenza DART risponderà qui.", "Settings saved and live": "Impostazioni salvate e attive", "Thanks for rating your courier": "Grazie per aver valutato il corriere", "Your plan will renew as normal": "Il tuo piano si rinnoverà normalmente", "Courier approved": "Corriere approvato", "Application rejected": "Candidatura rifiutata", "Courier suspended": "Corriere sospeso",
   "Vehicle change approved": "Cambio veicolo approvato", "Vehicle change declined": "Cambio veicolo non approvato", "Account reactivated": "Account riattivato", "Account suspended": "Account sospeso", "Order cancelled": "Ordine annullato", "Name saved": "Nome salvato", "Delivery cancelled and refunded": "Consegna annullata e rimborsata", "It was already taken.": "Era già stata presa.",
-  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
+  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "Today": "Oggi", "This week": "Questa settimana", "Last week": "Settimana scorsa", "This month": "Questo mese", "Last month": "Mese scorso", "Total earnings": "Guadagni totali", "Delivery": "Consegna", "Deliveries": "Consegne", "Delivery fees": "Compensi consegne", "Tips": "Mance", "Late fees": "Penali ritardo", "No deliveries in this period.": "Nessuna consegna in questo periodo.", "Show less": "Mostra meno", "Statements": "Estratti conto", "Current balance": "Saldo attuale", "Nothing waiting to be paid": "Niente in attesa di pagamento", "Previous payments": "Pagamenti precedenti", "None yet": "Ancora nessuno", "Request an invoice": "Richiedi una fattura", "For a month, sent to you by DART": "Per un mese, inviata da DART", "You earn the amount shown on each delivery. Payments go out every Monday.": "Guadagni l'importo mostrato su ogni consegna. I pagamenti partono ogni lunedì.", "No payments yet": "Ancora nessun pagamento", "Each Monday's payment shows up here with the deliveries it covers.": "Qui compare il pagamento di ogni lunedì con le consegne incluse.", "Paid": "Pagato", "Month": "Mese", "Anything to add? (optional)": "Qualcosa da aggiungere? (facoltativo)", "e.g. My Partita IVA, or a different email": "es. La mia Partita IVA o un'altra email", "Send request": "Invia richiesta", "Request sent. DART will email your invoice.": "Richiesta inviata. DART ti invierà la fattura via email.", "This delivery is finished": "Questa consegna è conclusa", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Vai su Aiuto e segnala un problema.", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Contatta DART da Account → Aiuto.", "Finding your location…": "Ricerca della tua posizione…", "Turn on location for DART Courier.": "Attiva la posizione per DART Courier.", "Location check: testing": "Controllo posizione: test", "Give this delivery back?": "Restituire questa consegna?", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
   "Booked. We're finding you a courier.": "Prenotato. Stiamo cercando un corriere.", "Business features are on": "Funzioni aziendali attive", "Business details saved": "Dati aziendali salvati", "You're now a business account. Choose a plan below.": "Ora hai un account aziendale. Scegli un piano qui sotto.", "Your plan will renew as normal.": "Il tuo piano si rinnoverà normalmente.",
   "Photo estimates aren't available. Enter the measurements instead.": "Le stime dalle foto non sono disponibili. Inserisci le misure.", "The photo estimate didn't work this time. Enter the measurements instead.": "La stima dalla foto non ha funzionato. Inserisci le misure.", "We couldn't tell the size from these photos. Please measure the item.": "Non riusciamo a capire le misure da queste foto. Misura l'oggetto.",
   "Start with where it's going.": "Inizia da dove deve andare.", "Add the street addresses to continue.": "Aggiungi le vie per continuare.", "Connecting to DART…": "Connessione a DART…", "Loading DART…": "Caricamento di DART…", "Problem reported.": "Problema segnalato.",
@@ -1782,7 +1803,7 @@ IT_PATTERNS.push(
   [/^charged now: (.+)$/, "addebitato ora: $1"], [/^Weight estimated at about (.+) kg from the size$/, "Peso stimato circa $1 kg in base alle misure"], [/^Weight over (\d+) kg$/, "Peso oltre $1 kg"],
   [/^Welcome to DART, (.+)$/, "Benvenuto in DART, $1"], [/^Welcome back, (.+)$/, "Bentornato, $1"], [/^Welcome to DART\. (\d+) earlier deliver(?:y was|ies were) added to your account\.$/, "Benvenuto in DART. $1 consegne precedenti sono state aggiunte al tuo account."],
   [/^You earned (.+)\. It's paid out with your next weekly payment\.$/, "Hai guadagnato $1. Ti verrà pagato con il prossimo pagamento settimanale."],
-  [/^You earn the amount shown on each delivery\. Pending earnings are paid every Monday to (.+)\.$/, function (m, w) { return "Guadagni l'importo mostrato su ogni consegna. I guadagni in attesa vengono pagati ogni lunedì su " + (w === "your bank" ? "il tuo conto" : trItem(w)) + "."; }],
+  [/^(\d+) payments? · last (.+)$/, function (m, n, d) { return n + (n === "1" ? " pagamento" : " pagamenti") + " · ultimo " + d; }], [/^Paid on (.+) to (.+)$/, function (m, d, w) { return "Pagato il " + d + " su " + (w === "your bank" ? "il tuo conto" : w.replace("IBAN ending", "IBAN che termina con")); }], [/^See all (\d+)$/, "Vedi tutte ($1)"], [/^Payment (.+)$/, "Pagamento $1"], [/^(\d+) deliver(?:y|ies) · (.+)$/, function (m, n, a) { return n + (n === "1" ? " consegna" : " consegne") + " · " + a; }], [/^You earn the amount shown on each delivery\. Pending earnings are paid every Monday to (.+)\.$/, function (m, w) { return "Guadagni l'importo mostrato su ogni consegna. I guadagni in attesa vengono pagati ogni lunedì su " + (w === "your bank" ? "il tuo conto" : trItem(w)) + "."; }],
   [/^signed up with (email|google) on (.+)$/, function (m, p, d) { return "iscritto con " + (p === "google" ? "Google" : "email") + " il " + d; }],
   [/^(.+) a month for (\d+) deliveries, charged to (.+) today and every month until you cancel\.( Your new allowance starts today\.)?$/, function (m, p, n, c, x) { return p + " al mese per " + n + " consegne, addebitati su " + c + " oggi e ogni mese fino alla disdetta." + (x ? " Le nuove consegne incluse partono da oggi." : ""); }],
   [/^Delivered at (.+)$/, "Consegnata alle $1"], [/^You're on the (.+) plan$/, "Ora hai il piano $1"], [/^Your plan will end on (.+)$/, "Il tuo piano termina il $1"], [/^Ends on (.+)\. You can keep using it until then\.$/, "Termina il $1. Puoi usarlo fino ad allora."],
@@ -3404,7 +3425,7 @@ var D_NAV = [["home", "Jobs", "send"], ["earnings", "Earnings", "euro"], ["accou
 function courierApp() {
   var c = myCourier();
   var body = !c ? dAuth() : dView(c);
-  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "home" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
+  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "home" : ["payments", "invreq"].indexOf(S.d.view) >= 0 ? "earnings" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
   var un = c ? myJobs().reduce(function (s, o) { return s + unread(o, "courier"); }, 0) : 0;
   var tabs = c && c.status === "approved" ? '<nav class="tabs t3">' + D_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="d-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + (n[0] === "messages" && un ? '<span class="badge">' + un + "</span>" : "") + "</button>"; }).join("") + "</nav>" : "";
   var offer = c && c.status === "approved" ? myOffer() : null;
@@ -3422,6 +3443,8 @@ function dView(c) {
     case "account": return dAccount(c);
     case "vehicle": return dVehicle(c);
     case "payout": return dPayout(c);
+    case "payments": return dPayments(c);
+    case "invreq": return dInvoiceRequest(c);
     case "history": return dHistory();
     case "help": return dHelp(c);
     case "notes": return dNotesView();
@@ -3514,7 +3537,7 @@ function dWaiting(c) {
 }
 ACT["d-logout"] = function () { var c = myCourier(); if (c && c.online) Store.update("couriers", c.id, { online: false, updatedAt: Date.now() }).catch(function () { }); S.me.courierId = null; saveMe(); S.d.view = "home"; closeChat(); render(); };
 
-ACT["d-go"] = function (d) { if (d.v !== "chat") closeChat(); S.d.view = d.v || "home"; if (d.v === "notes") { S.me.seen.courier = Date.now(); saveMe(); } render(); };
+ACT["d-go"] = function (d) { if (d.v !== "chat") closeChat(); S.modal = null; S.d.view = d.v || "home"; if (d.v === "notes") { S.me.seen.courier = Date.now(); saveMe(); } render(); };
 ACT["d-area"] = function (d) { var c = myCourier(); if (LIVE && settings().gpsTest === false) return; if (c) run(Store.update("couriers", c.id, { area: d.v, updatedAt: Date.now() })); };
 ACT["d-online"] = function () {
   var c = myCourier(); if (!c) return;
@@ -3719,17 +3742,86 @@ function dChat(c) {
   if (Chat.orderId !== o.id) openChat(o.id);
   return dHead(esc(o.customer.businessName || o.customer.name), "job", '<button class="btn ghost sm" data-act="d-job" data-v="' + esc(o.id) + '">Delivery</button>') + chatView(o, "courier", c.name);
 }
-function dEarnings(c) {
-  var done = myJobs().filter(function (o) { return o.status === "delivered"; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; });
-  var pend = done.filter(function (o) { return !o.courierPaid; }), paid = done.filter(function (o) { return o.courierPaid; });
-  var sum = function (l) { return l.reduce(function (s, o) { return s + earnOf(o); }, 0); };
-  var payouts = {}; paid.forEach(function (o) { var k = o.courierPayout || dmy(o.courierPaidAt); payouts[k] = payouts[k] || { at: o.courierPaidAt, total: 0, n: 0 }; payouts[k].total += earnOf(o); payouts[k].n++; });
-  return dHead("Earnings") + '<div class="pad"><div class="stat3"><div><b class="num">' + eur(sum(done)) + '</b><small>All time</small></div><div><b class="num">' + eur(sum(pend)) + '</b><small>Pending</small></div><div><b class="num">' + eur(sum(paid)) + "</b><small>Paid</small></div></div>" +
-    '<p class="muted sm">You earn the amount shown on each delivery. Pending earnings are paid every Monday to ' + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") + ".</p>" +
-    (Object.keys(payouts).length ? '<div class="sec-h"><h3>Payments</h3></div><div class="list">' + Object.keys(payouts).map(function (k) { var p = payouts[k]; return '<div class="item"><b>Paid ' + dmy(p.at) + '</b><b class="num">' + eur(p.total) + "</b><small>" + p.n + " deliveries</small><small></small></div>"; }).join("") + "</div>" : "") +
-    '<div class="sec-h"><h3>Completed deliveries</h3></div>' + (done.length ? '<div class="list">' + done.map(function (o) { return '<button class="item" data-act="d-job" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num">' + eur(earnOf(o)) + "</b><small>" + when(o.timeline.delivered) + " · " + esc(o.id) + "</small><small>" + (o.courierPaid ? "Paid" : "Pending") + ((o.review || o.rating) ? " · " + (o.review ? o.review.stars : o.rating) + "★" : "") + "</small>" +
-      '<span class="earn-lines"><span>Delivery ' + eur(payOf(o)) + "</span>" + (tipOf(o) ? '<span class="ok-t">Tip +' + eur(tipOf(o)) + "</span>" : "") + (lateFee(o) ? '<span class="bad-t">Late fee −' + eur(lateFee(o)) + "</span>" : "") + "</span></button>"; }).join("") + "</div>" : emptyState("No deliveries yet", "Completed deliveries and what you earned show up here.")) + "</div>";
+// ---------- Earnings ----------
+// Totals for a chosen period (like the big food-delivery apps), the deliveries behind them,
+// then statements: what's owed now, past payments, and a way to ask DART for an invoice.
+var EARN_P = [["today", "Today"], ["week", "This week"], ["lastweek", "Last week"], ["month", "This month"], ["lastmonth", "Last month"]];
+function dayStart(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+function weekStart(t) { var d = new Date(dayStart(t)); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.getTime(); }
+function monthStart(t, back) { var d = new Date(dayStart(t)); d.setDate(1); if (back) d.setMonth(d.getMonth() - back); return d.getTime(); }
+function earnRange(k, now) {
+  if (k === "today") return [dayStart(now), Infinity];
+  if (k === "week") return [weekStart(now), Infinity];
+  if (k === "lastweek") { var a = new Date(weekStart(now)); a.setDate(a.getDate() - 7); return [a.getTime(), weekStart(now)]; }
+  if (k === "lastmonth") return [monthStart(now, 1), monthStart(now)];
+  return [monthStart(now), Infinity];
 }
+function nextMonday(now) { var d = new Date(dayStart(now)); d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); return d.getTime(); }
+function bigEur(v) { var c = eur(v), m = c.match(/^(.*?)(\d[\d.,]*)([.,])(\d\d)(.*)$/); return m ? m[1] + m[2] + "<sup>" + m[3] + m[4] + "</sup>" + m[5] : c; }
+function doneJobs() { return myJobs().filter(function (o) { return o.status === "delivered"; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; }); }
+function jobTitle(o) { return o.customer.businessName || o.pickup.street || o.pickup.area; }
+function earnRow(o) {
+  return '<button class="earn-row" data-act="d-job" data-v="' + esc(o.id) + '"><span><b>' + esc(jobTitle(o)) + "</b><small>" + (isToday(o.timeline.delivered) ? hhmm(o.timeline.delivered) : when(o.timeline.delivered)) + " · " + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</small></span><b class="num">' + eur(earnOf(o)) + '</b><i aria-hidden="true">›</i></button>';
+}
+function dEarnings(c) {
+  var k = S.d.earnP || "week", r = earnRange(k, Date.now()), done = doneJobs();
+  var list = done.filter(function (o) { return o.timeline.delivered >= r[0] && o.timeline.delivered < r[1]; });
+  var sum = function (l, f) { return r2(l.reduce(function (s, o) { return s + f(o); }, 0)); };
+  var fees = sum(list, payOf), tips = sum(list, tipOf), late = sum(list, lateFee), total = sum(list, earnOf);
+  var pend = done.filter(function (o) { return !o.courierPaid; }), owed = sum(pend, earnOf), paidRuns = payoutRuns(done);
+  var shown = S.d.earnAll ? list : list.slice(0, 3);
+  return dHead("Earnings") + '<div class="pad">' +
+    '<div class="seg inline earn-p">' + EARN_P.map(function (p) { return '<button class="' + (k === p[0] ? "on" : "") + '" data-act="d-earn-p" data-v="' + p[0] + '">' + p[1] + "</button>"; }).join("") + "</div>" +
+    '<div class="card earn-sum"><div class="earn-top"><div><b class="earn-big num">' + bigEur(total) + '</b><small>Total earnings</small></div><div><b class="earn-big num">' + list.length + "</b><small>" + (list.length === 1 ? "Delivery" : "Deliveries") + "</small></div></div>" +
+    '<p class="earn-break">Delivery fees <b class="num">' + eur(fees) + "</b> · Tips <b class=\"num\">" + eur(tips) + "</b>" + (late ? ' · Late fees <b class="num bad-t">−' + eur(late) + "</b>" : "") + "</p></div>" +
+    (list.length ? '<div class="earn-list">' + shown.map(earnRow).join("") + (list.length > 3 ? '<button class="link earn-more" data-act="d-earn-all">' + (S.d.earnAll ? "Show less" : "See all " + list.length) + "</button>" : "") + "</div>"
+      : '<p class="muted center">No deliveries in this period.</p>') +
+    '<div class="sec-h"><h3>Statements</h3></div><div class="menu">' +
+    '<div class="menu-row"><b>Current balance</b><b class="num">' + eur(owed) + '</b><span>' + (owed ? "Paid on " + dmy(nextMonday(Date.now())) + " to " + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") : "Nothing waiting to be paid") + "</span></div>" +
+    '<button data-act="d-go" data-v="payments"><b>Previous payments</b><span>' + (paidRuns.length ? paidRuns.length + (paidRuns.length === 1 ? " payment" : " payments") + " · last " + dmy(paidRuns[0].at) : "None yet") + "</span><i>›</i></button>" +
+    '<button data-act="d-go" data-v="invreq"><b>Request an invoice</b><span>For a month, sent to you by DART</span><i>›</i></button></div>' +
+    '<p class="muted sm">You earn the amount shown on each delivery. Payments go out every Monday.</p></div>';
+}
+ACT["d-earn-p"] = function (d) { S.d.earnP = d.v; S.d.earnAll = false; render(); };
+ACT["d-earn-all"] = function () { S.d.earnAll = !S.d.earnAll; render(); };
+// Each payout DART records groups the deliveries it covered.
+function payoutRuns(done) {
+  var runs = {};
+  done.filter(function (o) { return o.courierPaid; }).forEach(function (o) { var k = o.courierPayout || dmy(o.courierPaidAt); runs[k] = runs[k] || { id: k, at: o.courierPaidAt, jobs: [] }; runs[k].jobs.push(o); });
+  return Object.keys(runs).map(function (k) { return runs[k]; }).sort(function (a, b) { return b.at - a.at; });
+}
+function dPayments(c) {
+  var runs = payoutRuns(doneJobs());
+  return dHead("Previous payments", "earnings") + '<div class="pad">' + (runs.length ? '<div class="menu">' + runs.map(function (p) {
+    return '<button data-act="d-statement" data-v="' + esc(p.id) + '"><b>' + dmy(p.at) + '</b><span>' + p.jobs.length + (p.jobs.length === 1 ? " delivery" : " deliveries") + " · " + eur(r2(p.jobs.reduce(function (s, o) { return s + earnOf(o); }, 0))) + "</span><i>›</i></button>";
+  }).join("") + "</div>" : emptyState("No payments yet", "Each Monday's payment shows up here with the deliveries it covers.")) + "</div>";
+}
+ACT["d-statement"] = function (d) { S.modal = { kind: "d-statement", id: d.v }; render(); };
+function statementModal(m) {
+  var p = payoutRuns(doneJobs()).filter(function (x) { return x.id === m.id; })[0]; if (!p) return "";
+  var sum = function (f) { return r2(p.jobs.reduce(function (s, o) { return s + f(o); }, 0)); };
+  return modalShell("Payment " + dmy(p.at),
+    '<div class="card"><dl class="kv">' + p.jobs.map(function (o) { return "<dt>" + esc(o.id) + " · " + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '<br><span class="muted sm">' + when(o.timeline.delivered) + '</span></dt><dd class="num">' + eur(earnOf(o)) + "</dd>"; }).join("") +
+    '<dt class="muted">Delivery fees</dt><dd class="muted num">' + eur(sum(payOf)) + '</dd><dt class="muted">Tips</dt><dd class="muted num">' + eur(sum(tipOf)) + "</dd>" + (sum(lateFee) ? '<dt class="muted">Late fees</dt><dd class="muted num">−' + eur(sum(lateFee)) + "</dd>" : "") +
+    '<dt class="tot">Paid</dt><dd class="tot num">' + eur(sum(earnOf)) + "</dd></dl></div>",
+    '<button class="btn" data-act="d-go" data-v="invreq">Request an invoice</button>');
+}
+function dInvoiceRequest(c) {
+  var done = doneJobs(), months = [];
+  for (var i = 0; i < 12; i++) { var a = monthStart(Date.now(), i), b = i ? monthStart(Date.now(), i - 1) : Infinity, n = done.filter(function (o) { return o.timeline.delivered >= a && o.timeline.delivered < b; }); if (n.length || i < 2) months.push([String(a), new Date(a).toLocaleDateString(locale(), { month: "long", year: "numeric" }) + " · " + n.length + (n.length === 1 ? " delivery" : " deliveries")]); }
+  if (!S.d.invreq) S.d.invreq = { month: months[0][0], note: "" };
+  var mine = (S.tickets || []).filter(function (t) { return t.courierId === c.id && t.topic === "invoice"; }).sort(function (a, b) { return b.createdAt - a.createdAt; });
+  return dHead("Request an invoice", "earnings") + '<div class="pad"><form class="card stack" data-form="d-invreq"><p class="muted sm">DART prepares an invoice for your deliveries in the month you choose and sends it to ' + esc(c.email) + ".</p>" +
+    field("Month", sel("d.invreq.month", S.d.invreq.month, months)) + field("Anything to add? (optional)", txt("d.invreq.note", S.d.invreq.note, 'rows="2" placeholder="e.g. My Partita IVA, or a different email"')) + '<button class="btn">Send request</button></form>' +
+    (mine.length ? '<div class="sec-h"><h3>Your requests</h3></div>' + mine.map(ticketCard).join("") : "") + "</div>";
+}
+FORMS["d-invreq"] = function () {
+  var c = myCourier(), q = S.d.invreq, a = +q.month, label = new Date(a).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  var end = monthStart(a, -1), jobs = doneJobs().filter(function (o) { return o.timeline.delivered >= a && o.timeline.delivered < end; });
+  var text = "Please send an invoice for " + label + ": " + jobs.length + " deliveries, " + eur(r2(jobs.reduce(function (s, o) { return s + earnOf(o); }, 0))) + "." + (clip(q.note, 500) ? "\n" + clip(q.note, 500) : "");
+  S.d.invreq = null;
+  run(Store.set("tickets", "T-" + rid(6), { from: "courier", courierId: c.id, name: c.name, orderId: null, topic: "invoice", subject: "Invoice request: " + label, text: text, status: "open", replies: [], createdAt: Date.now() }), "Request sent. DART will email your invoice.");
+};
 function dHistory() {
   var list = myJobs().sort(function (a, b) { return b.createdAt - a.createdAt; });
   return dHead("Delivery history", "account") + '<div class="pad">' + (list.length ? '<div class="list">' + list.map(function (o) { return '<button class="item" data-act="d-job" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + "</b>" + chip(o.status) + "<small>" + when(o.createdAt) + " · " + esc(o.id) + '</small><small class="num">' + eur(payOf(o)) + "</small></button>"; }).join("") + "</div>" : emptyState("No deliveries yet", "")) + "</div>";
@@ -4638,6 +4730,7 @@ function modalHTML(m) {
     case "a-customer": return aCustomerModal(m);
     case "a-courier": return aCourierModal(m);
     case "a-ticket": return aTicketModal(m);
+    case "d-statement": return statementModal(m);
   }
   return "";
 }
