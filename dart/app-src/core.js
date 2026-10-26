@@ -297,7 +297,7 @@ window.addEventListener("storage", function (e) { if (e.key === LS && Store.mode
 // ---------- Shared state ----------
 var S = {
   orders: [], accounts: [], couriers: [], invoices: [], tickets: [], plans: [],
-  cfg: { rules: null, pricing: null, settings: null },
+  cfg: { rules: null, pricing: null, settings: null, discounts: null },
   me: Object.assign({ customerId: null, courierId: null, read: {}, seen: {}, declined: {} }, lsGet("dart-v2-me", {})),
   modal: null,
   c: {}, d: {}, a: {}
@@ -408,15 +408,35 @@ function partyFor(acc) {
   var b = acc && acc.business && acc.business.active ? acc.business : null;
   return b ? { name: b.name, address: b.address, vat: b.vat, email: b.email || acc.email, sdi: b.sdi, contact: acc.name } : { name: acc ? acc.name : "Customer", address: "", email: acc ? acc.email : "" };
 }
+// ---------- Discount codes and account credit ----------
+function discounts() { return (S.cfg.discounts && S.cfg.discounts.codes) || []; }
+function normCode(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20); }
+function codeUses(code, who) {
+  return S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.code === code && o.status !== "cancelled" && (!who || o.customer.id === who.id || (who.email && slugEmail(o.customer.email || "") === slugEmail(who.email))); }).length;
+}
+// Is this code valid for this booking? Returns the discount in euros, or why not.
+function checkCode(raw, total, who) {
+  var code = normCode(raw), d = discounts().filter(function (x) { return x.code === code; })[0];
+  if (!code) return null;
+  if (!d || d.active === false) return { ok: false, msg: "That code isn't valid." };
+  if (d.until && Date.now() > new Date(d.until + "T23:59:59").getTime()) return { ok: false, msg: "That code has expired." };
+  if (num(d.minOrder, 0) && total < num(d.minOrder, 0)) return { ok: false, msg: "This code needs a delivery of at least " + eur(d.minOrder) + "." };
+  if (num(d.maxUses, 0) && codeUses(code) >= num(d.maxUses, 0)) return { ok: false, msg: "That code has been used up." };
+  if (d.once && who && (who.id || who.email) && codeUses(code, who) > 0) return { ok: false, msg: "You've already used this code." };
+  if (d.newOnly && who && who.id && S.orders.some(function (o) { return o.customer.id === who.id && o.status !== "cancelled"; })) return { ok: false, msg: "This code is for your first delivery." };
+  var amount = d.type === "fixed" ? num(d.value, 0) : total * num(d.value, 0) / 100;
+  return { ok: true, code: code, amount: r2(Math.min(total, amount)), label: d.type === "fixed" ? eur(d.value) + " off" : num(d.value, 0) + "% off" };
+}
 function deliveryInvoice(o, acc, status) {
-  var vr = num(pricing().vatRate, 22), lines = (o.price.lines || []).slice();
-  var total = o.billing ? num(o.billing.amount, o.price.total) : o.price.total;
-  if (o.billing && o.billing.method === "subscription") lines = [{ label: o.billing.included ? "Delivery included in " + o.billing.planName : "Delivery under " + o.billing.planName, amount: total }];
+  var vr = num(pricing().vatRate, 22), lines = (o.price.lines || []).slice(), b = o.billing || {};
+  var disc = b.discount ? num(b.discount.amount, 0) : 0, total = b.method === "subscription" ? num(b.amount, o.price.total) : r2(o.price.total - disc);
+  if (b.method === "subscription") lines = [{ label: b.included ? "Delivery included in " + b.planName : "Delivery under " + b.planName, amount: total }];
+  else if (disc) lines.push({ label: "Discount " + b.discount.code, amount: -disc });
   var vat = r2(total - total / (1 + vr / 100));
   return {
     number: invoiceNo(), kind: "delivery", accountId: o.customer.id, party: partyFor(acc), orderId: o.id,
     lines: lines, total: r2(total), vat: vat, net: r2(total - vat), vatRate: vr,
-    status: status, method: o.billing ? o.billing.method : "card", issuedAt: Date.now(), paidAt: status === "paid" ? Date.now() : null,
+    status: status, method: o.billing ? o.billing.method : "card", creditUsed: b.credit ? num(b.credit, 0) : 0, issuedAt: Date.now(), paidAt: status === "paid" ? Date.now() : null,
     ref: { from: o.pickup.area + (o.pickup.street ? ", " + o.pickup.street : ""), to: o.dropoff.area + (o.dropoff.street ? ", " + o.dropoff.street : ""), item: cLabel(o.cls.category) + (o.item.desc ? ": " + o.item.desc : ""), km: o.price.km, date: o.timeline && o.timeline.delivered || o.createdAt }
   };
 }
@@ -440,7 +460,7 @@ function invoiceHTML(inv) {
     (inv.period ? "<p><b>Billing period</b><br>" + dmy(inv.period.from) + " to " + dmy(inv.period.to) + "</p>" : "") +
     "<table><thead><tr><th>Description</th><th style='text-align:right'>Amount</th></tr></thead><tbody>" + rows +
     "<tr><td class='muted'>Net</td><td style='text-align:right' class='muted'>" + eur(inv.net) + "</td></tr><tr><td class='muted'>VAT " + inv.vatRate + "% (included)</td><td style='text-align:right' class='muted'>" + eur(inv.vat) + "</td></tr>" +
-    "<tr class='tot'><td>Total</td><td style='text-align:right'>" + eur(inv.total) + "</td></tr></tbody></table>" +
+    "<tr class='tot'><td>Total</td><td style='text-align:right'>" + eur(inv.total) + "</td></tr>" + (inv.creditUsed ? "<tr><td>Paid with DART credit</td><td style='text-align:right'>" + eur(inv.creditUsed) + "</td></tr>" : "") + "</tbody></table>" +
     "<p class='muted' style='margin-top:30px'>Test invoice generated by the DART test build. Not a fiscal document.</p></body></html>";
 }
 
@@ -557,7 +577,7 @@ function invoiceModal(inv) {
     '<span class="muted">Issued ' + dmy(inv.issuedAt) + (inv.paidAt ? " · Paid " + dmy(inv.paidAt) : "") + "</span>" +
     (inv.ref ? "<span>" + esc(inv.ref.from) + " → " + esc(inv.ref.to) + "</span>" : "") +
     '<dl class="kv">' + (inv.lines || []).map(function (l) { return "<dt>" + esc(l.label) + '</dt><dd class="num">' + eur(l.amount) + "</dd>"; }).join("") +
-    '<dt class="muted">Net</dt><dd class="muted num">' + eur(inv.net) + '</dd><dt class="muted">VAT ' + inv.vatRate + '%</dt><dd class="muted num">' + eur(inv.vat) + '</dd><dt class="tot">Total</dt><dd class="tot num">' + eur(inv.total) + "</dd></dl>" +
+    '<dt class="muted">Net</dt><dd class="muted num">' + eur(inv.net) + '</dd><dt class="muted">VAT ' + inv.vatRate + '%</dt><dd class="muted num">' + eur(inv.vat) + '</dd><dt class="tot">Total</dt><dd class="tot num">' + eur(inv.total) + "</dd>" + (inv.creditUsed ? '<dt class="muted">Paid with DART credit</dt><dd class="muted num">' + eur(inv.creditUsed) + "</dd>" : "") + "</dl>" +
     '<span class="muted">Billed to ' + esc(inv.party && inv.party.name) + "</span></div>",
     '<button class="btn" data-act="inv-download" data-v="' + esc(inv.id) + '">Download invoice</button>');
 }

@@ -1,6 +1,6 @@
 // ===== DART admin portal =====
 S.a = { tab: "dash", q: "", status: "active", invKind: "all", invStatus: "all", tStatus: "open", rulesDraft: null, pricingDraft: null, settingsDraft: null, plan: null, preview: { from: "Monti", to: "Prati", cat: "medium" }, docs: {}, reply: "", decision: "", confirmClear: false };
-var A_NAV = [["dash", "Dashboard"], ["deliveries", "Deliveries"], ["customers", "Customers"], ["couriers", "Couriers"], ["rules", "Vehicles and items"], ["pricing", "Pricing"], ["plans", "Plans"], ["invoices", "Invoices"], ["payments", "Payments"], ["support", "Support"], ["reports", "Reports"], ["settings", "Settings"]];
+var A_NAV = [["dash", "Dashboard"], ["deliveries", "Deliveries"], ["customers", "Customers"], ["couriers", "Couriers"], ["rules", "Vehicles and items"], ["pricing", "Pricing"], ["plans", "Plans"], ["discounts", "Discounts"], ["invoices", "Invoices"], ["payments", "Payments"], ["support", "Support"], ["reports", "Reports"], ["settings", "Settings"]];
 
 function aCounts() {
   return {
@@ -21,6 +21,7 @@ function adminApp() {
     case "plans": main = aPlans(); break;
     case "invoices": main = aInvoices(); break;
     case "payments": main = aPayments(); break;
+    case "discounts": main = aDiscounts(); break;
     case "support": main = aSupport(); break;
     case "reports": main = aReports(); break;
     case "settings": main = aSettings(); break;
@@ -174,6 +175,11 @@ function aCustomerModal(m) {
   var os = S.orders.filter(function (o) { return o.customer.id === a.id; }), invs = S.invoices.filter(function (i) { return i.accountId === a.id; }), b = a.business, sub = a.subscription, plan = sub ? byId(S.plans, sub.planId) : null;
   var h = '<div class="a-detail"><div class="stack"><div class="card"><b>' + esc(a.name) + '</b><span class="muted sm">' + esc(a.email) + (a.phone ? " · " + esc(a.phone) : "") + " · signed up with " + esc(a.provider) + " on " + dmy(a.createdAt) + "</span>" +
     '<span class="chip ' + (a.status === "suspended" ? "s-bad" : "s-ok") + '">' + esc(a.status || "active") + "</span></div>";
+  var cr = S.a.credit && S.a.credit.id === a.id ? S.a.credit : (S.a.credit = { id: a.id, amount: "", reason: "" });
+  h += '<div class="card"><div class="row between"><b>DART credit</b><b>' + eur(num(a.credit, 0)) + "</b></div>" +
+    (a.creditLog || []).slice(-5).reverse().map(function (l) { return '<div class="row between sm"><span>' + esc(l.reason || "") + ' <span class="muted">· ' + dmy(l.at) + (l.by ? " · " + esc(l.by) : "") + "</span></span><b>" + (l.amount < 0 ? "−" + eur(-l.amount) : "+" + eur(l.amount)) + "</b></div>"; }).join("") +
+    '<div class="grid2">' + field("Amount €", inp("a.credit.amount", cr.amount, 'inputmode="decimal" placeholder="10"')) + field("Reason (the customer sees it)", inp("a.credit.reason", cr.reason, 'placeholder="Sorry about the late delivery"')) + "</div>" +
+    '<div class="row"><button class="btn sm" data-act="a-credit" data-v="add">Add credit</button><button class="btn sm ghost" data-act="a-credit" data-v="remove">Remove credit</button></div></div>';
   if (b && b.active) h += '<div class="card"><div class="row between"><b>' + esc(b.name) + '</b><span class="chip ' + (b.verified ? "s-ok" : "s-warn") + '">' + (b.verified ? "Verified" : "Not reviewed") + '</span></div><dl class="kv"><dt>Address</dt><dd>' + esc(b.address || "—") + "</dd><dt>P.IVA / CF</dt><dd>" + esc(b.vat || "—") + "</dd><dt>SDI / PEC</dt><dd>" + esc(b.sdi || "—") + "</dd><dt>Billing email</dt><dd>" + esc(b.email || "—") + "</dd><dt>Activated</dt><dd>" + dmy(b.activatedAt) + "</dd></dl>" +
     '<button class="btn ghost sm" data-act="a-biz-verify" data-v="' + esc(a.id) + '">' + (b.verified ? "Mark as not verified" : "Mark business as verified") + "</button></div>";
   if (sub) h += '<div class="card"><b>Plan: ' + esc(plan ? plan.name : sub.planId) + '</b><span class="chip ' + (sub.status === "active" ? "s-ok" : "s-bad") + '">' + esc(sub.status) + "</span>" + (plan ? usageBar(subUsage(a), plan.allowance) : "") + '<span class="muted sm">Started ' + dmy(sub.startedAt) + " · period ends " + dmy(sub.renewsAt) + (sub.cancelAtEnd ? " · cancels at end" : "") + "</span>" +
@@ -188,6 +194,48 @@ ACT["a-sub-fail"] = function (d) { run(Store.update("accounts", d.v, { subscript
 ACT["a-sub-end"] = function (d) { run(Store.update("accounts", d.v, { subscription: { status: "cancelled", endedAt: Date.now() } }), "Plan ended"); };
 
 // ---------- Couriers ----------
+ACT["a-credit"] = function (d) {
+  var cr = S.a.credit, a = cr && byId(S.accounts, cr.id), amt = r2(num(cr && cr.amount, 0)); if (!a) return;
+  if (!(amt > 0)) return toast("Enter an amount.");
+  if (!clip(cr.reason, 80)) return toast("Add a reason. The customer sees it.");
+  var delta = d.v === "remove" ? -Math.min(amt, num(a.credit, 0)) : amt;
+  run(Store.update("accounts", a.id, { credit: r2(num(a.credit, 0) + delta), creditLog: (a.creditLog || []).concat([{ amount: delta, reason: clip(cr.reason, 80), at: Date.now(), by: "DART" }]).slice(-50) }).then(function () { S.a.credit = null; }),
+    delta >= 0 ? eur(delta) + " credit added" : eur(-delta) + " credit removed");
+};
+
+// ---------- Discount codes ----------
+function aDiscounts() {
+  var list = discounts(), f = S.a.disc || (S.a.disc = { code: "", type: "percent", value: "", minOrder: "", maxUses: "", once: true, newOnly: false, until: "" });
+  var h = aHead("Discounts") + '<p class="muted">Codes customers type at checkout. Couriers are still paid on the full price.</p>';
+  h += '<div class="panel">' + (list.length ? '<div class="tbl"><table><thead><tr><th>Code</th><th>Discount</th><th>Rules</th><th>Used</th><th>Discount given</th><th>Status</th><th></th></tr></thead><tbody>' + list.map(function (x) {
+    var used = S.orders.filter(function (o) { return o.billing && o.billing.discount && o.billing.discount.code === x.code && o.status !== "cancelled"; });
+    var given = used.reduce(function (s, o) { return s + num(o.billing.discount.amount, 0); }, 0);
+    var expired = x.until && Date.now() > new Date(x.until + "T23:59:59").getTime();
+    var rules = [num(x.minOrder, 0) ? "Min " + eur(x.minOrder) : "", x.once ? "Once per customer" : "", x.newOnly ? "First delivery only" : "", x.until ? "Until " + x.until : ""].filter(Boolean).join(" · ") || "None";
+    return '<tr><td><b class="mono">' + esc(x.code) + "</b></td><td>" + (x.type === "fixed" ? eur(x.value) + " off" : num(x.value, 0) + "% off") + "</td><td>" + esc(rules) + "</td><td>" + used.length + (num(x.maxUses, 0) ? " / " + x.maxUses : "") + "</td><td>" + eur(given) + "</td><td>" +
+      '<span class="chip ' + (x.active === false || expired ? "s-bad" : "s-ok") + '">' + (expired ? "Expired" : x.active === false ? "Off" : "On") + '</span></td><td><button class="btn sm ghost" data-act="a-disc-toggle" data-v="' + esc(x.code) + '">' + (x.active === false ? "Turn on" : "Turn off") + "</button></td></tr>";
+  }).join("") + "</tbody></table></div>" : emptyState("No discount codes yet", "Create one below. Customers enter it when they book.")) + "</div>";
+  h += '<form class="panel pad-m" data-form="a-disc"><div class="panel-h">New code</div><div class="grid3">' +
+    field("Code", inp("a.disc.code", f.code, 'placeholder="WELCOME10" autocapitalize="characters" required')) +
+    field("Type", sel("a.disc.type", f.type, [["percent", "Percentage off"], ["fixed", "Amount off (€)"]])) +
+    field(f.type === "fixed" ? "Amount off €" : "Percentage off %", inp("a.disc.value", f.value, 'inputmode="decimal" required')) + "</div>" +
+    '<div class="grid3">' + field("Minimum delivery price €", inp("a.disc.minOrder", f.minOrder, 'inputmode="decimal" placeholder="None"')) + field("Total uses allowed", inp("a.disc.maxUses", f.maxUses, 'inputmode="numeric" placeholder="Unlimited"')) + field("Valid until", inp("a.disc.until", f.until, 'type="date"')) + "</div>" +
+    check("a.disc.once", f.once, "Each customer can use it once") + check("a.disc.newOnly", f.newOnly, "Only for a customer's first delivery") +
+    '<button class="btn">Create code</button></form>';
+  return h;
+}
+FORMS["a-disc"] = function () {
+  var f = S.a.disc, code = normCode(f.code), v = num(f.value, 0);
+  if (code.length < 3) return toast("Use at least 3 letters or numbers for the code.");
+  if (!(v > 0) || (f.type === "percent" && v > 100)) return toast(f.type === "percent" ? "Enter a percentage between 1 and 100." : "Enter the amount off.");
+  if (discounts().some(function (x) { return x.code === code; })) return toast("That code already exists.");
+  var item = { code: code, type: f.type === "fixed" ? "fixed" : "percent", value: v, minOrder: num(f.minOrder, 0), maxUses: Math.round(num(f.maxUses, 0)), once: !!f.once, newOnly: !!f.newOnly, until: /^\d{4}-\d\d-\d\d$/.test(f.until || "") ? f.until : "", active: true, createdAt: Date.now() };
+  run(Store.set("config", "discounts", { codes: discounts().concat([item]) }).then(function () { S.a.disc = null; }), "Code " + code + " created");
+};
+ACT["a-disc-toggle"] = function (d) {
+  run(Store.set("config", "discounts", { codes: discounts().map(function (x) { return x.code === d.v ? Object.assign({}, x, { active: x.active === false }) : x; }) }), "Saved");
+};
+
 // Late deliveries waiting for a decision: deduct a fee or waive it. Only before the courier is paid.
 function lateReview() {
   var list = S.orders.filter(function (o) { return o.status === "delivered" && o.late && !o.late.decided && !o.courierPaid; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; });

@@ -291,15 +291,37 @@ function newReview(acc) {
       check("c.guest.create", g.create, "Also create a DART account with these details, to keep your history and invoices in one place") +
       '<span class="sm">Already have an account? <button class="link" data-act="c-auth-open" data-v="login">Log in</button></span></div>';
   }
+  var k = checkout(acc, d, x);
+  h += savingsCard(acc, d, x);
   h += '<div class="card"><b>How do you want to pay?</b><div class="opts">' +
-    payOpt("applepay", '<span class="wallet"><svg aria-hidden="true"><use href="#t-apple"/></svg>Pay</span>', "Apple Pay · charged now: " + eur(x.q.total)) +
-    payOpt("googlepay", '<span class="wallet g"><svg aria-hidden="true"><use href="#t-g"/></svg>Pay</span>', "Google Pay · charged now: " + eur(x.q.total)) +
-    payOpt("card", "Card", (cards.filter(function (k) { return k.def; })[0] || cards[0] || { brand: "Visa", last4: "4242" }).brand + " •• " + (cards.filter(function (k) { return k.def; })[0] || cards[0] || { last4: "4242" }).last4 + " · charged now: " + eur(x.q.total)) +
+    payOpt("applepay", '<span class="wallet"><svg aria-hidden="true"><use href="#t-apple"/></svg>Pay</span>', "Apple Pay · charged now: " + eur(k.charge)) +
+    payOpt("googlepay", '<span class="wallet g"><svg aria-hidden="true"><use href="#t-g"/></svg>Pay</span>', "Google Pay · charged now: " + eur(k.charge)) +
+    payOpt("card", "Card", (cards.filter(function (k) { return k.def; })[0] || cards[0] || { brand: "Visa", last4: "4242" }).brand + " •• " + (cards.filter(function (k) { return k.def; })[0] || cards[0] || { last4: "4242" }).last4 + " · charged now: " + eur(k.charge)) +
     (x.sub ? payOpt("subscription", "Use my " + esc(x.sub.plan.name) + " plan", esc(x.sub.note) + " · you pay " + eur(x.sub.amount)) : "") +
-    (biz ? payOpt("invoice", "Monthly business invoice", "Added to this month's invoice: " + eur(x.q.total)) : "") +
+    (biz ? payOpt("invoice", "Monthly business invoice", "Added to this month's invoice: " + eur(k.charge)) : "") +
     "</div></div>";
-  return h + '<button class="btn block big" data-act="c-book"' + (busy ? " disabled" : "") + ">Confirm and book · " + eur(d.billing === "subscription" ? x.sub.amount : x.q.total) + "</button>" + '<p class="hint center">No real payment is taken in the test build.</p>';
+  return h + '<button class="btn block big" data-act="c-book"' + (busy ? " disabled" : "") + ">Confirm and book · " + eur(checkout(acc, d, x).charge) + "</button>" + '<p class="hint center">No real payment is taken in the test build.</p>';
 }
+// What the customer pays: price, minus a discount code, minus account credit.
+function checkout(acc, d, x) {
+  if (d.billing === "subscription" && x.sub) return { base: x.sub.amount, disc: null, credit: 0, charge: x.sub.amount };
+  var base = x.q.total, who = acc ? { id: acc.id, email: acc.email } : { email: S.c.guest.email };
+  var chk = d.code ? checkCode(d.code, base, who) : null, disc = chk && chk.ok ? chk : null, after = r2(base - (disc ? disc.amount : 0));
+  var credit = acc && d.useCredit !== false ? r2(Math.min(num(acc.credit, 0), after)) : 0;
+  return { base: base, disc: disc, bad: chk && !chk.ok ? chk.msg : "", credit: credit, charge: r2(after - credit) };
+}
+function savingsCard(acc, d, x) {
+  if (d.billing === "subscription") return "";
+  var k = checkout(acc, d, x), bal = acc ? num(acc.credit, 0) : 0;
+  var h = '<div class="card"><b>Discounts and credit</b>';
+  h += k.disc ? '<div class="row between"><span>Code <b>' + esc(k.disc.code) + "</b> · " + esc(k.disc.label) + '</span><span class="row"><b class="ok-t">−' + eur(k.disc.amount) + '</b><button type="button" class="link" data-act="c-code-clear">Remove</button></span></div>'
+    : '<div class="row code-row">' + inp("c.draft.codeIn", d.codeIn || "", 'placeholder="Discount code" autocapitalize="characters" autocomplete="off"') + '<button type="button" class="btn ghost sm" data-act="c-code">Apply</button></div>' + (k.bad ? '<span class="bad-t sm">' + esc(k.bad) + "</span>" : "");
+  if (bal > 0) h += check("c.draft.useCredit", d.useCredit !== false, "Use my DART credit (" + eur(bal) + " available)") + (k.credit ? '<div class="row between"><span>DART credit</span><b class="ok-t">−' + eur(k.credit) + "</b></div>" : "");
+  if (k.disc || k.credit) h += '<div class="row between total-row"><b>You pay</b><b>' + eur(k.charge) + "</b></div>";
+  return h + "</div>";
+}
+ACT["c-code"] = function () { var d = S.c.draft; d.code = normCode(d.codeIn); if (!d.code) return toast("Enter a code."); render(); };
+ACT["c-code-clear"] = function () { var d = S.c.draft; d.code = ""; d.codeIn = ""; render(); };
 function payOpt(v, title, sub) { var on = S.c.draft.billing === v; return '<button type="button" class="opt ' + (on ? "on" : "") + '" role="radio" aria-checked="' + on + '" data-act="c-pay" data-v="' + v + '"><b>' + title + "</b><span>" + sub + "</span></button>"; }
 
 ACT["c-go"] = function (d) {
@@ -395,8 +417,11 @@ ACT["c-book"] = function () {
     if (g.create && findAccount(g.email)) return toast("That email already has a DART account. Log in to book with it.");
   }
   var now = Date.now(), id = "DRT-" + rid(3) + "-" + rid(3), method = d.billing;
-  var amount = method === "subscription" && x.sub ? x.sub.amount : x.q.total;
-  var billing = { method: method, amount: r2(amount), status: method === "invoice" ? "to_invoice" : amount === 0 ? "included" : "paid" };
+  var k = checkout(acc, d, x), amount = k.charge;
+  if (d.code && !k.disc) return toast(k.bad || "That code isn't valid.");
+  var billing = { method: method, amount: r2(amount), status: method === "invoice" ? "to_invoice" : amount === 0 ? (method === "subscription" ? "included" : "paid") : "paid" };
+  if (k.disc) billing.discount = { code: k.disc.code, amount: k.disc.amount };
+  if (k.credit) billing.credit = k.credit;
   if (method === "subscription" && x.sub) { billing.planId = x.sub.plan.id; billing.planName = x.sub.plan.name; billing.included = x.sub.included; }
   var item = { type: d.item.type, desc: clip(d.item.desc, 120), qty: Math.max(1, Math.round(num(d.item.qty, 1))), l: num(d.item.l, 0), w: num(d.item.w, 0), h: num(d.item.h, 0), kg: num(d.item.kg, 0), photos: d.item.photos.slice(0, 3), options: Object.assign({}, d.item.options), ai: !!d.item.ai };
   var order = {
@@ -413,7 +438,12 @@ ACT["c-book"] = function () {
   run(start.then(function (a) {
     order.customer = a ? { id: a.id, name: a.name, email: a.email, phone: a.phone || "", business: !!(a.business && a.business.active), businessName: a.business && a.business.active ? a.business.name : "" }
       : { id: "g-" + rid(10), name: clip(g.name, 60), email: slugEmail(g.email), phone: clip(g.phone, 30), guest: true, business: false, businessName: "" };
-    return Store.set("orders", id, order);
+    return Store.set("orders", id, order).then(function () {
+      // Take the credit used off the account balance.
+      if (!k.credit || !a) return;
+      var cur = byId(S.accounts, a.id) || a;
+      return Store.update("accounts", a.id, { credit: r2(Math.max(0, num(cur.credit, 0) - k.credit)), creditLog: (cur.creditLog || []).concat([{ amount: -k.credit, reason: "Used on " + id, at: Date.now() }]).slice(-50) });
+    });
   }).then(function () {
     if (order.customer.guest) { S.me.guestOrders = [id].concat(S.me.guestOrders.filter(function (x) { return x !== id; })).slice(0, 30); saveMe(); }
     S.c.draft = newDraft(); S.c.order = id; S.c.view = "order";
@@ -496,14 +526,18 @@ FORMS["c-review"] = function () {
 };
 ACT["c-cancel"] = function (d) {
   var o = byId(S.orders, d.v); if (!o) return;
-  S.modal = { kind: "confirm", title: "Cancel this delivery?", body: o.billing && o.billing.status === "paid" ? "You'll get a full refund of " + eur(o.billing.amount) + " to your card." : "It won't count towards your plan or invoice.", yes: "Cancel delivery", act: "c-cancel-yes", v: o.id }; render();
+  S.modal = { kind: "confirm", title: "Cancel this delivery?", body: (o.billing && o.billing.status === "paid" && o.billing.amount ? "You'll get a full refund of " + eur(o.billing.amount) + " to your card." : o.billing && o.billing.method === "subscription" ? "It won't count towards your plan." : "It won't be charged.") + (o.billing && o.billing.credit ? " " + eur(o.billing.credit) + " goes back to your DART credit." : ""), yes: "Cancel delivery", act: "c-cancel-yes", v: o.id }; render();
 };
 ACT["c-cancel-yes"] = function (d) {
   var o = byId(S.orders, d.v); S.modal = null;
   if (!o) return render();
   var patch = { status: "cancelled", timeline: { cancelled: Date.now() }, cancelledBy: "customer" };
   if (o.billing && o.billing.status === "paid") patch.billing = { status: "refunded" };
-  run(Store.claim("orders", o.id, S.me.customerId || o.customer.id, function (x) { return ["awaiting", "assigned", "to_pickup"].indexOf(x.status) >= 0; }, patch).then(function (ok) { if (!ok) toast("Too late to cancel: the item has been collected. Report a problem instead."); }));
+  var back = o.billing && o.billing.credit ? num(o.billing.credit, 0) : 0, acc = back ? byId(S.accounts, o.customer.id) : null;
+  run(Store.claim("orders", o.id, S.me.customerId || o.customer.id, function (x) { return ["awaiting", "assigned", "to_pickup"].indexOf(x.status) >= 0; }, patch).then(function (ok) {
+    if (!ok) return toast("Too late to cancel: the item has been collected. Report a problem instead.");
+    if (acc) return Store.update("accounts", acc.id, { credit: r2(num(acc.credit, 0) + back), creditLog: (acc.creditLog || []).concat([{ amount: back, reason: "Returned from cancelled " + o.id, at: Date.now() }]).slice(-50) });
+  }));
 };
 ACT["c-repeat"] = function (d) {
   var o = byId(S.orders, d.v); if (!o) return;
@@ -563,8 +597,15 @@ function cAccount(acc) {
   if (biz && subPlan(acc) && subPlan(acc).bulk) rows.push(["bulk", "Bulk deliveries", "Upload a CSV or Excel file"]);
   rows.push(["help", "Help and support", "FAQ, contact, report a problem"]);
   return (isWeb() ? '<h1 class="w-title">Account</h1>' : head("Account")) + '<div class="pad"><div class="person"><span class="avatar">' + esc(initials(acc.name)) + "</span><div><b>" + esc(acc.name) + '</b><div class="muted sm">' + (biz ? "Business · " + esc(acc.business.name) : "Individual") + (acc.provider === "google" ? " · Google sign-in" : "") + "</div></div></div>" +
+    creditCard(acc) +
     '<div class="menu">' + rows.map(function (r) { return '<button data-act="c-go" data-v="' + r[0] + '"><b>' + r[1] + "</b><span>" + r[2] + "</span><i>›</i></button>"; }).join("") + "</div>" +
     '<button class="btn ghost block" data-act="c-logout">Log out</button></div>';
+}
+function creditCard(acc) {
+  var bal = num(acc.credit, 0), log = (acc.creditLog || []).slice(-4).reverse();
+  if (!bal && !log.length) return "";
+  return '<div class="card credit"><div class="row between"><b>DART credit</b><b class="credit-bal">' + eur(bal) + '</b></div><span class="muted sm">Taken off your next deliveries automatically. You can switch it off at checkout.</span>' +
+    log.map(function (l) { return '<div class="row between sm"><span>' + esc(l.reason || "") + ' <span class="muted">· ' + dmy(l.at) + '</span></span><b class="' + (l.amount < 0 ? "" : "ok-t") + '">' + (l.amount < 0 ? "−" + eur(-l.amount) : "+" + eur(l.amount)) + "</b></div>"; }).join("") + "</div>";
 }
 function cProfile(acc) {
   if (!S.c.profile || S.c.profile.id !== acc.id) S.c.profile = { id: acc.id, name: acc.name, email: acc.email, phone: acc.phone || "" };

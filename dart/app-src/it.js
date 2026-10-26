@@ -502,3 +502,27 @@ Object.assign(IT, {
   "Add both addresses.": "Aggiungi entrambi gli indirizzi.", "Choose the area for each address.": "Scegli la zona per ogni indirizzo.",
   "Add the address.": "Aggiungi l'indirizzo.", "Choose which area of Rome it's in.": "Scegli in quale zona di Roma si trova.", "In": "A"
 });
+Object.assign(IT, {
+  "Discounts and credit": "Sconti e credito", "Discount code": "Codice sconto", "Apply": "Applica", "Remove": "Rimuovi", "You pay": "Paghi", "DART credit": "Credito DART",
+  "Enter a code.": "Inserisci un codice.", "That code isn't valid.": "Il codice non è valido.", "That code has expired.": "Il codice è scaduto.", "That code has been used up.": "Il codice è esaurito.",
+  "You've already used this code.": "Hai già usato questo codice.", "This code is for your first delivery.": "Questo codice vale per la prima consegna.",
+  "Taken off your next deliveries automatically. You can switch it off at checkout.": "Scalato in automatico dalle prossime consegne. Puoi disattivarlo al pagamento.",
+  "It won't be charged.": "Non verrà addebitata.", "It won't count towards your plan.": "Non verrà conteggiata nel tuo piano.", "Paid with DART credit": "Pagato con credito DART",
+  "Discounts": "Sconti", "Codes customers type at checkout. Couriers are still paid on the full price.": "Codici che i clienti inseriscono al pagamento. I corrieri sono pagati sempre sul prezzo pieno.",
+  "Code": "Codice", "Discount": "Sconto", "Rules": "Regole", "Used": "Usato", "Discount given": "Sconto concesso", "Turn on": "Attiva", "Turn off": "Disattiva", "On": "Attivo", "Off": "Disattivo", "Expired": "Scaduto", "None": "Nessuna",
+  "No discount codes yet": "Ancora nessun codice sconto", "Create one below. Customers enter it when they book.": "Creane uno qui sotto. I clienti lo inseriscono quando prenotano.",
+  "New code": "Nuovo codice", "Type": "Tipo", "Percentage off": "Percentuale di sconto", "Amount off (€)": "Importo di sconto (€)", "Amount off €": "Sconto €", "Percentage off %": "Sconto %",
+  "Minimum delivery price €": "Prezzo minimo della consegna €", "Total uses allowed": "Utilizzi totali consentiti", "Valid until": "Valido fino al", "Unlimited": "Illimitati",
+  "Each customer can use it once": "Ogni cliente può usarlo una volta", "Only for a customer's first delivery": "Solo per la prima consegna del cliente", "Create code": "Crea codice",
+  "Use at least 3 letters or numbers for the code.": "Usa almeno 3 lettere o numeri per il codice.", "Enter a percentage between 1 and 100.": "Inserisci una percentuale tra 1 e 100.",
+  "Enter the amount off.": "Inserisci l'importo di sconto.", "That code already exists.": "Il codice esiste già.", "Once per customer": "Una volta per cliente", "First delivery only": "Solo prima consegna",
+  "Amount €": "Importo €", "Reason (the customer sees it)": "Motivo (il cliente lo vede)", "Sorry about the late delivery": "Ci scusiamo per il ritardo", "Add credit": "Aggiungi credito", "Remove credit": "Togli credito",
+  "Enter an amount.": "Inserisci un importo.", "Add a reason. The customer sees it.": "Aggiungi un motivo. Il cliente lo vede."
+});
+IT_PATTERNS.push(
+  [/^Use my DART credit \((.+) available\)$/, "Usa il mio credito DART ($1 disponibili)"], [/^(\d+)% off$/, "$1% di sconto"], [/^(.+) off$/, "$1 di sconto"],
+  [/^This code needs a delivery of at least (.+)\.$/, "Questo codice richiede una consegna di almeno $1."], [/^Discount (.+)$/, "Sconto $1"],
+  [/^(.+) credit added$/, "$1 di credito aggiunti"], [/^(.+) credit removed$/, "$1 di credito tolti"], [/^Code (.+) created$/, "Codice $1 creato"],
+  [/^Used on (.+)$/, "Usato per $1"], [/^Returned from cancelled (.+)$/, "Restituito da $1 annullata"], [/^Min (.+)$/, "Min $1"], [/^Until (.+)$/, "Fino al $1"],
+  [/^(.+) goes back to your DART credit\.$/, "$1 tornano nel tuo credito DART."]
+);

@@ -116,7 +116,7 @@ function subscribeAll() {
     });
   });
   Store.watch("config", function (rows) {
-    ["rules", "pricing", "settings"].forEach(function (k) { var r = byId(rows, k); if (r) { r = Object.assign({}, r); delete r.id; } S.cfg[k] = r; });
+    ["rules", "pricing", "settings", "discounts"].forEach(function (k) { var r = byId(rows, k); if (r) { r = Object.assign({}, r); delete r.id; } S.cfg[k] = r; });
     render();
   });
 }
