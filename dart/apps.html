@@ -2793,7 +2793,7 @@ ACT["c-bulk-go"] = function () {
       return Store.set("orders", id, {
         customer: { id: acc.id, name: acc.name, business: true, businessName: acc.business.name }, pickup: r.pickup, dropoff: r.dropoff,
         item: { type: r.item.type, desc: r.item.desc, qty: r.item.qty, l: num(r.item.l, 0), w: num(r.item.w, 0), h: num(r.item.h, 0), kg: num(r.item.kg, 0), photos: [], options: {} },
-        cls: r.cls, price: r.q, billing: r.billing, status: "awaiting", createdAt: now + i, timeline: { requested: now, awaiting: now }, batch: batch
+        cls: r.cls, price: r.q, billing: r.billing, code: newCode(), deliverBy: now + Math.min(Math.round(num(r.q.mins, 30) + num(pricing().asapBufferMins, 45)), maxMins()) * 60000, asap: true, status: "awaiting", createdAt: now + i, timeline: { requested: now, awaiting: now }, batch: batch
       });
     });
   }, Promise.resolve());
