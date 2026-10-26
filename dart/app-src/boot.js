@@ -130,6 +130,7 @@ function subscribeAll() {
     if (settled && !(mode === "live" && Store.mode === "local")) return;
     settled = true; Store.start(mode, db); render();
   }
+  if (LIVE) { liveStart(go); return; }
   setTimeout(function () { go("local"); }, 3000);
   var c = window.claude;
   if (!c || !c.use) { go("local"); return; }

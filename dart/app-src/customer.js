@@ -102,7 +102,7 @@ function cAuth() {
     '<form class="stack" data-form="c-auth">' +
     (reg ? field("Full name", inp("c.auth.name", a.name, 'autocomplete="name" required')) : "") +
     field("Email", inp("c.auth.email", a.email, 'type="email" autocomplete="email" required')) +
-    field("Password", '<input class="input" type="password" data-bind="c.auth.pw" value="' + esc(a.pw || "") + '" autocomplete="' + (reg ? "new-password" : "current-password") + '" required>', "Test build: passwords aren't checked or stored.") +
+    field("Password", '<input class="input" type="password" data-bind="c.auth.pw" value="' + esc(a.pw || "") + '" autocomplete="' + (reg ? "new-password" : "current-password") + '" required>', LIVE ? (reg ? "At least 8 characters." : "") : "Test build: passwords aren't checked or stored.") +
     (reg ? field("Phone (optional)", inp("c.auth.phone", a.phone, 'type="tel" autocomplete="tel"')) + '<small class="hint">Running a business? Switch to a business account later in Settings to get subscription plans.</small>' : "") +
     '<button class="btn block">' + (reg ? "Create account" : "Log in") + "</button></form>" +
     '<p class="center"><button class="link" data-act="c-go" data-v="new">Continue without an account</button></p>' +
@@ -288,7 +288,7 @@ function newReview(acc) {
     var g = S.c.guest;
     h += '<div class="card"><b>Your details</b><span class="muted sm">For the receipt, the tracking link and so the courier can reach you. No account needed.</span>' +
       field("Name", inp("c.guest.name", g.name, 'autocomplete="name" required')) + '<div class="grid2">' + field("Email", inp("c.guest.email", g.email, 'type="email" autocomplete="email" required')) + field("Phone", inp("c.guest.phone", g.phone, 'type="tel" autocomplete="tel" required')) + "</div>" +
-      check("c.guest.create", g.create, "Also create a DART account with these details, to keep your history and invoices in one place") +
+      (LIVE ? "" : check("c.guest.create", g.create, "Also create a DART account with these details, to keep your history and invoices in one place")) +
       '<span class="sm">Already have an account? <button class="link" data-act="c-auth-open" data-v="login">Log in</button></span></div>';
   }
   var k = checkout(acc, d, x);
