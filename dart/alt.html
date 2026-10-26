@@ -1,0 +1,279 @@
+<title>DART Homepage B</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Figtree:wght@400;500;700&family=Cinzel:wght@600;700&display=swap">
+<style>
+/* Layout: a parcel label as the hero, then a city price list, Roman street plaques and one purple closing band. */
+:root {
+  --paper: #F7F5FB; --card: #FFFFFF; --ink: #170F2E; --muted: #5E5676; --line: #DCD5EA;
+  --purple: #6A2BE0; --lilac: #CDB6FF; --on-purple: #FFFFFF; --night: #170F2E; --night-fg: #F1EDFA; --night-muted: #B8B0D2;
+  --marble: #F4F2EE; --marble-ink: #2A2530; --marble-line: #3A3340;
+  --display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --body: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --plaque: "Cinzel", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0E0A1A; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE; --line: #2C2444; --purple: #8A55F5; --lilac: #B79BFF;
+  --marble: #E6E2DC; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --paper: #0E0A1A; --card: #1B1430; --ink: #F1EDFA; --muted: #A39BBE; --line: #2C2444; --purple: #8A55F5; --lilac: #B79BFF;
+  --marble: #E6E2DC; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+button, select { font: inherit; color: inherit; }
+a { color: var(--purple); }
+:focus-visible { outline: 3px solid var(--purple); outline-offset: 3px; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+
+/* Header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 24px; min-height: 64px; }
+.logo { font-family: var(--display); font-variation-settings: "wdth" 125; font-weight: 900; font-size: 24px; color: var(--purple); text-decoration: none; letter-spacing: -.01em; display: inline-flex; align-items: center; gap: 8px; }
+.logo svg { width: 26px; height: 26px; }
+.nav { display: flex; gap: 20px; font-weight: 500; }
+.nav a { color: var(--ink); text-decoration: none; }
+.nav a:hover { color: var(--purple); }
+.right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.lang { display: inline-flex; border: 1.5px solid var(--line); border-radius: 3px; overflow: hidden; }
+.lang button { border: 0; background: none; padding: 4px 9px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 3px; background: var(--purple); color: var(--on-purple); font-weight: 700; padding: 12px 18px; text-decoration: none; cursor: pointer; white-space: nowrap; }
+@media (max-width: 860px) { .nav { display: none; } }
+@media (max-width: 420px) { .top .btn { padding: 10px 12px; font-size: 15px; } .top .wrap { gap: 10px; } }
+
+/* Hero */
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 56px; align-items: center; padding-block: 64px 72px; }
+.hero h1 { font-variation-settings: "wdth" 112; font-weight: 900; font-size: clamp(46px, 6.6vw, 88px); line-height: .95; letter-spacing: -.035em; }
+.hero h1 em { font-style: normal; color: var(--purple); }
+.hero .lead { font-size: 20px; color: var(--muted); max-width: 40ch; margin-top: 24px; }
+.hero .uses { margin-top: 28px; display: grid; gap: 6px; font-weight: 500; }
+.hero .uses span::before { content: "→ "; color: var(--purple); font-weight: 700; }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-block: 40px 56px; } }
+
+/* The shipping label */
+.label { background: var(--card); color: var(--ink); border: 2px solid var(--ink); border-radius: 4px; box-shadow: 10px 10px 0 var(--lilac); transform: rotate(-1.5deg); max-width: 460px; width: 100%; justify-self: center; }
+@media (max-width: 900px) { .label { transform: none; box-shadow: 6px 6px 0 var(--lilac); } }
+.label-h { background: var(--purple); color: var(--on-purple); display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; font-family: var(--display); font-variation-settings: "wdth" 125; font-weight: 900; letter-spacing: .02em; }
+.label-h small { font-family: var(--body); font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.field { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; border-bottom: 2px solid var(--ink); }
+.field label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 0 12px 0 16px; color: var(--muted); align-self: stretch; display: flex; align-items: center; border-right: 2px solid var(--ink); }
+.field select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; padding: 14px 36px 14px 14px; font-family: var(--display); font-variation-settings: "wdth" 100; font-weight: 800; font-size: 20px; cursor: pointer; width: 100%;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(-45deg, transparent 50%, var(--ink) 50%); background-size: 7px 7px; background-position: right 20px center, right 13px center; background-repeat: no-repeat; }
+.field select option { color: #170F2E; background: #fff; font-family: var(--body); font-size: 16px; }
+.label-p { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: end; padding: 16px; border-bottom: 2px solid var(--ink); }
+.label-p .amt { font-family: var(--display); font-variation-settings: "wdth" 112; font-weight: 900; font-size: 52px; line-height: .9; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.label-p .amt.empty { font-size: 22px; color: var(--muted); font-weight: 700; letter-spacing: 0; line-height: 1.2; }
+.label-p .meta { font-size: 14px; color: var(--muted); }
+.label-f { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; }
+.code { height: 44px; flex: 1; max-width: 190px; background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 5px, var(--ink) 5px 6px, transparent 6px 9px, var(--ink) 9px 12px, transparent 12px 14px); }
+
+/* Sections */
+section.s { padding-block: 72px; }
+section.s + section.s { border-top: 1px solid var(--line); }
+.s h2 { font-variation-settings: "wdth" 112; font-weight: 900; font-size: clamp(32px, 4.4vw, 52px); line-height: 1; letter-spacing: -.03em; margin-bottom: 20px; }
+.s .intro { color: var(--muted); max-width: 60ch; margin-bottom: 28px; }
+.why { font-family: var(--display); font-variation-settings: "wdth" 100; font-weight: 600; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.22; letter-spacing: -.015em; max-width: 28ch; }
+.why mark { background: linear-gradient(transparent 62%, var(--lilac) 62%); color: inherit; padding: 0 2px; }
+.why-more { margin-top: 24px; max-width: 62ch; color: var(--muted); font-size: 18px; }
+
+/* Price list, set like a trattoria listino */
+.listino { max-width: 820px; list-style: none; padding: 0; margin: 0; }
+.listino li { display: flex; align-items: baseline; gap: 10px; padding: 12px 0; }
+.listino .what { font-weight: 700; font-size: 19px; }
+.listino .route { display: block; color: var(--muted); font-size: 15px; font-weight: 500; }
+.listino .dots { flex: 1; border-bottom: 2px dotted color-mix(in srgb, var(--ink) 35%, transparent); transform: translateY(-6px); min-width: 24px; }
+.listino .p { font-family: var(--display); font-variation-settings: "wdth" 100; font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.listino-foot { margin-top: 18px; color: var(--muted); font-size: 15px; }
+
+/* How it works, as one paragraph */
+.flow { font-size: clamp(20px, 2.2vw, 26px); line-height: 1.6; max-width: 34em; }
+.flow b { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--purple); color: var(--on-purple); font-family: var(--display); font-size: .7em; vertical-align: .25em; margin-right: 6px; }
+
+/* Roman street plaques */
+.plaques { display: flex; flex-wrap: wrap; gap: 14px; }
+.plaque { background: var(--marble); color: var(--marble-ink); border-radius: 3px; padding: 5px; box-shadow: 0 1px 0 rgba(0,0,0,.12), 0 6px 14px -8px rgba(23,15,46,.35); }
+.plaque span { display: grid; justify-items: center; border: 1.5px solid var(--marble-line); padding: 6px 16px 7px; font-family: var(--plaque); font-weight: 700; letter-spacing: .06em; line-height: 1.1; }
+.plaque small { font-size: 9px; letter-spacing: .3em; font-weight: 600; }
+.plaque b { font-size: 17px; }
+
+.biz { display: flex; flex-wrap: wrap; gap: 20px 48px; align-items: flex-end; justify-content: space-between; }
+.biz p { max-width: 58ch; }
+.more { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+.faq { max-width: 820px; }
+.faq details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+.faq details:first-child { border-top: 1px solid var(--line); }
+.faq summary { font-weight: 700; font-size: 19px; cursor: pointer; }
+.faq details p { color: var(--muted); margin-top: 8px; }
+
+.join { background: var(--purple); color: var(--on-purple); }
+.join .wrap { padding-block: 72px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.join h2 { font-variation-settings: "wdth" 125; font-weight: 900; font-size: clamp(40px, 6.4vw, 84px); line-height: .92; letter-spacing: -.03em; max-width: 12ch; }
+.join p { max-width: 36ch; margin-top: 14px; color: #EDE4FF; font-size: 19px; }
+.join .btn { background: #fff; color: #170F2E; }
+
+footer { background: var(--night); color: var(--night-muted); font-size: 15px; }
+footer .wrap { padding-block: 40px 28px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px; }
+footer .logo { color: var(--night-fg); }
+footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+footer a { color: var(--night-muted); text-decoration: none; }
+footer a:hover { color: var(--night-fg); }
+.note { width: 100%; font-size: 13px; border-top: 1px solid rgba(255,255,255,.14); padding-top: 16px; }
+@media (prefers-reduced-motion: no-preference) { .label { transition: transform .4s ease; } .label:hover { transform: rotate(0deg); } }
+</style>
+
+<header class="top"><div class="wrap">
+  <a class="logo" href="#top" aria-label="DART"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="5" fill="currentColor"/><path d="M10 22 L22 10 M14 10 H22 V18" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>DART</a>
+  <nav class="nav"><a href="#how" data-t="nav-how"></a><a href="#prices" data-t="nav-prices"></a><a href="#business" data-t="nav-biz"></a><a href="#couriers" data-t="nav-couriers"></a><a href="#help" data-t="nav-help"></a></nav>
+  <div class="right"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="it">IT</button><button type="button" data-lang="en">EN</button></div><a class="btn" href="#top" data-t="book"></a></div>
+</div></header>
+
+<main id="top">
+<section class="hero"><div class="wrap">
+  <div>
+    <h1 data-t="h1"></h1>
+    <p class="lead" data-t="lead"></p>
+    <div class="uses"><span data-t="use1"></span><span data-t="use2"></span><span data-t="use3"></span></div>
+  </div>
+  <form class="label" id="quote" aria-label="Price check">
+    <div class="label-h">DART<small data-t="label-h"></small></div>
+    <div class="field"><label for="q-from" data-t="from"></label><select id="q-from"></select></div>
+    <div class="field"><label for="q-to" data-t="to"></label><select id="q-to"></select></div>
+    <div class="field"><label for="q-type" data-t="contents"></label><select id="q-type"></select></div>
+    <div class="label-p"><div><div class="amt" id="q-amt"></div><div class="meta" id="q-meta"></div></div></div>
+    <div class="label-f"><span class="code" aria-hidden="true"></span><button class="btn" type="submit" data-t="book-now"></button></div>
+  </form>
+</div></section>
+
+<section class="s" id="why"><div class="wrap">
+  <p class="why" data-t="why" data-html="1"></p>
+  <p class="why-more" data-t="why-more"></p>
+</div></section>
+
+<section class="s" id="prices"><div class="wrap">
+  <h2 data-t="prices-h"></h2>
+  <p class="intro" data-t="prices-intro"></p>
+  <ul class="listino" id="listino"></ul>
+  <p class="listino-foot" id="listino-foot"></p>
+</div></section>
+
+<section class="s" id="how"><div class="wrap">
+  <h2 data-t="how-h"></h2>
+  <p class="flow" data-t="flow" data-html="1"></p>
+</div></section>
+
+<section class="s" id="areas"><div class="wrap">
+  <h2 data-t="areas-h"></h2>
+  <p class="intro" data-t="areas-intro"></p>
+  <div class="plaques" id="plaques"></div>
+</div></section>
+
+<section class="s" id="business"><div class="wrap biz">
+  <div><h2 data-t="biz-h"></h2><p data-t="biz-p"></p></div>
+  <a class="more" href="#business" data-t="biz-more"></a>
+</div></section>
+
+<section class="s" id="help"><div class="wrap">
+  <h2 data-t="faq-h"></h2>
+  <div class="faq" id="faq"></div>
+</div></section>
+</main>
+
+<section class="join" id="couriers"><div class="wrap">
+  <div><h2 data-t="join-h"></h2><p data-t="join-p"></p></div>
+  <a class="btn" href="#couriers" data-t="join-btn"></a>
+</div></section>
+
+<footer><div class="wrap">
+  <a class="logo" href="#top">DART</a>
+  <nav><a href="#top" data-t="book"></a><a href="#prices" data-t="nav-prices"></a><a href="#business" data-t="nav-biz"></a><a href="#couriers" data-t="join-btn"></a><a href="#help" data-t="nav-help"></a></nav>
+  <p class="note" data-t="note"></p>
+</div></footer>
+
+<script>
+var AREAS=["Centro Storico", "EUR", "Flaminio", "Garbatella", "Monteverde", "Monti", "Ostiense", "Parioli", "Pigneto", "Prati", "San Giovanni", "San Lorenzo", "Termini", "Testaccio", "Trastevere", "Tuscolano"];var PM={"letter":{"Centro Storico":{"EUR":[9.53,10,48],"Flaminio":[6.9,3.7,24],"Garbatella":[6.9,5.7,31],"Monteverde":[6.9,3.7,24],"Monti":[6.9,1.8,17],"Ostiense":[6.9,4.3,26],"Parioli":[6.9,4.5,27],"Pigneto":[6.9,6.3,33],"Prati":[6.9,2,18],"San Giovanni":[6.9,3.8,24],"San Lorenzo":[6.9,4.3,26],"Termini":[6.9,2.7,20],"Testaccio":[6.9,3.3,22],"Trastevere":[6.9,1.9,17],"Tuscolano":[6.95,7.3,37]},"EUR":{"Centro Storico":[9.53,10,48],"Flaminio":[12.98,13.7,61],"Garbatella":[6.9,5,29],"Monteverde":[7.03,7.4,38],"Monti":[9.28,9.8,47],"Ostiense":[6.9,5.8,32],"Parioli":[13.45,14.2,63],"Pigneto":[10.28,10.8,51],"Prati":[10.65,11.2,52],"San Giovanni":[8.6,9.1,44],"San Lorenzo":[10.49,11,51],"Termini":[10.37,10.9,51],"Testaccio":[6.9,6.8,35],"Trastevere":[7.8,8.2,41],"Tuscolano":[8.37,8.8,43]},"Flaminio":{"Centro Storico":[6.9,3.7,24],"EUR":[12.98,13.7,61],"Garbatella":[8.88,9.3,45],"Monteverde":[6.9,6.7,35],"Monti":[6.9,4.8,28],"Ostiense":[7.61,8,40],"Parioli":[6.9,2.9,21],"Pigneto":[8.01,8.4,42],"Prati":[6.9,2.7,20],"San Giovanni":[6.9,6.7,35],"San Lorenzo":[6.9,6.1,33],"Termini":[6.9,4.6,27],"Testaccio":[6.9,7,36],"Trastevere":[6.9,5.5,30],"Tuscolano":[9.75,10.3,48]},"Garbatella":{"Centro Storico":[6.9,5.7,31],"EUR":[6.9,5,29],"Flaminio":[8.88,9.3,45],"Monteverde":[6.9,4.7,27],"Monti":[6.9,5,29],"Ostiense":[6.9,1.6,16],"Parioli":[8.89,9.4,45],"Pigneto":[6.9,6.1,33],"Prati":[6.94,7.3,37],"San Giovanni":[6.9,4.1,25],"San Lorenzo":[6.9,6.1,33],"Termini":[6.9,6,33],"Testaccio":[6.9,2.6,20],"Trastevere":[6.9,4.3,26],"Tuscolano":[6.9,4.7,28]},"Monteverde":{"Centro Storico":[6.9,3.7,24],"EUR":[7.03,7.4,38],"Flaminio":[6.9,6.7,35],"Garbatella":[6.9,4.7,27],"Monti":[6.9,4.7,28],"Ostiense":[6.9,3.2,22],"Parioli":[7.76,8.2,41],"Pigneto":[8.15,8.6,42],"Prati":[6.9,4.1,25],"San Giovanni":[6.9,5.8,32],"San Lorenzo":[6.9,7.2,37],"Termini":[6.9,6,33],"Testaccio":[6.9,2.4,19],"Trastevere":[6.9,1.9,17],"Tuscolano":[8.09,8.5,42]},"Monti":{"Centro Storico":[6.9,1.8,17],"EUR":[9.28,9.8,47],"Flaminio":[6.9,4.8,28],"Garbatella":[6.9,5,29],"Monteverde":[6.9,4.7,28],"Ostiense":[6.9,4,25],"Parioli":[6.9,4.4,27],"Pigneto":[6.9,4.5,27],"Prati":[6.9,3.7,24],"San Giovanni":[6.9,2.1,18],"San Lorenzo":[6.9,2.6,20],"Termini":[6.9,1.4,15],"Testaccio":[6.9,3.3,22],"Trastevere":[6.9,2.8,20],"Tuscolano":[6.9,5.7,31]},"Ostiense":{"Centro Storico":[6.9,4.3,26],"EUR":[6.9,5.8,32],"Flaminio":[7.61,8,40],"Garbatella":[6.9,1.6,16],"Monteverde":[6.9,3.2,22],"Monti":[6.9,4,25],"Parioli":[7.93,8.3,41],"Pigneto":[6.9,6.3,34],"Prati":[6.9,5.8,32],"San Giovanni":[6.9,3.8,24],"San Lorenzo":[6.9,5.7,31],"Termini":[6.9,5.2,30],"Testaccio":[6.9,1.1,14],"Trastevere":[6.9,2.7,20],"Tuscolano":[6.9,5.6,31]},"Parioli":{"Centro Storico":[6.9,4.5,27],"EUR":[13.45,14.2,63],"Flaminio":[6.9,2.9,21],"Garbatella":[8.89,9.4,45],"Monteverde":[7.76,8.2,41],"Monti":[6.9,4.4,27],"Ostiense":[7.93,8.3,41],"Pigneto":[6.9,6.5,35],"Prati":[6.9,4.8,28],"San Giovanni":[6.9,5.8,32],"San Lorenzo":[6.9,4.4,27],"Termini":[6.9,3.5,23],"Testaccio":[7.12,7.5,38],"Trastevere":[6.9,6.4,34],"Tuscolano":[8.42,8.9,43]},"Pigneto":{"Centro Storico":[6.9,6.3,33],"EUR":[10.28,10.8,51],"Flaminio":[8.01,8.4,42],"Garbatella":[6.9,6.1,33],"Monteverde":[8.15,8.6,42],"Monti":[6.9,4.5,27],"Ostiense":[6.9,6.3,34],"Parioli":[6.9,6.5,35],"Prati":[7.73,8.1,41],"San Giovanni":[6.9,2.8,21],"San Lorenzo":[6.9,2.3,19],"Termini":[6.9,3.9,25],"Testaccio":[6.9,6.3,34],"Trastevere":[6.9,6.8,36],"Tuscolano":[6.9,2.7,20]},"Prati":{"Centro Storico":[6.9,2,18],"EUR":[10.65,11.2,52],"Flaminio":[6.9,2.7,20],"Garbatella":[6.94,7.3,37],"Monteverde":[6.9,4.1,25],"Monti":[6.9,3.7,24],"Ostiense":[6.9,5.8,32],"Parioli":[6.9,4.8,28],"Pigneto":[7.73,8.1,41],"San Giovanni":[6.9,5.8,32],"San Lorenzo":[6.9,6,33],"Termini":[6.9,4.4,26],"Testaccio":[6.9,4.7,28],"Trastevere":[6.9,3.1,22],"Tuscolano":[8.85,9.3,45]},"San Giovanni":{"Centro Storico":[6.9,3.8,24],"EUR":[8.6,9.1,44],"Flaminio":[6.9,6.7,35],"Garbatella":[6.9,4.1,25],"Monteverde":[6.9,5.8,32],"Monti":[6.9,2.1,18],"Ostiense":[6.9,3.8,24],"Parioli":[6.9,5.8,32],"Pigneto":[6.9,2.8,21],"Prati":[6.9,5.8,32],"San Lorenzo":[6.9,2,18],"Termini":[6.9,2.3,19],"Testaccio":[6.9,3.6,24],"Trastevere":[6.9,4,25],"Tuscolano":[6.9,3.6,24]},"San Lorenzo":{"Centro Storico":[6.9,4.3,26],"EUR":[10.49,11,51],"Flaminio":[6.9,6.1,33],"Garbatella":[6.9,6.1,33],"Monteverde":[6.9,7.2,37],"Monti":[6.9,2.6,20],"Ostiense":[6.9,5.7,31],"Parioli":[6.9,4.4,27],"Pigneto":[6.9,2.3,19],"Prati":[6.9,6,33],"San Giovanni":[6.9,2,18],"Termini":[6.9,1.6,16],"Testaccio":[6.9,5.3,30],"Trastevere":[6.9,5.3,30],"Tuscolano":[6.9,4.5,27]},"Termini":{"Centro Storico":[6.9,2.7,20],"EUR":[10.37,10.9,51],"Flaminio":[6.9,4.6,27],"Garbatella":[6.9,6,33],"Monteverde":[6.9,6,33],"Monti":[6.9,1.4,15],"Ostiense":[6.9,5.2,30],"Parioli":[6.9,3.5,23],"Pigneto":[6.9,3.9,25],"Prati":[6.9,4.4,26],"San Giovanni":[6.9,2.3,19],"San Lorenzo":[6.9,1.6,16],"Testaccio":[6.9,4.6,27],"Trastevere":[6.9,4.1,25],"Tuscolano":[6.9,5.7,31]},"Testaccio":{"Centro Storico":[6.9,3.3,22],"EUR":[6.9,6.8,35],"Flaminio":[6.9,7,36],"Garbatella":[6.9,2.6,20],"Monteverde":[6.9,2.4,19],"Monti":[6.9,3.3,22],"Ostiense":[6.9,1.1,14],"Parioli":[7.12,7.5,38],"Pigneto":[6.9,6.3,34],"Prati":[6.9,4.7,28],"San Giovanni":[6.9,3.6,24],"San Lorenzo":[6.9,5.3,30],"Termini":[6.9,4.6,27],"Trastevere":[6.9,1.6,16],"Tuscolano":[6.9,6.1,33]},"Trastevere":{"Centro Storico":[6.9,1.9,17],"EUR":[7.8,8.2,41],"Flaminio":[6.9,5.5,30],"Garbatella":[6.9,4.3,26],"Monteverde":[6.9,1.9,17],"Monti":[6.9,2.8,20],"Ostiense":[6.9,2.7,20],"Parioli":[6.9,6.4,34],"Pigneto":[6.9,6.8,36],"Prati":[6.9,3.1,22],"San Giovanni":[6.9,4,25],"San Lorenzo":[6.9,5.3,30],"Termini":[6.9,4.1,25],"Testaccio":[6.9,1.6,16],"Tuscolano":[6.9,7.2,37]},"Tuscolano":{"Centro Storico":[6.95,7.3,37],"EUR":[8.37,8.8,43],"Flaminio":[9.75,10.3,48],"Garbatella":[6.9,4.7,28],"Monteverde":[8.09,8.5,42],"Monti":[6.9,5.7,31],"Ostiense":[6.9,5.6,31],"Parioli":[8.42,8.9,43],"Pigneto":[6.9,2.7,20],"Prati":[8.85,9.3,45],"San Giovanni":[6.9,3.6,24],"San Lorenzo":[6.9,4.5,27],"Termini":[6.9,5.7,31],"Testaccio":[6.9,6.1,33],"Trastevere":[6.9,7.2,37]}},"parcel":{"Centro Storico":{"EUR":[12.53,10,38],"Flaminio":[6.9,3.7,19],"Garbatella":[8.38,5.7,25],"Monteverde":[6.9,3.7,19],"Monti":[6.9,1.8,13],"Ostiense":[7.09,4.3,21],"Parioli":[7.26,4.5,21],"Pigneto":[8.94,6.3,27],"Prati":[6.9,2,14],"San Giovanni":[6.9,3.8,19],"San Lorenzo":[7.05,4.3,21],"Termini":[6.9,2.7,16],"Testaccio":[6.9,3.3,18],"Trastevere":[6.9,1.9,14],"Tuscolano":[9.95,7.3,30]},"EUR":{"Centro Storico":[12.53,10,38],"Flaminio":[15.98,13.7,49],"Garbatella":[7.73,5,23],"Monteverde":[10.03,7.4,30],"Monti":[12.28,9.8,37],"Ostiense":[8.52,5.8,25],"Parioli":[16.45,14.2,50],"Pigneto":[13.28,10.8,40],"Prati":[13.65,11.2,42],"San Giovanni":[11.6,9.1,35],"San Lorenzo":[13.49,11,41],"Termini":[13.37,10.9,41],"Testaccio":[9.42,6.8,28],"Trastevere":[10.8,8.2,33],"Tuscolano":[11.37,8.8,34]},"Flaminio":{"Centro Storico":[6.9,3.7,19],"EUR":[15.98,13.7,49],"Garbatella":[11.88,9.3,36],"Monteverde":[9.39,6.7,28],"Monti":[7.52,4.8,22],"Ostiense":[10.61,8,32],"Parioli":[6.9,2.9,17],"Pigneto":[11.01,8.4,33],"Prati":[6.9,2.7,16],"San Giovanni":[9.39,6.7,28],"San Lorenzo":[8.83,6.1,26],"Termini":[7.4,4.6,22],"Testaccio":[9.6,7,29],"Trastevere":[8.18,5.5,24],"Tuscolano":[12.75,10.3,39]},"Garbatella":{"Centro Storico":[8.38,5.7,25],"EUR":[7.73,5,23],"Flaminio":[11.88,9.3,36],"Monteverde":[7.43,4.7,22],"Monti":[7.72,5,23],"Ostiense":[6.9,1.6,13],"Parioli":[11.89,9.4,36],"Pigneto":[8.8,6.1,26],"Prati":[9.94,7.3,30],"San Giovanni":[6.9,4.1,20],"San Lorenzo":[8.77,6.1,26],"Termini":[8.71,6,26],"Testaccio":[6.9,2.6,16],"Trastevere":[7.06,4.3,21],"Tuscolano":[7.5,4.7,22]},"Monteverde":{"Centro Storico":[6.9,3.7,19],"EUR":[10.03,7.4,30],"Flaminio":[9.39,6.7,28],"Garbatella":[7.43,4.7,22],"Monti":[7.47,4.7,22],"Ostiense":[6.9,3.2,18],"Parioli":[10.76,8.2,33],"Pigneto":[11.15,8.6,34],"Prati":[6.9,4.1,20],"San Giovanni":[8.48,5.8,25],"San Lorenzo":[9.84,7.2,30],"Termini":[8.73,6,26],"Testaccio":[6.9,2.4,15],"Trastevere":[6.9,1.9,14],"Tuscolano":[11.09,8.5,34]},"Monti":{"Centro Storico":[6.9,1.8,13],"EUR":[12.28,9.8,37],"Flaminio":[7.52,4.8,22],"Garbatella":[7.72,5,23],"Monteverde":[7.47,4.7,22],"Ostiense":[6.9,4,20],"Parioli":[7.18,4.4,21],"Pigneto":[7.26,4.5,21],"Prati":[6.9,3.7,19],"San Giovanni":[6.9,2.1,14],"San Lorenzo":[6.9,2.6,16],"Termini":[6.9,1.4,12],"Testaccio":[6.9,3.3,18],"Trastevere":[6.9,2.8,16],"Tuscolano":[8.39,5.7,25]},"Ostiense":{"Centro Storico":[7.09,4.3,21],"EUR":[8.52,5.8,25],"Flaminio":[10.61,8,32],"Garbatella":[6.9,1.6,13],"Monteverde":[6.9,3.2,18],"Monti":[6.9,4,20],"Parioli":[10.93,8.3,33],"Pigneto":[8.99,6.3,27],"Prati":[8.53,5.8,25],"San Giovanni":[6.9,3.8,19],"San Lorenzo":[8.41,5.7,25],"Termini":[7.95,5.2,24],"Testaccio":[6.9,1.1,11],"Trastevere":[6.9,2.7,16],"Tuscolano":[8.31,5.6,25]},"Parioli":{"Centro Storico":[7.26,4.5,21],"EUR":[16.45,14.2,50],"Flaminio":[6.9,2.9,17],"Garbatella":[11.89,9.4,36],"Monteverde":[10.76,8.2,33],"Monti":[7.18,4.4,21],"Ostiense":[10.93,8.3,33],"Pigneto":[9.21,6.5,28],"Prati":[7.52,4.8,22],"San Giovanni":[8.48,5.8,25],"San Lorenzo":[7.19,4.4,21],"Termini":[6.9,3.5,18],"Testaccio":[10.12,7.5,30],"Trastevere":[9.09,6.4,27],"Tuscolano":[11.42,8.9,35]},"Pigneto":{"Centro Storico":[8.94,6.3,27],"EUR":[13.28,10.8,40],"Flaminio":[11.01,8.4,33],"Garbatella":[8.8,6.1,26],"Monteverde":[11.15,8.6,34],"Monti":[7.26,4.5,21],"Ostiense":[8.99,6.3,27],"Parioli":[9.21,6.5,28],"Prati":[10.73,8.1,32],"San Giovanni":[6.9,2.8,16],"San Lorenzo":[6.9,2.3,15],"Termini":[6.9,3.9,20],"Testaccio":[9.03,6.3,27],"Trastevere":[9.48,6.8,28],"Tuscolano":[6.9,2.7,16]},"Prati":{"Centro Storico":[6.9,2,14],"EUR":[13.65,11.2,42],"Flaminio":[6.9,2.7,16],"Garbatella":[9.94,7.3,30],"Monteverde":[6.9,4.1,20],"Monti":[6.9,3.7,19],"Ostiense":[8.53,5.8,25],"Parioli":[7.52,4.8,22],"Pigneto":[10.73,8.1,32],"San Giovanni":[8.46,5.8,25],"San Lorenzo":[8.72,6,26],"Termini":[7.16,4.4,21],"Testaccio":[7.47,4.7,22],"Trastevere":[6.9,3.1,17],"Tuscolano":[11.85,9.3,36]},"San Giovanni":{"Centro Storico":[6.9,3.8,19],"EUR":[11.6,9.1,35],"Flaminio":[9.39,6.7,28],"Garbatella":[6.9,4.1,20],"Monteverde":[8.48,5.8,25],"Monti":[6.9,2.1,14],"Ostiense":[6.9,3.8,19],"Parioli":[8.48,5.8,25],"Pigneto":[6.9,2.8,16],"Prati":[8.46,5.8,25],"San Lorenzo":[6.9,2,14],"Termini":[6.9,2.3,15],"Testaccio":[6.9,3.6,19],"Trastevere":[6.9,4,20],"Tuscolano":[6.9,3.6,19]},"San Lorenzo":{"Centro Storico":[7.05,4.3,21],"EUR":[13.49,11,41],"Flaminio":[8.83,6.1,26],"Garbatella":[8.77,6.1,26],"Monteverde":[9.84,7.2,30],"Monti":[6.9,2.6,16],"Ostiense":[8.41,5.7,25],"Parioli":[7.19,4.4,21],"Pigneto":[6.9,2.3,15],"Prati":[8.72,6,26],"San Giovanni":[6.9,2,14],"Termini":[6.9,1.6,13],"Testaccio":[8.06,5.3,24],"Trastevere":[8.02,5.3,24],"Tuscolano":[7.24,4.5,21]},"Termini":{"Centro Storico":[6.9,2.7,16],"EUR":[13.37,10.9,41],"Flaminio":[7.4,4.6,22],"Garbatella":[8.71,6,26],"Monteverde":[8.73,6,26],"Monti":[6.9,1.4,12],"Ostiense":[7.95,5.2,24],"Parioli":[6.9,3.5,18],"Pigneto":[6.9,3.9,20],"Prati":[7.16,4.4,21],"San Giovanni":[6.9,2.3,15],"San Lorenzo":[6.9,1.6,13],"Testaccio":[7.34,4.6,22],"Trastevere":[6.9,4.1,20],"Tuscolano":[8.39,5.7,25]},"Testaccio":{"Centro Storico":[6.9,3.3,18],"EUR":[9.42,6.8,28],"Flaminio":[9.6,7,29],"Garbatella":[6.9,2.6,16],"Monteverde":[6.9,2.4,15],"Monti":[6.9,3.3,18],"Ostiense":[6.9,1.1,11],"Parioli":[10.12,7.5,30],"Pigneto":[9.03,6.3,27],"Prati":[7.47,4.7,22],"San Giovanni":[6.9,3.6,19],"San Lorenzo":[8.06,5.3,24],"Termini":[7.34,4.6,22],"Trastevere":[6.9,1.6,13],"Tuscolano":[8.79,6.1,26]},"Trastevere":{"Centro Storico":[6.9,1.9,14],"EUR":[10.8,8.2,33],"Flaminio":[8.18,5.5,24],"Garbatella":[7.06,4.3,21],"Monteverde":[6.9,1.9,14],"Monti":[6.9,2.8,16],"Ostiense":[6.9,2.7,16],"Parioli":[9.09,6.4,27],"Pigneto":[9.48,6.8,28],"Prati":[6.9,3.1,17],"San Giovanni":[6.9,4,20],"San Lorenzo":[8.02,5.3,24],"Termini":[6.9,4.1,20],"Testaccio":[6.9,1.6,13],"Tuscolano":[9.8,7.2,29]},"Tuscolano":{"Centro Storico":[9.95,7.3,30],"EUR":[11.37,8.8,34],"Flaminio":[12.75,10.3,39],"Garbatella":[7.5,4.7,22],"Monteverde":[11.09,8.5,34],"Monti":[8.39,5.7,25],"Ostiense":[8.31,5.6,25],"Parioli":[11.42,8.9,35],"Pigneto":[6.9,2.7,16],"Prati":[11.85,9.3,36],"San Giovanni":[6.9,3.6,19],"San Lorenzo":[7.24,4.5,21],"Termini":[8.39,5.7,25],"Testaccio":[8.79,6.1,26],"Trastevere":[9.8,7.2,29]}},"large":{"Centro Storico":{"EUR":[22.78,10,52],"Flaminio":[16.77,3.7,27],"Garbatella":[18.63,5.7,35],"Monteverde":[16.77,3.7,27],"Monti":[15.15,1.8,19],"Ostiense":[17.34,4.3,29],"Parioli":[17.51,4.5,30],"Pigneto":[19.19,6.3,37],"Prati":[15.15,2,20],"San Giovanni":[16.82,3.8,27],"San Lorenzo":[17.3,4.3,29],"Termini":[15.83,2.7,23],"Testaccio":[16.36,3.3,25],"Trastevere":[15.15,1.9,20],"Tuscolano":[20.2,7.3,41]},"EUR":{"Centro Storico":[22.78,10,52],"Flaminio":[26.23,13.7,67],"Garbatella":[17.98,5,32],"Monteverde":[20.28,7.4,42],"Monti":[22.53,9.8,51],"Ostiense":[18.77,5.8,35],"Parioli":[26.7,14.2,69],"Pigneto":[23.53,10.8,55],"Prati":[23.9,11.2,57],"San Giovanni":[21.85,9.1,48],"San Lorenzo":[23.74,11,56],"Termini":[23.62,10.9,56],"Testaccio":[19.67,6.8,39],"Trastevere":[21.05,8.2,45],"Tuscolano":[21.62,8.8,47]},"Flaminio":{"Centro Storico":[16.77,3.7,27],"EUR":[26.23,13.7,67],"Garbatella":[22.13,9.3,49],"Monteverde":[19.64,6.7,39],"Monti":[17.77,4.8,31],"Ostiense":[20.86,8,44],"Parioli":[16.01,2.9,24],"Pigneto":[21.26,8.4,46],"Prati":[15.81,2.7,23],"San Giovanni":[19.64,6.7,39],"San Lorenzo":[19.08,6.1,37],"Termini":[17.65,4.6,31],"Testaccio":[19.85,7,40],"Trastevere":[18.43,5.5,34],"Tuscolano":[23,10.3,53]},"Garbatella":{"Centro Storico":[18.63,5.7,35],"EUR":[17.98,5,32],"Flaminio":[22.13,9.3,49],"Monteverde":[17.68,4.7,31],"Monti":[17.97,5,32],"Ostiense":[15.15,1.6,18],"Parioli":[22.14,9.4,49],"Pigneto":[19.05,6.1,36],"Prati":[20.19,7.3,41],"San Giovanni":[17.12,4.1,28],"San Lorenzo":[19.02,6.1,36],"Termini":[18.96,6,36],"Testaccio":[15.76,2.6,23],"Trastevere":[17.31,4.3,29],"Tuscolano":[17.75,4.7,31]},"Monteverde":{"Centro Storico":[16.77,3.7,27],"EUR":[20.28,7.4,42],"Flaminio":[19.64,6.7,39],"Garbatella":[17.68,4.7,31],"Monti":[17.72,4.7,31],"Ostiense":[16.26,3.2,25],"Parioli":[21.01,8.2,45],"Pigneto":[21.4,8.6,46],"Prati":[17.12,4.1,28],"San Giovanni":[18.73,5.8,35],"San Lorenzo":[20.09,7.2,41],"Termini":[18.98,6,36],"Testaccio":[15.55,2.4,22],"Trastevere":[15.15,1.9,20],"Tuscolano":[21.34,8.5,46]},"Monti":{"Centro Storico":[15.15,1.8,19],"EUR":[22.53,9.8,51],"Flaminio":[17.77,4.8,31],"Garbatella":[17.97,5,32],"Monteverde":[17.72,4.7,31],"Ostiense":[17.04,4,28],"Parioli":[17.43,4.4,30],"Pigneto":[17.51,4.5,30],"Prati":[16.78,3.7,27],"San Giovanni":[15.22,2.1,20],"San Lorenzo":[15.72,2.6,22],"Termini":[15.15,1.4,17],"Testaccio":[16.34,3.3,25],"Trastevere":[15.87,2.8,23],"Tuscolano":[18.64,5.7,35]},"Ostiense":{"Centro Storico":[17.34,4.3,29],"EUR":[18.77,5.8,35],"Flaminio":[20.86,8,44],"Garbatella":[15.15,1.6,18],"Monteverde":[16.26,3.2,25],"Monti":[17.04,4,28],"Parioli":[21.18,8.3,45],"Pigneto":[19.24,6.3,37],"Prati":[18.78,5.8,35],"San Giovanni":[16.83,3.8,27],"San Lorenzo":[18.66,5.7,35],"Termini":[18.2,5.2,33],"Testaccio":[15.15,1.1,16],"Trastevere":[15.85,2.7,23],"Tuscolano":[18.56,5.6,34]},"Parioli":{"Centro Storico":[17.51,4.5,30],"EUR":[26.7,14.2,69],"Flaminio":[16.01,2.9,24],"Garbatella":[22.14,9.4,49],"Monteverde":[21.01,8.2,45],"Monti":[17.43,4.4,30],"Ostiense":[21.18,8.3,45],"Pigneto":[19.46,6.5,38],"Prati":[17.77,4.8,31],"San Giovanni":[18.73,5.8,35],"San Lorenzo":[17.44,4.4,30],"Termini":[16.55,3.5,26],"Testaccio":[20.37,7.5,42],"Trastevere":[19.34,6.4,38],"Tuscolano":[21.67,8.9,47]},"Pigneto":{"Centro Storico":[19.19,6.3,37],"EUR":[23.53,10.8,55],"Flaminio":[21.26,8.4,46],"Garbatella":[19.05,6.1,36],"Monteverde":[21.4,8.6,46],"Monti":[17.51,4.5,30],"Ostiense":[19.24,6.3,37],"Parioli":[19.46,6.5,38],"Prati":[20.98,8.1,45],"San Giovanni":[15.92,2.8,23],"San Lorenzo":[15.43,2.3,21],"Termini":[16.94,3.9,28],"Testaccio":[19.28,6.3,37],"Trastevere":[19.73,6.8,39],"Tuscolano":[15.82,2.7,23]},"Prati":{"Centro Storico":[15.15,2,20],"EUR":[23.9,11.2,57],"Flaminio":[15.81,2.7,23],"Garbatella":[20.19,7.3,41],"Monteverde":[17.12,4.1,28],"Monti":[16.78,3.7,27],"Ostiense":[18.78,5.8,35],"Parioli":[17.77,4.8,31],"Pigneto":[20.98,8.1,45],"San Giovanni":[18.71,5.8,35],"San Lorenzo":[18.97,6,36],"Termini":[17.41,4.4,30],"Testaccio":[17.72,4.7,31],"Trastevere":[16.19,3.1,24],"Tuscolano":[22.1,9.3,49]},"San Giovanni":{"Centro Storico":[16.82,3.8,27],"EUR":[21.85,9.1,48],"Flaminio":[19.64,6.7,39],"Garbatella":[17.12,4.1,28],"Monteverde":[18.73,5.8,35],"Monti":[15.22,2.1,20],"Ostiense":[16.83,3.8,27],"Parioli":[18.73,5.8,35],"Pigneto":[15.92,2.8,23],"Prati":[18.71,5.8,35],"San Lorenzo":[15.15,2,20],"Termini":[15.45,2.3,21],"Testaccio":[16.68,3.6,26],"Trastevere":[17.07,4,28],"Tuscolano":[16.67,3.6,26]},"San Lorenzo":{"Centro Storico":[17.3,4.3,29],"EUR":[23.74,11,56],"Flaminio":[19.08,6.1,37],"Garbatella":[19.02,6.1,36],"Monteverde":[20.09,7.2,41],"Monti":[15.72,2.6,22],"Ostiense":[18.66,5.7,35],"Parioli":[17.44,4.4,30],"Pigneto":[15.43,2.3,21],"Prati":[18.97,6,36],"San Giovanni":[15.15,2,20],"Termini":[15.15,1.6,19],"Testaccio":[18.31,5.3,33],"Trastevere":[18.27,5.3,33],"Tuscolano":[17.49,4.5,30]},"Termini":{"Centro Storico":[15.83,2.7,23],"EUR":[23.62,10.9,56],"Flaminio":[17.65,4.6,31],"Garbatella":[18.96,6,36],"Monteverde":[18.98,6,36],"Monti":[15.15,1.4,17],"Ostiense":[18.2,5.2,33],"Parioli":[16.55,3.5,26],"Pigneto":[16.94,3.9,28],"Prati":[17.41,4.4,30],"San Giovanni":[15.45,2.3,21],"San Lorenzo":[15.15,1.6,19],"Testaccio":[17.59,4.6,30],"Trastevere":[17.13,4.1,28],"Tuscolano":[18.64,5.7,35]},"Testaccio":{"Centro Storico":[16.36,3.3,25],"EUR":[19.67,6.8,39],"Flaminio":[19.85,7,40],"Garbatella":[15.76,2.6,23],"Monteverde":[15.55,2.4,22],"Monti":[16.34,3.3,25],"Ostiense":[15.15,1.1,16],"Parioli":[20.37,7.5,42],"Pigneto":[19.28,6.3,37],"Prati":[17.72,4.7,31],"San Giovanni":[16.68,3.6,26],"San Lorenzo":[18.31,5.3,33],"Termini":[17.59,4.6,30],"Trastevere":[15.15,1.6,19],"Tuscolano":[19.04,6.1,36]},"Trastevere":{"Centro Storico":[15.15,1.9,20],"EUR":[21.05,8.2,45],"Flaminio":[18.43,5.5,34],"Garbatella":[17.31,4.3,29],"Monteverde":[15.15,1.9,20],"Monti":[15.87,2.8,23],"Ostiense":[15.85,2.7,23],"Parioli":[19.34,6.4,38],"Pigneto":[19.73,6.8,39],"Prati":[16.19,3.1,24],"San Giovanni":[17.07,4,28],"San Lorenzo":[18.27,5.3,33],"Termini":[17.13,4.1,28],"Testaccio":[15.15,1.6,19],"Tuscolano":[20.05,7.2,41]},"Tuscolano":{"Centro Storico":[20.2,7.3,41],"EUR":[21.62,8.8,47],"Flaminio":[23,10.3,53],"Garbatella":[17.75,4.7,31],"Monteverde":[21.34,8.5,46],"Monti":[18.64,5.7,35],"Ostiense":[18.56,5.6,34],"Parioli":[21.67,8.9,47],"Pigneto":[15.82,2.7,23],"Prati":[22.1,9.3,49],"San Giovanni":[16.67,3.6,26],"San Lorenzo":[17.49,4.5,30],"Termini":[18.64,5.7,35],"Testaccio":[19.04,6.1,36],"Trastevere":[20.05,7.2,41]}},"furniture":{"Centro Storico":{"EUR":[50.28,10,63],"Flaminio":[44.27,3.7,36],"Garbatella":[46.13,5.7,44],"Monteverde":[44.27,3.7,36],"Monti":[42.65,1.8,28],"Ostiense":[44.84,4.3,38],"Parioli":[45.01,4.5,39],"Pigneto":[46.69,6.3,47],"Prati":[42.65,2,29],"San Giovanni":[44.32,3.8,36],"San Lorenzo":[44.8,4.3,38],"Termini":[43.33,2.7,32],"Testaccio":[43.86,3.3,34],"Trastevere":[42.65,1.9,28],"Tuscolano":[47.7,7.3,51]},"EUR":{"Centro Storico":[50.28,10,63],"Flaminio":[53.73,13.7,79],"Garbatella":[45.48,5,41],"Monteverde":[47.78,7.4,52],"Monti":[50.03,9.8,62],"Ostiense":[46.27,5.8,45],"Parioli":[54.2,14.2,81],"Pigneto":[51.03,10.8,66],"Prati":[51.4,11.2,68],"San Giovanni":[49.35,9.1,59],"San Lorenzo":[51.24,11,67],"Termini":[51.12,10.9,67],"Testaccio":[47.17,6.8,49],"Trastevere":[48.55,8.2,55],"Tuscolano":[49.12,8.8,58]},"Flaminio":{"Centro Storico":[44.27,3.7,36],"EUR":[53.73,13.7,79],"Garbatella":[49.63,9.3,60],"Monteverde":[47.14,6.7,49],"Monti":[45.27,4.8,40],"Ostiense":[48.36,8,54],"Parioli":[43.51,2.9,32],"Pigneto":[48.76,8.4,56],"Prati":[43.31,2.7,32],"San Giovanni":[47.14,6.7,49],"San Lorenzo":[46.58,6.1,46],"Termini":[45.15,4.6,40],"Testaccio":[47.35,7,50],"Trastevere":[45.93,5.5,43],"Tuscolano":[50.5,10.3,64]},"Garbatella":{"Centro Storico":[46.13,5.7,44],"EUR":[45.48,5,41],"Flaminio":[49.63,9.3,60],"Monteverde":[45.18,4.7,40],"Monti":[45.47,5,41],"Ostiense":[42.65,1.6,27],"Parioli":[49.64,9.4,60],"Pigneto":[46.55,6.1,46],"Prati":[47.69,7.3,51],"San Giovanni":[44.62,4.1,37],"San Lorenzo":[46.52,6.1,46],"Termini":[46.46,6,46],"Testaccio":[43.26,2.6,31],"Trastevere":[44.81,4.3,38],"Tuscolano":[45.25,4.7,40]},"Monteverde":{"Centro Storico":[44.27,3.7,36],"EUR":[47.78,7.4,52],"Flaminio":[47.14,6.7,49],"Garbatella":[45.18,4.7,40],"Monti":[45.22,4.7,40],"Ostiense":[43.76,3.2,34],"Parioli":[48.51,8.2,55],"Pigneto":[48.9,8.6,57],"Prati":[44.62,4.1,37],"San Giovanni":[46.23,5.8,45],"San Lorenzo":[47.59,7.2,51],"Termini":[46.48,6,46],"Testaccio":[43.05,2.4,30],"Trastevere":[42.65,1.9,28],"Tuscolano":[48.84,8.5,57]},"Monti":{"Centro Storico":[42.65,1.8,28],"EUR":[50.03,9.8,62],"Flaminio":[45.27,4.8,40],"Garbatella":[45.47,5,41],"Monteverde":[45.22,4.7,40],"Ostiense":[44.54,4,37],"Parioli":[44.93,4.4,39],"Pigneto":[45.01,4.5,39],"Prati":[44.28,3.7,36],"San Giovanni":[42.72,2.1,29],"San Lorenzo":[43.22,2.6,31],"Termini":[42.65,1.4,26],"Testaccio":[43.84,3.3,34],"Trastevere":[43.37,2.8,32],"Tuscolano":[46.14,5.7,44]},"Ostiense":{"Centro Storico":[44.84,4.3,38],"EUR":[46.27,5.8,45],"Flaminio":[48.36,8,54],"Garbatella":[42.65,1.6,27],"Monteverde":[43.76,3.2,34],"Monti":[44.54,4,37],"Parioli":[48.68,8.3,56],"Pigneto":[46.74,6.3,47],"Prati":[46.28,5.8,45],"San Giovanni":[44.33,3.8,36],"San Lorenzo":[46.16,5.7,44],"Termini":[45.7,5.2,42],"Testaccio":[42.65,1.1,25],"Trastevere":[43.35,2.7,32],"Tuscolano":[46.06,5.6,44]},"Parioli":{"Centro Storico":[45.01,4.5,39],"EUR":[54.2,14.2,81],"Flaminio":[43.51,2.9,32],"Garbatella":[49.64,9.4,60],"Monteverde":[48.51,8.2,55],"Monti":[44.93,4.4,39],"Ostiense":[48.68,8.3,56],"Pigneto":[46.96,6.5,48],"Prati":[45.27,4.8,40],"San Giovanni":[46.23,5.8,45],"San Lorenzo":[44.94,4.4,39],"Termini":[44.05,3.5,35],"Testaccio":[47.87,7.5,52],"Trastevere":[46.84,6.4,47],"Tuscolano":[49.17,8.9,58]},"Pigneto":{"Centro Storico":[46.69,6.3,47],"EUR":[51.03,10.8,66],"Flaminio":[48.76,8.4,56],"Garbatella":[46.55,6.1,46],"Monteverde":[48.9,8.6,57],"Monti":[45.01,4.5,39],"Ostiense":[46.74,6.3,47],"Parioli":[46.96,6.5,48],"Prati":[48.48,8.1,55],"San Giovanni":[43.42,2.8,32],"San Lorenzo":[42.93,2.3,30],"Termini":[44.44,3.9,37],"Testaccio":[46.78,6.3,47],"Trastevere":[47.23,6.8,49],"Tuscolano":[43.32,2.7,32]},"Prati":{"Centro Storico":[42.65,2,29],"EUR":[51.4,11.2,68],"Flaminio":[43.31,2.7,32],"Garbatella":[47.69,7.3,51],"Monteverde":[44.62,4.1,37],"Monti":[44.28,3.7,36],"Ostiense":[46.28,5.8,45],"Parioli":[45.27,4.8,40],"Pigneto":[48.48,8.1,55],"San Giovanni":[46.21,5.8,45],"San Lorenzo":[46.47,6,46],"Termini":[44.91,4.4,39],"Testaccio":[45.22,4.7,40],"Trastevere":[43.69,3.1,33],"Tuscolano":[49.6,9.3,60]},"San Giovanni":{"Centro Storico":[44.32,3.8,36],"EUR":[49.35,9.1,59],"Flaminio":[47.14,6.7,49],"Garbatella":[44.62,4.1,37],"Monteverde":[46.23,5.8,45],"Monti":[42.72,2.1,29],"Ostiense":[44.33,3.8,36],"Parioli":[46.23,5.8,45],"Pigneto":[43.42,2.8,32],"Prati":[46.21,5.8,45],"San Lorenzo":[42.65,2,29],"Termini":[42.95,2.3,30],"Testaccio":[44.18,3.6,35],"Trastevere":[44.57,4,37],"Tuscolano":[44.17,3.6,35]},"San Lorenzo":{"Centro Storico":[44.8,4.3,38],"EUR":[51.24,11,67],"Flaminio":[46.58,6.1,46],"Garbatella":[46.52,6.1,46],"Monteverde":[47.59,7.2,51],"Monti":[43.22,2.6,31],"Ostiense":[46.16,5.7,44],"Parioli":[44.94,4.4,39],"Pigneto":[42.93,2.3,30],"Prati":[46.47,6,46],"San Giovanni":[42.65,2,29],"Termini":[42.65,1.6,27],"Testaccio":[45.81,5.3,43],"Trastevere":[45.77,5.3,43],"Tuscolano":[44.99,4.5,39]},"Termini":{"Centro Storico":[43.33,2.7,32],"EUR":[51.12,10.9,67],"Flaminio":[45.15,4.6,40],"Garbatella":[46.46,6,46],"Monteverde":[46.48,6,46],"Monti":[42.65,1.4,26],"Ostiense":[45.7,5.2,42],"Parioli":[44.05,3.5,35],"Pigneto":[44.44,3.9,37],"Prati":[44.91,4.4,39],"San Giovanni":[42.95,2.3,30],"San Lorenzo":[42.65,1.6,27],"Testaccio":[45.09,4.6,40],"Trastevere":[44.63,4.1,37],"Tuscolano":[46.14,5.7,44]},"Testaccio":{"Centro Storico":[43.86,3.3,34],"EUR":[47.17,6.8,49],"Flaminio":[47.35,7,50],"Garbatella":[43.26,2.6,31],"Monteverde":[43.05,2.4,30],"Monti":[43.84,3.3,34],"Ostiense":[42.65,1.1,25],"Parioli":[47.87,7.5,52],"Pigneto":[46.78,6.3,47],"Prati":[45.22,4.7,40],"San Giovanni":[44.18,3.6,35],"San Lorenzo":[45.81,5.3,43],"Termini":[45.09,4.6,40],"Trastevere":[42.65,1.6,27],"Tuscolano":[46.54,6.1,46]},"Trastevere":{"Centro Storico":[42.65,1.9,28],"EUR":[48.55,8.2,55],"Flaminio":[45.93,5.5,43],"Garbatella":[44.81,4.3,38],"Monteverde":[42.65,1.9,28],"Monti":[43.37,2.8,32],"Ostiense":[43.35,2.7,32],"Parioli":[46.84,6.4,47],"Pigneto":[47.23,6.8,49],"Prati":[43.69,3.1,33],"San Giovanni":[44.57,4,37],"San Lorenzo":[45.77,5.3,43],"Termini":[44.63,4.1,37],"Testaccio":[42.65,1.6,27],"Tuscolano":[47.55,7.2,51]},"Tuscolano":{"Centro Storico":[47.7,7.3,51],"EUR":[49.12,8.8,58],"Flaminio":[50.5,10.3,64],"Garbatella":[45.25,4.7,40],"Monteverde":[48.84,8.5,57],"Monti":[46.14,5.7,44],"Ostiense":[46.06,5.6,44],"Parioli":[49.17,8.9,58],"Pigneto":[43.32,2.7,32],"Prati":[49.6,9.3,60],"San Giovanni":[44.17,3.6,35],"San Lorenzo":[44.99,4.5,39],"Termini":[46.14,5.7,44],"Testaccio":[46.54,6.1,46],"Trastevere":[47.55,7.2,51]}}};
+var T = {
+  "nav-how": ["How it works", "Come funziona"], "nav-prices": ["Prices", "Prezzi"], "nav-biz": ["Business", "Aziende"], "nav-couriers": ["Couriers", "Corrieri"], "nav-help": ["Help", "Aiuto"],
+  "book": ["Book a delivery", "Prenota una consegna"], "book-now": ["Book now", "Prenota ora"],
+  "h1": ["Anything, anywhere in Rome. <em>Today.</em>", "Qualsiasi cosa, ovunque a Roma. <em>Oggi.</em>"],
+  "lead": ["From a signed contract to a sofa. A courier with the right vehicle collects it and brings it across the city the same day.", "Da un contratto firmato a un divano. Un corriere con il veicolo giusto lo ritira e lo porta dall'altra parte della città in giornata."],
+  "use1": ["Boxes and a mattress for the new flat", "Scatoloni e un materasso per la casa nuova"],
+  "use2": ["The armchair you found on Marketplace", "La poltrona trovata su Marketplace"],
+  "use3": ["Documents and stock between offices and shops", "Documenti e merce tra uffici e negozi"],
+  "label-h": ["Same-day · Roma", "In giornata · Roma"], "from": ["From", "Da"], "to": ["To", "A"], "contents": ["Contents", "Contenuto"],
+  "why": ["Sometimes you need to get something across Rome, but you don't have <mark>a car, the time, or an easy way</mark> to do it.", "A volte devi portare qualcosa dall'altra parte di Roma, ma non hai <mark>un'auto, il tempo o un modo semplice</mark> per farlo."],
+  "why-more": ["That's why we started DART: a local delivery network for people and businesses in Rome. No contract, no account unless you want one, and the full price before you book.", "Per questo è nato DART: una rete di consegne locale per privati e aziende a Roma. Nessun contratto, nessun account se non lo vuoi, e il prezzo completo prima di prenotare."],
+  "prices-h": ["What things cost", "Quanto costa"],
+  "prices-intro": ["Real routes, priced at today's rates. VAT included.", "Percorsi reali, con le tariffe di oggi. IVA inclusa."],
+  "how-h": ["How it works", "Come funziona"],
+  "flow": ["<b>1</b>Tell us what it is, roughly how big, and where it's going. <b>2</b>We find a courier nearby whose vehicle it fits in, and show you the price before you pay. <b>3</b>Follow it on the map, message the courier if you need to, and get a photo when it's delivered.", "<b>1</b>Dicci cos'è, quanto è grande più o meno, e dove deve andare. <b>2</b>Troviamo un corriere vicino con un veicolo in cui entra, e ti mostriamo il prezzo prima di pagare. <b>3</b>Seguilo sulla mappa, scrivi al corriere se serve, e ricevi una foto alla consegna."],
+  "areas-h": ["Where we go", "Dove arriviamo"],
+  "areas-intro": ["Anywhere inside the Grande Raccordo Anulare. These are the areas you can book today.", "Ovunque dentro il Grande Raccordo Anulare. Queste sono le zone che puoi prenotare oggi."],
+  "biz-h": ["For businesses", "Per le aziende"],
+  "biz-p": ["Use the same account. Switch it to business in Settings, add your Partita IVA and SDI code, and pay per delivery or choose a monthly plan. Upload a spreadsheet to book many deliveries at once.", "Usa lo stesso account. Passa ad azienda nelle Impostazioni, aggiungi Partita IVA e codice SDI, e paga a consegna o scegli un piano mensile. Carica un foglio di calcolo per prenotare tante consegne insieme."],
+  "biz-more": ["Business plans →", "Piani per le aziende →"],
+  "faq-h": ["Questions", "Domande"],
+  "join-h": ["Deliver with DART", "Consegna con DART"],
+  "join-p": ["Bike, scooter, car or van. Your hours, and only jobs your vehicle can carry.", "Bici, scooter, auto o furgone. I tuoi orari, e solo lavori che il tuo veicolo può portare."],
+  "join-btn": ["Become a courier", "Diventa corriere"],
+  "note": ["Design option B. The working site, booking and apps are on the main DART test page.", "Proposta grafica B. Il sito funzionante, le prenotazioni e le app sono nella pagina di prova principale di DART."]
+};
+var TYPES = [["letter", "A letter or documents", "Lettera o documenti"], ["parcel", "A parcel, up to 40 cm", "Pacco, fino a 40 cm"], ["large", "Something large or heavy", "Oggetto grande o pesante"], ["furniture", "A piece of furniture", "Un mobile"]];
+var LIST = [
+  ["A signed contract", "Un contratto firmato", "Prati", "EUR", 10.65],
+  ["A shop order", "Un ordine del negozio", "Monti", "Parioli", 6.90],
+  ["Six moving boxes", "Sei scatoloni del trasloco", "Termini", "Monteverde", 33.23],
+  ["An armchair, fourth floor, no lift", "Una poltrona, quarto piano, senza ascensore", "Trastevere", "Pigneto", 51.98],
+  ["A wardrobe, taken apart", "Un armadio smontato", "San Giovanni", "Ostiense", 69.83]
+];
+var FAQ = [
+  [["What can DART carry?", "Cosa può portare DART?"], ["Letters, documents, parcels and furniture up to the size of a cargo van. We don't carry cash, weapons, illegal items or prescription medicines.", "Lettere, documenti, pacchi e mobili fino alle dimensioni di un furgone. Non trasportiamo contanti, armi, oggetti illegali o farmaci con ricetta."]],
+  [["How is the price worked out?", "Come si calcola il prezzo?"], ["A minimum of €6.90, then €0.95 a kilometre, plus a fee for larger items and any extras like stairs. You see every line before you book.", "Un minimo di 6,90 €, poi 0,95 € al chilometro, più un supplemento per gli oggetti grandi e gli extra come le scale. Vedi ogni voce prima di prenotare."]],
+  [["Do I need an account?", "Serve un account?"], ["No. Book and track with your name, email and phone. An account keeps your deliveries and invoices together.", "No. Prenoti e tracci con nome, email e telefono. Un account tiene insieme consegne e fatture."]],
+  [["Can I cancel?", "Posso annullare?"], ["Yes, free of charge until the courier collects the item.", "Sì, gratis finché il corriere non ritira l'oggetto."]]
+];
+var L = "en";
+try { L = localStorage.getItem("dart-b-lang") || ((navigator.language || "").slice(0, 2) === "it" ? "it" : "en"); } catch (e) {}
+function i() { return L === "it" ? 1 : 0; }
+function eur(n) { return L === "it" ? n.toFixed(2).replace(".", ",") + " €" : "€" + n.toFixed(2); }
+function km(n) { return (L === "it" ? String(n).replace(".", ",") : String(n)) + " km"; }
+var S = { from: "Pigneto", to: "Prati", type: "furniture" };
+function options(sel, list, val) { sel.innerHTML = list.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === val ? " selected" : "") + ">" + o[1] + "</option>"; }).join(""); }
+function quote() {
+  var amt = document.getElementById("q-amt"), meta = document.getElementById("q-meta");
+  var x = S.from && S.to && S.from !== S.to ? PM[S.type][S.from][S.to] : null;
+  if (!x) { amt.className = "amt empty"; amt.textContent = L === "it" ? "Scegli due zone diverse" : "Choose two different areas"; meta.textContent = ""; return; }
+  amt.className = "amt"; amt.textContent = eur(x[0]);
+  meta.textContent = km(x[1]) + " · " + (L === "it" ? "circa " : "about ") + x[2] + " min · " + (L === "it" ? "IVA inclusa" : "VAT included");
+}
+function render() {
+  document.documentElement.lang = L;
+  document.querySelectorAll("[data-t]").forEach(function (el) { var v = T[el.getAttribute("data-t")]; if (!v) return; if (el.hasAttribute("data-html") || /<em>/.test(v[i()])) el.innerHTML = v[i()]; else el.textContent = v[i()]; });
+  document.querySelectorAll("[data-lang]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === L)); });
+  var areas = AREAS.map(function (a) { return [a, a]; });
+  options(document.getElementById("q-from"), areas, S.from);
+  options(document.getElementById("q-to"), areas, S.to);
+  options(document.getElementById("q-type"), TYPES.map(function (t) { return [t[0], t[1 + i()]]; }), S.type);
+  document.getElementById("listino").innerHTML = LIST.map(function (r) {
+    return '<li><span><span class="what">' + r[i()] + '</span><span class="route">' + r[2] + " → " + r[3] + '</span></span><span class="dots"></span><span class="p">' + eur(r[4]) + "</span></li>";
+  }).join("");
+  document.getElementById("listino-foot").textContent = L === "it" ? "Minimo " + eur(6.9) + ", poi " + eur(0.95) + " al chilometro. Le misure, il peso e gli extra come le scale si aggiungono." : "Minimum " + eur(6.9) + ", then " + eur(0.95) + " a kilometre. Size, weight and extras like stairs are added.";
+  document.getElementById("plaques").innerHTML = AREAS.map(function (a) { return '<div class="plaque"><span><small>ROMA</small><b>' + a.toUpperCase() + "</b></span></div>"; }).join("");
+  document.getElementById("faq").innerHTML = FAQ.map(function (f) { return "<details><summary>" + f[0][i()] + "</summary><p>" + f[1][i()] + "</p></details>"; }).join("");
+  quote();
+}
+document.getElementById("q-from").addEventListener("change", function (e) { S.from = e.target.value; quote(); });
+document.getElementById("q-to").addEventListener("change", function (e) { S.to = e.target.value; quote(); });
+document.getElementById("q-type").addEventListener("change", function (e) { S.type = e.target.value; quote(); });
+document.getElementById("quote").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var m = document.getElementById("q-meta");
+  m.textContent = L === "it" ? "Questa è una proposta grafica: la prenotazione funziona sul sito principale." : "This is a design option: booking works on the main site.";
+});
+document.querySelectorAll("[data-lang]").forEach(function (b) { b.addEventListener("click", function () { L = b.getAttribute("data-lang"); try { localStorage.setItem("dart-b-lang", L); } catch (e) {} render(); }); });
+render();
+</script>
