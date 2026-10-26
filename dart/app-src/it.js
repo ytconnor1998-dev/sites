@@ -375,3 +375,29 @@ Object.assign(IT, {
   "That's the problem DART was started to solve. We're building a local delivery network for the city, for people and for businesses. Tell us what it is and where it's going, and a nearby courier with the right vehicle collects it the same day, whether it's a second-hand find, a shop purchase, or documents for another office.": "DART è nato per risolvere proprio questo. Stiamo costruendo una rete di consegne locale per la città, per privati e aziende. Dicci cos'è e dove deve andare, e un corriere vicino con il veicolo giusto lo ritira in giornata: che sia un affare dell'usato, un acquisto in negozio o dei documenti per un altro ufficio.",
   "No contract, no account unless you want one, and you see the full price before you book.": "Nessun contratto, nessun account se non lo vuoi, e vedi il prezzo completo prima di prenotare."
 });
+Object.assign(IT, {
+  "New delivery": "Nuova consegna", "You earn": "Guadagni", "Decline": "Rifiuta", "Accept": "Accetta",
+  "If you decline or the timer runs out, it goes to the next courier.": "Se rifiuti o il tempo scade, passa al prossimo corriere.",
+  "Declined. It goes to the next courier.": "Rifiutata. Passa al prossimo corriere.", "The time ran out, so it went to another courier.": "Il tempo è scaduto, quindi è passata a un altro corriere.",
+  "Waiting for a delivery": "In attesa di una consegna", "Go online to get deliveries": "Vai online per ricevere consegne", "You're in the queue": "Sei in coda",
+  "Courier offers": "Offerte ai corrieri", "Finding the next courier…": "Cerco il prossimo corriere…", "No courier is free right now. It's offered again when one comes online.": "Nessun corriere è libero ora. Verrà offerta di nuovo quando uno sarà online.",
+  "Offer now": "Offri ora", "Deciding": "Sta decidendo", " · busy": " · occupato", "Pickup": "Ritiro", "Delivery": "Consegna"
+});
+IT_PATTERNS.push(
+  [/^New deliveries that fit your (.+) pop up on this screen\. You have (\d+) seconds to accept or decline\.$/, function (m, v, n) { return "Le nuove consegne adatte al tuo veicolo (" + trItem(v) + ") compaiono su questa schermata. Hai " + n + " secondi per accettare o rifiutare."; }],
+  [/^Offered to (.+), (\d+) s left to answer$/, "Offerta a $1, $2 s per rispondere"], [/^Offered to (.+)$/, "Offerta a $1"],
+  [/^Declined or missed: (.+)$/, "Rifiutata o persa da: $1"], [/^(.+) km to pickup$/, "$1 km dal ritiro"], [/^(.+) km trip$/, "viaggio di $1 km"]
+);
+Object.assign(IT, {
+  "Continue with Apple": "Continua con Apple", "Apple ID email": "Email dell'ID Apple", "Pay": "Pay",
+  "With Apple you can choose to hide your email. DART then gets a private relay address that forwards to you.": "Con Apple puoi scegliere di nascondere la tua email. DART riceve un indirizzo privato che inoltra i messaggi a te.",
+  "Apple Pay and Google Pay": "Apple Pay e Google Pay", "Offered at checkout on phones that support them. Nothing to set up here.": "Disponibili al pagamento sui telefoni che li supportano. Non c'è niente da configurare qui.",
+  "No courier account uses that email. Apply to become a courier first.": "Nessun account corriere usa questa email. Prima candidati come corriere."
+});
+IT_PATTERNS.push(
+  [/^Sign in with (Apple|Google)$/, "Accedi con $1"], [/^Signed in with (Apple|Google)$/, "Accesso effettuato con $1"],
+  [/^You sign in with (Apple|Google), so there's no DART password\.$/, "Accedi con $1, quindi non c'è una password DART."],
+  [/^Test build: this stands in for (Apple|Google)'s sign-in screen\. Enter the account you want to use\.$/, "Versione di prova: sostituisce la schermata di accesso di $1. Inserisci l'account che vuoi usare."],
+  [/^(Apple Pay|Google Pay) · charged now: (.+)$/, "$1 · addebito ora: $2"], [/^(Apple Pay|Google Pay), paid$/, "$1, pagato"], [/^(Apple Pay|Google Pay), refunded$/, "$1, rimborsato"]
+);
+Object.assign(IT, { "Show more": "Mostra di più", "Show less": "Mostra meno" });

@@ -111,8 +111,11 @@ function aOrderModal(m) {
     : '<div class="card"><b>Customer</b><button class="link left" data-act="a-customer" data-v="' + esc(o.customer.id) + '">' + esc(o.customer.name) + (o.customer.businessName ? " · " + esc(o.customer.businessName) : "") + "</button>" + (acc ? '<span class="muted sm">' + esc(acc.email) + (acc.phone ? " · " + esc(acc.phone) : "") + "</span>" : "") + "</div>";
   if (o.courier) h += '<div class="card"><b>Courier</b><button class="link left" data-act="a-courier" data-v="' + esc(o.courier.id) + '">' + esc(o.courier.name) + "</button><span class=\"muted sm\">" + esc(vLabel(o.courier.vehicle)) + (o.courier.plate ? " · " + esc(o.courier.plate) : "") + " · earns " + eur(o.courierPay) + "</span></div>";
   if (o.status === "awaiting") {
-    var el = S.couriers.filter(function (c) { return c.status === "approved" && eligibleAny(c, o); });
-    h += '<div class="card"><b>Assign a courier</b>' + (el.length ? el.map(function (c) { return '<div class="row between"><span>' + esc(c.name) + ' <span class="muted sm">' + esc(vLabel(c.vehicle.type)) + (c.online ? " · online" : " · offline") + (c.area ? " · " + esc(c.area) : "") + '</span></span><button class="btn sm" data-act="a-assign" data-v="' + esc(c.id) + '">Assign</button></div>'; }).join("") : '<span class="muted">No approved courier has a vehicle that fits this item.</span>') + "</div>";
+    var el = S.couriers.filter(function (c) { return c.status === "approved" && eligible(c, o); }), f = liveOffer(o), fc = f && byId(S.couriers, f.to);
+    var dec = (o.declinedBy || []).map(function (id) { var c = byId(S.couriers, id); return c ? c.name : id; });
+    h += '<div class="card"><b>Courier offers</b><span>' + (fc ? "Offered to " + esc(fc.name) + ", " + Math.max(0, Math.ceil((f.until - Date.now()) / 1000)) + " s left to answer" : el.some(function (c) { return freeCourier(c); }) ? "Finding the next courier…" : "No courier is free right now. It's offered again when one comes online.") + "</span>" +
+      (dec.length ? '<span class="muted sm">Declined or missed: ' + esc(dec.join(", ")) + "</span>" : "") +
+      (el.length ? el.map(function (c) { var free = freeCourier(c), mine = f && f.to === c.id; return '<div class="row between"><span>' + esc(c.name) + ' <span class="muted sm">' + esc(vLabel(c.vehicle.type)) + (c.online ? (free || mine ? " · online" : " · busy") : " · offline") + (c.area ? " · " + esc(c.area) : "") + '</span></span>' + (mine ? '<span class="chip s-warn">Deciding</span>' : '<button class="btn sm ghost" data-act="a-assign" data-v="' + esc(c.id) + '"' + (free ? "" : " disabled") + ">Offer now</button>") + "</div>"; }).join("") : '<span class="muted">No approved courier has a vehicle that fits this item.</span>') + "</div>";
   }
   h += '<div class="card"><b>Price and payment</b>' + breakdown(o.price, o.billing && o.billing.method === "subscription" ? o.billing : null) + '<span class="muted sm">' + esc(payLabel(o.billing)) + " · " + esc(o.billing ? o.billing.status : "") + "</span>" + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">Invoice ' + esc(inv.number) + "</button>" : "") + "</div>";
   if (o.issue && (o.issue.open || o.status === "issue")) h += '<div class="card warn"><b>Issue reported by ' + esc(o.issue.by) + "</b><span>" + esc(o.issue.reason) + ": " + esc(o.issue.text) + '</span><div class="row wrap"><button class="btn sm" data-act="a-resolve" data-v="' + esc(o.id) + '">Mark resolved</button></div></div>';
@@ -125,9 +128,11 @@ function aOrderModal(m) {
 }
 ACT["a-order-back"] = function () { closeChat(); S.modal.chat = false; render(); };
 ACT["a-chat"] = function () { var o = byId(S.orders, S.modal.id); openChat(o.id); S.modal.chat = true; Store.update("orders", o.id, { adminViewed: { at: Date.now() } }).catch(function () { }); render(); };
+// Admin can put a delivery in front of a specific courier; they still accept or decline it.
 ACT["a-assign"] = function (d) {
   var c = byId(S.couriers, d.v), o = byId(S.orders, S.modal.id); if (!c || !o) return;
-  run(Store.claim("orders", o.id, "admin", function (x) { return x.status === "awaiting"; }, { status: "assigned", courier: { id: c.id, name: c.name, vehicle: c.vehicle.type, plate: c.vehicle.plate || "", phone: c.phone }, courierPay: r2(o.price.total * share() / 100), timeline: { assigned: Date.now() }, assignedBy: "admin" }).then(function (ok) { toast(ok ? "Assigned to " + c.name : "It was already taken."); }));
+  var now = Date.now(), declined = (o.declinedBy || []).filter(function (id) { return id !== c.id; });
+  run(Store.claim("orders", o.id, "admin", function (x) { return x.status === "awaiting"; }, { offer: { to: c.id, at: now, until: now + OFFER_SECS * 1000, byAdmin: true }, declinedBy: declined }).then(function (ok) { toast(ok ? "Offered to " + c.name : "It was already taken."); }));
 };
 ACT["a-resolve"] = function (d) {
   var o = byId(S.orders, d.v); if (!o) return;

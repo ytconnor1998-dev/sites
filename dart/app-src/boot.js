@@ -1,6 +1,5 @@
 // ===== Router, rendering, events, startup =====
 function route() { var h = location.hash.replace("#", ""); return ["customer", "web", "courier", "admin"].indexOf(h) >= 0 ? h : "home"; }
-function eligibleAny(c, o) { var keep = S.me.declined; S.me.declined = {}; try { return eligible(c, o); } finally { S.me.declined = keep; } }
 
 function launcher() {
   return '<div class="home"><div class="row between wrap"><span class="logo xl"><svg><use href="#mark"/></svg>DART</span>' + modeChip() + "</div>" +
@@ -88,6 +87,12 @@ function wire() {
   root.addEventListener("focusout", function () { setTimeout(function () { if (pending) render(); }, 0); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && S.modal) { ACT["modal-close"](); } });
   window.addEventListener("hashchange", function () { S.modal = null; closeChat(); render(); window.scrollTo(0, 0); });
+  // Hand waiting deliveries to couriers one at a time, and keep an open offer's timer moving.
+  setInterval(function () {
+    var r = route();
+    if (r === "courier" || r === "admin") dispatch();
+    if (r === "courier" && myOffer() && !pending && !S.modal) render();
+  }, 1000);
   // Keep simulated courier movement and relative times fresh on live views.
   setInterval(function () {
     var r = route();

@@ -355,6 +355,17 @@ var TIBER = [[41.945, 12.468], [41.93, 12.472], [41.918, 12.47], [41.908, 12.475
 var ROADS = [["Prati", "Centro Storico"], ["Centro Storico", "Monti"], ["Monti", "Termini"], ["Termini", "San Lorenzo"], ["San Lorenzo", "Pigneto"], ["Monti", "San Giovanni"], ["San Giovanni", "Pigneto"], ["Centro Storico", "Trastevere"], ["Trastevere", "Testaccio"], ["Testaccio", "Ostiense"], ["Ostiense", "EUR"], ["Termini", "Parioli"], ["Parioli", "Flaminio"], ["Flaminio", "Prati"], ["Testaccio", "San Giovanni"], ["Trastevere", "Monteverde"], ["Ostiense", "Garbatella"], ["Garbatella", "EUR"], ["San Giovanni", "Tuscolano"], ["Pigneto", "Tuscolano"], ["Centro Storico", "Flaminio"]];
 function quad(a, b) { var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1]; return [r2(mx - dy * .18), r2(my + dx * .18)]; }
 function onQuad(a, c, b, t) { var u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; }
+// A viewBox that frames the given areas at a set width:height ratio, so a route is never cut off.
+function fitVB(names, ratio, pad) {
+  var pts = names.filter(function (n) { return AREAS[n]; }).map(function (n) { return proj(AREAS[n]); });
+  if (!pts.length) return null;
+  pad = pad == null ? 40 : pad;
+  var x0 = Math.min.apply(null, pts.map(function (p) { return p[0]; })) - pad, x1 = Math.max.apply(null, pts.map(function (p) { return p[0]; })) + pad;
+  var y0 = Math.min.apply(null, pts.map(function (p) { return p[1]; })) - pad, y1 = Math.max.apply(null, pts.map(function (p) { return p[1]; })) + pad;
+  var w = Math.max(x1 - x0, 160), h = Math.max(y1 - y0, 80), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (w / h < ratio) w = h * ratio; else h = w / ratio;
+  return [cx - w / 2, cy - h / 2, w, h].map(function (v) { return Math.round(v); }).join(" ");
+}
 function mapSVG(opt) {
   opt = opt || {};
   var s = '<svg viewBox="' + (opt.vb || "0 0 " + MW + " " + MH) + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of Rome">';

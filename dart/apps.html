@@ -81,6 +81,12 @@ img { max-width: 100%; }
 .btn.sm { padding: 8px 12px; font-size: 13px; border-radius: 5px; }
 .btn.google { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
 .btn.google svg { width: 18px; height: 18px; }
+.btn.apple { background: #000; color: #fff; }
+.btn.apple svg { width: 18px; height: 18px; margin-top: -3px; }
+.social { display: grid; gap: 10px; }
+.wallet { display: inline-flex; align-items: center; gap: 2px; background: #000; color: #fff; border-radius: 5px; padding: 3px 9px; font-weight: 700; font-size: 15px; line-height: 1.3; }
+.wallet svg { width: 15px; height: 15px; margin-top: -2px; }
+.wallet.g { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); gap: 4px; }
 .link { border: 0; background: none; color: var(--purple); font-weight: 700; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
 .link.left { text-align: left; }
 .icon-btn { border: 0; background: var(--paper-2); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; position: relative; color: var(--ink); }
@@ -289,6 +295,49 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .mh-title p { font-weight: 700; font-size: 14px; color: var(--purple); text-shadow: 0 0 3px var(--map-bg), 0 0 8px var(--map-bg); }
 .mh-title h1 { font-size: 30px; font-weight: 900; letter-spacing: -.03em; line-height: 1; max-width: 13ch; color: var(--ink); text-shadow: 0 0 3px var(--map-bg), 0 0 6px var(--map-bg), 0 0 12px var(--map-bg); }
 .mh-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 64%; overflow-y: auto; z-index: 3; background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -14px 34px -14px rgba(30, 10, 80, .45); padding: 8px 16px 16px; display: grid; gap: 12px; align-content: start; }
+/* Courier offer: a pop-up card, or the full details */
+.offer-scrim { position: absolute; inset: 0; z-index: 20; background: rgba(14, 8, 30, .45); display: flex; align-items: flex-end; padding: 12px; }
+.offer-scrim.enter { animation: fade .2s ease-out; }
+.offer-scrim.enter .offer-card, .offer.enter { animation: offer-in .28s ease-out; }
+@keyframes fade { from { opacity: 0; } }
+.offer-card { width: 100%; background: var(--card); border-radius: 18px; overflow: hidden; box-shadow: 0 24px 60px -20px rgba(14, 8, 30, .6); }
+.offer-card .offer-map { height: 150px; }
+.offer-in { padding: 14px 16px 16px; display: grid; gap: 10px; }
+.offer { position: absolute; inset: 0; z-index: 20; background: var(--card); display: flex; flex-direction: column; }
+@keyframes offer-in { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.offer-map { position: relative; height: 30%; min-height: 150px; flex: none; background: var(--paper-2); }
+.offer-map svg { width: 100%; height: 100%; display: block; }
+.offer-tag { position: absolute; top: 12px; left: 12px; background: var(--ink); color: var(--card); font-weight: 800; font-size: 13px; padding: 6px 10px; border-radius: 999px; }
+.offer-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 18px 18px; display: grid; grid-auto-rows: max-content; gap: 14px; align-content: start; }
+.offer-timer { height: 5px; background: var(--paper-2); }
+.offer-body .offer-timer { margin: 0 -18px; }
+.offer-timer i { display: block; height: 100%; background: var(--purple); transform-origin: left; animation-name: offer-tick; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes offer-tick { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.offer-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.offer-top > div { display: grid; }
+.offer-pay { font-size: 40px; font-weight: 900; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.offer-left { font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.offer-left b { font-size: 26px; color: var(--ink); font-weight: 800; }
+.offer-route { font-size: 18px; margin: 0; }
+.offer-meta { color: var(--muted); font-size: 14px; margin: -6px 0 0; }
+.offer-legs { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.offer-legs > div { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; padding: 12px 14px; }
+.offer-legs > div + div { border-top: 1px solid var(--line); }
+.offer-legs .dot { grid-row: 1 / 4; width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; }
+.offer-legs .dot.a { border: 3px solid var(--purple); }
+.offer-legs .dot.b { background: var(--ink); border-radius: 2px; }
+.offer-legs b { font-size: 17px; }
+.offer-legs small { color: var(--muted); }
+.offer-item { display: grid; gap: 4px; background: var(--paper-2); border-radius: 10px; padding: 12px 14px; }
+.offer-act { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr); gap: 8px; }
+.offer .offer-act { position: sticky; bottom: 0; background: var(--card); padding-top: 4px; }
+.offer-act .btn { min-height: 52px; font-size: 15px; padding-inline: 6px; white-space: nowrap; }
+.wait-card { display: flex; gap: 14px; align-items: center; background: var(--paper-2); border-radius: 10px; padding: 14px; }
+.wait-card > div { display: grid; gap: 2px; }
+.wait-card span:not(.pulse) { color: var(--muted); font-size: 14px; }
+.pulse { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); animation: pulse 1.8s infinite; }
+@keyframes pulse { to { box-shadow: 0 0 0 14px transparent; } }
+@media (prefers-reduced-motion: reduce) { .offer, .offer-card, .offer-scrim, .pulse { animation: none; } }
 .mh-sheet .grab { width: 40px; height: 5px; border-radius: 4px; background: var(--line); margin: 2px auto 2px; }
 .mh-q { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
 .mh-types { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
@@ -594,6 +643,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
     <symbol id="t-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
     <symbol id="t-euro" viewBox="0 0 24 24"><path d="M17 6.5A7 7 0 1 0 17 17.5M4 10h9M4 14h9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
     <symbol id="t-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></symbol>
+    <symbol id="t-apple" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.7-1-2.7-4.1zM13.9 5c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></symbol>
     <symbol id="t-g" viewBox="0 0 24 24"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" fill="#4285F4"/><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853"/><path d="M6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9z" fill="#FBBC05"/><path d="M12 6c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.5L6.4 10C7.2 7.8 9.4 6 12 6z" fill="#EA4335"/></symbol>
   </defs>
 </svg>
@@ -958,6 +1008,17 @@ var TIBER = [[41.945, 12.468], [41.93, 12.472], [41.918, 12.47], [41.908, 12.475
 var ROADS = [["Prati", "Centro Storico"], ["Centro Storico", "Monti"], ["Monti", "Termini"], ["Termini", "San Lorenzo"], ["San Lorenzo", "Pigneto"], ["Monti", "San Giovanni"], ["San Giovanni", "Pigneto"], ["Centro Storico", "Trastevere"], ["Trastevere", "Testaccio"], ["Testaccio", "Ostiense"], ["Ostiense", "EUR"], ["Termini", "Parioli"], ["Parioli", "Flaminio"], ["Flaminio", "Prati"], ["Testaccio", "San Giovanni"], ["Trastevere", "Monteverde"], ["Ostiense", "Garbatella"], ["Garbatella", "EUR"], ["San Giovanni", "Tuscolano"], ["Pigneto", "Tuscolano"], ["Centro Storico", "Flaminio"]];
 function quad(a, b) { var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1]; return [r2(mx - dy * .18), r2(my + dx * .18)]; }
 function onQuad(a, c, b, t) { var u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; }
+// A viewBox that frames the given areas at a set width:height ratio, so a route is never cut off.
+function fitVB(names, ratio, pad) {
+  var pts = names.filter(function (n) { return AREAS[n]; }).map(function (n) { return proj(AREAS[n]); });
+  if (!pts.length) return null;
+  pad = pad == null ? 40 : pad;
+  var x0 = Math.min.apply(null, pts.map(function (p) { return p[0]; })) - pad, x1 = Math.max.apply(null, pts.map(function (p) { return p[0]; })) + pad;
+  var y0 = Math.min.apply(null, pts.map(function (p) { return p[1]; })) - pad, y1 = Math.max.apply(null, pts.map(function (p) { return p[1]; })) + pad;
+  var w = Math.max(x1 - x0, 160), h = Math.max(y1 - y0, 80), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (w / h < ratio) w = h * ratio; else h = w / ratio;
+  return [cx - w / 2, cy - h / 2, w, h].map(function (v) { return Math.round(v); }).join(" ");
+}
 function mapSVG(opt) {
   opt = opt || {};
   var s = '<svg viewBox="' + (opt.vb || "0 0 " + MW + " " + MH) + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of Rome">';
@@ -1546,6 +1607,32 @@ Object.assign(IT, {
   "That's the problem DART was started to solve. We're building a local delivery network for the city, for people and for businesses. Tell us what it is and where it's going, and a nearby courier with the right vehicle collects it the same day, whether it's a second-hand find, a shop purchase, or documents for another office.": "DART è nato per risolvere proprio questo. Stiamo costruendo una rete di consegne locale per la città, per privati e aziende. Dicci cos'è e dove deve andare, e un corriere vicino con il veicolo giusto lo ritira in giornata: che sia un affare dell'usato, un acquisto in negozio o dei documenti per un altro ufficio.",
   "No contract, no account unless you want one, and you see the full price before you book.": "Nessun contratto, nessun account se non lo vuoi, e vedi il prezzo completo prima di prenotare."
 });
+Object.assign(IT, {
+  "New delivery": "Nuova consegna", "You earn": "Guadagni", "Decline": "Rifiuta", "Accept": "Accetta",
+  "If you decline or the timer runs out, it goes to the next courier.": "Se rifiuti o il tempo scade, passa al prossimo corriere.",
+  "Declined. It goes to the next courier.": "Rifiutata. Passa al prossimo corriere.", "The time ran out, so it went to another courier.": "Il tempo è scaduto, quindi è passata a un altro corriere.",
+  "Waiting for a delivery": "In attesa di una consegna", "Go online to get deliveries": "Vai online per ricevere consegne", "You're in the queue": "Sei in coda",
+  "Courier offers": "Offerte ai corrieri", "Finding the next courier…": "Cerco il prossimo corriere…", "No courier is free right now. It's offered again when one comes online.": "Nessun corriere è libero ora. Verrà offerta di nuovo quando uno sarà online.",
+  "Offer now": "Offri ora", "Deciding": "Sta decidendo", " · busy": " · occupato", "Pickup": "Ritiro", "Delivery": "Consegna"
+});
+IT_PATTERNS.push(
+  [/^New deliveries that fit your (.+) pop up on this screen\. You have (\d+) seconds to accept or decline\.$/, function (m, v, n) { return "Le nuove consegne adatte al tuo veicolo (" + trItem(v) + ") compaiono su questa schermata. Hai " + n + " secondi per accettare o rifiutare."; }],
+  [/^Offered to (.+), (\d+) s left to answer$/, "Offerta a $1, $2 s per rispondere"], [/^Offered to (.+)$/, "Offerta a $1"],
+  [/^Declined or missed: (.+)$/, "Rifiutata o persa da: $1"], [/^(.+) km to pickup$/, "$1 km dal ritiro"], [/^(.+) km trip$/, "viaggio di $1 km"]
+);
+Object.assign(IT, {
+  "Continue with Apple": "Continua con Apple", "Apple ID email": "Email dell'ID Apple", "Pay": "Pay",
+  "With Apple you can choose to hide your email. DART then gets a private relay address that forwards to you.": "Con Apple puoi scegliere di nascondere la tua email. DART riceve un indirizzo privato che inoltra i messaggi a te.",
+  "Apple Pay and Google Pay": "Apple Pay e Google Pay", "Offered at checkout on phones that support them. Nothing to set up here.": "Disponibili al pagamento sui telefoni che li supportano. Non c'è niente da configurare qui.",
+  "No courier account uses that email. Apply to become a courier first.": "Nessun account corriere usa questa email. Prima candidati come corriere."
+});
+IT_PATTERNS.push(
+  [/^Sign in with (Apple|Google)$/, "Accedi con $1"], [/^Signed in with (Apple|Google)$/, "Accesso effettuato con $1"],
+  [/^You sign in with (Apple|Google), so there's no DART password\.$/, "Accedi con $1, quindi non c'è una password DART."],
+  [/^Test build: this stands in for (Apple|Google)'s sign-in screen\. Enter the account you want to use\.$/, "Versione di prova: sostituisce la schermata di accesso di $1. Inserisci l'account che vuoi usare."],
+  [/^(Apple Pay|Google Pay) · charged now: (.+)$/, "$1 · addebito ora: $2"], [/^(Apple Pay|Google Pay), paid$/, "$1, pagato"], [/^(Apple Pay|Google Pay), refunded$/, "$1, rimborsato"]
+);
+Object.assign(IT, { "Show more": "Mostra di più", "Show less": "Mostra meno" });
 
 // ===== DART customer app (phone) and customer website dashboard (web) =====
 
@@ -1647,7 +1734,7 @@ function cAuth() {
   var a = S.c.auth, reg = a.mode === "register";
   return '<div class="auth"><span class="logo xl"><svg><use href="#mark"/></svg>DART</span>' +
     "<h1>" + (reg ? "Create your DART account" : "Get it across Rome.") + '</h1><p class="muted">' + (reg ? "One account for the app and the website. Use it for yourself, or for your business." : "Log in to send something, track a delivery or see your invoices.") + "</p>" +
-    '<button class="btn google block" data-act="c-google"><svg aria-hidden="true"><use href="#t-g"/></svg>Continue with Google</button><div class="or"><span>or</span></div>' +
+    socialButtons("c-social") + '<div class="or"><span>or</span></div>' +
     '<form class="stack" data-form="c-auth">' +
     (reg ? field("Full name", inp("c.auth.name", a.name, 'autocomplete="name" required')) : "") +
     field("Email", inp("c.auth.email", a.email, 'type="email" autocomplete="email" required')) +
@@ -1689,17 +1776,26 @@ FORMS["c-auth"] = function (f) {
   createAccount({ name: clip(a.name, 60), email: email, phone: clip(a.phone, 30), provider: "email", type: "individual" });
 };
 ACT["c-auth-mode"] = function (d) { S.c.auth.mode = d.v; render(); };
-ACT["c-google"] = function () { S.modal = { kind: "google", email: "", name: "" }; render(); };
+// Apple and Google sign-in. The test build asks for the account details the real sign-in sheet would return.
+var PROVIDERS = { apple: "Apple", google: "Google" };
+function socialButtons(act) {
+  return '<div class="social"><button class="btn apple block" data-act="' + act + '" data-v="apple"><svg aria-hidden="true"><use href="#t-apple"/></svg>Continue with Apple</button>' +
+    '<button class="btn google block" data-act="' + act + '" data-v="google"><svg aria-hidden="true"><use href="#t-g"/></svg>Continue with Google</button></div>';
+}
+ACT["c-social"] = function (d) { S.modal = { kind: "google", provider: d.v || "google", role: "customer", email: "", name: "" }; render(); };
+ACT["c-google"] = ACT["c-social"];
 function googleModal(m) {
-  return modalShell("Sign in with Google", '<p class="muted">Test build: this stands in for Google\'s sign-in screen. Enter the Google account you want to use.</p><form class="stack" data-form="c-google">' +
-    field("Gmail address", inp("modal.email", m.email, 'type="email" required')) + field("Name on the account", inp("modal.name", m.name, "required")) + '<button class="btn block">Continue</button></form>');
+  var p = PROVIDERS[m.provider] || "Google", apple = m.provider === "apple";
+  return modalShell("Sign in with " + p, '<p class="muted">Test build: this stands in for ' + p + "'s sign-in screen. Enter the account you want to use.</p>" + (apple ? '<p class="muted sm">With Apple you can choose to hide your email. DART then gets a private relay address that forwards to you.</p>' : "") +
+    '<form class="stack" data-form="c-google">' + field(apple ? "Apple ID email" : "Gmail address", inp("modal.email", m.email, 'type="email" required')) + (m.role === "courier" ? "" : field("Name on the account", inp("modal.name", m.name, "required"))) + '<button class="btn block">Continue</button></form>');
 }
 FORMS["c-google"] = function () {
-  var m = S.modal, email = slugEmail(m.email);
+  var m = S.modal, email = slugEmail(m.email), p = PROVIDERS[m.provider] || "Google";
   if (!emailOk(email)) return toast("Enter a valid email address.");
+  if (m.role === "courier") return courierSocial(email, p);
   var found = findAccount(email); S.modal = null;
-  if (found) { S.me.customerId = found.id; saveMe(); S.c.view = "home"; render(); return toast("Signed in with Google"); }
-  createAccount({ name: clip(m.name, 60) || email.split("@")[0], email: email, provider: "google", type: "individual" });
+  if (found) { S.me.customerId = found.id; saveMe(); S.c.view = "home"; render(); return toast("Signed in with " + p); }
+  createAccount({ name: clip(m.name, 60) || email.split("@")[0], email: email, provider: m.provider || "google", type: "individual" });
 };
 ACT["c-logout"] = function () { S.me.customerId = null; saveMe(); S.c = Object.assign(S.c, { view: isWeb() ? "site-home" : "home", draft: newDraft() }); closeChat(); render(); };
 
@@ -1819,6 +1915,8 @@ function newReview(acc) {
       '<span class="sm">Already have an account? <button class="link" data-act="c-auth-open" data-v="login">Log in</button></span></div>';
   }
   h += '<div class="card"><b>How do you want to pay?</b><div class="opts">' +
+    payOpt("applepay", '<span class="wallet"><svg aria-hidden="true"><use href="#t-apple"/></svg>Pay</span>', "Apple Pay · charged now: " + eur(x.q.total)) +
+    payOpt("googlepay", '<span class="wallet g"><svg aria-hidden="true"><use href="#t-g"/></svg>Pay</span>', "Google Pay · charged now: " + eur(x.q.total)) +
     payOpt("card", "Card", (cards.filter(function (k) { return k.def; })[0] || cards[0] || { brand: "Visa", last4: "4242" }).brand + " •• " + (cards.filter(function (k) { return k.def; })[0] || cards[0] || { last4: "4242" }).last4 + " · charged now: " + eur(x.q.total)) +
     (x.sub ? payOpt("subscription", "Use my " + esc(x.sub.plan.name) + " plan", esc(x.sub.note) + " · you pay " + eur(x.sub.amount)) : "") +
     (biz ? payOpt("invoice", "Monthly business invoice", "Added to this month's invoice: " + eur(x.q.total)) : "") +
@@ -1948,7 +2046,8 @@ function cOrder(acc) {
   if (web) return top + '<div class="w-cols"><div class="stack">' + mapH + a + "</div>" + b + "</div>";
   return top + mapH + '<div class="pad">' + a + b + "</div>";
 }
-function payLabel(b) { if (!b) return "Card"; return b.method === "subscription" ? (b.included ? "Included in " + b.planName : b.planName + " plan, extra charge") : b.method === "invoice" ? "Monthly business invoice" : b.status === "refunded" ? "Card, refunded" : "Card, paid"; }
+var WALLETS = { applepay: "Apple Pay", googlepay: "Google Pay" };
+function payLabel(b) { if (!b) return "Card"; if (WALLETS[b.method]) return WALLETS[b.method] + (b.status === "refunded" ? ", refunded" : ", paid"); return b.method === "subscription" ? (b.included ? "Included in " + b.planName : b.planName + " plan, extra charge") : b.method === "invoice" ? "Monthly business invoice" : b.status === "refunded" ? "Card, refunded" : "Card, paid"; }
 ACT["c-rate"] = function (d) { run(Store.update("orders", S.c.order, { rating: +d.v }), "Thanks for rating your courier"); };
 ACT["c-cancel"] = function (d) {
   var o = byId(S.orders, d.v); if (!o) return;
@@ -2026,7 +2125,7 @@ function cProfile(acc) {
   if (!S.c.profile || S.c.profile.id !== acc.id) S.c.profile = { id: acc.id, name: acc.name, email: acc.email, phone: acc.phone || "" };
   var p = S.c.profile;
   return head("Profile", "account") + '<div class="pad"><form class="card" data-form="c-profile">' + field("Full name", inp("c.profile.name", p.name, "required")) + field("Email", inp("c.profile.email", p.email, 'type="email" required')) + field("Phone", inp("c.profile.phone", p.phone, 'type="tel"')) + '<button class="btn">Save changes</button></form>' +
-    '<div class="card"><b>Password</b><span class="muted">' + (acc.provider === "google" ? "You sign in with Google, so there's no DART password." : "Test build: passwords aren't stored, so there's nothing to change yet.") + "</span></div></div>";
+    '<div class="card"><b>Password</b><span class="muted">' + (PROVIDERS[acc.provider] ? "You sign in with " + PROVIDERS[acc.provider] + ", so there's no DART password." : "Test build: passwords aren't stored, so there's nothing to change yet.") + "</span></div></div>";
 }
 FORMS["c-profile"] = function () {
   var p = S.c.profile, acc = me(), email = slugEmail(p.email);
@@ -2048,7 +2147,7 @@ FORMS["c-addr"] = function () {
 ACT["c-addr-del"] = function (d) { var acc = me(); run(Store.update("accounts", acc.id, { addresses: (acc.addresses || []).filter(function (x) { return x.id !== d.v; }) }), "Address removed"); };
 function cPayments(acc) {
   var k = S.c.newCard, list = acc.cards || [];
-  return head("Payment methods", "account") + '<div class="pad"><div class="list">' + list.map(function (c) { return '<div class="item"><b>' + esc(c.brand) + " •• " + esc(c.last4) + (c.def ? ' <span class="chip s-pur">Default</span>' : "") + '</b><span class="row">' + (c.def ? "" : '<button class="btn ghost sm" data-act="c-card-def" data-v="' + esc(c.id) + '">Make default</button>') + (list.length > 1 ? '<button class="btn ghost sm" data-act="c-card-del" data-v="' + esc(c.id) + '">Remove</button>' : "") + "</span><small>Expires " + esc(c.exp) + "</small><small></small></div>"; }).join("") + "</div>" +
+  return head("Payment methods", "account") + '<div class="pad"><div class="card"><b>Apple Pay and Google Pay</b><span class="muted">Offered at checkout on phones that support them. Nothing to set up here.</span></div><div class="list">' + list.map(function (c) { return '<div class="item"><b>' + esc(c.brand) + " •• " + esc(c.last4) + (c.def ? ' <span class="chip s-pur">Default</span>' : "") + '</b><span class="row">' + (c.def ? "" : '<button class="btn ghost sm" data-act="c-card-def" data-v="' + esc(c.id) + '">Make default</button>') + (list.length > 1 ? '<button class="btn ghost sm" data-act="c-card-del" data-v="' + esc(c.id) + '">Remove</button>' : "") + "</span><small>Expires " + esc(c.exp) + "</small><small></small></div>"; }).join("") + "</div>" +
     '<form class="card" data-form="c-card"><b>Add a test card</b><span class="muted">The full app uses Stripe. Here you only enter the last 4 digits.</span><div class="grid3">' + field("Brand", sel("c.newCard.brand", k.brand, ["Visa", "Mastercard", "Amex"])) + field("Last 4 digits", inp("c.newCard.last4", k.last4, 'inputmode="numeric" maxlength="4"')) + field("Expiry", inp("c.newCard.exp", k.exp, 'placeholder="MM/YY" maxlength="5"')) + '</div><button class="btn">Add card</button></form></div>';
 }
 FORMS["c-card"] = function () {
@@ -2606,13 +2705,50 @@ function activeJob() { return myJobs().filter(function (o) { return JOB_STEPS.in
 function share() { return num(pricing().courierShare, 75); }
 function payOf(o) { return o.courierPay != null ? o.courierPay : r2(o.price.total * share() / 100); }
 function eligible(c, o) {
-  if (o.status !== "awaiting" || !c || !c.vehicle || S.me.declined[o.id]) return false;
+  if (o.status !== "awaiting" || !c || !c.vehicle) return false;
   if ((o.cls.vehicles || []).indexOf(c.vehicle.type) < 0) return false;
   return vehicleFits(c.vehicle, { l: o.cls.l, w: o.cls.w, h: o.cls.h, kg: o.cls.kg, qty: o.item.qty });
 }
-function requestsFor(c) {
-  return S.orders.filter(function (o) { return eligible(c, o); }).sort(function (a, b) {
-    var ka = c.area ? tripKm(c.area, a.pickup.area) : 0, kb = c.area ? tripKm(c.area, b.pickup.area) : 0; return ka - kb || a.createdAt - b.createdAt;
+// ---------- Offers: each waiting delivery goes to one courier at a time ----------
+var OFFER_SECS = 45, RETRY_SECS = 120;
+function liveOffer(o, now) { return o.offer && o.offer.until > (now || Date.now()) ? o.offer : null; }
+function jobOf(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && (JOB_STEPS.indexOf(o.status) >= 0 || o.status === "issue"); })[0] || null; }
+function freeCourier(c, now) {
+  return c.status === "approved" && c.online && !jobOf(c.id) && !S.orders.some(function (x) { var f = liveOffer(x, now); return f && f.to === c.id; });
+}
+// The offer showing on this courier's phone, if any.
+function myOffer() {
+  var id = S.me.courierId, now = Date.now();
+  if (activeJob()) return null;
+  return id ? S.orders.filter(function (o) { var f = o.status === "awaiting" && liveOffer(o, now); return f && f.to === id; }).sort(function (a, b) { return a.offer.at - b.offer.at || (a.id < b.id ? -1 : 1); })[0] || null : null;
+}
+// Runs on every open courier and admin screen. In production this runs on the server.
+var dispatching = {};
+function dispatch() {
+  if (settings().open === false) return;
+  var now = Date.now(), held = {};
+  // A courier holds at most one offer: the oldest live one counts, any others move on.
+  S.orders.filter(function (o) { return o.status === "awaiting" && liveOffer(o, now); }).sort(function (a, b) { return a.offer.at - b.offer.at || (a.id < b.id ? -1 : 1); })
+    .forEach(function (o) { if (!held[o.offer.to]) held[o.offer.to] = o.id; });
+  S.orders.forEach(function (o) {
+    if (o.status !== "awaiting" || dispatching[o.id]) return;
+    var f = liveOffer(o, now), holder = f && byId(S.couriers, f.to);
+    if (f && holder && holder.online && holder.status === "approved" && !jobOf(holder.id) && held[f.to] === o.id) return;
+    var dup = f && held[f.to] !== o.id;
+    var declined = (o.declinedBy || []).slice();
+    if (o.offer && !dup && declined.indexOf(o.offer.to) < 0) declined.push(o.offer.to);
+    var next = S.couriers.filter(function (c) { return declined.indexOf(c.id) < 0 && !held[c.id] && c.status === "approved" && c.online && !jobOf(c.id) && eligible(c, o); }).sort(function (a, b) {
+      return (a.area ? tripKm(a.area, o.pickup.area) : 99) - (b.area ? tripKm(b.area, o.pickup.area) : 99);
+    })[0];
+    var patch;
+    if (next) { held[next.id] = o.id; patch = { offer: { to: next.id, at: now, until: now + OFFER_SECS * 1000 }, declinedBy: declined }; }
+    else if (declined.length && now - (o.lastDeclineAt || (o.offer && o.offer.until) || 0) > RETRY_SECS * 1000) patch = { offer: null, declinedBy: [] };
+    else if (o.offer) patch = { offer: null, declinedBy: declined, lastDeclineAt: o.offer.until < now ? o.offer.until : now };
+    if (!patch) return;
+    var stamp = o.offer ? o.offer.at : 0;
+    dispatching[o.id] = true;
+    Store.claim("orders", o.id, "dispatch", function (x) { return x.status === "awaiting" && (x.offer ? x.offer.at : 0) === stamp; }, patch)
+      .catch(function () { }).then(function () { delete dispatching[o.id]; });
   });
 }
 function courierNotes() {
@@ -2620,7 +2756,6 @@ function courierNotes() {
   var out = [];
   if (c.approvedAt) out.push({ at: c.approvedAt, text: "Your DART courier account is approved", sub: "You can go online and take deliveries" });
   if (c.vehicleDecidedAt) out.push({ at: c.vehicleDecidedAt, text: "Vehicle change " + (c.vehicleStatus === "approved" ? "approved" : "declined"), sub: vLabel(c.vehicle && c.vehicle.type) });
-  if (c.status === "approved" && c.online) requestsFor(c).forEach(function (o) { out.push({ at: o.createdAt, text: "New delivery request", sub: o.pickup.area + " → " + o.dropoff.area + " · " + eur(payOf(o)), req: o.id }); });
   myJobs().forEach(function (o) {
     if (o.lastMsg && o.lastMsg.from !== "courier") out.push({ at: o.lastMsg.at, text: "Message from " + (o.lastMsg.from === "admin" ? "DART support" : o.customer.name), sub: o.lastMsg.text, chat: o.id });
     if (o.status === "cancelled" && o.timeline.cancelled) out.push({ at: o.timeline.cancelled, text: "Delivery cancelled", sub: o.id, job: o.id });
@@ -2639,14 +2774,14 @@ function courierApp() {
   var cur = S.d.view === "job" || S.d.view === "req" ? "home" : S.d.view === "chat" ? "messages" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
   var un = c ? myJobs().reduce(function (s, o) { return s + unread(o, "courier"); }, 0) : 0;
   var tabs = c && c.status === "approved" ? '<nav class="tabs t4">' + D_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="d-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + (n[0] === "messages" && un ? '<span class="badge">' + un + "</span>" : "") + "</button>"; }).join("") + "</nav>" : "";
-  return stage('<div class="app-body" data-scroll="d-' + S.d.view + '">' + body + "</div>" + tabs, "DART Courier app");
+  var offer = c && c.status === "approved" ? myOffer() : null;
+  return stage('<div class="app-body" data-scroll="d-' + S.d.view + '">' + body + "</div>" + tabs + (offer ? offerSheet(c, offer) : ""), "DART Courier app");
 }
 function dHead(title, back, right) { return '<div class="app-head">' + (back ? '<button class="btn ghost sm" data-act="d-go" data-v="' + back + '">← Back</button>' : "") + "<h2>" + title + "</h2>" + (right || "") + "</div>"; }
 function dView(c) {
   if (c.status === "pending" || c.status === "rejected" || c.status === "suspended") return dWaiting(c);
   switch (S.d.view) {
-    case "req": return dRequest(c);
-    case "job": return dJob(c);
+        case "job": return dJob(c);
     case "earnings": return dEarnings(c);
     case "messages": return dMessages();
     case "chat": return dChat(c);
@@ -2665,6 +2800,7 @@ function newReg() { var v = vehicle("scooter") || rules().vehicles[0]; return { 
 function dAuth() {
   if (S.d.mode === "register") return dRegister();
   return '<div class="auth"><span class="logo xl"><svg><use href="#mark"/></svg>DART Courier</span><h1>Deliver with DART</h1><p class="muted">Take delivery jobs across Rome with your own bicycle, scooter, car or van, whenever it suits you.</p>' +
+    socialButtons("d-social") + '<div class="or"><span>or</span></div>' +
     '<form class="stack" data-form="d-login">' + field("Email", inp("d.login.email", S.d.login.email, 'type="email" autocomplete="email" required')) + field("Password", '<input class="input" type="password" autocomplete="current-password">', "Test build: passwords aren't checked or stored.") + '<button class="btn block">Log in</button></form>' +
     '<p class="center">New courier? <button class="link" data-act="d-reg-start">Apply to ride with DART</button></p></div>';
 }
@@ -2674,6 +2810,12 @@ FORMS["d-login"] = function () {
   S.me.courierId = c.id; saveMe(); S.d.view = "home"; render(); toast("Welcome back, " + c.name.split(" ")[0]);
 };
 ACT["d-reg-start"] = function () { S.d.mode = "register"; S.d.reg = S.d.reg || newReg(); render(); };
+ACT["d-social"] = function (d) { S.modal = { kind: "google", provider: d.v || "google", role: "courier", email: "" }; render(); };
+function courierSocial(email, p) {
+  var c = S.couriers.filter(function (x) { return slugEmail(x.email) === email; })[0];
+  if (!c) return toast("No courier account uses that email. Apply to become a courier first.");
+  S.modal = null; S.me.courierId = c.id; saveMe(); S.d.view = "home"; render(); toast("Signed in with " + p);
+}
 ACT["d-login-mode"] = function () { S.d.mode = "login"; render(); };
 function dRegister() {
   var r = S.d.reg, steps = ["You", "Vehicle", "Documents", "Payout"];
@@ -2738,54 +2880,45 @@ function dWaiting(c) {
 }
 ACT["d-logout"] = function () { var c = myCourier(); if (c && c.online) Store.update("couriers", c.id, { online: false, updatedAt: Date.now() }).catch(function () { }); S.me.courierId = null; saveMe(); S.d.view = "home"; closeChat(); render(); };
 
-// ---------- Home: online, requests, active job ----------
-function dHome(c) {
-  var job = activeJob(), reqs = requestsFor(c), done = myJobs().filter(function (o) { return o.status === "delivered"; });
-  var today = done.filter(function (o) { return isToday(o.timeline.delivered); }), earned = today.reduce(function (s, o) { return s + payOf(o); }, 0);
-  var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + payOf(o); }, 0);
-  var h = dHead('<span class="logo"><svg><use href="#mark"/></svg>Courier</span>', "", '<button class="icon-btn" data-act="d-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (courierUnseen() ? '<span class="badge">' + courierUnseen() + "</span>" : "") + "</button>") + '<div class="pad">';
-  h += '<div class="online-card ' + (c.online ? "on" : "") + '"><div style="flex:1"><b>' + (c.online ? "You're online" : "You're offline") + '</b><div class="sm">' + (c.online ? "Requests that fit your " + esc(vLabel(c.vehicle.type).toLowerCase()) + " show up here" : "Go online to get delivery requests") + "</div></div>" + sw("d-online", c.online, "Online") + "</div>";
-  if (c.online) h += field("Where are you now?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'), "Requests nearest to you come first.");
-  h += '<div class="stat3"><div><b class="num">' + eur(earned) + "</b><small>Today</small></div><div><b>" + today.length + '</b><small>Jobs today</small></div><div><b class="num">' + eur(pending) + "</b><small>To be paid</small></div></div>";
-  if (c.vehicleStatus === "pending") h += '<div class="banner">Your vehicle change is waiting for approval. You get requests for your current vehicle until then.</div>';
-  if (settings().open === false) h += '<div class="banner bad">DART is closed. No new requests until it reopens.</div>';
-  if (job) h += '<div class="sec-h"><h3>Your delivery</h3></div><button class="item job-card" data-act="d-job" data-v="' + esc(job.id) + '"><b>' + esc(job.pickup.area) + " → " + esc(job.dropoff.area) + "</b>" + chip(job.status) + "<small>" + itemSummary(job) + '</small><small class="num">' + eur(payOf(job)) + "</small></button>";
-  if (!c.online) return h + "</div>";
-  h += '<div class="sec-h"><h3>Delivery requests</h3><span class="muted sm">' + reqs.length + "</span></div>";
-  if (job) h += '<p class="muted sm">Finish your current delivery before accepting another.</p>';
-  h += reqs.length ? '<div class="list">' + reqs.map(function (o) {
-    var away = c.area ? tripKm(c.area, o.pickup.area).toFixed(1) + " km away · " : "";
-    return '<button class="item req" data-act="d-req" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num pay">' + eur(payOf(o)) + "</b><small>" + away + o.price.km.toFixed(1) + " km trip · " + esc(cLabel(o.cls.category)) + (o.cls.couriers > 1 ? " · 2 people" : "") + "</small><small>" + hhmm(o.createdAt) + "</small></button>";
-  }).join("") + "</div>" : emptyState("No requests right now", "Book something in the customer app and it shows up here if it fits your vehicle.");
-  return h + "</div>";
-}
 ACT["d-go"] = function (d) { if (d.v !== "chat") closeChat(); S.d.view = d.v || "home"; if (d.v === "notes") { S.me.seen.courier = Date.now(); saveMe(); } render(); };
 ACT["d-area"] = function (d) { var c = myCourier(); if (c) run(Store.update("couriers", c.id, { area: d.v, updatedAt: Date.now() })); };
 ACT["d-online"] = function () {
   var c = myCourier(); if (!c) return;
   run(Store.update("couriers", c.id, { online: !c.online, updatedAt: Date.now() }), c.online ? "You're offline" : "You're online");
 };
-ACT["d-req"] = function (d) { S.d.job = d.v; S.d.view = "req"; render(); };
 ACT["d-job"] = function (d) { S.d.job = d.v; S.d.view = "job"; render(); };
-function dRequest(c) {
-  var o = byId(S.orders, S.d.job);
-  if (!o || o.status !== "awaiting") return dHead("Request", "home") + '<div class="pad">' + emptyState("This request is gone", "Another courier took it or the customer cancelled.", '<button class="btn sm" data-act="d-go" data-v="home">Back to requests</button>') + "</div>";
-  var job = activeJob();
-  return dHead("Delivery request", "home") + '<div class="map map-md">' + mapSVG({ labels: false, routes: [{ from: o.pickup.area, to: o.dropoff.area }], dots: c.area ? [{ area: c.area, color: "var(--ok)" }] : [] }) + '</div><div class="pad">' +
-    '<div class="row between"><span class="price-big">' + eur(payOf(o)) + '</span><span class="muted">' + o.price.km.toFixed(1) + " km · about " + o.price.mins + " min</span></div>" + legs(o) +
-    '<div class="card"><b>' + esc(cLabel(o.cls.category)) + "</b><span>" + itemSummary(o) + "</span>" + (o.item.photos && o.item.photos.length ? '<div class="phs">' + photoStrip(o.item.photos) + "</div>" : "") +
-    (o.cls.notes && o.cls.notes.length ? '<ul class="notes">' + o.cls.notes.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul>" : "") +
-    (Object.keys(o.item.options || {}).filter(function (k) { return o.item.options[k]; }).length ? '<span class="muted">Extras: ' + OPTIONS.filter(function (x) { return o.item.options[x.id]; }).map(function (x) { return x.label; }).join(", ") + "</span>" : "") + "</div>" +
+// Offer pop-up: route, pay and timer first; "Show more" opens the full details.
+function offerSheet(c, o) {
+  var f = o.offer, total = OFFER_SECS, left = Math.max(0, Math.ceil((f.until - Date.now()) / 1000)), more = S.d.offerMore === o.id;
+  // Animate in only the first time this offer is drawn; the countdown redraws it every second.
+  var enter = S.d.offerSeen !== o.id + (more ? ":more" : "") ? " enter" : ""; S.d.offerSeen = o.id + (more ? ":more" : "");
+  var away = c.area ? tripKm(c.area, o.pickup.area) : null, extras = OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).map(function (x) { return x.label; });
+  var timer = '<div class="offer-timer" aria-hidden="true"><i style="animation-duration:' + total + "s;animation-delay:-" + (total - left) + 's"></i></div>';
+  var top = '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay" id="offer-pay">' + eur(payOf(o)) + '</b></div><span class="offer-left"><b>' + left + "</b> s</span></div>" +
+    '<p class="offer-route"><b>' + esc(o.pickup.area) + "</b> → <b>" + esc(o.dropoff.area) + "</b></p>" +
+    '<p class="offer-meta">' + o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min" + (away != null ? " · " + away.toFixed(1) + " km to pickup" : "") + "</p>";
+  var acts = '<div class="offer-act"><button class="btn ghost" data-act="d-decline" data-v="' + esc(o.id) + '">Decline</button><button class="btn ghost" data-act="d-offer-more" data-v="' + esc(o.id) + '">' + (more ? "Show less" : "Show more") + '</button><button class="btn" data-act="d-accept" data-v="' + esc(o.id) + '"' + (busy ? " disabled" : "") + ">Accept</button></div>";
+  var map = '<div class="offer-map">' + mapSVG({ vb: fitVB([o.pickup.area, o.dropoff.area].concat(c.area ? [c.area] : []), more ? 1.7 : 2.4, 34), labels: false, routes: [{ from: o.pickup.area, to: o.dropoff.area }], dots: c.area ? [{ area: c.area, color: "var(--ok)" }] : [] }) + '<span class="offer-tag">New delivery</span></div>';
+  if (!more) return '<div class="offer-scrim' + enter + '"><div class="offer-card" role="dialog" aria-modal="true" aria-labelledby="offer-pay">' + map + timer + '<div class="offer-in">' + top + acts + "</div></div></div>";
+  return '<div class="offer full' + enter + '" role="dialog" aria-modal="true" aria-labelledby="offer-pay">' + map + '<div class="offer-body">' + timer + top +
+    '<div class="offer-legs"><div><i class="dot a"></i><span class="muted sm">Pickup</span><b>' + esc(o.pickup.street || o.pickup.area) + "</b><small>" + esc(o.pickup.area) + (o.pickup.notes ? " · " + esc(o.pickup.notes) : "") + '</small></div><div><i class="dot b"></i><span class="muted sm">Delivery</span><b>' + esc(o.dropoff.street || o.dropoff.area) + "</b><small>" + esc(o.dropoff.area) + (o.dropoff.notes ? " · " + esc(o.dropoff.notes) : "") + "</small></div></div>" +
+    '<div class="offer-item"><b>' + esc(cLabel(o.cls.category)) + "</b><span>" + itemSummary(o) + "</span>" + (o.item.photos && o.item.photos.length ? '<div class="phs">' + photoStrip(o.item.photos) + "</div>" : "") +
+    (extras.length ? '<span class="muted sm">Extras: ' + extras.join(", ") + "</span>" : "") + "</div>" +
     (o.cls.couriers > 1 ? '<div class="banner">Two people needed. Accept only if you can bring a helper.</div>' : "") +
-    '<div class="row"><button class="btn ghost" data-act="d-decline" data-v="' + esc(o.id) + '">Decline</button><button class="btn" style="flex:1" data-act="d-accept" data-v="' + esc(o.id) + '"' + (job || busy ? " disabled" : "") + ">Accept delivery</button></div></div>";
+    '<p class="muted sm center">If you decline or the timer runs out, it goes to the next courier.</p>' + acts + "</div></div>";
 }
-ACT["d-decline"] = function (d) { S.me.declined[d.v] = Date.now(); saveMe(); S.d.view = "home"; render(); toast("Request declined"); };
+ACT["d-offer-more"] = function (d) { S.d.offerMore = S.d.offerMore === d.v ? null : d.v; render(); };
+ACT["d-decline"] = function (d) {
+  var c = myCourier(), o = byId(S.orders, d.v); if (!c || !o) return;
+  var declined = (o.declinedBy || []).concat([c.id]);
+  run(Store.claim("orders", o.id, c.id, function (x) { return x.offer && x.offer.to === c.id; }, { offer: null, declinedBy: declined, lastDeclineAt: Date.now() }), "Declined. It goes to the next courier.");
+};
 ACT["d-accept"] = function (d) {
   var c = myCourier(), o = byId(S.orders, d.v); if (!c || !o || busy || activeJob()) return;
   var now = Date.now();
-  var patch = { status: "assigned", courier: { id: c.id, name: c.name, vehicle: c.vehicle.type, plate: c.vehicle.plate || "", phone: c.phone }, courierPay: r2(o.price.total * share() / 100), timeline: { assigned: now } };
-  run(Store.claim("orders", o.id, c.id, function (x) { return x.status === "awaiting"; }, patch).then(function (ok) {
-    if (ok) { S.d.job = o.id; S.d.view = "job"; toast("Delivery accepted. Head to pickup when ready."); } else { S.d.view = "home"; toast("Another courier took that one."); }
+  var patch = { status: "assigned", offer: null, courier: { id: c.id, name: c.name, vehicle: c.vehicle.type, plate: c.vehicle.plate || "", phone: c.phone }, courierPay: r2(o.price.total * share() / 100), timeline: { assigned: now } };
+  run(Store.claim("orders", o.id, c.id, function (x) { return x.status === "awaiting" && x.offer && x.offer.to === c.id && x.offer.until > Date.now(); }, patch).then(function (ok) {
+    if (ok) { S.d.job = o.id; S.d.view = "job"; toast("Delivery accepted. Head to pickup when ready."); } else toast("The time ran out, so it went to another courier.");
   }));
 };
 
@@ -2827,7 +2960,7 @@ ACT["d-resume"] = function () { var o = byId(S.orders, S.d.job); if (!o) return;
 ACT["d-release"] = function (d) { S.modal = { kind: "confirm", title: "Give this delivery back?", body: "It goes back to other couriers. Do this only if you can't do it.", yes: "Give it back", act: "d-release-yes", v: d.v }; render(); };
 ACT["d-release-yes"] = function (d) {
   S.modal = null; var c = myCourier();
-  run(Store.claim("orders", d.v, c.id, function (x) { return x.courier && x.courier.id === c.id && ["assigned", "to_pickup", "at_pickup"].indexOf(x.status) >= 0; }, { status: "awaiting", courier: null, courierPay: null, timeline: { awaiting: Date.now() }, releasedBy: c.id }).then(function (ok) { S.me.declined[d.v] = Date.now(); saveMe(); S.d.view = "home"; if (!ok) toast("It couldn't be given back. Report a problem instead."); }));
+  run(Store.claim("orders", d.v, c.id, function (x) { return x.courier && x.courier.id === c.id && ["assigned", "to_pickup", "at_pickup"].indexOf(x.status) >= 0; }, { status: "awaiting", courier: null, courierPay: null, offer: null, declinedBy: [c.id], timeline: { awaiting: Date.now() }, releasedBy: c.id }).then(function (ok) { S.d.view = "home"; if (!ok) toast("It couldn't be given back. Report a problem instead."); }));
 };
 ACT["d-issue"] = function (d) { S.modal = { kind: "issue", order: d.v, reason: "Can't find the address", text: "", role: "courier" }; render(); };
 FILES["proof"] = function (file) { shrinkImage(file, 640, 60000).then(function (src) { S.d.proof.photo = src; render(); }, function () { toast("That photo couldn't be read."); }); };
@@ -2872,7 +3005,7 @@ function dHistory() {
 function dNotesView() {
   var list = courierNotes();
   return dHead("Notifications", "home") + '<div class="pad">' + (list.length ? '<div class="list">' + list.map(function (n) {
-    return '<button class="item" data-act="' + (n.req ? "d-req" : n.chat ? "d-chat" : n.job ? "d-job" : n.help ? "d-go" : "d-go") + '" data-v="' + esc(n.req || n.chat || n.job || (n.help ? "help" : "home")) + '"><b>' + esc(n.text) + "</b><small>" + when(n.at) + "</small><small>" + esc(n.sub || "") + "</small><small></small></button>";
+    return '<button class="item" data-act="' + (n.chat ? "d-chat" : n.job ? "d-job" : n.help ? "d-go" : "d-go") + '" data-v="' + esc(n.chat || n.job || (n.help ? "help" : "home")) + '"><b>' + esc(n.text) + "</b><small>" + when(n.at) + "</small><small>" + esc(n.sub || "") + "</small><small></small></button>";
   }).join("") + "</div>" : emptyState("No notifications yet", "")) + "</div>";
 }
 
@@ -2921,14 +3054,14 @@ FORMS["d-ticket"] = function () {
 
 // ---------- Courier home: a full map with a sheet over it ----------
 function dMapHome(c) {
-  var job = activeJob(), reqs = c.online && !job ? requestsFor(c) : [], done = myJobs().filter(function (o) { return o.status === "delivered"; });
+  var job = activeJob(), done = myJobs().filter(function (o) { return o.status === "delivered"; });
   var today = done.filter(function (o) { return isToday(o.timeline.delivered); }), earned = today.reduce(function (s, o) { return s + payOf(o); }, 0);
   var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + payOf(o); }, 0);
-  var pins = reqs.slice(0, 8).map(function (o, i) { return { area: o.pickup.area, text: eur(payOf(o)), dy: -(i % 2) * 22 }; });
+  var pins = [];
   if (c.online && c.area) pins.unshift({ area: c.area, text: tr("You"), tone: "green", dy: 44 });
   var routes = job ? [Object.assign({ from: job.pickup.area, to: job.dropoff.area }, courierPos(job))] : [];
-  var title = !c.online ? "You're offline" : job ? "On a delivery" : reqs.length === 1 ? "1 request near you" : reqs.length + " requests near you";
-  var sub = !c.online ? "Go online to see requests near you" : c.area ? "In " + c.area : "Set your area below";
+  var title = !c.online ? "You're offline" : job ? "On a delivery" : "Waiting for a delivery";
+  var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Set your area below";
   var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
     '<div class="mh-top"><button class="mh-online ' + (c.online ? "on" : "") + '" data-act="d-online" role="switch" aria-checked="' + !!c.online + '"><i></i>' + (c.online ? "Online" : "Offline") + "</button>" +
     '<button class="mh-chip icon" data-act="d-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (courierUnseen() ? '<span class="badge">' + courierUnseen() + "</span>" : "") + "</button></div>" +
@@ -2941,10 +3074,7 @@ function dMapHome(c) {
   if (!c.online) h += '<button class="btn block big" data-act="d-online">Go online</button>';
   else {
     h += field("Where are you now?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'));
-    if (!job) h += reqs.length ? '<div class="list">' + reqs.map(function (o) {
-      var away = c.area ? tripKm(c.area, o.pickup.area).toFixed(1) + " km away · " : "";
-      return '<button class="item req" data-act="d-req" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num pay">' + eur(payOf(o)) + "</b><small>" + away + o.price.km.toFixed(1) + " km trip · " + esc(cLabel(o.cls.category)) + (o.cls.couriers > 1 ? " · 2 people" : "") + "</small><small>" + hhmm(o.createdAt) + "</small></button>";
-    }).join("") + "</div>" : emptyState("No requests right now", "Book something in the customer app and it shows up here if it fits your vehicle.");
+    if (!job) h += '<div class="wait-card"><span class="pulse" aria-hidden="true"></span><div><b>You\'re in the queue</b><span>New deliveries that fit your ' + esc(vLabel(c.vehicle.type).toLowerCase()) + " pop up on this screen. You have " + OFFER_SECS + " seconds to accept or decline.</span></div></div>";
   }
   return h + "</div></div>";
 }
@@ -3062,8 +3192,11 @@ function aOrderModal(m) {
     : '<div class="card"><b>Customer</b><button class="link left" data-act="a-customer" data-v="' + esc(o.customer.id) + '">' + esc(o.customer.name) + (o.customer.businessName ? " · " + esc(o.customer.businessName) : "") + "</button>" + (acc ? '<span class="muted sm">' + esc(acc.email) + (acc.phone ? " · " + esc(acc.phone) : "") + "</span>" : "") + "</div>";
   if (o.courier) h += '<div class="card"><b>Courier</b><button class="link left" data-act="a-courier" data-v="' + esc(o.courier.id) + '">' + esc(o.courier.name) + "</button><span class=\"muted sm\">" + esc(vLabel(o.courier.vehicle)) + (o.courier.plate ? " · " + esc(o.courier.plate) : "") + " · earns " + eur(o.courierPay) + "</span></div>";
   if (o.status === "awaiting") {
-    var el = S.couriers.filter(function (c) { return c.status === "approved" && eligibleAny(c, o); });
-    h += '<div class="card"><b>Assign a courier</b>' + (el.length ? el.map(function (c) { return '<div class="row between"><span>' + esc(c.name) + ' <span class="muted sm">' + esc(vLabel(c.vehicle.type)) + (c.online ? " · online" : " · offline") + (c.area ? " · " + esc(c.area) : "") + '</span></span><button class="btn sm" data-act="a-assign" data-v="' + esc(c.id) + '">Assign</button></div>'; }).join("") : '<span class="muted">No approved courier has a vehicle that fits this item.</span>') + "</div>";
+    var el = S.couriers.filter(function (c) { return c.status === "approved" && eligible(c, o); }), f = liveOffer(o), fc = f && byId(S.couriers, f.to);
+    var dec = (o.declinedBy || []).map(function (id) { var c = byId(S.couriers, id); return c ? c.name : id; });
+    h += '<div class="card"><b>Courier offers</b><span>' + (fc ? "Offered to " + esc(fc.name) + ", " + Math.max(0, Math.ceil((f.until - Date.now()) / 1000)) + " s left to answer" : el.some(function (c) { return freeCourier(c); }) ? "Finding the next courier…" : "No courier is free right now. It's offered again when one comes online.") + "</span>" +
+      (dec.length ? '<span class="muted sm">Declined or missed: ' + esc(dec.join(", ")) + "</span>" : "") +
+      (el.length ? el.map(function (c) { var free = freeCourier(c), mine = f && f.to === c.id; return '<div class="row between"><span>' + esc(c.name) + ' <span class="muted sm">' + esc(vLabel(c.vehicle.type)) + (c.online ? (free || mine ? " · online" : " · busy") : " · offline") + (c.area ? " · " + esc(c.area) : "") + '</span></span>' + (mine ? '<span class="chip s-warn">Deciding</span>' : '<button class="btn sm ghost" data-act="a-assign" data-v="' + esc(c.id) + '"' + (free ? "" : " disabled") + ">Offer now</button>") + "</div>"; }).join("") : '<span class="muted">No approved courier has a vehicle that fits this item.</span>') + "</div>";
   }
   h += '<div class="card"><b>Price and payment</b>' + breakdown(o.price, o.billing && o.billing.method === "subscription" ? o.billing : null) + '<span class="muted sm">' + esc(payLabel(o.billing)) + " · " + esc(o.billing ? o.billing.status : "") + "</span>" + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">Invoice ' + esc(inv.number) + "</button>" : "") + "</div>";
   if (o.issue && (o.issue.open || o.status === "issue")) h += '<div class="card warn"><b>Issue reported by ' + esc(o.issue.by) + "</b><span>" + esc(o.issue.reason) + ": " + esc(o.issue.text) + '</span><div class="row wrap"><button class="btn sm" data-act="a-resolve" data-v="' + esc(o.id) + '">Mark resolved</button></div></div>';
@@ -3076,9 +3209,11 @@ function aOrderModal(m) {
 }
 ACT["a-order-back"] = function () { closeChat(); S.modal.chat = false; render(); };
 ACT["a-chat"] = function () { var o = byId(S.orders, S.modal.id); openChat(o.id); S.modal.chat = true; Store.update("orders", o.id, { adminViewed: { at: Date.now() } }).catch(function () { }); render(); };
+// Admin can put a delivery in front of a specific courier; they still accept or decline it.
 ACT["a-assign"] = function (d) {
   var c = byId(S.couriers, d.v), o = byId(S.orders, S.modal.id); if (!c || !o) return;
-  run(Store.claim("orders", o.id, "admin", function (x) { return x.status === "awaiting"; }, { status: "assigned", courier: { id: c.id, name: c.name, vehicle: c.vehicle.type, plate: c.vehicle.plate || "", phone: c.phone }, courierPay: r2(o.price.total * share() / 100), timeline: { assigned: Date.now() }, assignedBy: "admin" }).then(function (ok) { toast(ok ? "Assigned to " + c.name : "It was already taken."); }));
+  var now = Date.now(), declined = (o.declinedBy || []).filter(function (id) { return id !== c.id; });
+  run(Store.claim("orders", o.id, "admin", function (x) { return x.status === "awaiting"; }, { offer: { to: c.id, at: now, until: now + OFFER_SECS * 1000, byAdmin: true }, declinedBy: declined }).then(function (ok) { toast(ok ? "Offered to " + c.name : "It was already taken."); }));
 };
 ACT["a-resolve"] = function (d) {
   var o = byId(S.orders, d.v); if (!o) return;
@@ -3360,7 +3495,6 @@ ACT["a-settings-save"] = function () {
 
 // ===== Router, rendering, events, startup =====
 function route() { var h = location.hash.replace("#", ""); return ["customer", "web", "courier", "admin"].indexOf(h) >= 0 ? h : "home"; }
-function eligibleAny(c, o) { var keep = S.me.declined; S.me.declined = {}; try { return eligible(c, o); } finally { S.me.declined = keep; } }
 
 function launcher() {
   return '<div class="home"><div class="row between wrap"><span class="logo xl"><svg><use href="#mark"/></svg>DART</span>' + modeChip() + "</div>" +
@@ -3448,6 +3582,12 @@ function wire() {
   root.addEventListener("focusout", function () { setTimeout(function () { if (pending) render(); }, 0); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && S.modal) { ACT["modal-close"](); } });
   window.addEventListener("hashchange", function () { S.modal = null; closeChat(); render(); window.scrollTo(0, 0); });
+  // Hand waiting deliveries to couriers one at a time, and keep an open offer's timer moving.
+  setInterval(function () {
+    var r = route();
+    if (r === "courier" || r === "admin") dispatch();
+    if (r === "courier" && myOffer() && !pending && !S.modal) render();
+  }, 1000);
   // Keep simulated courier movement and relative times fresh on live views.
   setInterval(function () {
     var r = route();

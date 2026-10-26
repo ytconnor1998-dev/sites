@@ -98,7 +98,7 @@ function cAuth() {
   var a = S.c.auth, reg = a.mode === "register";
   return '<div class="auth"><span class="logo xl"><svg><use href="#mark"/></svg>DART</span>' +
     "<h1>" + (reg ? "Create your DART account" : "Get it across Rome.") + '</h1><p class="muted">' + (reg ? "One account for the app and the website. Use it for yourself, or for your business." : "Log in to send something, track a delivery or see your invoices.") + "</p>" +
-    '<button class="btn google block" data-act="c-google"><svg aria-hidden="true"><use href="#t-g"/></svg>Continue with Google</button><div class="or"><span>or</span></div>' +
+    socialButtons("c-social") + '<div class="or"><span>or</span></div>' +
     '<form class="stack" data-form="c-auth">' +
     (reg ? field("Full name", inp("c.auth.name", a.name, 'autocomplete="name" required')) : "") +
     field("Email", inp("c.auth.email", a.email, 'type="email" autocomplete="email" required')) +
@@ -140,17 +140,26 @@ FORMS["c-auth"] = function (f) {
   createAccount({ name: clip(a.name, 60), email: email, phone: clip(a.phone, 30), provider: "email", type: "individual" });
 };
 ACT["c-auth-mode"] = function (d) { S.c.auth.mode = d.v; render(); };
-ACT["c-google"] = function () { S.modal = { kind: "google", email: "", name: "" }; render(); };
+// Apple and Google sign-in. The test build asks for the account details the real sign-in sheet would return.
+var PROVIDERS = { apple: "Apple", google: "Google" };
+function socialButtons(act) {
+  return '<div class="social"><button class="btn apple block" data-act="' + act + '" data-v="apple"><svg aria-hidden="true"><use href="#t-apple"/></svg>Continue with Apple</button>' +
+    '<button class="btn google block" data-act="' + act + '" data-v="google"><svg aria-hidden="true"><use href="#t-g"/></svg>Continue with Google</button></div>';
+}
+ACT["c-social"] = function (d) { S.modal = { kind: "google", provider: d.v || "google", role: "customer", email: "", name: "" }; render(); };
+ACT["c-google"] = ACT["c-social"];
 function googleModal(m) {
-  return modalShell("Sign in with Google", '<p class="muted">Test build: this stands in for Google\'s sign-in screen. Enter the Google account you want to use.</p><form class="stack" data-form="c-google">' +
-    field("Gmail address", inp("modal.email", m.email, 'type="email" required')) + field("Name on the account", inp("modal.name", m.name, "required")) + '<button class="btn block">Continue</button></form>');
+  var p = PROVIDERS[m.provider] || "Google", apple = m.provider === "apple";
+  return modalShell("Sign in with " + p, '<p class="muted">Test build: this stands in for ' + p + "'s sign-in screen. Enter the account you want to use.</p>" + (apple ? '<p class="muted sm">With Apple you can choose to hide your email. DART then gets a private relay address that forwards to you.</p>' : "") +
+    '<form class="stack" data-form="c-google">' + field(apple ? "Apple ID email" : "Gmail address", inp("modal.email", m.email, 'type="email" required')) + (m.role === "courier" ? "" : field("Name on the account", inp("modal.name", m.name, "required"))) + '<button class="btn block">Continue</button></form>');
 }
 FORMS["c-google"] = function () {
-  var m = S.modal, email = slugEmail(m.email);
+  var m = S.modal, email = slugEmail(m.email), p = PROVIDERS[m.provider] || "Google";
   if (!emailOk(email)) return toast("Enter a valid email address.");
+  if (m.role === "courier") return courierSocial(email, p);
   var found = findAccount(email); S.modal = null;
-  if (found) { S.me.customerId = found.id; saveMe(); S.c.view = "home"; render(); return toast("Signed in with Google"); }
-  createAccount({ name: clip(m.name, 60) || email.split("@")[0], email: email, provider: "google", type: "individual" });
+  if (found) { S.me.customerId = found.id; saveMe(); S.c.view = "home"; render(); return toast("Signed in with " + p); }
+  createAccount({ name: clip(m.name, 60) || email.split("@")[0], email: email, provider: m.provider || "google", type: "individual" });
 };
 ACT["c-logout"] = function () { S.me.customerId = null; saveMe(); S.c = Object.assign(S.c, { view: isWeb() ? "site-home" : "home", draft: newDraft() }); closeChat(); render(); };
 
@@ -270,6 +279,8 @@ function newReview(acc) {
       '<span class="sm">Already have an account? <button class="link" data-act="c-auth-open" data-v="login">Log in</button></span></div>';
   }
   h += '<div class="card"><b>How do you want to pay?</b><div class="opts">' +
+    payOpt("applepay", '<span class="wallet"><svg aria-hidden="true"><use href="#t-apple"/></svg>Pay</span>', "Apple Pay · charged now: " + eur(x.q.total)) +
+    payOpt("googlepay", '<span class="wallet g"><svg aria-hidden="true"><use href="#t-g"/></svg>Pay</span>', "Google Pay · charged now: " + eur(x.q.total)) +
     payOpt("card", "Card", (cards.filter(function (k) { return k.def; })[0] || cards[0] || { brand: "Visa", last4: "4242" }).brand + " •• " + (cards.filter(function (k) { return k.def; })[0] || cards[0] || { last4: "4242" }).last4 + " · charged now: " + eur(x.q.total)) +
     (x.sub ? payOpt("subscription", "Use my " + esc(x.sub.plan.name) + " plan", esc(x.sub.note) + " · you pay " + eur(x.sub.amount)) : "") +
     (biz ? payOpt("invoice", "Monthly business invoice", "Added to this month's invoice: " + eur(x.q.total)) : "") +
@@ -399,7 +410,8 @@ function cOrder(acc) {
   if (web) return top + '<div class="w-cols"><div class="stack">' + mapH + a + "</div>" + b + "</div>";
   return top + mapH + '<div class="pad">' + a + b + "</div>";
 }
-function payLabel(b) { if (!b) return "Card"; return b.method === "subscription" ? (b.included ? "Included in " + b.planName : b.planName + " plan, extra charge") : b.method === "invoice" ? "Monthly business invoice" : b.status === "refunded" ? "Card, refunded" : "Card, paid"; }
+var WALLETS = { applepay: "Apple Pay", googlepay: "Google Pay" };
+function payLabel(b) { if (!b) return "Card"; if (WALLETS[b.method]) return WALLETS[b.method] + (b.status === "refunded" ? ", refunded" : ", paid"); return b.method === "subscription" ? (b.included ? "Included in " + b.planName : b.planName + " plan, extra charge") : b.method === "invoice" ? "Monthly business invoice" : b.status === "refunded" ? "Card, refunded" : "Card, paid"; }
 ACT["c-rate"] = function (d) { run(Store.update("orders", S.c.order, { rating: +d.v }), "Thanks for rating your courier"); };
 ACT["c-cancel"] = function (d) {
   var o = byId(S.orders, d.v); if (!o) return;
@@ -477,7 +489,7 @@ function cProfile(acc) {
   if (!S.c.profile || S.c.profile.id !== acc.id) S.c.profile = { id: acc.id, name: acc.name, email: acc.email, phone: acc.phone || "" };
   var p = S.c.profile;
   return head("Profile", "account") + '<div class="pad"><form class="card" data-form="c-profile">' + field("Full name", inp("c.profile.name", p.name, "required")) + field("Email", inp("c.profile.email", p.email, 'type="email" required')) + field("Phone", inp("c.profile.phone", p.phone, 'type="tel"')) + '<button class="btn">Save changes</button></form>' +
-    '<div class="card"><b>Password</b><span class="muted">' + (acc.provider === "google" ? "You sign in with Google, so there's no DART password." : "Test build: passwords aren't stored, so there's nothing to change yet.") + "</span></div></div>";
+    '<div class="card"><b>Password</b><span class="muted">' + (PROVIDERS[acc.provider] ? "You sign in with " + PROVIDERS[acc.provider] + ", so there's no DART password." : "Test build: passwords aren't stored, so there's nothing to change yet.") + "</span></div></div>";
 }
 FORMS["c-profile"] = function () {
   var p = S.c.profile, acc = me(), email = slugEmail(p.email);
@@ -499,7 +511,7 @@ FORMS["c-addr"] = function () {
 ACT["c-addr-del"] = function (d) { var acc = me(); run(Store.update("accounts", acc.id, { addresses: (acc.addresses || []).filter(function (x) { return x.id !== d.v; }) }), "Address removed"); };
 function cPayments(acc) {
   var k = S.c.newCard, list = acc.cards || [];
-  return head("Payment methods", "account") + '<div class="pad"><div class="list">' + list.map(function (c) { return '<div class="item"><b>' + esc(c.brand) + " •• " + esc(c.last4) + (c.def ? ' <span class="chip s-pur">Default</span>' : "") + '</b><span class="row">' + (c.def ? "" : '<button class="btn ghost sm" data-act="c-card-def" data-v="' + esc(c.id) + '">Make default</button>') + (list.length > 1 ? '<button class="btn ghost sm" data-act="c-card-del" data-v="' + esc(c.id) + '">Remove</button>' : "") + "</span><small>Expires " + esc(c.exp) + "</small><small></small></div>"; }).join("") + "</div>" +
+  return head("Payment methods", "account") + '<div class="pad"><div class="card"><b>Apple Pay and Google Pay</b><span class="muted">Offered at checkout on phones that support them. Nothing to set up here.</span></div><div class="list">' + list.map(function (c) { return '<div class="item"><b>' + esc(c.brand) + " •• " + esc(c.last4) + (c.def ? ' <span class="chip s-pur">Default</span>' : "") + '</b><span class="row">' + (c.def ? "" : '<button class="btn ghost sm" data-act="c-card-def" data-v="' + esc(c.id) + '">Make default</button>') + (list.length > 1 ? '<button class="btn ghost sm" data-act="c-card-del" data-v="' + esc(c.id) + '">Remove</button>' : "") + "</span><small>Expires " + esc(c.exp) + "</small><small></small></div>"; }).join("") + "</div>" +
     '<form class="card" data-form="c-card"><b>Add a test card</b><span class="muted">The full app uses Stripe. Here you only enter the last 4 digits.</span><div class="grid3">' + field("Brand", sel("c.newCard.brand", k.brand, ["Visa", "Mastercard", "Amex"])) + field("Last 4 digits", inp("c.newCard.last4", k.last4, 'inputmode="numeric" maxlength="4"')) + field("Expiry", inp("c.newCard.exp", k.exp, 'placeholder="MM/YY" maxlength="5"')) + '</div><button class="btn">Add card</button></form></div>';
 }
 FORMS["c-card"] = function () {
