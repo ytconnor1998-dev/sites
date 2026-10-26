@@ -101,7 +101,7 @@ function cAuth() {
   var a = S.c.auth, reg = a.mode === "register";
   return '<div class="auth"><span class="logo xl"><svg><use href="#mark"/></svg>DART</span>' +
     "<h1>" + (reg ? "Create your DART account" : "Get it across Rome.") + '</h1><p class="muted">' + (reg ? "One account for the app and the website. Use it for yourself, or for your business." : "Log in to send something, track a delivery or see your invoices.") + "</p>" +
-    socialButtons("c-social") + '<div class="or"><span>or</span></div>' +
+    socialOr("c-social") +
     '<form class="stack" data-form="c-auth">' +
     (reg ? field("Full name", inp("c.auth.name", a.name, 'autocomplete="name" required')) : "") +
     field("Email", inp("c.auth.email", a.email, 'type="email" autocomplete="email" required')) +
@@ -145,6 +145,8 @@ FORMS["c-auth"] = function (f) {
 ACT["c-auth-mode"] = function (d) { S.c.auth.mode = d.v; render(); };
 // Apple and Google sign-in. The test build asks for the account details the real sign-in sheet would return.
 var PROVIDERS = { apple: "Apple", google: "Google" };
+// The sign-in buttons and the "or" line under them, or nothing when sign-in buttons are off.
+function socialOr(act) { var b = socialButtons(act); return b ? b + '<div class="or"><span>or</span></div>' : ""; }
 function socialButtons(act) {
   return '<div class="social"><button class="btn apple block" data-act="' + act + '" data-v="apple"><svg aria-hidden="true"><use href="#t-apple"/></svg>Continue with Apple</button>' +
     '<button class="btn google block" data-act="' + act + '" data-v="google"><svg aria-hidden="true"><use href="#t-g"/></svg>Continue with Google</button></div>';

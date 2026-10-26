@@ -191,7 +191,7 @@ function newReg() { var v = vehicle("scooter") || rules().vehicles[0]; return { 
 function dAuth() {
   if (S.d.mode === "register") return dRegister();
   return '<div class="auth"><span class="logo xl"><svg><use href="#mark"/></svg>DART Courier</span><h1>Deliver with DART</h1><p class="muted">Take delivery jobs across Rome with your own bicycle, scooter, car or van, whenever it suits you.</p>' +
-    socialButtons("d-social") + '<div class="or"><span>or</span></div>' +
+    socialOr("d-social") +
     '<form class="stack" data-form="d-login">' + field("Email", inp("d.login.email", S.d.login.email, 'type="email" autocomplete="email" required')) + field("Password", '<input class="input" type="password" data-bind="d.login.pw" autocomplete="current-password">', LIVE ? "" : "Test build: passwords aren't checked or stored.") + '<button class="btn block">Log in</button></form>' +
     '<p class="center">New courier? <button class="link" data-act="d-reg-start">Apply to ride with DART</button></p></div>';
 }

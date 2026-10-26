@@ -4,7 +4,7 @@ apps.html      the test platform (browser storage or the claude.ai test database
 dist/live.html the live build on the real DART database, when SUPABASE_URL and
                SUPABASE_ANON_KEY are set and the Supabase library is in vendor/
 """
-import json, os, pathlib
+import base64, json, os, pathlib
 here = pathlib.Path(__file__).resolve().parent
 parts = ["core.js", "i18n.js", "it.js", "customer.js", "site.js", "courier.js", "admin.js", "live.js", "boot.js"]
 js = "(function () {\n" + "\n".join((here / p).read_text() for p in parts) + "\n})();"
@@ -20,6 +20,12 @@ if url and key and lib.exists():
     # Inlined, the library can't work out its own address; it only needs it for an optional extra file.
     libjs = lib.read_text().replace('if(!e)throw new Error("Automatic publicPath is not supported in this browser");', 'if(!e)e="./";').replace("</script", "<\\/script")
     live = shell.replace("/*SCRIPT*/", libjs + "\n" + cfg + "\n" + js)
+    # Hosted on its own, the page needs the document header the artifact host normally adds.
+    live = live.replace("<title>DART Test Platform</title>", "<title>DART</title>", 1)
+    live = ('<!doctype html>\n<html lang="it">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+            '<link rel="icon" href="data:image/png;base64,' + base64.b64encode((here.parent / "mobile" / "assets" / "favicon.png").read_bytes()).decode() + '">\n'
+            + live + "\n</html>\n")
     dist = here.parent / "dist"; dist.mkdir(exist_ok=True)
     (dist / "live.html").write_text(live)
     print("dist/live.html", len(live), "bytes")
