@@ -70,7 +70,7 @@ function cGuest() {
     default: return isWeb() ? cNew(null) : cMapHome(null);
   }
 }
-ACT["c-auth-open"] = function (d) { S.c.auth.mode = d.v; S.c.view = "auth"; closeChat(); render(); };
+ACT["c-auth-open"] = function (d) { S.c.auth.mode = d.v; S.c.view = "auth"; S.c.navOpen = false; closeChat(); render(); if (isWeb()) window.scrollTo(0, 0); };
 function cView(acc) {
   switch (S.c.view) {
     case "new": return cNew(acc);
@@ -303,6 +303,7 @@ function newReview(acc) {
 function payOpt(v, title, sub) { var on = S.c.draft.billing === v; return '<button type="button" class="opt ' + (on ? "on" : "") + '" role="radio" aria-checked="' + on + '" data-act="c-pay" data-v="' + v + '"><b>' + title + "</b><span>" + sub + "</span></button>"; }
 
 ACT["c-go"] = function (d) {
+  S.c.navOpen = false;
   var v = d.v || "home";
   if (v !== "chat") closeChat();
   if (v === "new" && S.c.view !== "new" && S.c.draft.done) S.c.draft = newDraft();
