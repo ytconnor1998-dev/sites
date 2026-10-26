@@ -7,7 +7,7 @@ Read this first in a new session. Everything so far is in this folder on branch 
 - `apps.html` is the working test platform, built from `app-src/` with `python3 dart/app-src/build.py`. It has the website (`#web`), customer app (`#customer`), courier app (`#courier`) and admin portal (`#admin`). Published as a claude.ai artifact: https://claude.ai/artifact/NThNkemPptZWhNwAZVqrXj
 - `SPEC.md` is the product spec; `README.md` explains the files.
 - `dart-logo.svg` is the logo. Brand purple is `#452B94`.
-- All rules, prices and flows in `app-src/` are the reference for the real build: classification and vehicle fit, pricing, courier offers one at a time (45 s), multi-stop routes with deadlines, set-time jobs booked ahead, proof (photos, 4-digit code, signature), tips and reviews, credit, discount and referral codes, late-fee review, 3-hour delivery promise, Italian and English.
+- All rules, prices and flows in `app-src/` are the reference for the real build: classification and vehicle fit, pricing, courier offers one at a time (2 minutes), multi-stop routes with deadlines, set-time jobs booked ahead, proof (photos, 4-digit code, signature), tips and reviews, credit, discount and referral codes, late-fee review, 3-hour delivery promise, Italian and English.
 
 ## What the owner set up
 

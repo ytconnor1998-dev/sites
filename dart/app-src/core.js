@@ -10,7 +10,26 @@ var AREAS = {
   "Pigneto": [41.8880, 12.5310], "Parioli": [41.9240, 12.4980], "Ostiense": [41.8700, 12.4800],
   "San Giovanni": [41.8860, 12.5060], "Termini": [41.9010, 12.5010], "EUR": [41.8320, 12.4700],
   "Flaminio": [41.9230, 12.4720], "Monteverde": [41.8800, 12.4550], "Garbatella": [41.8620, 12.4890],
-  "Tuscolano": [41.8700, 12.5300]
+  "Tuscolano": [41.8700, 12.5300],
+  "Trieste": [41.9180, 12.5090], "Nomentano": [41.9095, 12.5240], "Tiburtino": [41.9085, 12.5345],
+  "Pietralata": [41.9245, 12.5440], "Montesacro": [41.9400, 12.5290], "Ponte Milvio": [41.9360, 12.4670],
+  "Monte Mario": [41.9240, 12.4400], "Cassia": [41.9600, 12.4480], "Primavalle": [41.9200, 12.4150],
+  "Cornelia": [41.9040, 12.4180], "Aurelio": [41.8990, 12.4380], "Portuense": [41.8600, 12.4540],
+  "Magliana": [41.8420, 12.4380], "Appio Latino": [41.8720, 12.5150], "Centocelle": [41.8880, 12.5700],
+  "Cinecittà": [41.8500, 12.5650]
+};
+// Local names people use for places inside an area: typing one finds the area.
+var AREA_ALIASES = {
+  "Ottaviano": "Prati", "Borgo": "Prati", "Vaticano": "Prati", "Risorgimento": "Prati", "Della Vittoria": "Prati", "Mazzini": "Prati",
+  "Jonio": "Montesacro", "Talenti": "Montesacro", "Conca d'Oro": "Montesacro", "Sempione": "Montesacro", "Val Melaina": "Montesacro", "Bufalotta": "Montesacro", "Città Giardino": "Montesacro",
+  "Salario": "Trieste", "Africano": "Trieste", "Coppedè": "Trieste", "Buenos Aires": "Trieste", "Bologna": "Nomentano", "Piazza Bologna": "Nomentano",
+  "Tiburtina": "Tiburtino", "Casal Bertone": "Tiburtino", "Portonaccio": "Tiburtino", "Monti Tiburtini": "Pietralata", "Ponte Mammolo": "Pietralata",
+  "Balduina": "Monte Mario", "Trionfale": "Monte Mario", "Camilluccia": "Monte Mario", "Vigna Clara": "Ponte Milvio", "Tor di Quinto": "Ponte Milvio", "Farnesina": "Ponte Milvio",
+  "Tomba di Nerone": "Cassia", "Grottarossa": "Cassia", "Torrevecchia": "Primavalle", "Battistini": "Primavalle", "Boccea": "Cornelia",
+  "Gregorio VII": "Aurelio", "Baldo degli Ubaldi": "Aurelio", "Marconi": "Portuense", "Trullo": "Portuense", "Gianicolense": "Monteverde",
+  "Appio": "Appio Latino", "Latino": "Appio Latino", "Re di Roma": "San Giovanni", "Quadraro": "Cinecittà", "Anagnina": "Cinecittà", "Don Bosco": "Cinecittà",
+  "Tor Pignattara": "Pigneto", "Torpignattara": "Pigneto", "Esquilino": "Termini", "Castro Pretorio": "Termini", "San Paolo": "Ostiense", "Piramide": "Testaccio",
+  "Colosseo": "Monti", "Laurentino": "EUR", "Torrino": "EUR"
 };
 var AREA_NAMES = Object.keys(AREAS).sort();
 
@@ -81,7 +100,7 @@ var DEFAULT_PRICING = {
   maxHours: 3, asapBufferMins: 45, leadMins: 45, showHours: 3, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
 };
 var DEFAULT_SETTINGS = {
-  open: true, banner: "", company: "", companyVat: "", companyAddress: "", supportEmail: "", invoicePrefix: "DART"
+  open: true, gpsTest: true, banner: "", company: "", companyVat: "", companyAddress: "", supportEmail: "", invoicePrefix: "DART"
 };
 
 // ---------- Helpers ----------
@@ -114,6 +133,12 @@ function safeImg(src) { return typeof src === "string" && /^data:image\/jpeg;bas
 function emailOk(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function slugEmail(e) { return String(e || "").trim().toLowerCase(); }
 
+// The DART area closest to a GPS position, and how far its centre is.
+function nearestArea(lat, lng) {
+  var best = null;
+  Object.keys(AREAS).forEach(function (n) { var km = haversine([lat, lng], AREAS[n]); if (!best || km < best.km) best = { area: n, km: km }; });
+  return best;
+}
 function haversine(a, b) {
   var R = 6371, r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r;
   var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.pow(Math.sin(dLng / 2), 2);
@@ -130,7 +155,7 @@ var STREETS = {
   "Testaccio": ["Via Marmorata", "Via Galvani", "Via Mastro Giorgio", "Piazza Testaccio", "Via Ginori", "Via Vanvitelli", "Via Nicola Zabaglia", "Via Alessandro Volta", "Via Luca della Robbia", "Via Aldo Manuzio", "Via di Monte Testaccio", "Via Caio Cestio", "Piazza dell'Emporio", "Lungotevere Testaccio", "Via Bodoni", "Via Florio"],
   "San Lorenzo": ["Via Tiburtina", "Via dei Volsci", "Via degli Equi", "Via dei Sabelli", "Via dei Marsi", "Via degli Ausoni", "Largo degli Osci", "Piazza dell'Immacolata", "Via dei Reti", "Via dei Latini", "Via dello Scalo di San Lorenzo", "Via dei Ramni", "Via dei Taurini", "Via dei Piceni"],
   "Pigneto": ["Via del Pigneto", "Via Prenestina", "Circonvallazione Casilina", "Via L'Aquila", "Via Fanfulla da Lodi", "Via Ascoli Piceno", "Via Macerata", "Via Braccio da Montone", "Via Casilina", "Via Pesaro", "Via Alberto da Giussano", "Via Gentile da Mogliano", "Via Perugia"],
-  "Parioli": ["Viale Parioli", "Viale Bruno Buozzi", "Via Antonio Bertoloni", "Piazza Euclide", "Via Archimede", "Viale Liegi", "Via Paisiello", "Via Panama", "Piazza Ungheria", "Viale Rossini", "Via Antonio Gramsci", "Via Salaria", "Viale dei Parioli", "Via Denza", "Via Mercalli", "Viale Romania", "Via Nomentana"],
+  "Parioli": ["Viale Parioli", "Viale Bruno Buozzi", "Via Antonio Bertoloni", "Piazza Euclide", "Via Archimede", "Viale Liegi", "Via Paisiello", "Via Panama", "Piazza Ungheria", "Viale Rossini", "Via Antonio Gramsci", "Viale dei Parioli", "Via Denza", "Via Mercalli", "Viale Romania"],
   "Ostiense": ["Via Ostiense", "Viale Guglielmo Marconi", "Via del Porto Fluviale", "Via Pellegrino Matteucci", "Via Giacomo Bove", "Via Libetta", "Via del Gazometro", "Lungotevere San Paolo", "Piazzale Ostiense", "Via dei Magazzini Generali", "Via Gustavo Bianchi", "Via Antonio Pacinotti"],
   "San Giovanni": ["Via Appia Nuova", "Via La Spezia", "Via Taranto", "Via Gallia", "Via Magna Grecia", "Via Sannio", "Piazza di San Giovanni in Laterano", "Via Merulana", "Via Emanuele Filiberto", "Via dell'Amba Aradam", "Via Britannia", "Via Pinerolo", "Piazza Re di Roma", "Via Cerveteri", "Via Orvieto", "Via Etruria", "Via Enna", "Via Albalonga"],
   "Termini": ["Via Marsala", "Via Giolitti", "Piazza dei Cinquecento", "Via Volturno", "Via Milazzo", "Via Principe Amedeo", "Piazza Vittorio Emanuele II", "Via Gioberti", "Via Napoleone III", "Via Carlo Alberto", "Via Filippo Turati", "Via Palestro", "Via Goito", "Via XX Settembre", "Via Solferino", "Piazza della Repubblica", "Via Castelfidardo", "Via Manin", "Via Cernaia"],
@@ -138,15 +163,32 @@ var STREETS = {
   "Flaminio": ["Via Flaminia", "Viale Tiziano", "Piazza Mancini", "Via Guido Reni", "Viale Pinturicchio", "Via Fracassini", "Lungotevere Flaminio", "Piazza Apollodoro", "Viale del Vignola", "Via Masaccio", "Piazza Gentile da Fabriano", "Via Flaminia Vecchia"],
   "Monteverde": ["Circonvallazione Gianicolense", "Via di Donna Olimpia", "Via Fonteiana", "Viale dei Quattro Venti", "Via Giacinto Carini", "Via Vitellia", "Piazza Rosolino Pilo", "Via Federico Ozanam", "Via Emilio Dandolo", "Via Carlo Poerio", "Via di Monteverde", "Piazza San Giovanni di Dio", "Via Ludovico di Monreale"],
   "Garbatella": ["Circonvallazione Ostiense", "Via delle Sette Chiese", "Piazza Benedetto Brin", "Via Rocco da Cesinale", "Largo delle Sette Chiese", "Piazza Damiano Sauli", "Via Ignazio Persico", "Via Giovanni Ansaldo", "Via Edgardo Ferrati", "Via Francesco Passino", "Via Guglielmo Massaia"],
-  "Tuscolano": ["Via Tuscolana", "Viale Furio Camillo", "Via Ponzio Cominio", "Viale Giulio Agricola", "Via Cesare Baronio", "Via dell'Arco di Travertino", "Viale Spartaco", "Via di Porta Furba", "Piazza di Cinecittà", "Via Lucio Sestio", "Via dei Quintili"]
+  "Tuscolano": ["Via Tuscolana", "Viale Furio Camillo", "Via Ponzio Cominio", "Viale Giulio Agricola", "Via dell'Arco di Travertino", "Viale Spartaco", "Via di Porta Furba", "Via dei Quintili"],
+  "Trieste": ["Corso Trieste", "Via Salaria", "Viale Eritrea", "Viale Libia", "Viale Somalia", "Piazza Istria", "Via Nemorense", "Piazza Buenos Aires", "Via Tagliamento", "Piazza Annibaliano", "Via Chiana", "Viale Etiopia", "Via Taro", "Via Po", "Piazza Verbano"],
+  "Nomentano": ["Via Nomentana", "Piazza Bologna", "Viale XXI Aprile", "Viale delle Province", "Via Catania", "Via Lorenzo il Magnifico", "Via Livorno", "Via Michele di Lando", "Viale Ippocrate", "Via Padova", "Via Alessandria"],
+  "Tiburtino": ["Piazzale della Stazione Tiburtina", "Via di Portonaccio", "Via di Casal Bertone", "Via dei Monti di Pietralata", "Via Arduino", "Largo Beltramelli"],
+  "Pietralata": ["Via di Pietralata", "Via dei Monti Tiburtini", "Via Feronia", "Via di Casal de' Pazzi", "Via Filippo Meda", "Via di Ponte Mammolo"],
+  "Montesacro": ["Viale Jonio", "Viale Adriatico", "Viale Tirreno", "Piazza Sempione", "Corso Sempione", "Via Ugo Ojetti", "Viale Gottardo", "Via Conca d'Oro", "Via Val Padana", "Via Monte Cervialto", "Via Nomentana Nuova", "Via Cimone", "Via Franco Sacchetti", "Via della Bufalotta"],
+  "Ponte Milvio": ["Piazzale di Ponte Milvio", "Corso Francia", "Via della Farnesina", "Via Flaminia Nuova", "Viale di Tor di Quinto", "Via Riano", "Via Prati della Farnesina", "Via Tor di Quinto", "Via Mario Fani", "Via Cortina d'Ampezzo"],
+  "Monte Mario": ["Via Trionfale", "Viale Medaglie d'Oro", "Piazza della Balduina", "Via della Camilluccia", "Via Duccio Galimberti", "Via Lucilio", "Via Proba Petronia", "Via Igea", "Piazza Walter Rossi"],
+  "Cassia": ["Via Cassia", "Via di Grottarossa", "Via Cassia Antica", "Via Vittorio Montiglio", "Via Due Ponti", "Via Oriolo Romano", "Via di Vigna Stelluti", "Via Gradoli"],
+  "Primavalle": ["Via di Torrevecchia", "Via Federico Borromeo", "Via di Primavalle", "Via Mattia Battistini", "Piazza Capecelatro", "Via Pietro Bembo", "Via Pasquale II"],
+  "Cornelia": ["Via di Boccea", "Piazza Irnerio", "Via Cornelia", "Via della Pineta Sacchetti"],
+  "Aurelio": ["Via Aurelia", "Via Gregorio VII", "Via Baldo degli Ubaldi", "Circonvallazione Aurelia", "Piazza Pio XI", "Via di Porta Cavalleggeri", "Via Anastasio II", "Via Innocenzo III", "Via Urbano II", "Via di Valle Aurelia", "Via Aurelia Antica"],
+  "Portuense": ["Via Portuense", "Piazza della Radio", "Via Oderisi da Gubbio", "Via del Trullo", "Via Ettore Rolli", "Via Pietro Blaserna", "Via Enrico Fermi", "Via di Vigna Pia"],
+  "Magliana": ["Via della Magliana", "Via dell'Impruneta", "Via Pescaglia", "Via Vaiano", "Via Greve", "Via Lari", "Via Castiglion Fibocchi"],
+  "Appio Latino": ["Via Latina", "Via Cesare Baronio", "Piazza Galeria", "Via Appia Antica", "Via Tommaso da Celano", "Via Gabi", "Via Lusitania", "Piazza Epiro"],
+  "Centocelle": ["Piazza dei Mirti", "Via dei Castani", "Via Tor de' Schiavi", "Viale della Primavera", "Via dei Platani", "Via dei Gelsi", "Via delle Acacie", "Via dei Glicini", "Piazza delle Gardenie"],
+  "Cinecittà": ["Piazza di Cinecittà", "Via Lucio Sestio", "Viale Palmiro Togliatti", "Via Quinto Publicio", "Viale Marco Fulvio Nobiliore", "Via di Torre Spaccata", "Via Tito Labieno", "Via del Quadraro", "Viale Anicio Gallo"]
 };
 // Rome postcodes (CAP) and the areas they cover.
 var CAPS = { "00184": ["Monti"], "00186": ["Centro Storico"], "00187": ["Centro Storico"], "00153": ["Trastevere", "Testaccio"], "00185": ["Termini", "San Lorenzo"],
-  "00192": ["Prati"], "00193": ["Prati"], "00195": ["Prati"], "00196": ["Flaminio"], "00197": ["Parioli"], "00198": ["Parioli"], "00199": ["Parioli"],
-  "00176": ["Pigneto"], "00177": ["Pigneto"], "00182": ["San Giovanni"], "00183": ["San Giovanni"], "00181": ["Tuscolano"], "00174": ["Tuscolano"], "00179": ["Tuscolano"],
+  "00192": ["Prati"], "00193": ["Prati"], "00195": ["Prati"], "00196": ["Flaminio"], "00197": ["Parioli"], "00198": ["Trieste", "Parioli"], "00199": ["Trieste"], "00161": ["Nomentano"], "00162": ["Nomentano"], "00157": ["Tiburtino"], "00159": ["Tiburtino"], "00158": ["Pietralata"], "00156": ["Pietralata"], "00155": ["Pietralata"], "00141": ["Montesacro"], "00139": ["Montesacro"], "00137": ["Montesacro"], "00138": ["Montesacro"], "00135": ["Monte Mario"], "00136": ["Monte Mario"], "00191": ["Ponte Milvio"], "00194": ["Ponte Milvio"], "00189": ["Cassia"], "00168": ["Primavalle"], "00167": ["Cornelia", "Aurelio"], "00165": ["Aurelio"], "00166": ["Cornelia"], "00149": ["Portuense"], "00164": ["Portuense"], "00148": ["Magliana"], "00178": ["Appio Latino"], "00172": ["Centocelle"], "00171": ["Pigneto", "Centocelle"], "00169": ["Centocelle"], "00173": ["Cinecittà"], "00175": ["Cinecittà"], "00128": ["EUR"], "00150": ["Monteverde"],
+  "00176": ["Pigneto"], "00177": ["Pigneto"], "00182": ["San Giovanni"], "00183": ["San Giovanni"], "00181": ["Tuscolano"], "00174": ["Tuscolano", "Cinecittà"], "00179": ["Appio Latino", "Tuscolano"],
   "00144": ["EUR"], "00142": ["EUR"], "00143": ["EUR"], "00152": ["Monteverde"], "00151": ["Monteverde"], "00154": ["Ostiense", "Garbatella"], "00145": ["Garbatella"], "00146": ["Ostiense"], "00147": ["Garbatella"] };
 function fold(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’']/g, "'").toLowerCase().replace(/\s+/g, " ").trim(); }
 var STREET_LIST = []; Object.keys(STREETS).forEach(function (a) { STREETS[a].forEach(function (s) { STREET_LIST.push({ street: s, area: a, key: fold(s) }); }); });
+var ALIAS_LIST = Object.keys(AREA_ALIASES).map(function (n) { return { name: n, area: AREA_ALIASES[n], key: fold(n) }; });
 // Suggestions while typing: streets whose name contains every word typed (house numbers ignored).
 function streetMatches(text, max) {
   var words = fold(text).replace(/\b\d+[a-z]?\b|,|\b00\d{3}\b/g, " ").split(" ").filter(function (w) { return w.length > 1 && ["via", "viale", "piazza", "largo", "vicolo", "corso", "lungotevere", "piazzale", "circonvallazione"].indexOf(w) < 0; });
@@ -157,9 +199,12 @@ function streetMatches(text, max) {
 // The area for a typed address: from a known street, else from the postcode. Returns the areas it could be.
 function findArea(text) {
   var t = fold(text), hit = STREET_LIST.filter(function (s) { return t.indexOf(s.key) === 0 || t.indexOf(s.key + " ") >= 0 || t.indexOf(s.key + ",") >= 0 || t === s.key; }).sort(function (a, b) { return b.key.length - a.key.length; })[0];
-  if (hit) return [hit.area];
-  var cap = (t.match(/\b(00\d{3})\b/) || [])[1];
-  return cap && CAPS[cap] ? CAPS[cap] : [];
+  var cap = (t.match(/\b(00\d{3})\b/) || [])[1], byCap = cap && CAPS[cap] ? CAPS[cap] : [];
+  // A postcode wins over a long street that crosses several areas.
+  if (hit && (!byCap.length || byCap.indexOf(hit.area) >= 0)) return [hit.area];
+  if (byCap.length) return byCap;
+  var named = ALIAS_LIST.concat(AREA_NAMES.map(function (n) { return { area: n, key: fold(n) }; })).filter(function (a) { return (" " + t + " ").indexOf(" " + a.key + " ") >= 0 || t.indexOf(a.key + ",") >= 0; }).sort(function (a, b) { return b.key.length - a.key.length; })[0];
+  return named ? [named.area] : [];
 }
 function houseNumber(text) { var m = String(text || "").match(/(?:^|[\s,])(\d+[a-zA-Z]?(?:\/[a-zA-Z0-9]+)?)\s*(?:,|$)/); return m ? m[1] : ""; }
 
@@ -246,7 +291,7 @@ var Store = {
     if (self.mode === "live") {
       w.un = self.db.collection(w.path).onSnapshot(function (snap) {
         w.cb(snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }));
-      }, function (e) { toast("Live data stopped (" + e.code + "). Reload the page to reconnect."); });
+      }, function () { toast("Can't reach DART right now. It reconnects by itself when you have signal."); });
     } else {
       var fire = function () { var d = self.local()[w.path] || {}; w.cb(Object.keys(d).map(function (id) { return Object.assign({ id: id }, d[id]); })); };
       self.localSubs.push(fire);
@@ -485,7 +530,7 @@ function invoiceHTML(inv) {
 var MW = 360, MH = 400;
 function proj(ll) { return [r2((ll[1] - 12.43) / .115 * MW), r2((41.94 - ll[0]) / .12 * MH)]; }
 var TIBER = [[41.945, 12.468], [41.93, 12.472], [41.918, 12.47], [41.908, 12.475], [41.902, 12.466], [41.896, 12.468], [41.892, 12.471], [41.889, 12.4775], [41.882, 12.477], [41.876, 12.471], [41.868, 12.468], [41.858, 12.474], [41.848, 12.468], [41.838, 12.458], [41.82, 12.45]];
-var ROADS = [["Prati", "Centro Storico"], ["Centro Storico", "Monti"], ["Monti", "Termini"], ["Termini", "San Lorenzo"], ["San Lorenzo", "Pigneto"], ["Monti", "San Giovanni"], ["San Giovanni", "Pigneto"], ["Centro Storico", "Trastevere"], ["Trastevere", "Testaccio"], ["Testaccio", "Ostiense"], ["Ostiense", "EUR"], ["Termini", "Parioli"], ["Parioli", "Flaminio"], ["Flaminio", "Prati"], ["Testaccio", "San Giovanni"], ["Trastevere", "Monteverde"], ["Ostiense", "Garbatella"], ["Garbatella", "EUR"], ["San Giovanni", "Tuscolano"], ["Pigneto", "Tuscolano"], ["Centro Storico", "Flaminio"]];
+var ROADS = [["Prati", "Centro Storico"], ["Centro Storico", "Monti"], ["Monti", "Termini"], ["Termini", "San Lorenzo"], ["San Lorenzo", "Pigneto"], ["Monti", "San Giovanni"], ["San Giovanni", "Pigneto"], ["Centro Storico", "Trastevere"], ["Trastevere", "Testaccio"], ["Testaccio", "Ostiense"], ["Ostiense", "EUR"], ["Termini", "Parioli"], ["Parioli", "Flaminio"], ["Flaminio", "Prati"], ["Testaccio", "San Giovanni"], ["Trastevere", "Monteverde"], ["Ostiense", "Garbatella"], ["Garbatella", "EUR"], ["San Giovanni", "Tuscolano"], ["Pigneto", "Tuscolano"], ["Centro Storico", "Flaminio"], ["Parioli", "Trieste"], ["Trieste", "Nomentano"], ["Termini", "Nomentano"], ["Nomentano", "Tiburtino"], ["San Lorenzo", "Tiburtino"], ["Tiburtino", "Pietralata"], ["Trieste", "Montesacro"], ["Montesacro", "Pietralata"], ["Flaminio", "Ponte Milvio"], ["Ponte Milvio", "Cassia"], ["Ponte Milvio", "Monte Mario"], ["Prati", "Monte Mario"], ["Monte Mario", "Primavalle"], ["Primavalle", "Cornelia"], ["Cornelia", "Aurelio"], ["Prati", "Aurelio"], ["Aurelio", "Monteverde"], ["Monteverde", "Portuense"], ["Trastevere", "Portuense"], ["Portuense", "Magliana"], ["Magliana", "EUR"], ["San Giovanni", "Appio Latino"], ["Appio Latino", "Tuscolano"], ["Garbatella", "Appio Latino"], ["Pigneto", "Centocelle"], ["Tuscolano", "Cinecittà"], ["Centocelle", "Cinecittà"]];
 function quad(a, b) { var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1]; return [r2(mx - dy * .18), r2(my + dx * .18)]; }
 function onQuad(a, c, b, t) { var u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; }
 // A viewBox that frames the given areas at a set width:height ratio, so a route is never cut off.

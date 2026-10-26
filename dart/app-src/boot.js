@@ -142,3 +142,17 @@ function subscribeAll() {
     return s.limits().then(function (l) { Caps.sampleImages = !!(l && l.images); render(); }, function () { });
   }, function () { });
 })();
+
+// Phone back button and back swipe (called by the apps): close what's open, or go back one screen.
+// Returns false on a main screen, so the app closes as phone apps normally do.
+window.DART_BACK = function () {
+  var bg = document.querySelector(".modal-bg"); if (bg) { bg.click(); return true; }
+  if (S.d.offerMore) { S.d.offerMore = null; render(); return true; }
+  var root = document.querySelector(".device") || document.body;
+  var back = [].slice.call(root.querySelectorAll("button")).filter(function (b) { return /^\s*←/.test(b.textContent) && b.offsetParent !== null && !b.disabled; })[0];
+  if (back) { back.click(); return true; }
+  var r = route(), st = r === "customer" ? S.c : r === "courier" ? S.d : null;
+  if (st && st.navOpen) { st.navOpen = false; render(); return true; }
+  if (st && st.view && st.view !== "home") { ACT[r === "customer" ? "c-go" : "d-go"]({ v: "home" }); return true; }
+  return false;
+};

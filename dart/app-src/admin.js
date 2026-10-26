@@ -491,11 +491,13 @@ function aSettings() {
   return aHead("Settings", '<button class="btn" data-act="a-settings-save">Save settings</button>') + '<div class="stack" style="max-width:720px">' +
     (missing.length ? '<div class="banner bad">Add your company name, Partita IVA, registered address and support email. Italian websites and invoices must show them, and the website footer only shows what you fill in.</div>' : "") +
     '<div class="card"><div class="row between"><div><b>Taking deliveries</b><div class="muted sm">Turn off to close DART. Customers can\'t book and couriers get no new requests.</div></div>' + sw("a-open", s.open !== false, "Taking deliveries") + "</div></div>" +
+    '<div class="card"><div class="row between"><div><b>Location check: testing</b><div class="muted sm">While on, couriers can tap \u201cI\'m here\u201d to skip the GPS check at pickup and drop-off. Turn off before launch.</div></div>' + sw("a-gps-test", s.gpsTest !== false, "Location check: testing") + "</div></div>" +
     '<div class="card">' + field("Message at the top of the customer app and website", inp(b + "banner", s.banner, 'maxlength="160" placeholder="e.g. Free delivery on your first order"'), "Leave empty to show nothing.") + "</div>" +
     '<div class="card"><b>Invoice details</b><div class="grid2">' + field("Company name", inp(b + "company", s.company)) + field("Partita IVA", inp(b + "companyVat", s.companyVat)) + "</div>" + field("Registered address", inp(b + "companyAddress", s.companyAddress)) + '<div class="grid2">' + field("Invoice number prefix", inp(b + "invoicePrefix", s.invoicePrefix)) + field("Support email", inp(b + "supportEmail", s.supportEmail, 'type="email"')) + "</div></div></div>";
 }
+ACT["a-gps-test"] = function () { S.a.settingsDraft.gpsTest = S.a.settingsDraft.gpsTest === false; render(); };
 ACT["a-open"] = function () { S.a.settingsDraft.open = S.a.settingsDraft.open === false; render(); };
 ACT["a-settings-save"] = function () {
-  var s = S.a.settingsDraft, out = { open: s.open !== false, banner: clip(s.banner, 160), company: clip(s.company, 80), companyVat: clip(s.companyVat, 20), companyAddress: clip(s.companyAddress, 140), invoicePrefix: clip(s.invoicePrefix, 10).replace(/[^A-Za-z0-9]/g, "") || "DART", supportEmail: clip(s.supportEmail, 80) };
+  var s = S.a.settingsDraft, out = { open: s.open !== false, gpsTest: s.gpsTest !== false, banner: clip(s.banner, 160), company: clip(s.company, 80), companyVat: clip(s.companyVat, 20), companyAddress: clip(s.companyAddress, 140), invoicePrefix: clip(s.invoicePrefix, 10).replace(/[^A-Za-z0-9]/g, "") || "DART", supportEmail: clip(s.supportEmail, 80) };
   run(Store.set("config", "settings", out).then(function () { S.a.settingsDraft = null; }), "Settings saved and live");
 };

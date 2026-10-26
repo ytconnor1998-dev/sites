@@ -21,7 +21,7 @@ function eligible(c, o) {
   return vehicleFits(c.vehicle, { l: o.cls.l, w: o.cls.w, h: o.cls.h, kg: o.cls.kg, qty: o.item.qty });
 }
 // ---------- Offers: each waiting delivery goes to one courier at a time ----------
-var OFFER_SECS = 45, RETRY_SECS = 120;
+var OFFER_SECS = 120, RETRY_SECS = 120;
 function liveOffer(o, now) { return o.offer && o.offer.until > (now || Date.now()) ? o.offer : null; }
 function jobsOf(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && !bookedAhead(o) && (JOB_STEPS.indexOf(o.status) >= 0 || o.status === "issue"); }); }
 function jobOf(cid) { return jobsOf(cid)[0] || null; }
@@ -157,13 +157,14 @@ function courierNotes() {
 function courierUnseen() { var s = S.me.seen.courier || 0; return courierNotes().filter(function (n) { return n.at > s; }).length; }
 
 // ---------- Shell ----------
-var D_NAV = [["home", "Jobs", "send"], ["earnings", "Earnings", "euro"], ["messages", "Messages", "chat"], ["account", "Account", "user"]];
+var D_NAV = [["home", "Jobs", "send"], ["earnings", "Earnings", "euro"], ["account", "Account", "user"]];
+// No separate Messages tab: couriers message the customer from inside the job, while it's under way.
 function courierApp() {
   var c = myCourier();
   var body = !c ? dAuth() : dView(c);
-  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "messages" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
+  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "home" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
   var un = c ? myJobs().reduce(function (s, o) { return s + unread(o, "courier"); }, 0) : 0;
-  var tabs = c && c.status === "approved" ? '<nav class="tabs t4">' + D_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="d-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + (n[0] === "messages" && un ? '<span class="badge">' + un + "</span>" : "") + "</button>"; }).join("") + "</nav>" : "";
+  var tabs = c && c.status === "approved" ? '<nav class="tabs t3">' + D_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="d-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + (n[0] === "messages" && un ? '<span class="badge">' + un + "</span>" : "") + "</button>"; }).join("") + "</nav>" : "";
   var offer = c && c.status === "approved" ? myOffer() : null;
   return stage('<div class="app-body" data-scroll="d-' + S.d.view + '">' + body + "</div>" + tabs + (offer ? offerSheet(c, offer) : ""), "DART Courier app");
 }
@@ -272,7 +273,7 @@ function dWaiting(c) {
 ACT["d-logout"] = function () { var c = myCourier(); if (c && c.online) Store.update("couriers", c.id, { online: false, updatedAt: Date.now() }).catch(function () { }); S.me.courierId = null; saveMe(); S.d.view = "home"; closeChat(); render(); };
 
 ACT["d-go"] = function (d) { if (d.v !== "chat") closeChat(); S.d.view = d.v || "home"; if (d.v === "notes") { S.me.seen.courier = Date.now(); saveMe(); } render(); };
-ACT["d-area"] = function (d) { var c = myCourier(); if (c) run(Store.update("couriers", c.id, { area: d.v, updatedAt: Date.now() })); };
+ACT["d-area"] = function (d) { var c = myCourier(); if (LIVE && settings().gpsTest === false) return; if (c) run(Store.update("couriers", c.id, { area: d.v, updatedAt: Date.now() })); };
 ACT["d-online"] = function () {
   var c = myCourier(); if (!c) return;
   run(Store.update("couriers", c.id, { online: !c.online, updatedAt: Date.now() }), c.online ? "You're offline" : "You're online");
@@ -285,7 +286,7 @@ function offerSheet(c, o) {
   var enter = S.d.offerSeen !== o.id + (more ? ":more" : "") ? " enter" : ""; S.d.offerSeen = o.id + (more ? ":more" : "");
   var chk = routeCheck(c, o, Date.now()), away = c.area ? tripKm(c.area, o.pickup.area) : null, extras = OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).map(function (x) { return x.label; });
   var timer = '<div class="offer-timer" aria-hidden="true"><i style="animation-duration:' + total + "s;animation-delay:-" + (total - left) + 's"></i></div>';
-  var top = '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay" id="offer-pay">' + eur(payOf(o)) + '</b></div><span class="offer-left"><b>' + left + "</b> s</span></div>" +
+  var top = '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay" id="offer-pay">' + eur(payOf(o)) + '</b></div><span class="offer-left"><b>' + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + "</b></span></div>" +
     '<p class="offer-route"><b>' + esc(o.pickup.area) + "</b> → <b>" + esc(o.dropoff.area) + "</b></p>" +
     '<p class="offer-meta">' + o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min" + (away != null ? " · " + away.toFixed(1) + " km to pickup" : "") + "</p>" +
     (o.deliverBy ? '<p class="offer-by"><b>Deliver ' + byLabel(o.deliverBy).replace(/^Today by /, "by ").replace(/^Tomorrow by /, "tomorrow by ") + "</b>" + (o.asap ? " · ASAP" : "") + "</p>" : "") +
@@ -321,7 +322,7 @@ function dJob(c) {
   var o = byId(S.orders, S.d.job);
   if (!o) return dHead("Delivery", "home") + '<div class="pad">' + emptyState("Delivery not found", "", '<button class="btn sm" data-act="d-go" data-v="home">Back</button>') + "</div>";
   var st = o.status === "issue" ? (o.issue && o.issue.prev) : o.status, toPickup = ["assigned", "to_pickup", "at_pickup"].indexOf(st) >= 0;
-  var h = dHead('<span class="mono">' + esc(o.id) + "</span>", "home", '<button class="btn ghost sm" data-act="d-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "courier") ? ' <span class="badge in">1</span>' : "") + "</button>") +
+  var h = dHead('<span class="mono">' + esc(o.id) + "</span>", "home", isActive(o) ? '<button class="btn ghost sm" data-act="d-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "courier") ? ' <span class="badge in">1</span>' : "") + "</button>" : "") +
     '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, dashed: toPickup }, courierPos(o))] }) + '</div><div class="pad">';
   h += '<div class="row between">' + chip(o.status) + '<span class="price-big">' + eur(payOf(o)) + "</span></div>";
   if (bookedAhead(o)) h += '<div class="banner">Booked ahead. Start by ' + hhmm(startAt(o)) + " to deliver by " + hhmm(o.deliverBy) + ".</div>";
@@ -354,19 +355,52 @@ function dJob(c) {
       (needSig ? '<div class="sig"><div class="row between"><span class="field-l">Signature of the person receiving it</span><button type="button" class="link" data-act="d-sig-clear">Clear</button></div><canvas id="sig-pad" width="640" height="260" aria-label="Signature pad"></canvas><small class="hint">Ask them to sign with a finger.</small></div>' : "") +
       '<button class="btn ok block"' + (here ? "" : " disabled") + ">Complete delivery</button></form>";
   }
-  h += '<div class="row wrap"><button class="btn ghost sm" data-act="d-issue" data-v="' + esc(o.id) + '">Report a problem</button>' + (["assigned", "to_pickup", "at_pickup"].indexOf(o.status) >= 0 ? '<button class="btn ghost sm" data-act="d-release" data-v="' + esc(o.id) + '">Give this delivery back</button>' : "") + "</div>";
+  h += '<div class="row wrap"><button class="btn ghost sm" data-act="d-issue" data-v="' + esc(o.id) + '">Report a problem</button>' + (["assigned", "to_pickup"].indexOf(o.status) >= 0 ? '<button class="btn ghost sm" data-act="d-release" data-v="' + esc(o.id) + '">Give this delivery back</button>' : "") + "</div>";
   return h + '<div class="card"><b>Status history</b>' + timelineList(o) + "</div></div>";
 }
-// Steps that can only be confirmed at a place. Production checks the phone's GPS (within about 150 m);
-// the test build uses the area the courier says they're in.
+// Live location: while online, the phone's GPS sets the courier's area (the nearest DART area).
+// Saved when the area changes or every minute, so offers and the map use where the courier really is.
+var GPS = { watch: null, fix: null, err: null, savedAt: 0 };
+function gpsOn() { return typeof navigator !== "undefined" && !!navigator.geolocation; }
+function gpsStart() {
+  if (GPS.watch != null || !gpsOn()) return;
+  GPS.err = null;
+  GPS.watch = navigator.geolocation.watchPosition(function (p) {
+    var c = myCourier(); GPS.fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, at: Date.now() }; GPS.err = null;
+    if (!c) return;
+    var n = nearestArea(GPS.fix.lat, GPS.fix.lng), moved = n.area !== c.area;
+    if (moved || Date.now() - GPS.savedAt > 60000) {
+      GPS.savedAt = Date.now();
+      Store.update("couriers", c.id, { area: n.area, pos: { lat: +GPS.fix.lat.toFixed(5), lng: +GPS.fix.lng.toFixed(5), at: GPS.fix.at }, updatedAt: Date.now() }).catch(function () {});
+    }
+    if (moved) render();
+  }, function (e) { GPS.err = e && e.code === 1 ? "denied" : "unavailable"; render(); }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 });
+}
+function gpsStop() { if (GPS.watch != null && gpsOn()) navigator.geolocation.clearWatch(GPS.watch); GPS.watch = null; }
+function gpsBanner() {
+  if (!LIVE) return "";
+  if (!gpsOn()) return '<div class="banner bad">This phone can\'t share its location, so you can\'t get deliveries.</div>';
+  if (GPS.err === "denied") return '<div class="banner bad"><b>Turn on location for DART Courier.</b> DART needs it to send you nearby deliveries and to check you\'re at each pickup and drop-off. Allow it in your phone\'s settings, then come back.</div>';
+  if (GPS.err) return '<div class="banner">Can\'t find your location right now. Check location is on and you have signal.</div>';
+  return "";
+}
+AFTER.push(function () {
+  if (!LIVE || route() !== "courier") return gpsStop();
+  var c = myCourier();
+  if (c && c.status === "approved" && c.online) gpsStart(); else gpsStop();
+});
+
+// Steps that can only be confirmed at a place: the courier's GPS area must match the pickup or drop-off area.
+// While admin has "Location check: testing" on, couriers can skip it.
 var GATE = { to_pickup: "pickup", at_pickup: "pickup", in_transit: "dropoff" };
 function atPlace(c, place) { return !!(c && place && c.area === place.area); }
 function whereCheck(c, place, kind) {
   var ok = atPlace(c, place), label = kind === "pickup" ? "pickup" : "delivery address";
   if (ok) return '<div class="where ok"><i aria-hidden="true"></i><span>You\'re at the ' + label + "</span></div>";
   var away = c.area ? tripKm(c.area, place.area).toFixed(1) + " km away" : "location unknown";
-  return '<div class="where"><i aria-hidden="true"></i><span><b>You need to be at the ' + label + "</b> (" + away + "). DART checks your GPS before you can confirm.</span>" +
-    '<button class="btn ghost sm" data-act="d-area" data-v="' + esc(place.area) + '">Test build: I\'m in ' + esc(place.area) + "</button></div>";
+  var skip = !LIVE || settings().gpsTest !== false;
+  return '<div class="where"><i aria-hidden="true"></i><span><b>You need to be at the ' + label + "</b> (" + away + "). DART checks your location before you can confirm.</span>" +
+    (skip ? '<button class="btn ghost sm" data-act="d-area" data-v="' + esc(place.area) + '">Testing: I\'m in ' + esc(place.area) + "</button>" : "") + "</div>";
 }
 ACT["d-next"] = function () {
   var o = byId(S.orders, S.d.job), c = myCourier(); if (!o || !NEXT[o.status] || busy) return;
@@ -405,10 +439,11 @@ AFTER.push(function (root) {
   cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
 });
 ACT["d-resume"] = function () { var o = byId(S.orders, S.d.job); if (!o) return; run(Store.update("orders", o.id, { status: o.issue.prev || "assigned", issue: { open: false, resolvedAt: Date.now() } }), "Back on track"); };
-ACT["d-release"] = function (d) { S.modal = { kind: "confirm", title: "Give this delivery back?", body: "It goes back to other couriers. Do this only if you can't do it.", yes: "Give it back", act: "d-release-yes", v: d.v }; render(); };
+// Only before reaching the pickup: once a courier is there, they may have the item, so problems go to DART via Report a problem.
+ACT["d-release"] = function (d) { S.modal = { kind: "confirm", title: "Give this delivery back?", body: "It goes back to other couriers. Do this only if you can't do it. Once you're at the pickup, use Report a problem instead.", yes: "Give it back", act: "d-release-yes", v: d.v }; render(); };
 ACT["d-release-yes"] = function (d) {
   S.modal = null; var c = myCourier();
-  run(Store.claim("orders", d.v, c.id, function (x) { return x.courier && x.courier.id === c.id && ["assigned", "to_pickup", "at_pickup"].indexOf(x.status) >= 0; }, { status: "awaiting", courier: null, courierPay: null, offer: null, declinedBy: [c.id], timeline: { awaiting: Date.now() }, releasedBy: c.id }).then(function (ok) { S.d.view = "home"; if (!ok) toast("It couldn't be given back. Report a problem instead."); }));
+  run(Store.claim("orders", d.v, c.id, function (x) { return x.courier && x.courier.id === c.id && ["assigned", "to_pickup"].indexOf(x.status) >= 0; }, { status: "awaiting", courier: null, courierPay: null, offer: null, declinedBy: [c.id], timeline: { awaiting: Date.now() }, releasedBy: c.id }).then(function (ok) { S.d.view = "home"; if (!ok) toast("It couldn't be given back. Report a problem instead."); }));
 };
 ACT["d-issue"] = function (d) { S.modal = { kind: "issue", order: d.v, reason: "Can't find the address", text: "", role: "courier" }; render(); };
 FILES["proof"] = function (file) { shrinkImage(file, 640, 60000).then(function (src) { S.d.proof.photo = src; render(); }, function () { toast("That photo couldn't be read."); }); };
@@ -437,9 +472,10 @@ function dMessages() {
 }
 ACT["d-chat"] = function (d) { S.d.job = d.v; S.d.view = "chat"; openChat(d.v); markRead(d.v); render(); scrollChat(); };
 function dChat(c) {
-  var o = byId(S.orders, S.d.job); if (!o) return dHead("Chat", "messages");
+  var o = byId(S.orders, S.d.job); if (!o) return dHead("Chat", "home");
+  if (!isActive(o)) return dHead("Chat", "job") + emptyState("This delivery is finished", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.");
   if (Chat.orderId !== o.id) openChat(o.id);
-  return dHead(esc(o.customer.businessName || o.customer.name), "messages", '<button class="btn ghost sm" data-act="d-job" data-v="' + esc(o.id) + '">Delivery</button>') + chatView(o, "courier", c.name);
+  return dHead(esc(o.customer.businessName || o.customer.name), "job", '<button class="btn ghost sm" data-act="d-job" data-v="' + esc(o.id) + '">Delivery</button>') + chatView(o, "courier", c.name);
 }
 function dEarnings(c) {
   var done = myJobs().filter(function (o) { return o.status === "delivered"; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; });
@@ -447,7 +483,7 @@ function dEarnings(c) {
   var sum = function (l) { return l.reduce(function (s, o) { return s + earnOf(o); }, 0); };
   var payouts = {}; paid.forEach(function (o) { var k = o.courierPayout || dmy(o.courierPaidAt); payouts[k] = payouts[k] || { at: o.courierPaidAt, total: 0, n: 0 }; payouts[k].total += earnOf(o); payouts[k].n++; });
   return dHead("Earnings") + '<div class="pad"><div class="stat3"><div><b class="num">' + eur(sum(done)) + '</b><small>All time</small></div><div><b class="num">' + eur(sum(pend)) + '</b><small>Pending</small></div><div><b class="num">' + eur(sum(paid)) + "</b><small>Paid</small></div></div>" +
-    '<p class="muted sm">You keep ' + share() + "% of each delivery price. Pending earnings are paid every Monday to " + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") + ".</p>" +
+    '<p class="muted sm">You earn the amount shown on each delivery. Pending earnings are paid every Monday to ' + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") + ".</p>" +
     (Object.keys(payouts).length ? '<div class="sec-h"><h3>Payments</h3></div><div class="list">' + Object.keys(payouts).map(function (k) { var p = payouts[k]; return '<div class="item"><b>Paid ' + dmy(p.at) + '</b><b class="num">' + eur(p.total) + "</b><small>" + p.n + " deliveries</small><small></small></div>"; }).join("") + "</div>" : "") +
     '<div class="sec-h"><h3>Completed deliveries</h3></div>' + (done.length ? '<div class="list">' + done.map(function (o) { return '<button class="item" data-act="d-job" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num">' + eur(earnOf(o)) + "</b><small>" + when(o.timeline.delivered) + " · " + esc(o.id) + "</small><small>" + (o.courierPaid ? "Paid" : "Pending") + ((o.review || o.rating) ? " · " + (o.review ? o.review.stars : o.rating) + "★" : "") + "</small>" +
       '<span class="earn-lines"><span>Delivery ' + eur(payOf(o)) + "</span>" + (tipOf(o) ? '<span class="ok-t">Tip +' + eur(tipOf(o)) + "</span>" : "") + (lateFee(o) ? '<span class="bad-t">Late fee −' + eur(lateFee(o)) + "</span>" : "") + "</span></button>"; }).join("") + "</div>" : emptyState("No deliveries yet", "Completed deliveries and what you earned show up here.")) + "</div>";
@@ -528,7 +564,7 @@ function dMapHome(c) {
   var jobs = activeJobs(), plan = myRoute(c);
   var routes = jobs.map(function (j) { return Object.assign({ from: j.pickup.area, to: j.dropoff.area }, courierPos(j)); });
   var title = !c.online && !job ? "You're offline" : jobs.length > 1 ? jobs.length + " deliveries on your route" : job ? "On a delivery" : "Waiting for a delivery";
-  var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Set your area below";
+  var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Finding your location…";
   var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
     '<div class="mh-top"><button class="mh-online ' + (c.online ? "on" : "") + '" data-act="d-online" role="switch" aria-checked="' + !!c.online + '"><i></i>' + (c.online ? "Online" : "Offline") + "</button>" +
     '<button class="mh-chip icon" data-act="d-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (courierUnseen() ? '<span class="badge">' + courierUnseen() + "</span>" : "") + "</button></div>" +
@@ -541,11 +577,12 @@ function dMapHome(c) {
   else if (job) h += '<button class="item job-card" data-act="d-job" data-v="' + esc(job.id) + '"><b>' + esc(job.pickup.area) + " → " + esc(job.dropoff.area) + "</b>" + chip(job.status) + "<small>" + itemSummary(job) + (job.deliverBy ? " · by " + hhmm(job.deliverBy) : "") + '</small><small class="num">' + eur(payOf(job)) + "</small></button>";
   if (!c.online) h += '<button class="btn block big" data-act="d-online">Go online</button>';
   else {
-    h += field("Where are you now?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'));
+    h += gpsBanner();
+    if (!LIVE) h += field("Test build: where are you?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'), "The phone apps use GPS instead.");
     var later = bookedJobs(c.id), board = openScheduled(c);
     if (later.length) h += '<div class="sec-h"><h3>Later today</h3></div><div class="list">' + later.map(function (o) { return schedRow(o, "d-job"); }).join("") + "</div>";
     if (board.length) h += '<div class="sec-h"><h3>Scheduled today</h3><span class="muted sm">Book ahead</span></div><div class="list">' + board.map(function (o) { return schedRow(o, "d-sched"); }).join("") + "</div>";
-    if (!job) h += '<div class="wait-card"><span class="pulse" aria-hidden="true"></span><div><b>You\'re in the queue</b><span>New deliveries that fit your ' + esc(vLabel(c.vehicle.type).toLowerCase()) + " pop up on this screen. You have " + OFFER_SECS + " seconds to accept or decline.</span></div></div>";
+    if (!job) h += '<div class="wait-card"><span class="pulse" aria-hidden="true"></span><div><b>You\'re in the queue</b><span>New deliveries that fit your ' + esc(vLabel(c.vehicle.type).toLowerCase()) + " pop up on this screen. You have " + Math.round(OFFER_SECS / 60) + " minutes to accept or decline.</span></div></div>";
   }
   return h + "</div></div>";
 }

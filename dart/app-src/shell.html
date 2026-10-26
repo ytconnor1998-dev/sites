@@ -318,7 +318,8 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .by-line { margin: 2px 0 0; font-weight: 700; color: var(--purple); }
 .when-row { border-top: 1px solid var(--line); padding-top: 10px; gap: 10px; }
 .when-row span { color: var(--muted); }
-.when-row b { flex: 1; text-align: right; }
+.when-row b, .card .when-row b { flex: 1; min-width: 0; text-align: right; white-space: normal; }
+.when-row .link { flex: none; }
 .offer-by { margin: -4px 0 0; font-size: 15px; }
 .offer-batch { margin: 0; font-size: 14px; background: var(--ok-soft); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
 .by-card { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; align-items: baseline; padding: 10px 14px; border-radius: 10px; background: var(--paper-2); }
@@ -419,6 +420,9 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 /* Chat */
 .chat { display: flex; flex-direction: column; flex: 1; min-height: 320px; border-top: 1px solid var(--line); }
 .chat-log { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; max-height: 60vh; }
+/* In the apps the conversation fills the screen and sits just above the message box, like a messaging app */
+.device .chat-log { max-height: none; }
+.chat-log > :first-child { margin-top: auto; }
 .msg { max-width: 80%; align-self: flex-start; background: var(--paper-2); border-radius: 14px 14px 14px 4px; padding: 8px 12px; display: grid; gap: 4px; }
 .msg.mine { align-self: flex-end; background: var(--purple); color: #fff; border-radius: 14px 14px 4px 14px; }
 .msg.mine small { color: #E6DAFF; }

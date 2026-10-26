@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
 import { WebView } from 'react-native-webview';
+import * as Location from 'expo-location';
 
 // The app shows the DART web app for one role (customer or courier), full screen.
 const { site, screen } = Constants.expoConfig.extra;
@@ -15,17 +16,24 @@ const FLAG = 'window.DART_APP = ' + JSON.stringify(screen) + '; true;';
 
 export default function App() {
   const web = useRef(null);
-  const [back, setBack] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  // Android back button: go back in the app, or close it on the first screen.
+  // Back button and back swipe: the page goes back a screen; on a main screen the app closes.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (back && web.current) { web.current.goBack(); return true; }
-      return false;
+      if (!web.current || failed) return false;
+      web.current.injectJavaScript("window.ReactNativeWebView.postMessage(window.DART_BACK && window.DART_BACK() ? 'back:done' : 'back:exit'); true;");
+      return true;
     });
     return () => sub.remove();
-  }, [back]);
+  }, [failed]);
+
+  // Couriers: ask for location once, so the page can use GPS for nearby jobs and arrival checks.
+  useEffect(() => {
+    if (screen === 'courier') Location.requestForegroundPermissionsAsync().catch(() => {});
+  }, []);
+
+  const onMessage = (e) => { if (e.nativeEvent.data === 'back:exit') BackHandler.exitApp(); };
 
   // Links that leave DART (maps, phone, email, WhatsApp) open in their own apps.
   const keepInside = (req) => {
@@ -66,7 +74,7 @@ export default function App() {
             </View>
           )}
           onShouldStartLoadWithRequest={keepInside}
-          onNavigationStateChange={(s) => setBack(s.canGoBack)}
+          onMessage={onMessage}
           onError={() => setFailed(true)}
         />
       </SafeAreaView>

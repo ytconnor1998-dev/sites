@@ -33,7 +33,8 @@ function custNotes() {
 function custUnseen() { var seen = S.me.seen.customer || 0; return custNotes().filter(function (n) { return n.at > seen; }).length; }
 
 // ---------- Shell ----------
-var C_NAV = [["home", "Home", "home"], ["new", "Send", "send"], ["deliveries", "Deliveries", "list"], ["messages", "Messages", "chat"], ["account", "Account", "user"]];
+var C_NAV = [["home", "Home", "home"], ["new", "Send", "send"], ["deliveries", "Deliveries", "list"], ["account", "Account", "user"]];
+// No separate Messages tab: you message your courier from inside the delivery, while it's under way.
 function customerApp() {
   var acc = me(), web = isWeb();
   if (web && !S.c.webInit) { S.c.webInit = true; if (!acc || S.c.view === "home") S.c.view = "site-home"; }
@@ -44,13 +45,13 @@ function customerApp() {
   var unreadMsgs = acc ? myOrders().reduce(function (s, o) { return s + unread(o, "customer"); }, 0) : 0;
   var active = acc ? myOrders().filter(isActive).length : 0;
   var badge = function (k) { return k === "deliveries" && active ? '<span class="badge">' + active + "</span>" : k === "messages" && unreadMsgs ? '<span class="badge">' + unreadMsgs + "</span>" : ""; };
-  var cur = S.c.view === "order" ? "deliveries" : S.c.view === "chat" ? "messages" : ["invoices", "business", "plans", "bulk", "help", "profile", "addresses", "payments", "prefs", "notes"].indexOf(S.c.view) >= 0 ? "account" : S.c.view;
+  var cur = S.c.view === "order" ? "deliveries" : S.c.view === "chat" ? "deliveries" : ["invoices", "business", "plans", "bulk", "help", "profile", "addresses", "payments", "prefs", "notes"].indexOf(S.c.view) >= 0 ? "account" : S.c.view;
   if (web) {
     var accNav = acc ? '<nav class="w-nav" aria-label="Your account">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '">' + (n[0] === "new" ? "New delivery" : n[1]) + badge(n[0]) + "</button>"; }).join("") +
       '<button class="' + (S.c.view === "invoices" ? "on" : "") + '" data-act="c-go" data-v="invoices">Invoices</button><button class="bell ' + (S.c.view === "notes" ? "on" : "") + '" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button></nav>" : "";
     return siteShell(acc, body, isSite, accNav);
   }
-  var tabs = acc && acc.status !== "suspended" ? '<nav class="tabs t5">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + badge(n[0]) + "</button>"; }).join("") + "</nav>" :
+  var tabs = acc && acc.status !== "suspended" ? '<nav class="tabs t4">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + badge(n[0]) + "</button>"; }).join("") + "</nav>" :
     !acc ? '<nav class="tabs t3">' + [["home", "Home", "home"], ["track", "Track", "list"], ["auth", "Log in", "user"]].map(function (n) { var on = S.c.view === n[0] || (n[0] === "track" && (S.c.view === "order" || S.c.view === "chat")); return '<button class="' + (on ? "on" : "") + '" data-act="' + (n[0] === "auth" ? "c-auth-open" : "c-go") + '" data-v="' + (n[0] === "auth" ? "login" : n[0]) + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + "</button>"; }).join("") + "</nav>" : "";
   return stage('<div class="app-body" data-scroll="c-' + S.c.view + '">' + body + "</div>" + tabs, "DART customer app");
 }
@@ -190,7 +191,7 @@ function cHome(acc) {
     else h += '<span class="muted">No plan. You pay per delivery.</span>';
     h += '<div class="row wrap"><button class="btn ghost sm" data-act="c-go" data-v="business">Business settings</button>' + (plan && plan.bulk ? '<button class="btn ghost sm" data-act="c-go" data-v="bulk">Bulk deliveries</button>' : "") + "</div></div>";
   }
-  h += '<div class="quick"><button data-act="c-go" data-v="invoices"><b>Invoices</b><span>' + myInvoices().length + " total</span></button><button data-act=\"c-go\" data-v=\"messages\"><b>Messages</b><span>Chat with couriers</span></button><button data-act=\"c-go\" data-v=\"help\"><b>Help</b><span>Report a problem</span></button>" + (!(acc.business && acc.business.active) ? '<button data-act="c-go" data-v="business"><b>For business</b><span>Subscription plans</span></button>' : "") + "</div>";
+  h += '<div class="quick"><button data-act="c-go" data-v="invoices"><b>Invoices</b><span>' + myInvoices().length + " total</span></button><button data-act=\"c-go\" data-v=\"help\"><b>Help</b><span>Report a problem</span></button>" + (!(acc.business && acc.business.active) ? '<button data-act="c-go" data-v="business"><b>For business</b><span>Subscription plans</span></button>' : "") + "</div>";
   return h + "</div></div></div>";
 }
 function usageBar(used, total) {
@@ -485,7 +486,7 @@ function cOrder(acc) {
   if (o.code && ACTIVE.indexOf(o.status) >= 0) a += '<div class="code-card"><div><span class="muted sm">Delivery code</span><b class="code-big">' + esc(o.code) + "</b></div><p>Give this code to the courier when they arrive. They can't finish the delivery without it. If someone else is receiving it, send them the code.</p>" +
     (o.item.options && o.item.options.signature ? '<p class="muted sm">The person receiving it will also be asked to sign on the courier\'s phone.</p>' : "") + "</div>";
   if (o.courier) a += '<div class="person"><span class="avatar">' + esc(initials(o.courier.name)) + "</span><div><b>" + esc(o.courier.name) + '</b><div class="muted sm">' + esc(ratingText(o.courier.id)) + " · " + esc(vLabel(o.courier.vehicle)) + (o.courier.plate ? " · " + esc(o.courier.plate) : "") + "</div></div>" +
-    '<button class="btn sm" data-act="c-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "customer") ? ' <span class="badge in">1</span>' : "") + "</button></div>";
+    (isActive(o) ? '<button class="btn sm" data-act="c-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "customer") ? ' <span class="badge in">1</span>' : "") + "</button>" : "") + "</div>";
   if (o.status === "delivered") {
     var img = o.proof && safeImg(o.proof.photo);
     var sig = o.proof && safeImg(o.proof.sig);
@@ -579,10 +580,11 @@ function cMessages() {
 }
 ACT["c-chat"] = function (d) { S.c.order = d.v; S.c.view = "chat"; openChat(d.v); markRead(d.v); render(); scrollChat(); };
 function cChat(acc) {
-  var o = byId(S.orders, S.c.order); if (!o) return head("Chat", acc ? "messages" : "track");
+  var o = byId(S.orders, S.c.order); if (!o) return head("Chat", acc ? "deliveries" : "track");
+  if (!isActive(o)) return head("Chat", acc ? "order" : "track") + emptyState("This delivery is finished", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.");
   if (Chat.orderId !== o.id) openChat(o.id);
   var title = esc(o.courier ? o.courier.name : "Chat");
-  return (isWeb() ? '<div class="row between"><h1 class="w-title">' + title + ' <span class="muted mono sm">' + esc(o.id) + '</span></h1><button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Delivery details</button></div>' : head(title, acc ? "messages" : "", '<button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Details</button>')) + chatView(o, "customer", acc ? acc.name : o.customer.name);
+  return (isWeb() ? '<div class="row between"><h1 class="w-title">' + title + ' <span class="muted mono sm">' + esc(o.id) + '</span></h1><button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Delivery details</button></div>' : head(title, acc ? "order" : "track", '<button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Details</button>')) + chatView(o, "customer", acc ? acc.name : o.customer.name);
 }
 FORMS["chat"] = function (form) { sendChat(form); };
 FILES["chat"] = function (file) { shrinkImage(file, 640, 60000).then(function (src) { Chat.draftPhoto = src; render(); }, function () { toast("That photo couldn't be read."); }); };

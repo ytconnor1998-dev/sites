@@ -318,7 +318,8 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .by-line { margin: 2px 0 0; font-weight: 700; color: var(--purple); }
 .when-row { border-top: 1px solid var(--line); padding-top: 10px; gap: 10px; }
 .when-row span { color: var(--muted); }
-.when-row b { flex: 1; text-align: right; }
+.when-row b, .card .when-row b { flex: 1; min-width: 0; text-align: right; white-space: normal; }
+.when-row .link { flex: none; }
 .offer-by { margin: -4px 0 0; font-size: 15px; }
 .offer-batch { margin: 0; font-size: 14px; background: var(--ok-soft); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
 .by-card { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; align-items: baseline; padding: 10px 14px; border-radius: 10px; background: var(--paper-2); }
@@ -419,6 +420,9 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 /* Chat */
 .chat { display: flex; flex-direction: column; flex: 1; min-height: 320px; border-top: 1px solid var(--line); }
 .chat-log { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; max-height: 60vh; }
+/* In the apps the conversation fills the screen and sits just above the message box, like a messaging app */
+.device .chat-log { max-height: none; }
+.chat-log > :first-child { margin-top: auto; }
 .msg { max-width: 80%; align-self: flex-start; background: var(--paper-2); border-radius: 14px 14px 14px 4px; padding: 8px 12px; display: grid; gap: 4px; }
 .msg.mine { align-self: flex-end; background: var(--purple); color: #fff; border-radius: 14px 14px 4px 14px; }
 .msg.mine small { color: #E6DAFF; }
@@ -724,7 +728,26 @@ var AREAS = {
   "Pigneto": [41.8880, 12.5310], "Parioli": [41.9240, 12.4980], "Ostiense": [41.8700, 12.4800],
   "San Giovanni": [41.8860, 12.5060], "Termini": [41.9010, 12.5010], "EUR": [41.8320, 12.4700],
   "Flaminio": [41.9230, 12.4720], "Monteverde": [41.8800, 12.4550], "Garbatella": [41.8620, 12.4890],
-  "Tuscolano": [41.8700, 12.5300]
+  "Tuscolano": [41.8700, 12.5300],
+  "Trieste": [41.9180, 12.5090], "Nomentano": [41.9095, 12.5240], "Tiburtino": [41.9085, 12.5345],
+  "Pietralata": [41.9245, 12.5440], "Montesacro": [41.9400, 12.5290], "Ponte Milvio": [41.9360, 12.4670],
+  "Monte Mario": [41.9240, 12.4400], "Cassia": [41.9600, 12.4480], "Primavalle": [41.9200, 12.4150],
+  "Cornelia": [41.9040, 12.4180], "Aurelio": [41.8990, 12.4380], "Portuense": [41.8600, 12.4540],
+  "Magliana": [41.8420, 12.4380], "Appio Latino": [41.8720, 12.5150], "Centocelle": [41.8880, 12.5700],
+  "Cinecittà": [41.8500, 12.5650]
+};
+// Local names people use for places inside an area: typing one finds the area.
+var AREA_ALIASES = {
+  "Ottaviano": "Prati", "Borgo": "Prati", "Vaticano": "Prati", "Risorgimento": "Prati", "Della Vittoria": "Prati", "Mazzini": "Prati",
+  "Jonio": "Montesacro", "Talenti": "Montesacro", "Conca d'Oro": "Montesacro", "Sempione": "Montesacro", "Val Melaina": "Montesacro", "Bufalotta": "Montesacro", "Città Giardino": "Montesacro",
+  "Salario": "Trieste", "Africano": "Trieste", "Coppedè": "Trieste", "Buenos Aires": "Trieste", "Bologna": "Nomentano", "Piazza Bologna": "Nomentano",
+  "Tiburtina": "Tiburtino", "Casal Bertone": "Tiburtino", "Portonaccio": "Tiburtino", "Monti Tiburtini": "Pietralata", "Ponte Mammolo": "Pietralata",
+  "Balduina": "Monte Mario", "Trionfale": "Monte Mario", "Camilluccia": "Monte Mario", "Vigna Clara": "Ponte Milvio", "Tor di Quinto": "Ponte Milvio", "Farnesina": "Ponte Milvio",
+  "Tomba di Nerone": "Cassia", "Grottarossa": "Cassia", "Torrevecchia": "Primavalle", "Battistini": "Primavalle", "Boccea": "Cornelia",
+  "Gregorio VII": "Aurelio", "Baldo degli Ubaldi": "Aurelio", "Marconi": "Portuense", "Trullo": "Portuense", "Gianicolense": "Monteverde",
+  "Appio": "Appio Latino", "Latino": "Appio Latino", "Re di Roma": "San Giovanni", "Quadraro": "Cinecittà", "Anagnina": "Cinecittà", "Don Bosco": "Cinecittà",
+  "Tor Pignattara": "Pigneto", "Torpignattara": "Pigneto", "Esquilino": "Termini", "Castro Pretorio": "Termini", "San Paolo": "Ostiense", "Piramide": "Testaccio",
+  "Colosseo": "Monti", "Laurentino": "EUR", "Torrino": "EUR"
 };
 var AREA_NAMES = Object.keys(AREAS).sort();
 
@@ -795,7 +818,7 @@ var DEFAULT_PRICING = {
   maxHours: 3, asapBufferMins: 45, leadMins: 45, showHours: 3, latePenaltyPct: 10, maxOrders: 3, nearKm: 2.5
 };
 var DEFAULT_SETTINGS = {
-  open: true, banner: "", company: "", companyVat: "", companyAddress: "", supportEmail: "", invoicePrefix: "DART"
+  open: true, gpsTest: true, banner: "", company: "", companyVat: "", companyAddress: "", supportEmail: "", invoicePrefix: "DART"
 };
 
 // ---------- Helpers ----------
@@ -828,6 +851,12 @@ function safeImg(src) { return typeof src === "string" && /^data:image\/jpeg;bas
 function emailOk(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function slugEmail(e) { return String(e || "").trim().toLowerCase(); }
 
+// The DART area closest to a GPS position, and how far its centre is.
+function nearestArea(lat, lng) {
+  var best = null;
+  Object.keys(AREAS).forEach(function (n) { var km = haversine([lat, lng], AREAS[n]); if (!best || km < best.km) best = { area: n, km: km }; });
+  return best;
+}
 function haversine(a, b) {
   var R = 6371, r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r;
   var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.pow(Math.sin(dLng / 2), 2);
@@ -844,7 +873,7 @@ var STREETS = {
   "Testaccio": ["Via Marmorata", "Via Galvani", "Via Mastro Giorgio", "Piazza Testaccio", "Via Ginori", "Via Vanvitelli", "Via Nicola Zabaglia", "Via Alessandro Volta", "Via Luca della Robbia", "Via Aldo Manuzio", "Via di Monte Testaccio", "Via Caio Cestio", "Piazza dell'Emporio", "Lungotevere Testaccio", "Via Bodoni", "Via Florio"],
   "San Lorenzo": ["Via Tiburtina", "Via dei Volsci", "Via degli Equi", "Via dei Sabelli", "Via dei Marsi", "Via degli Ausoni", "Largo degli Osci", "Piazza dell'Immacolata", "Via dei Reti", "Via dei Latini", "Via dello Scalo di San Lorenzo", "Via dei Ramni", "Via dei Taurini", "Via dei Piceni"],
   "Pigneto": ["Via del Pigneto", "Via Prenestina", "Circonvallazione Casilina", "Via L'Aquila", "Via Fanfulla da Lodi", "Via Ascoli Piceno", "Via Macerata", "Via Braccio da Montone", "Via Casilina", "Via Pesaro", "Via Alberto da Giussano", "Via Gentile da Mogliano", "Via Perugia"],
-  "Parioli": ["Viale Parioli", "Viale Bruno Buozzi", "Via Antonio Bertoloni", "Piazza Euclide", "Via Archimede", "Viale Liegi", "Via Paisiello", "Via Panama", "Piazza Ungheria", "Viale Rossini", "Via Antonio Gramsci", "Via Salaria", "Viale dei Parioli", "Via Denza", "Via Mercalli", "Viale Romania", "Via Nomentana"],
+  "Parioli": ["Viale Parioli", "Viale Bruno Buozzi", "Via Antonio Bertoloni", "Piazza Euclide", "Via Archimede", "Viale Liegi", "Via Paisiello", "Via Panama", "Piazza Ungheria", "Viale Rossini", "Via Antonio Gramsci", "Viale dei Parioli", "Via Denza", "Via Mercalli", "Viale Romania"],
   "Ostiense": ["Via Ostiense", "Viale Guglielmo Marconi", "Via del Porto Fluviale", "Via Pellegrino Matteucci", "Via Giacomo Bove", "Via Libetta", "Via del Gazometro", "Lungotevere San Paolo", "Piazzale Ostiense", "Via dei Magazzini Generali", "Via Gustavo Bianchi", "Via Antonio Pacinotti"],
   "San Giovanni": ["Via Appia Nuova", "Via La Spezia", "Via Taranto", "Via Gallia", "Via Magna Grecia", "Via Sannio", "Piazza di San Giovanni in Laterano", "Via Merulana", "Via Emanuele Filiberto", "Via dell'Amba Aradam", "Via Britannia", "Via Pinerolo", "Piazza Re di Roma", "Via Cerveteri", "Via Orvieto", "Via Etruria", "Via Enna", "Via Albalonga"],
   "Termini": ["Via Marsala", "Via Giolitti", "Piazza dei Cinquecento", "Via Volturno", "Via Milazzo", "Via Principe Amedeo", "Piazza Vittorio Emanuele II", "Via Gioberti", "Via Napoleone III", "Via Carlo Alberto", "Via Filippo Turati", "Via Palestro", "Via Goito", "Via XX Settembre", "Via Solferino", "Piazza della Repubblica", "Via Castelfidardo", "Via Manin", "Via Cernaia"],
@@ -852,15 +881,32 @@ var STREETS = {
   "Flaminio": ["Via Flaminia", "Viale Tiziano", "Piazza Mancini", "Via Guido Reni", "Viale Pinturicchio", "Via Fracassini", "Lungotevere Flaminio", "Piazza Apollodoro", "Viale del Vignola", "Via Masaccio", "Piazza Gentile da Fabriano", "Via Flaminia Vecchia"],
   "Monteverde": ["Circonvallazione Gianicolense", "Via di Donna Olimpia", "Via Fonteiana", "Viale dei Quattro Venti", "Via Giacinto Carini", "Via Vitellia", "Piazza Rosolino Pilo", "Via Federico Ozanam", "Via Emilio Dandolo", "Via Carlo Poerio", "Via di Monteverde", "Piazza San Giovanni di Dio", "Via Ludovico di Monreale"],
   "Garbatella": ["Circonvallazione Ostiense", "Via delle Sette Chiese", "Piazza Benedetto Brin", "Via Rocco da Cesinale", "Largo delle Sette Chiese", "Piazza Damiano Sauli", "Via Ignazio Persico", "Via Giovanni Ansaldo", "Via Edgardo Ferrati", "Via Francesco Passino", "Via Guglielmo Massaia"],
-  "Tuscolano": ["Via Tuscolana", "Viale Furio Camillo", "Via Ponzio Cominio", "Viale Giulio Agricola", "Via Cesare Baronio", "Via dell'Arco di Travertino", "Viale Spartaco", "Via di Porta Furba", "Piazza di Cinecittà", "Via Lucio Sestio", "Via dei Quintili"]
+  "Tuscolano": ["Via Tuscolana", "Viale Furio Camillo", "Via Ponzio Cominio", "Viale Giulio Agricola", "Via dell'Arco di Travertino", "Viale Spartaco", "Via di Porta Furba", "Via dei Quintili"],
+  "Trieste": ["Corso Trieste", "Via Salaria", "Viale Eritrea", "Viale Libia", "Viale Somalia", "Piazza Istria", "Via Nemorense", "Piazza Buenos Aires", "Via Tagliamento", "Piazza Annibaliano", "Via Chiana", "Viale Etiopia", "Via Taro", "Via Po", "Piazza Verbano"],
+  "Nomentano": ["Via Nomentana", "Piazza Bologna", "Viale XXI Aprile", "Viale delle Province", "Via Catania", "Via Lorenzo il Magnifico", "Via Livorno", "Via Michele di Lando", "Viale Ippocrate", "Via Padova", "Via Alessandria"],
+  "Tiburtino": ["Piazzale della Stazione Tiburtina", "Via di Portonaccio", "Via di Casal Bertone", "Via dei Monti di Pietralata", "Via Arduino", "Largo Beltramelli"],
+  "Pietralata": ["Via di Pietralata", "Via dei Monti Tiburtini", "Via Feronia", "Via di Casal de' Pazzi", "Via Filippo Meda", "Via di Ponte Mammolo"],
+  "Montesacro": ["Viale Jonio", "Viale Adriatico", "Viale Tirreno", "Piazza Sempione", "Corso Sempione", "Via Ugo Ojetti", "Viale Gottardo", "Via Conca d'Oro", "Via Val Padana", "Via Monte Cervialto", "Via Nomentana Nuova", "Via Cimone", "Via Franco Sacchetti", "Via della Bufalotta"],
+  "Ponte Milvio": ["Piazzale di Ponte Milvio", "Corso Francia", "Via della Farnesina", "Via Flaminia Nuova", "Viale di Tor di Quinto", "Via Riano", "Via Prati della Farnesina", "Via Tor di Quinto", "Via Mario Fani", "Via Cortina d'Ampezzo"],
+  "Monte Mario": ["Via Trionfale", "Viale Medaglie d'Oro", "Piazza della Balduina", "Via della Camilluccia", "Via Duccio Galimberti", "Via Lucilio", "Via Proba Petronia", "Via Igea", "Piazza Walter Rossi"],
+  "Cassia": ["Via Cassia", "Via di Grottarossa", "Via Cassia Antica", "Via Vittorio Montiglio", "Via Due Ponti", "Via Oriolo Romano", "Via di Vigna Stelluti", "Via Gradoli"],
+  "Primavalle": ["Via di Torrevecchia", "Via Federico Borromeo", "Via di Primavalle", "Via Mattia Battistini", "Piazza Capecelatro", "Via Pietro Bembo", "Via Pasquale II"],
+  "Cornelia": ["Via di Boccea", "Piazza Irnerio", "Via Cornelia", "Via della Pineta Sacchetti"],
+  "Aurelio": ["Via Aurelia", "Via Gregorio VII", "Via Baldo degli Ubaldi", "Circonvallazione Aurelia", "Piazza Pio XI", "Via di Porta Cavalleggeri", "Via Anastasio II", "Via Innocenzo III", "Via Urbano II", "Via di Valle Aurelia", "Via Aurelia Antica"],
+  "Portuense": ["Via Portuense", "Piazza della Radio", "Via Oderisi da Gubbio", "Via del Trullo", "Via Ettore Rolli", "Via Pietro Blaserna", "Via Enrico Fermi", "Via di Vigna Pia"],
+  "Magliana": ["Via della Magliana", "Via dell'Impruneta", "Via Pescaglia", "Via Vaiano", "Via Greve", "Via Lari", "Via Castiglion Fibocchi"],
+  "Appio Latino": ["Via Latina", "Via Cesare Baronio", "Piazza Galeria", "Via Appia Antica", "Via Tommaso da Celano", "Via Gabi", "Via Lusitania", "Piazza Epiro"],
+  "Centocelle": ["Piazza dei Mirti", "Via dei Castani", "Via Tor de' Schiavi", "Viale della Primavera", "Via dei Platani", "Via dei Gelsi", "Via delle Acacie", "Via dei Glicini", "Piazza delle Gardenie"],
+  "Cinecittà": ["Piazza di Cinecittà", "Via Lucio Sestio", "Viale Palmiro Togliatti", "Via Quinto Publicio", "Viale Marco Fulvio Nobiliore", "Via di Torre Spaccata", "Via Tito Labieno", "Via del Quadraro", "Viale Anicio Gallo"]
 };
 // Rome postcodes (CAP) and the areas they cover.
 var CAPS = { "00184": ["Monti"], "00186": ["Centro Storico"], "00187": ["Centro Storico"], "00153": ["Trastevere", "Testaccio"], "00185": ["Termini", "San Lorenzo"],
-  "00192": ["Prati"], "00193": ["Prati"], "00195": ["Prati"], "00196": ["Flaminio"], "00197": ["Parioli"], "00198": ["Parioli"], "00199": ["Parioli"],
-  "00176": ["Pigneto"], "00177": ["Pigneto"], "00182": ["San Giovanni"], "00183": ["San Giovanni"], "00181": ["Tuscolano"], "00174": ["Tuscolano"], "00179": ["Tuscolano"],
+  "00192": ["Prati"], "00193": ["Prati"], "00195": ["Prati"], "00196": ["Flaminio"], "00197": ["Parioli"], "00198": ["Trieste", "Parioli"], "00199": ["Trieste"], "00161": ["Nomentano"], "00162": ["Nomentano"], "00157": ["Tiburtino"], "00159": ["Tiburtino"], "00158": ["Pietralata"], "00156": ["Pietralata"], "00155": ["Pietralata"], "00141": ["Montesacro"], "00139": ["Montesacro"], "00137": ["Montesacro"], "00138": ["Montesacro"], "00135": ["Monte Mario"], "00136": ["Monte Mario"], "00191": ["Ponte Milvio"], "00194": ["Ponte Milvio"], "00189": ["Cassia"], "00168": ["Primavalle"], "00167": ["Cornelia", "Aurelio"], "00165": ["Aurelio"], "00166": ["Cornelia"], "00149": ["Portuense"], "00164": ["Portuense"], "00148": ["Magliana"], "00178": ["Appio Latino"], "00172": ["Centocelle"], "00171": ["Pigneto", "Centocelle"], "00169": ["Centocelle"], "00173": ["Cinecittà"], "00175": ["Cinecittà"], "00128": ["EUR"], "00150": ["Monteverde"],
+  "00176": ["Pigneto"], "00177": ["Pigneto"], "00182": ["San Giovanni"], "00183": ["San Giovanni"], "00181": ["Tuscolano"], "00174": ["Tuscolano", "Cinecittà"], "00179": ["Appio Latino", "Tuscolano"],
   "00144": ["EUR"], "00142": ["EUR"], "00143": ["EUR"], "00152": ["Monteverde"], "00151": ["Monteverde"], "00154": ["Ostiense", "Garbatella"], "00145": ["Garbatella"], "00146": ["Ostiense"], "00147": ["Garbatella"] };
 function fold(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’']/g, "'").toLowerCase().replace(/\s+/g, " ").trim(); }
 var STREET_LIST = []; Object.keys(STREETS).forEach(function (a) { STREETS[a].forEach(function (s) { STREET_LIST.push({ street: s, area: a, key: fold(s) }); }); });
+var ALIAS_LIST = Object.keys(AREA_ALIASES).map(function (n) { return { name: n, area: AREA_ALIASES[n], key: fold(n) }; });
 // Suggestions while typing: streets whose name contains every word typed (house numbers ignored).
 function streetMatches(text, max) {
   var words = fold(text).replace(/\b\d+[a-z]?\b|,|\b00\d{3}\b/g, " ").split(" ").filter(function (w) { return w.length > 1 && ["via", "viale", "piazza", "largo", "vicolo", "corso", "lungotevere", "piazzale", "circonvallazione"].indexOf(w) < 0; });
@@ -871,9 +917,12 @@ function streetMatches(text, max) {
 // The area for a typed address: from a known street, else from the postcode. Returns the areas it could be.
 function findArea(text) {
   var t = fold(text), hit = STREET_LIST.filter(function (s) { return t.indexOf(s.key) === 0 || t.indexOf(s.key + " ") >= 0 || t.indexOf(s.key + ",") >= 0 || t === s.key; }).sort(function (a, b) { return b.key.length - a.key.length; })[0];
-  if (hit) return [hit.area];
-  var cap = (t.match(/\b(00\d{3})\b/) || [])[1];
-  return cap && CAPS[cap] ? CAPS[cap] : [];
+  var cap = (t.match(/\b(00\d{3})\b/) || [])[1], byCap = cap && CAPS[cap] ? CAPS[cap] : [];
+  // A postcode wins over a long street that crosses several areas.
+  if (hit && (!byCap.length || byCap.indexOf(hit.area) >= 0)) return [hit.area];
+  if (byCap.length) return byCap;
+  var named = ALIAS_LIST.concat(AREA_NAMES.map(function (n) { return { area: n, key: fold(n) }; })).filter(function (a) { return (" " + t + " ").indexOf(" " + a.key + " ") >= 0 || t.indexOf(a.key + ",") >= 0; }).sort(function (a, b) { return b.key.length - a.key.length; })[0];
+  return named ? [named.area] : [];
 }
 function houseNumber(text) { var m = String(text || "").match(/(?:^|[\s,])(\d+[a-zA-Z]?(?:\/[a-zA-Z0-9]+)?)\s*(?:,|$)/); return m ? m[1] : ""; }
 
@@ -960,7 +1009,7 @@ var Store = {
     if (self.mode === "live") {
       w.un = self.db.collection(w.path).onSnapshot(function (snap) {
         w.cb(snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }));
-      }, function (e) { toast("Live data stopped (" + e.code + "). Reload the page to reconnect."); });
+      }, function () { toast("Can't reach DART right now. It reconnects by itself when you have signal."); });
     } else {
       var fire = function () { var d = self.local()[w.path] || {}; w.cb(Object.keys(d).map(function (id) { return Object.assign({ id: id }, d[id]); })); };
       self.localSubs.push(fire);
@@ -1199,7 +1248,7 @@ function invoiceHTML(inv) {
 var MW = 360, MH = 400;
 function proj(ll) { return [r2((ll[1] - 12.43) / .115 * MW), r2((41.94 - ll[0]) / .12 * MH)]; }
 var TIBER = [[41.945, 12.468], [41.93, 12.472], [41.918, 12.47], [41.908, 12.475], [41.902, 12.466], [41.896, 12.468], [41.892, 12.471], [41.889, 12.4775], [41.882, 12.477], [41.876, 12.471], [41.868, 12.468], [41.858, 12.474], [41.848, 12.468], [41.838, 12.458], [41.82, 12.45]];
-var ROADS = [["Prati", "Centro Storico"], ["Centro Storico", "Monti"], ["Monti", "Termini"], ["Termini", "San Lorenzo"], ["San Lorenzo", "Pigneto"], ["Monti", "San Giovanni"], ["San Giovanni", "Pigneto"], ["Centro Storico", "Trastevere"], ["Trastevere", "Testaccio"], ["Testaccio", "Ostiense"], ["Ostiense", "EUR"], ["Termini", "Parioli"], ["Parioli", "Flaminio"], ["Flaminio", "Prati"], ["Testaccio", "San Giovanni"], ["Trastevere", "Monteverde"], ["Ostiense", "Garbatella"], ["Garbatella", "EUR"], ["San Giovanni", "Tuscolano"], ["Pigneto", "Tuscolano"], ["Centro Storico", "Flaminio"]];
+var ROADS = [["Prati", "Centro Storico"], ["Centro Storico", "Monti"], ["Monti", "Termini"], ["Termini", "San Lorenzo"], ["San Lorenzo", "Pigneto"], ["Monti", "San Giovanni"], ["San Giovanni", "Pigneto"], ["Centro Storico", "Trastevere"], ["Trastevere", "Testaccio"], ["Testaccio", "Ostiense"], ["Ostiense", "EUR"], ["Termini", "Parioli"], ["Parioli", "Flaminio"], ["Flaminio", "Prati"], ["Testaccio", "San Giovanni"], ["Trastevere", "Monteverde"], ["Ostiense", "Garbatella"], ["Garbatella", "EUR"], ["San Giovanni", "Tuscolano"], ["Pigneto", "Tuscolano"], ["Centro Storico", "Flaminio"], ["Parioli", "Trieste"], ["Trieste", "Nomentano"], ["Termini", "Nomentano"], ["Nomentano", "Tiburtino"], ["San Lorenzo", "Tiburtino"], ["Tiburtino", "Pietralata"], ["Trieste", "Montesacro"], ["Montesacro", "Pietralata"], ["Flaminio", "Ponte Milvio"], ["Ponte Milvio", "Cassia"], ["Ponte Milvio", "Monte Mario"], ["Prati", "Monte Mario"], ["Monte Mario", "Primavalle"], ["Primavalle", "Cornelia"], ["Cornelia", "Aurelio"], ["Prati", "Aurelio"], ["Aurelio", "Monteverde"], ["Monteverde", "Portuense"], ["Trastevere", "Portuense"], ["Portuense", "Magliana"], ["Magliana", "EUR"], ["San Giovanni", "Appio Latino"], ["Appio Latino", "Tuscolano"], ["Garbatella", "Appio Latino"], ["Pigneto", "Centocelle"], ["Tuscolano", "Cinecittà"], ["Centocelle", "Cinecittà"]];
 function quad(a, b) { var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1]; return [r2(mx - dy * .18), r2(my + dx * .18)]; }
 function onQuad(a, c, b, t) { var u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; }
 // A viewBox that frames the given areas at a set width:height ratio, so a route is never cut off.
@@ -1682,7 +1731,7 @@ Object.assign(IT, {
   "Problem reported. DART support will get back to you.": "Problema segnalato. L'assistenza DART ti ricontatterà.", "Profile saved": "Profilo salvato", "Refund recorded": "Rimborso registrato", "Reply sent": "Risposta inviata", "Request updated": "Richiesta aggiornata", "Rules saved and live": "Regole salvate e attive", "Sent to DART for approval": "Inviato a DART per l'approvazione", "Sent to DART support": "Inviato all'assistenza DART",
   "Sent. DART support will reply here.": "Inviato. L'assistenza DART risponderà qui.", "Settings saved and live": "Impostazioni salvate e attive", "Thanks for rating your courier": "Grazie per aver valutato il corriere", "Your plan will renew as normal": "Il tuo piano si rinnoverà normalmente", "Courier approved": "Corriere approvato", "Application rejected": "Candidatura rifiutata", "Courier suspended": "Corriere sospeso",
   "Vehicle change approved": "Cambio veicolo approvato", "Vehicle change declined": "Cambio veicolo non approvato", "Account reactivated": "Account riattivato", "Account suspended": "Account sospeso", "Order cancelled": "Ordine annullato", "Name saved": "Nome salvato", "Delivery cancelled and refunded": "Consegna annullata e rimborsata", "It was already taken.": "Era già stata presa.",
-  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
+  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
   "Booked. We're finding you a courier.": "Prenotato. Stiamo cercando un corriere.", "Business features are on": "Funzioni aziendali attive", "Business details saved": "Dati aziendali salvati", "You're now a business account. Choose a plan below.": "Ora hai un account aziendale. Scegli un piano qui sotto.", "Your plan will renew as normal.": "Il tuo piano si rinnoverà normalmente.",
   "Photo estimates aren't available. Enter the measurements instead.": "Le stime dalle foto non sono disponibili. Inserisci le misure.", "The photo estimate didn't work this time. Enter the measurements instead.": "La stima dalla foto non ha funzionato. Inserisci le misure.", "We couldn't tell the size from these photos. Please measure the item.": "Non riusciamo a capire le misure da queste foto. Misura l'oggetto.",
   "Start with where it's going.": "Inizia da dove deve andare.", "Add the street addresses to continue.": "Aggiungi le vie per continuare.", "Connecting to DART…": "Connessione a DART…", "Loading DART…": "Caricamento di DART…", "Problem reported.": "Problema segnalato.",
@@ -1733,7 +1782,7 @@ IT_PATTERNS.push(
   [/^charged now: (.+)$/, "addebitato ora: $1"], [/^Weight estimated at about (.+) kg from the size$/, "Peso stimato circa $1 kg in base alle misure"], [/^Weight over (\d+) kg$/, "Peso oltre $1 kg"],
   [/^Welcome to DART, (.+)$/, "Benvenuto in DART, $1"], [/^Welcome back, (.+)$/, "Bentornato, $1"], [/^Welcome to DART\. (\d+) earlier deliver(?:y was|ies were) added to your account\.$/, "Benvenuto in DART. $1 consegne precedenti sono state aggiunte al tuo account."],
   [/^You earned (.+)\. It's paid out with your next weekly payment\.$/, "Hai guadagnato $1. Ti verrà pagato con il prossimo pagamento settimanale."],
-  [/^You keep (\d+)% of each delivery price\. Pending earnings are paid every Monday to (.+)\.$/, function (m, p, w) { return "Ti spetta il " + p + "% del prezzo di ogni consegna. I guadagni in attesa vengono pagati ogni lunedì su " + (w === "your bank" ? "il tuo conto" : trItem(w)) + "."; }],
+  [/^You earn the amount shown on each delivery\. Pending earnings are paid every Monday to (.+)\.$/, function (m, w) { return "Guadagni l'importo mostrato su ogni consegna. I guadagni in attesa vengono pagati ogni lunedì su " + (w === "your bank" ? "il tuo conto" : trItem(w)) + "."; }],
   [/^signed up with (email|google) on (.+)$/, function (m, p, d) { return "iscritto con " + (p === "google" ? "Google" : "email") + " il " + d; }],
   [/^(.+) a month for (\d+) deliveries, charged to (.+) today and every month until you cancel\.( Your new allowance starts today\.)?$/, function (m, p, n, c, x) { return p + " al mese per " + n + " consegne, addebitati su " + c + " oggi e ogni mese fino alla disdetta." + (x ? " Le nuove consegne incluse partono da oggi." : ""); }],
   [/^Delivered at (.+)$/, "Consegnata alle $1"], [/^You're on the (.+) plan$/, "Ora hai il piano $1"], [/^Your plan will end on (.+)$/, "Il tuo piano termina il $1"], [/^Ends on (.+)\. You can keep using it until then\.$/, "Termina il $1. Puoi usarlo fino ad allora."],
@@ -1812,7 +1861,7 @@ Object.assign(IT, {
   "Offer now": "Offri ora", "Deciding": "Sta decidendo", " · busy": " · occupato", "Pickup": "Ritiro", "Delivery": "Consegna"
 });
 IT_PATTERNS.push(
-  [/^New deliveries that fit your (.+) pop up on this screen\. You have (\d+) seconds to accept or decline\.$/, function (m, v, n) { return "Le nuove consegne adatte al tuo veicolo (" + trItem(v) + ") compaiono su questa schermata. Hai " + n + " secondi per accettare o rifiutare."; }],
+  [/^New deliveries that fit your (.+) pop up on this screen\. You have (\d+) minutes to accept or decline\.$/, function (m, v, n) { return "Le nuove consegne adatte al tuo veicolo (" + trItem(v) + ") compaiono su questa schermata. Hai " + n + " minuti per accettare o rifiutare."; }],
   [/^Offered to (.+), (\d+) s left to answer$/, "Offerta a $1, $2 s per rispondere"], [/^Offered to (.+)$/, "Offerta a $1"],
   [/^Declined or missed: (.+)$/, "Rifiutata o persa da: $1"], [/^(.+) km to pickup$/, "$1 km dal ritiro"], [/^(.+) km trip$/, "viaggio di $1 km"]
 );
@@ -2004,7 +2053,8 @@ function custNotes() {
 function custUnseen() { var seen = S.me.seen.customer || 0; return custNotes().filter(function (n) { return n.at > seen; }).length; }
 
 // ---------- Shell ----------
-var C_NAV = [["home", "Home", "home"], ["new", "Send", "send"], ["deliveries", "Deliveries", "list"], ["messages", "Messages", "chat"], ["account", "Account", "user"]];
+var C_NAV = [["home", "Home", "home"], ["new", "Send", "send"], ["deliveries", "Deliveries", "list"], ["account", "Account", "user"]];
+// No separate Messages tab: you message your courier from inside the delivery, while it's under way.
 function customerApp() {
   var acc = me(), web = isWeb();
   if (web && !S.c.webInit) { S.c.webInit = true; if (!acc || S.c.view === "home") S.c.view = "site-home"; }
@@ -2015,13 +2065,13 @@ function customerApp() {
   var unreadMsgs = acc ? myOrders().reduce(function (s, o) { return s + unread(o, "customer"); }, 0) : 0;
   var active = acc ? myOrders().filter(isActive).length : 0;
   var badge = function (k) { return k === "deliveries" && active ? '<span class="badge">' + active + "</span>" : k === "messages" && unreadMsgs ? '<span class="badge">' + unreadMsgs + "</span>" : ""; };
-  var cur = S.c.view === "order" ? "deliveries" : S.c.view === "chat" ? "messages" : ["invoices", "business", "plans", "bulk", "help", "profile", "addresses", "payments", "prefs", "notes"].indexOf(S.c.view) >= 0 ? "account" : S.c.view;
+  var cur = S.c.view === "order" ? "deliveries" : S.c.view === "chat" ? "deliveries" : ["invoices", "business", "plans", "bulk", "help", "profile", "addresses", "payments", "prefs", "notes"].indexOf(S.c.view) >= 0 ? "account" : S.c.view;
   if (web) {
     var accNav = acc ? '<nav class="w-nav" aria-label="Your account">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '">' + (n[0] === "new" ? "New delivery" : n[1]) + badge(n[0]) + "</button>"; }).join("") +
       '<button class="' + (S.c.view === "invoices" ? "on" : "") + '" data-act="c-go" data-v="invoices">Invoices</button><button class="bell ' + (S.c.view === "notes" ? "on" : "") + '" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button></nav>" : "";
     return siteShell(acc, body, isSite, accNav);
   }
-  var tabs = acc && acc.status !== "suspended" ? '<nav class="tabs t5">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + badge(n[0]) + "</button>"; }).join("") + "</nav>" :
+  var tabs = acc && acc.status !== "suspended" ? '<nav class="tabs t4">' + C_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="c-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + badge(n[0]) + "</button>"; }).join("") + "</nav>" :
     !acc ? '<nav class="tabs t3">' + [["home", "Home", "home"], ["track", "Track", "list"], ["auth", "Log in", "user"]].map(function (n) { var on = S.c.view === n[0] || (n[0] === "track" && (S.c.view === "order" || S.c.view === "chat")); return '<button class="' + (on ? "on" : "") + '" data-act="' + (n[0] === "auth" ? "c-auth-open" : "c-go") + '" data-v="' + (n[0] === "auth" ? "login" : n[0]) + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + "</button>"; }).join("") + "</nav>" : "";
   return stage('<div class="app-body" data-scroll="c-' + S.c.view + '">' + body + "</div>" + tabs, "DART customer app");
 }
@@ -2161,7 +2211,7 @@ function cHome(acc) {
     else h += '<span class="muted">No plan. You pay per delivery.</span>';
     h += '<div class="row wrap"><button class="btn ghost sm" data-act="c-go" data-v="business">Business settings</button>' + (plan && plan.bulk ? '<button class="btn ghost sm" data-act="c-go" data-v="bulk">Bulk deliveries</button>' : "") + "</div></div>";
   }
-  h += '<div class="quick"><button data-act="c-go" data-v="invoices"><b>Invoices</b><span>' + myInvoices().length + " total</span></button><button data-act=\"c-go\" data-v=\"messages\"><b>Messages</b><span>Chat with couriers</span></button><button data-act=\"c-go\" data-v=\"help\"><b>Help</b><span>Report a problem</span></button>" + (!(acc.business && acc.business.active) ? '<button data-act="c-go" data-v="business"><b>For business</b><span>Subscription plans</span></button>' : "") + "</div>";
+  h += '<div class="quick"><button data-act="c-go" data-v="invoices"><b>Invoices</b><span>' + myInvoices().length + " total</span></button><button data-act=\"c-go\" data-v=\"help\"><b>Help</b><span>Report a problem</span></button>" + (!(acc.business && acc.business.active) ? '<button data-act="c-go" data-v="business"><b>For business</b><span>Subscription plans</span></button>' : "") + "</div>";
   return h + "</div></div></div>";
 }
 function usageBar(used, total) {
@@ -2456,7 +2506,7 @@ function cOrder(acc) {
   if (o.code && ACTIVE.indexOf(o.status) >= 0) a += '<div class="code-card"><div><span class="muted sm">Delivery code</span><b class="code-big">' + esc(o.code) + "</b></div><p>Give this code to the courier when they arrive. They can't finish the delivery without it. If someone else is receiving it, send them the code.</p>" +
     (o.item.options && o.item.options.signature ? '<p class="muted sm">The person receiving it will also be asked to sign on the courier\'s phone.</p>' : "") + "</div>";
   if (o.courier) a += '<div class="person"><span class="avatar">' + esc(initials(o.courier.name)) + "</span><div><b>" + esc(o.courier.name) + '</b><div class="muted sm">' + esc(ratingText(o.courier.id)) + " · " + esc(vLabel(o.courier.vehicle)) + (o.courier.plate ? " · " + esc(o.courier.plate) : "") + "</div></div>" +
-    '<button class="btn sm" data-act="c-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "customer") ? ' <span class="badge in">1</span>' : "") + "</button></div>";
+    (isActive(o) ? '<button class="btn sm" data-act="c-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "customer") ? ' <span class="badge in">1</span>' : "") + "</button>" : "") + "</div>";
   if (o.status === "delivered") {
     var img = o.proof && safeImg(o.proof.photo);
     var sig = o.proof && safeImg(o.proof.sig);
@@ -2550,10 +2600,11 @@ function cMessages() {
 }
 ACT["c-chat"] = function (d) { S.c.order = d.v; S.c.view = "chat"; openChat(d.v); markRead(d.v); render(); scrollChat(); };
 function cChat(acc) {
-  var o = byId(S.orders, S.c.order); if (!o) return head("Chat", acc ? "messages" : "track");
+  var o = byId(S.orders, S.c.order); if (!o) return head("Chat", acc ? "deliveries" : "track");
+  if (!isActive(o)) return head("Chat", acc ? "order" : "track") + emptyState("This delivery is finished", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.");
   if (Chat.orderId !== o.id) openChat(o.id);
   var title = esc(o.courier ? o.courier.name : "Chat");
-  return (isWeb() ? '<div class="row between"><h1 class="w-title">' + title + ' <span class="muted mono sm">' + esc(o.id) + '</span></h1><button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Delivery details</button></div>' : head(title, acc ? "messages" : "", '<button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Details</button>')) + chatView(o, "customer", acc ? acc.name : o.customer.name);
+  return (isWeb() ? '<div class="row between"><h1 class="w-title">' + title + ' <span class="muted mono sm">' + esc(o.id) + '</span></h1><button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Delivery details</button></div>' : head(title, acc ? "order" : "track", '<button class="btn ghost sm" data-act="c-order" data-v="' + esc(o.id) + '">Details</button>')) + chatView(o, "customer", acc ? acc.name : o.customer.name);
 }
 FORMS["chat"] = function (form) { sendChat(form); };
 FILES["chat"] = function (file) { shrinkImage(file, 640, 60000).then(function (src) { Chat.draftPhoto = src; render(); }, function () { toast("That photo couldn't be read."); }); };
@@ -3212,7 +3263,7 @@ function eligible(c, o) {
   return vehicleFits(c.vehicle, { l: o.cls.l, w: o.cls.w, h: o.cls.h, kg: o.cls.kg, qty: o.item.qty });
 }
 // ---------- Offers: each waiting delivery goes to one courier at a time ----------
-var OFFER_SECS = 45, RETRY_SECS = 120;
+var OFFER_SECS = 120, RETRY_SECS = 120;
 function liveOffer(o, now) { return o.offer && o.offer.until > (now || Date.now()) ? o.offer : null; }
 function jobsOf(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && !bookedAhead(o) && (JOB_STEPS.indexOf(o.status) >= 0 || o.status === "issue"); }); }
 function jobOf(cid) { return jobsOf(cid)[0] || null; }
@@ -3348,13 +3399,14 @@ function courierNotes() {
 function courierUnseen() { var s = S.me.seen.courier || 0; return courierNotes().filter(function (n) { return n.at > s; }).length; }
 
 // ---------- Shell ----------
-var D_NAV = [["home", "Jobs", "send"], ["earnings", "Earnings", "euro"], ["messages", "Messages", "chat"], ["account", "Account", "user"]];
+var D_NAV = [["home", "Jobs", "send"], ["earnings", "Earnings", "euro"], ["account", "Account", "user"]];
+// No separate Messages tab: couriers message the customer from inside the job, while it's under way.
 function courierApp() {
   var c = myCourier();
   var body = !c ? dAuth() : dView(c);
-  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "messages" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
+  var cur = S.d.view === "job" || S.d.view === "req" || S.d.view === "sched" ? "home" : S.d.view === "chat" ? "home" : ["vehicle", "help", "history", "payout", "notes"].indexOf(S.d.view) >= 0 ? "account" : S.d.view;
   var un = c ? myJobs().reduce(function (s, o) { return s + unread(o, "courier"); }, 0) : 0;
-  var tabs = c && c.status === "approved" ? '<nav class="tabs t4">' + D_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="d-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + (n[0] === "messages" && un ? '<span class="badge">' + un + "</span>" : "") + "</button>"; }).join("") + "</nav>" : "";
+  var tabs = c && c.status === "approved" ? '<nav class="tabs t3">' + D_NAV.map(function (n) { return '<button class="' + (cur === n[0] ? "on" : "") + '" data-act="d-go" data-v="' + n[0] + '"><svg><use href="#t-' + n[2] + '"/></svg>' + n[1] + (n[0] === "messages" && un ? '<span class="badge">' + un + "</span>" : "") + "</button>"; }).join("") + "</nav>" : "";
   var offer = c && c.status === "approved" ? myOffer() : null;
   return stage('<div class="app-body" data-scroll="d-' + S.d.view + '">' + body + "</div>" + tabs + (offer ? offerSheet(c, offer) : ""), "DART Courier app");
 }
@@ -3463,7 +3515,7 @@ function dWaiting(c) {
 ACT["d-logout"] = function () { var c = myCourier(); if (c && c.online) Store.update("couriers", c.id, { online: false, updatedAt: Date.now() }).catch(function () { }); S.me.courierId = null; saveMe(); S.d.view = "home"; closeChat(); render(); };
 
 ACT["d-go"] = function (d) { if (d.v !== "chat") closeChat(); S.d.view = d.v || "home"; if (d.v === "notes") { S.me.seen.courier = Date.now(); saveMe(); } render(); };
-ACT["d-area"] = function (d) { var c = myCourier(); if (c) run(Store.update("couriers", c.id, { area: d.v, updatedAt: Date.now() })); };
+ACT["d-area"] = function (d) { var c = myCourier(); if (LIVE && settings().gpsTest === false) return; if (c) run(Store.update("couriers", c.id, { area: d.v, updatedAt: Date.now() })); };
 ACT["d-online"] = function () {
   var c = myCourier(); if (!c) return;
   run(Store.update("couriers", c.id, { online: !c.online, updatedAt: Date.now() }), c.online ? "You're offline" : "You're online");
@@ -3476,7 +3528,7 @@ function offerSheet(c, o) {
   var enter = S.d.offerSeen !== o.id + (more ? ":more" : "") ? " enter" : ""; S.d.offerSeen = o.id + (more ? ":more" : "");
   var chk = routeCheck(c, o, Date.now()), away = c.area ? tripKm(c.area, o.pickup.area) : null, extras = OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).map(function (x) { return x.label; });
   var timer = '<div class="offer-timer" aria-hidden="true"><i style="animation-duration:' + total + "s;animation-delay:-" + (total - left) + 's"></i></div>';
-  var top = '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay" id="offer-pay">' + eur(payOf(o)) + '</b></div><span class="offer-left"><b>' + left + "</b> s</span></div>" +
+  var top = '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay" id="offer-pay">' + eur(payOf(o)) + '</b></div><span class="offer-left"><b>' + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + "</b></span></div>" +
     '<p class="offer-route"><b>' + esc(o.pickup.area) + "</b> → <b>" + esc(o.dropoff.area) + "</b></p>" +
     '<p class="offer-meta">' + o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min" + (away != null ? " · " + away.toFixed(1) + " km to pickup" : "") + "</p>" +
     (o.deliverBy ? '<p class="offer-by"><b>Deliver ' + byLabel(o.deliverBy).replace(/^Today by /, "by ").replace(/^Tomorrow by /, "tomorrow by ") + "</b>" + (o.asap ? " · ASAP" : "") + "</p>" : "") +
@@ -3512,7 +3564,7 @@ function dJob(c) {
   var o = byId(S.orders, S.d.job);
   if (!o) return dHead("Delivery", "home") + '<div class="pad">' + emptyState("Delivery not found", "", '<button class="btn sm" data-act="d-go" data-v="home">Back</button>') + "</div>";
   var st = o.status === "issue" ? (o.issue && o.issue.prev) : o.status, toPickup = ["assigned", "to_pickup", "at_pickup"].indexOf(st) >= 0;
-  var h = dHead('<span class="mono">' + esc(o.id) + "</span>", "home", '<button class="btn ghost sm" data-act="d-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "courier") ? ' <span class="badge in">1</span>' : "") + "</button>") +
+  var h = dHead('<span class="mono">' + esc(o.id) + "</span>", "home", isActive(o) ? '<button class="btn ghost sm" data-act="d-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "courier") ? ' <span class="badge in">1</span>' : "") + "</button>" : "") +
     '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, dashed: toPickup }, courierPos(o))] }) + '</div><div class="pad">';
   h += '<div class="row between">' + chip(o.status) + '<span class="price-big">' + eur(payOf(o)) + "</span></div>";
   if (bookedAhead(o)) h += '<div class="banner">Booked ahead. Start by ' + hhmm(startAt(o)) + " to deliver by " + hhmm(o.deliverBy) + ".</div>";
@@ -3545,19 +3597,52 @@ function dJob(c) {
       (needSig ? '<div class="sig"><div class="row between"><span class="field-l">Signature of the person receiving it</span><button type="button" class="link" data-act="d-sig-clear">Clear</button></div><canvas id="sig-pad" width="640" height="260" aria-label="Signature pad"></canvas><small class="hint">Ask them to sign with a finger.</small></div>' : "") +
       '<button class="btn ok block"' + (here ? "" : " disabled") + ">Complete delivery</button></form>";
   }
-  h += '<div class="row wrap"><button class="btn ghost sm" data-act="d-issue" data-v="' + esc(o.id) + '">Report a problem</button>' + (["assigned", "to_pickup", "at_pickup"].indexOf(o.status) >= 0 ? '<button class="btn ghost sm" data-act="d-release" data-v="' + esc(o.id) + '">Give this delivery back</button>' : "") + "</div>";
+  h += '<div class="row wrap"><button class="btn ghost sm" data-act="d-issue" data-v="' + esc(o.id) + '">Report a problem</button>' + (["assigned", "to_pickup"].indexOf(o.status) >= 0 ? '<button class="btn ghost sm" data-act="d-release" data-v="' + esc(o.id) + '">Give this delivery back</button>' : "") + "</div>";
   return h + '<div class="card"><b>Status history</b>' + timelineList(o) + "</div></div>";
 }
-// Steps that can only be confirmed at a place. Production checks the phone's GPS (within about 150 m);
-// the test build uses the area the courier says they're in.
+// Live location: while online, the phone's GPS sets the courier's area (the nearest DART area).
+// Saved when the area changes or every minute, so offers and the map use where the courier really is.
+var GPS = { watch: null, fix: null, err: null, savedAt: 0 };
+function gpsOn() { return typeof navigator !== "undefined" && !!navigator.geolocation; }
+function gpsStart() {
+  if (GPS.watch != null || !gpsOn()) return;
+  GPS.err = null;
+  GPS.watch = navigator.geolocation.watchPosition(function (p) {
+    var c = myCourier(); GPS.fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, at: Date.now() }; GPS.err = null;
+    if (!c) return;
+    var n = nearestArea(GPS.fix.lat, GPS.fix.lng), moved = n.area !== c.area;
+    if (moved || Date.now() - GPS.savedAt > 60000) {
+      GPS.savedAt = Date.now();
+      Store.update("couriers", c.id, { area: n.area, pos: { lat: +GPS.fix.lat.toFixed(5), lng: +GPS.fix.lng.toFixed(5), at: GPS.fix.at }, updatedAt: Date.now() }).catch(function () {});
+    }
+    if (moved) render();
+  }, function (e) { GPS.err = e && e.code === 1 ? "denied" : "unavailable"; render(); }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 });
+}
+function gpsStop() { if (GPS.watch != null && gpsOn()) navigator.geolocation.clearWatch(GPS.watch); GPS.watch = null; }
+function gpsBanner() {
+  if (!LIVE) return "";
+  if (!gpsOn()) return '<div class="banner bad">This phone can\'t share its location, so you can\'t get deliveries.</div>';
+  if (GPS.err === "denied") return '<div class="banner bad"><b>Turn on location for DART Courier.</b> DART needs it to send you nearby deliveries and to check you\'re at each pickup and drop-off. Allow it in your phone\'s settings, then come back.</div>';
+  if (GPS.err) return '<div class="banner">Can\'t find your location right now. Check location is on and you have signal.</div>';
+  return "";
+}
+AFTER.push(function () {
+  if (!LIVE || route() !== "courier") return gpsStop();
+  var c = myCourier();
+  if (c && c.status === "approved" && c.online) gpsStart(); else gpsStop();
+});
+
+// Steps that can only be confirmed at a place: the courier's GPS area must match the pickup or drop-off area.
+// While admin has "Location check: testing" on, couriers can skip it.
 var GATE = { to_pickup: "pickup", at_pickup: "pickup", in_transit: "dropoff" };
 function atPlace(c, place) { return !!(c && place && c.area === place.area); }
 function whereCheck(c, place, kind) {
   var ok = atPlace(c, place), label = kind === "pickup" ? "pickup" : "delivery address";
   if (ok) return '<div class="where ok"><i aria-hidden="true"></i><span>You\'re at the ' + label + "</span></div>";
   var away = c.area ? tripKm(c.area, place.area).toFixed(1) + " km away" : "location unknown";
-  return '<div class="where"><i aria-hidden="true"></i><span><b>You need to be at the ' + label + "</b> (" + away + "). DART checks your GPS before you can confirm.</span>" +
-    '<button class="btn ghost sm" data-act="d-area" data-v="' + esc(place.area) + '">Test build: I\'m in ' + esc(place.area) + "</button></div>";
+  var skip = !LIVE || settings().gpsTest !== false;
+  return '<div class="where"><i aria-hidden="true"></i><span><b>You need to be at the ' + label + "</b> (" + away + "). DART checks your location before you can confirm.</span>" +
+    (skip ? '<button class="btn ghost sm" data-act="d-area" data-v="' + esc(place.area) + '">Testing: I\'m in ' + esc(place.area) + "</button>" : "") + "</div>";
 }
 ACT["d-next"] = function () {
   var o = byId(S.orders, S.d.job), c = myCourier(); if (!o || !NEXT[o.status] || busy) return;
@@ -3596,10 +3681,11 @@ AFTER.push(function (root) {
   cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
 });
 ACT["d-resume"] = function () { var o = byId(S.orders, S.d.job); if (!o) return; run(Store.update("orders", o.id, { status: o.issue.prev || "assigned", issue: { open: false, resolvedAt: Date.now() } }), "Back on track"); };
-ACT["d-release"] = function (d) { S.modal = { kind: "confirm", title: "Give this delivery back?", body: "It goes back to other couriers. Do this only if you can't do it.", yes: "Give it back", act: "d-release-yes", v: d.v }; render(); };
+// Only before reaching the pickup: once a courier is there, they may have the item, so problems go to DART via Report a problem.
+ACT["d-release"] = function (d) { S.modal = { kind: "confirm", title: "Give this delivery back?", body: "It goes back to other couriers. Do this only if you can't do it. Once you're at the pickup, use Report a problem instead.", yes: "Give it back", act: "d-release-yes", v: d.v }; render(); };
 ACT["d-release-yes"] = function (d) {
   S.modal = null; var c = myCourier();
-  run(Store.claim("orders", d.v, c.id, function (x) { return x.courier && x.courier.id === c.id && ["assigned", "to_pickup", "at_pickup"].indexOf(x.status) >= 0; }, { status: "awaiting", courier: null, courierPay: null, offer: null, declinedBy: [c.id], timeline: { awaiting: Date.now() }, releasedBy: c.id }).then(function (ok) { S.d.view = "home"; if (!ok) toast("It couldn't be given back. Report a problem instead."); }));
+  run(Store.claim("orders", d.v, c.id, function (x) { return x.courier && x.courier.id === c.id && ["assigned", "to_pickup"].indexOf(x.status) >= 0; }, { status: "awaiting", courier: null, courierPay: null, offer: null, declinedBy: [c.id], timeline: { awaiting: Date.now() }, releasedBy: c.id }).then(function (ok) { S.d.view = "home"; if (!ok) toast("It couldn't be given back. Report a problem instead."); }));
 };
 ACT["d-issue"] = function (d) { S.modal = { kind: "issue", order: d.v, reason: "Can't find the address", text: "", role: "courier" }; render(); };
 FILES["proof"] = function (file) { shrinkImage(file, 640, 60000).then(function (src) { S.d.proof.photo = src; render(); }, function () { toast("That photo couldn't be read."); }); };
@@ -3628,9 +3714,10 @@ function dMessages() {
 }
 ACT["d-chat"] = function (d) { S.d.job = d.v; S.d.view = "chat"; openChat(d.v); markRead(d.v); render(); scrollChat(); };
 function dChat(c) {
-  var o = byId(S.orders, S.d.job); if (!o) return dHead("Chat", "messages");
+  var o = byId(S.orders, S.d.job); if (!o) return dHead("Chat", "home");
+  if (!isActive(o)) return dHead("Chat", "job") + emptyState("This delivery is finished", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.");
   if (Chat.orderId !== o.id) openChat(o.id);
-  return dHead(esc(o.customer.businessName || o.customer.name), "messages", '<button class="btn ghost sm" data-act="d-job" data-v="' + esc(o.id) + '">Delivery</button>') + chatView(o, "courier", c.name);
+  return dHead(esc(o.customer.businessName || o.customer.name), "job", '<button class="btn ghost sm" data-act="d-job" data-v="' + esc(o.id) + '">Delivery</button>') + chatView(o, "courier", c.name);
 }
 function dEarnings(c) {
   var done = myJobs().filter(function (o) { return o.status === "delivered"; }).sort(function (a, b) { return b.timeline.delivered - a.timeline.delivered; });
@@ -3638,7 +3725,7 @@ function dEarnings(c) {
   var sum = function (l) { return l.reduce(function (s, o) { return s + earnOf(o); }, 0); };
   var payouts = {}; paid.forEach(function (o) { var k = o.courierPayout || dmy(o.courierPaidAt); payouts[k] = payouts[k] || { at: o.courierPaidAt, total: 0, n: 0 }; payouts[k].total += earnOf(o); payouts[k].n++; });
   return dHead("Earnings") + '<div class="pad"><div class="stat3"><div><b class="num">' + eur(sum(done)) + '</b><small>All time</small></div><div><b class="num">' + eur(sum(pend)) + '</b><small>Pending</small></div><div><b class="num">' + eur(sum(paid)) + "</b><small>Paid</small></div></div>" +
-    '<p class="muted sm">You keep ' + share() + "% of each delivery price. Pending earnings are paid every Monday to " + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") + ".</p>" +
+    '<p class="muted sm">You earn the amount shown on each delivery. Pending earnings are paid every Monday to ' + esc(c.payout ? "IBAN ending " + String(c.payout.iban).slice(-4) : "your bank") + ".</p>" +
     (Object.keys(payouts).length ? '<div class="sec-h"><h3>Payments</h3></div><div class="list">' + Object.keys(payouts).map(function (k) { var p = payouts[k]; return '<div class="item"><b>Paid ' + dmy(p.at) + '</b><b class="num">' + eur(p.total) + "</b><small>" + p.n + " deliveries</small><small></small></div>"; }).join("") + "</div>" : "") +
     '<div class="sec-h"><h3>Completed deliveries</h3></div>' + (done.length ? '<div class="list">' + done.map(function (o) { return '<button class="item" data-act="d-job" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><b class="num">' + eur(earnOf(o)) + "</b><small>" + when(o.timeline.delivered) + " · " + esc(o.id) + "</small><small>" + (o.courierPaid ? "Paid" : "Pending") + ((o.review || o.rating) ? " · " + (o.review ? o.review.stars : o.rating) + "★" : "") + "</small>" +
       '<span class="earn-lines"><span>Delivery ' + eur(payOf(o)) + "</span>" + (tipOf(o) ? '<span class="ok-t">Tip +' + eur(tipOf(o)) + "</span>" : "") + (lateFee(o) ? '<span class="bad-t">Late fee −' + eur(lateFee(o)) + "</span>" : "") + "</span></button>"; }).join("") + "</div>" : emptyState("No deliveries yet", "Completed deliveries and what you earned show up here.")) + "</div>";
@@ -3719,7 +3806,7 @@ function dMapHome(c) {
   var jobs = activeJobs(), plan = myRoute(c);
   var routes = jobs.map(function (j) { return Object.assign({ from: j.pickup.area, to: j.dropoff.area }, courierPos(j)); });
   var title = !c.online && !job ? "You're offline" : jobs.length > 1 ? jobs.length + " deliveries on your route" : job ? "On a delivery" : "Waiting for a delivery";
-  var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Set your area below";
+  var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Finding your location…";
   var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
     '<div class="mh-top"><button class="mh-online ' + (c.online ? "on" : "") + '" data-act="d-online" role="switch" aria-checked="' + !!c.online + '"><i></i>' + (c.online ? "Online" : "Offline") + "</button>" +
     '<button class="mh-chip icon" data-act="d-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (courierUnseen() ? '<span class="badge">' + courierUnseen() + "</span>" : "") + "</button></div>" +
@@ -3732,11 +3819,12 @@ function dMapHome(c) {
   else if (job) h += '<button class="item job-card" data-act="d-job" data-v="' + esc(job.id) + '"><b>' + esc(job.pickup.area) + " → " + esc(job.dropoff.area) + "</b>" + chip(job.status) + "<small>" + itemSummary(job) + (job.deliverBy ? " · by " + hhmm(job.deliverBy) : "") + '</small><small class="num">' + eur(payOf(job)) + "</small></button>";
   if (!c.online) h += '<button class="btn block big" data-act="d-online">Go online</button>';
   else {
-    h += field("Where are you now?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'));
+    h += gpsBanner();
+    if (!LIVE) h += field("Test build: where are you?", sel("d.areaPick", c.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="d-area"'), "The phone apps use GPS instead.");
     var later = bookedJobs(c.id), board = openScheduled(c);
     if (later.length) h += '<div class="sec-h"><h3>Later today</h3></div><div class="list">' + later.map(function (o) { return schedRow(o, "d-job"); }).join("") + "</div>";
     if (board.length) h += '<div class="sec-h"><h3>Scheduled today</h3><span class="muted sm">Book ahead</span></div><div class="list">' + board.map(function (o) { return schedRow(o, "d-sched"); }).join("") + "</div>";
-    if (!job) h += '<div class="wait-card"><span class="pulse" aria-hidden="true"></span><div><b>You\'re in the queue</b><span>New deliveries that fit your ' + esc(vLabel(c.vehicle.type).toLowerCase()) + " pop up on this screen. You have " + OFFER_SECS + " seconds to accept or decline.</span></div></div>";
+    if (!job) h += '<div class="wait-card"><span class="pulse" aria-hidden="true"></span><div><b>You\'re in the queue</b><span>New deliveries that fit your ' + esc(vLabel(c.vehicle.type).toLowerCase()) + " pop up on this screen. You have " + Math.round(OFFER_SECS / 60) + " minutes to accept or decline.</span></div></div>";
   }
   return h + "</div></div>";
 }
@@ -4234,12 +4322,14 @@ function aSettings() {
   return aHead("Settings", '<button class="btn" data-act="a-settings-save">Save settings</button>') + '<div class="stack" style="max-width:720px">' +
     (missing.length ? '<div class="banner bad">Add your company name, Partita IVA, registered address and support email. Italian websites and invoices must show them, and the website footer only shows what you fill in.</div>' : "") +
     '<div class="card"><div class="row between"><div><b>Taking deliveries</b><div class="muted sm">Turn off to close DART. Customers can\'t book and couriers get no new requests.</div></div>' + sw("a-open", s.open !== false, "Taking deliveries") + "</div></div>" +
+    '<div class="card"><div class="row between"><div><b>Location check: testing</b><div class="muted sm">While on, couriers can tap \u201cI\'m here\u201d to skip the GPS check at pickup and drop-off. Turn off before launch.</div></div>' + sw("a-gps-test", s.gpsTest !== false, "Location check: testing") + "</div></div>" +
     '<div class="card">' + field("Message at the top of the customer app and website", inp(b + "banner", s.banner, 'maxlength="160" placeholder="e.g. Free delivery on your first order"'), "Leave empty to show nothing.") + "</div>" +
     '<div class="card"><b>Invoice details</b><div class="grid2">' + field("Company name", inp(b + "company", s.company)) + field("Partita IVA", inp(b + "companyVat", s.companyVat)) + "</div>" + field("Registered address", inp(b + "companyAddress", s.companyAddress)) + '<div class="grid2">' + field("Invoice number prefix", inp(b + "invoicePrefix", s.invoicePrefix)) + field("Support email", inp(b + "supportEmail", s.supportEmail, 'type="email"')) + "</div></div></div>";
 }
+ACT["a-gps-test"] = function () { S.a.settingsDraft.gpsTest = S.a.settingsDraft.gpsTest === false; render(); };
 ACT["a-open"] = function () { S.a.settingsDraft.open = S.a.settingsDraft.open === false; render(); };
 ACT["a-settings-save"] = function () {
-  var s = S.a.settingsDraft, out = { open: s.open !== false, banner: clip(s.banner, 160), company: clip(s.company, 80), companyVat: clip(s.companyVat, 20), companyAddress: clip(s.companyAddress, 140), invoicePrefix: clip(s.invoicePrefix, 10).replace(/[^A-Za-z0-9]/g, "") || "DART", supportEmail: clip(s.supportEmail, 80) };
+  var s = S.a.settingsDraft, out = { open: s.open !== false, gpsTest: s.gpsTest !== false, banner: clip(s.banner, 160), company: clip(s.company, 80), companyVat: clip(s.companyVat, 20), companyAddress: clip(s.companyAddress, 140), invoicePrefix: clip(s.invoicePrefix, 10).replace(/[^A-Za-z0-9]/g, "") || "DART", supportEmail: clip(s.supportEmail, 80) };
   run(Store.set("config", "settings", out).then(function () { S.a.settingsDraft = null; }), "Settings saved and live");
 };
 
@@ -4263,19 +4353,34 @@ function liveTable(path) {
 }
 function liveErr(e) { return e && (e.message || e.code) ? { code: e.code || "error", message: e.message } : e; }
 
+// Coming back to the app or getting signal again: refresh the login, then reload everything on screen.
+if (LIVE && typeof document !== "undefined") {
+  var liveWake = function () { SB.auth.getSession().then(function () { liveReloaders.forEach(function (x) { x.fn(); }); }, function () {}); };
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") liveWake(); });
+  window.addEventListener("online", liveWake);
+}
+
 // A database object with the same shape the app's Store already uses.
 var liveDb = LIVE && {
   collection: function (path) {
     var t = liveTable(path);
     return {
       onSnapshot: function (cb, onErr) {
-        var stopped = false, timer = null;
+        // Phones pause connections in the background: failed loads retry quietly, and a dropped
+        // live channel reconnects. Only a long outage is shown to the person.
+        var stopped = false, timer = null, fails = 0, ch = null;
         var load = function () {
           var q = SB.from(t.table).select(t.table === "messages" ? "id,data" : "id,data,updated_at");
           if (t.order) q = q.eq("order_id", t.order);
           q.then(function (r) {
             if (stopped) return;
-            if (r.error) { if (onErr) onErr(liveErr(r.error)); return; }
+            if (r.error) {
+              fails++;
+              if (fails === 4 && onErr) onErr(liveErr(r.error));
+              clearTimeout(timer); timer = setTimeout(function () { SB.auth.getSession().then(load, load); }, Math.min(30000, 1500 * fails));
+              return;
+            }
+            fails = 0;
             var rows = (r.data || []).map(function (x) { return { id: x.id, data: x.data, v: x.updated_at }; });
             if (t.table === "orders") {
               // Guest deliveries aren't readable directly; they're fetched with their code and email.
@@ -4283,13 +4388,22 @@ var liveDb = LIVE && {
               rows.forEach(function (x) { liveSeen[x.id] = x.v; });
             }
             cb({ docs: rows.map(function (x) { return { id: x.id, data: function () { return x.data; } }; }) });
-          });
+          }, function () { fails++; clearTimeout(timer); timer = setTimeout(load, Math.min(30000, 1500 * fails)); });
         };
         var soon = function () { clearTimeout(timer); timer = setTimeout(load, 120); };
         load();
-        var ch = SB.channel("w-" + path + "-" + rid(5)).on("postgres_changes", Object.assign({ event: "*", schema: "public", table: t.table }, t.order ? { filter: "order_id=eq." + t.order } : {}), soon).subscribe();
+        var connect = function () {
+          var mine = SB.channel("w-" + path + "-" + rid(5)).on("postgres_changes", Object.assign({ event: "*", schema: "public", table: t.table }, t.order ? { filter: "order_id=eq." + t.order } : {}), soon);
+          ch = mine;
+          mine.subscribe(function (st) {
+            if (stopped || ch !== mine || ["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].indexOf(st) < 0) return;
+            ch = null; SB.removeChannel(mine);
+            setTimeout(function () { if (!stopped) { connect(); soon(); } }, 3000);
+          });
+        };
+        connect();
         liveReloaders.push({ table: t.table, fn: soon });
-        return function () { stopped = true; SB.removeChannel(ch); liveReloaders = liveReloaders.filter(function (x) { return x.fn !== soon; }); };
+        return function () { stopped = true; clearTimeout(timer); if (ch) { var c = ch; ch = null; SB.removeChannel(c); } liveReloaders = liveReloaders.filter(function (x) { return x.fn !== soon; }); };
       }
     };
   },
@@ -4621,6 +4735,20 @@ function subscribeAll() {
     return s.limits().then(function (l) { Caps.sampleImages = !!(l && l.images); render(); }, function () { });
   }, function () { });
 })();
+
+// Phone back button and back swipe (called by the apps): close what's open, or go back one screen.
+// Returns false on a main screen, so the app closes as phone apps normally do.
+window.DART_BACK = function () {
+  var bg = document.querySelector(".modal-bg"); if (bg) { bg.click(); return true; }
+  if (S.d.offerMore) { S.d.offerMore = null; render(); return true; }
+  var root = document.querySelector(".device") || document.body;
+  var back = [].slice.call(root.querySelectorAll("button")).filter(function (b) { return /^\s*←/.test(b.textContent) && b.offsetParent !== null && !b.disabled; })[0];
+  if (back) { back.click(); return true; }
+  var r = route(), st = r === "customer" ? S.c : r === "courier" ? S.d : null;
+  if (st && st.navOpen) { st.navOpen = false; render(); return true; }
+  if (st && st.view && st.view !== "home") { ACT[r === "customer" ? "c-go" : "d-go"]({ v: "home" }); return true; }
+  return false;
+};
 
 })();
 </script>

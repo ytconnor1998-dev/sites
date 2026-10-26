@@ -18,19 +18,34 @@ function liveTable(path) {
 }
 function liveErr(e) { return e && (e.message || e.code) ? { code: e.code || "error", message: e.message } : e; }
 
+// Coming back to the app or getting signal again: refresh the login, then reload everything on screen.
+if (LIVE && typeof document !== "undefined") {
+  var liveWake = function () { SB.auth.getSession().then(function () { liveReloaders.forEach(function (x) { x.fn(); }); }, function () {}); };
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") liveWake(); });
+  window.addEventListener("online", liveWake);
+}
+
 // A database object with the same shape the app's Store already uses.
 var liveDb = LIVE && {
   collection: function (path) {
     var t = liveTable(path);
     return {
       onSnapshot: function (cb, onErr) {
-        var stopped = false, timer = null;
+        // Phones pause connections in the background: failed loads retry quietly, and a dropped
+        // live channel reconnects. Only a long outage is shown to the person.
+        var stopped = false, timer = null, fails = 0, ch = null;
         var load = function () {
           var q = SB.from(t.table).select(t.table === "messages" ? "id,data" : "id,data,updated_at");
           if (t.order) q = q.eq("order_id", t.order);
           q.then(function (r) {
             if (stopped) return;
-            if (r.error) { if (onErr) onErr(liveErr(r.error)); return; }
+            if (r.error) {
+              fails++;
+              if (fails === 4 && onErr) onErr(liveErr(r.error));
+              clearTimeout(timer); timer = setTimeout(function () { SB.auth.getSession().then(load, load); }, Math.min(30000, 1500 * fails));
+              return;
+            }
+            fails = 0;
             var rows = (r.data || []).map(function (x) { return { id: x.id, data: x.data, v: x.updated_at }; });
             if (t.table === "orders") {
               // Guest deliveries aren't readable directly; they're fetched with their code and email.
@@ -38,13 +53,22 @@ var liveDb = LIVE && {
               rows.forEach(function (x) { liveSeen[x.id] = x.v; });
             }
             cb({ docs: rows.map(function (x) { return { id: x.id, data: function () { return x.data; } }; }) });
-          });
+          }, function () { fails++; clearTimeout(timer); timer = setTimeout(load, Math.min(30000, 1500 * fails)); });
         };
         var soon = function () { clearTimeout(timer); timer = setTimeout(load, 120); };
         load();
-        var ch = SB.channel("w-" + path + "-" + rid(5)).on("postgres_changes", Object.assign({ event: "*", schema: "public", table: t.table }, t.order ? { filter: "order_id=eq." + t.order } : {}), soon).subscribe();
+        var connect = function () {
+          var mine = SB.channel("w-" + path + "-" + rid(5)).on("postgres_changes", Object.assign({ event: "*", schema: "public", table: t.table }, t.order ? { filter: "order_id=eq." + t.order } : {}), soon);
+          ch = mine;
+          mine.subscribe(function (st) {
+            if (stopped || ch !== mine || ["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].indexOf(st) < 0) return;
+            ch = null; SB.removeChannel(mine);
+            setTimeout(function () { if (!stopped) { connect(); soon(); } }, 3000);
+          });
+        };
+        connect();
         liveReloaders.push({ table: t.table, fn: soon });
-        return function () { stopped = true; SB.removeChannel(ch); liveReloaders = liveReloaders.filter(function (x) { return x.fn !== soon; }); };
+        return function () { stopped = true; clearTimeout(timer); if (ch) { var c = ch; ch = null; SB.removeChannel(c); } liveReloaders = liveReloaders.filter(function (x) { return x.fn !== soon; }); };
       }
     };
   },
