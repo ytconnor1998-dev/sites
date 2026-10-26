@@ -69,12 +69,20 @@ var EXAMPLES = [
   { what: "A wardrobe, taken apart", from: "San Giovanni", to: "Ostiense", item: { type: "furniture", l: 200, w: 60, h: 45, kg: 65, qty: 1, options: {} } }
 ];
 function examplePrice(e) { var cls = classify(e.item); if (!cls.ok) return null; return { cls: cls, q: quote(e.from, e.to, e.item, cls, null) }; }
+// A dashed delivery route sweeping across the hero, ending in the DART arrow.
+function heroRoute() {
+  return '<svg class="ws-hero-route" viewBox="0 0 1200 600" preserveAspectRatio="none" aria-hidden="true"><path d="M-20 560 C 220 520, 260 360, 520 380 S 860 300, 940 170 S 1120 60, 1230 40" fill="none" stroke="var(--lilac)" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+}
 function heroQuote() {
   var hq = S.c.hq, x = hq.from && hq.to ? typicalQuote(hq.type, hq.from, hq.to) : null;
-  return '<form class="ws-quote" data-form="w-quote"><label><span>From</span>' + sel("c.hq.from", hq.from, [["", "Pickup area"]].concat(AREA_NAMES), 'data-live="1"') + "</label>" +
-    '<label><span>To</span>' + sel("c.hq.to", hq.to, [["", "Delivery area"]].concat(AREA_NAMES), 'data-live="1"') + "</label>" +
-    '<label><span>What is it?</span>' + sel("c.hq.type", hq.type, [["letter", "A letter or documents"], ["parcel", "A parcel, up to 40 cm"], ["large", "A large or heavy item"], ["furniture", "A piece of furniture"]], 'data-live="1"') + "</label>" +
-    '<p class="ws-q-out">' + (x ? '<b class="ws-q-price">' + eur(x.q.total) + '</b> <span class="ws-q-meta">' + x.q.km.toFixed(1) + " km · " + x.q.mins + " min</span>" : '<span class="ws-q-meta">Choose two areas to see the price</span>') + '</p><button class="ws-btn" data-act="w-hq-book">Book now</button></form>';
+  // The visible word sizes the blank; the real select sits invisibly on top of it.
+  var pick = function (path, val, opts, label) {
+    var cur = opts.filter(function (o) { return (Array.isArray(o) ? o[0] : o) === val; })[0] || opts[0], txt = Array.isArray(cur) ? cur[1] : cur;
+    return '<span class="ws-say-sel"><span class="ws-say-w" aria-hidden="true">' + esc(txt) + "</span>" + sel(path, val, opts, 'data-live="1" aria-label="' + label + '"') + "</span>";
+  };
+  return '<form class="ws-say" data-form="w-quote"><p class="ws-say-line"><span>Send</span> ' + pick("c.hq.type", hq.type, [["letter", "a letter or documents"], ["parcel", "a parcel up to 40 cm"], ["large", "something large or heavy"], ["furniture", "a piece of furniture"]], "What is it?") +
+    " <span>from</span> " + pick("c.hq.from", hq.from, [["", "pickup area"]].concat(AREA_NAMES), "From") + " <span>to</span> " + pick("c.hq.to", hq.to, [["", "delivery area"]].concat(AREA_NAMES), "To") + '<span>.</span></p>' +
+    '<div class="ws-say-out">' + (x ? '<b class="ws-q-price">' + eur(x.q.total) + '</b><span class="ws-q-meta">' + x.q.km.toFixed(1) + " km · " + x.q.mins + " min</span>" : '<span class="ws-q-meta">Choose two areas to see the price</span>') + '<button class="ws-btn">Book now</button></div></form>';
 }
 FORMS["w-quote"] = function () { ACT["w-hq-book"](); };
 // A measuring tape per size category, each as long as the longest side it allows.
@@ -95,23 +103,29 @@ function sizeTape() {
 function pageHead(kicker, title, lead) { return '<section class="ws-page-h"><div class="ws-wrap"><p class="ws-kicker">' + kicker + "</p><h1>" + title + "</h1>" + (lead ? '<p class="ws-lead">' + lead + "</p>" : "") + "</div></section>"; }
 function step(t, b) { return "<li><b>" + t + "</b> " + b + "</li>"; }
 function sec(title, body, id) { return '<section class="ws-s"' + (id ? ' id="' + id + '"' : "") + "><h2>" + title + "</h2>" + body + "</section>"; }
+function who(word, lead, body) { return '<div class="ws-who-row"><span class="ws-who-w" aria-hidden="true">' + word + "</span><p><b>" + lead + "</b> " + body + "</p></div>"; }
+// Example routes drawn as lines, each as long as its distance.
+function routeLines(rows) {
+  rows = rows.filter(Boolean); var max = Math.max.apply(null, rows.map(function (r) { return r.km; }).concat([1]));
+  return '<ul class="ws-routes">' + rows.map(function (r) {
+    return '<li><span class="ws-r-top"><span class="ws-c-what">' + r.what + '</span><b class="ws-c-amt">' + eur(r.price) + '</b></span><span class="ws-r"><span class="ws-r-a">' + esc(r.from) + '</span><span class="ws-r-line" style="--w:' + Math.max(12, Math.round(r.km / max * 100)) + '%"><i></i><em>' + r.km.toFixed(1) + ' km</em></span><span class="ws-r-b">' + esc(r.to) + "</span></span></li>";
+  }).join("") + "</ul>";
+}
 function costLine(what, from, to, price, extra) { return '<li><span class="ws-c-what">' + what + '</span> <span class="ws-c-route">' + esc(from) + " → " + esc(to) + (extra ? " · " + extra : "") + '</span> <b class="ws-c-amt">' + eur(price) + "</b></li>"; }
 
 // ---------- Home ----------
 function siteHome(acc) {
   var P = pricing(), plans = S.plans.filter(function (p) { return p.active !== false; }).sort(function (a, b) { return a.price - b.price; });
-  var h = '<section class="ws-hero"><div class="ws-wrap"><p class="ws-kicker">Same-day delivery inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' +
-    '<div class="ws-hero-row"><div class="ws-hero-text"><p class="ws-lead">DART collects whatever you need moved in the city, from a signed contract to a sofa, and delivers it the same day.</p>' +
-    '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. No account needed.</span></p></div>' + heroQuote() + "</div></div></section>";
+  var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><p class="ws-kicker">Same-day delivery inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' + heroQuote() +
+    '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. No account needed.</span></p></div></section>';
   h += '<div class="ws-wrap ws-read">';
-  h += sec("Who uses DART",
-    '<p><b>People who just moved to Rome.</b> New flat, no car, and boxes or a mattress to get home. Book a car or a van and it\'s done.</p>' +
-    '<p><b>Anyone who found a deal across town.</b> The chair on Facebook Marketplace is perfect, but the seller is in EUR and you\'re in Prati. We collect it and carry it in.</p>' +
-    '<p><b>Shops, offices and studios.</b> Contracts, stock, supplies and samples between offices, shops and clients, paid per delivery or on a monthly plan.</p>');
+  h += sec("Who uses DART", '<div class="ws-who">' +
+    who("Boxes.", "People who just moved to Rome.", "New flat, no car, and boxes or a mattress to get home. Book a car or a van and it's done.") +
+    who("Armchair.", "Anyone who found a deal across town.", "The chair on Facebook Marketplace is perfect, but the seller is in EUR and you're in Prati. We collect it and carry it in.") +
+    who("Contracts.", "Shops, offices and studios.", "Contracts, stock, supplies and samples between offices, shops and clients, paid per delivery or on a monthly plan.") + "</div>");
   h += '<p class="ws-pull">If it fits in a van, we can take it.</p>';
-  h += sec("What things cost", '<p>Real routes, priced with today\'s rates. Distance sets the base; size, weight, the vehicle and extras like stairs are added.</p><ul class="ws-costs">' +
-    EXAMPLES.map(function (e) { var x = examplePrice(e); return x ? costLine(e.what, e.from, e.to, x.q.total) : ""; }).join("") +
-    '</ul><p><button class="ws-more" data-act="w-page" data-v="site-pricing">How the price is worked out →</button></p>');
+  h += sec("What things cost", '<p>Real routes, priced with today\'s rates. Distance sets the base; size, weight, the vehicle and extras like stairs are added.</p>' + routeLines(EXAMPLES.map(function (e) { var x = examplePrice(e); return x ? { what: e.what, from: e.from, to: e.to, km: x.q.km, price: x.q.total } : null; })) +
+    '<p><button class="ws-more" data-act="w-page" data-v="site-pricing">How the price is worked out →</button></p>');
   h += sec("How big can it be?", "<p>Every item goes in the smallest category it fits. These are the longest sides each one allows.</p>" + sizeTape());
   h += sec("What happens after you book", '<ol class="ws-steps">' +
     step("Addresses and access.", "Add the buzzer name and the floor. Plenty of palazzi in the centre have no lift: tick “Stairs, no lift” and the courier arrives ready for it.") +
@@ -121,7 +135,7 @@ function siteHome(acc) {
     '</ol><p><button class="ws-btn" data-act="w-book">Book a delivery</button></p>');
   h += sec("For businesses", "<p>Use your normal DART account. Switch it to business in Settings, add your Partita IVA and SDI code, and choose a monthly plan or keep paying per delivery.</p>" +
     (plans.length ? '<ul class="ws-plain">' + plans.map(planLine).join("") + "</ul>" : "") + '<p><button class="ws-more" data-act="w-page" data-v="site-business">Business details →</button></p>');
-  h += sec("Deliver with DART", "<p>Couriers use their own bicycle, scooter, motorbike, car or van, choose their hours, and keep " + num(P.courierShare, 75) + "% of every delivery. You only get jobs your vehicle can carry.</p>" +
+  h += sec("Deliver with DART", '<div class="ws-stat"><b>' + num(P.courierShare, 75) + '%</b><p><span>of every delivery price goes to the courier.</span> <span>Use your own bicycle, scooter, motorbike, car or van, choose your hours, and only get jobs your vehicle can carry.</span></p></div>' +
     '<p><button class="ws-more" data-act="w-page" data-v="site-couriers">What being a courier involves →</button></p>');
   h += sec("Where we deliver", "<p>Anywhere inside the Grande Raccordo Anulare. These are the areas you can choose when booking:</p><p class=\"ws-arealist\">" + AREA_NAMES.join(", ") + ".</p>");
   h += sec("Questions", '<div class="ws-faq">' + FAQ.slice(0, 4).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + '</div><p><button class="ws-more" data-act="w-page" data-v="site-help">More answers and contact →</button></p>');
@@ -181,15 +195,15 @@ var COURIER_JOBS = {
 };
 function siteCouriers() {
   var P = pricing(), R = rules(), share = num(P.courierShare, 75), vs = R.vehicles.filter(function (v) { return v.active !== false; });
-  var pay = vs.map(function (v) {
-    var j = COURIER_JOBS[v.id]; if (!j) return "";
-    var cls = classify(j.item); if (!cls.ok) return "";
+  var pay = routeLines(vs.map(function (v) {
+    var j = COURIER_JOBS[v.id]; if (!j) return null;
+    var cls = classify(j.item); if (!cls.ok) return null;
     var q = quote(j.from, j.to, j.item, Object.assign({}, cls, { minVehicle: v.id }), null);
-    return '<li><span class="ws-c-what">' + esc(v.label) + '</span> <span class="ws-c-route">' + j.what + " · " + esc(j.from) + " → " + esc(j.to) + '</span> <b class="ws-c-amt">' + eur(q.total * share / 100) + "</b></li>";
-  }).join("");
+    return { what: esc(v.label) + " · " + j.what, from: j.from, to: j.to, km: q.km, price: q.total * share / 100 };
+  }));
   return pageHead("Couriers", "Deliver with DART", "Use your own bicycle, scooter, motorbike, car or van to deliver across Rome. You choose when you work, and you only get jobs your vehicle can carry.") +
-    '<div class="ws-wrap ws-read"><p class="ws-big"><span>You keep</span> <b>' + share + '%</b> <span>of every delivery price, paid every Monday.</span></p><p><button class="ws-btn" data-act="w-page" data-v="site-courier-apply">Apply to deliver</button></p>' +
-    sec("What you earn", "<p>Each job shows its pay before you accept. Here's what a typical job pays on each vehicle, with today's prices.</p><ul class=\"ws-costs\">" + pay + "</ul><p>Bigger vehicles also see smaller jobs. Furniture and heavy items pay more, and some need two people.</p>") +
+    '<div class="ws-wrap ws-read"><div class="ws-stat"><b>' + share + '%</b><p><span>of every delivery price is yours, paid every Monday.</span></p></div><p><button class="ws-btn" data-act="w-page" data-v="site-courier-apply">Apply to deliver</button></p>' +
+    sec("What you earn", "<p>Each job shows its pay before you accept. Here's what a typical job pays on each vehicle, with today's prices.</p>" + pay + "<p>Bigger vehicles also see smaller jobs. Furniture and heavy items pay more, and some need two people.</p>") +
     sec("From application to first job", '<ol class="ws-steps">' +
       step("Apply online.", "Your name, phone and address, your vehicle with its loading space and weight limit, photos of your documents, and the IBAN you want to be paid to. It takes about ten minutes.") +
       step("We check your documents.", "DART reviews your identity and, for motor vehicles, your licence, insurance and libretto. You'll get a notification when you're approved, or a note telling you what to fix.") +

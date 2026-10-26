@@ -419,30 +419,75 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .ws-lead { font-size: clamp(18px, 2vw, 21px); max-width: 46ch; }
 .ws-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 4px; padding: 14px 22px; font-weight: 800; font-size: 16px; background: var(--purple); color: #fff; text-decoration: none; }
 .ws-more { border: 0; background: none; color: var(--purple); font-weight: 700; font-size: inherit; padding: 0; text-align: left; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
-.ws-hero { background: var(--purple); color: #fff; }
-.ws-hero .ws-wrap { padding-block: 56px 60px; }
-.ws-hero h1 { font-size: clamp(52px, 8.5vw, 104px); font-weight: 900; font-style: italic; letter-spacing: -.05em; line-height: .9; margin-bottom: 26px; }
-.ws-hero-row { display: flex; gap: 48px; align-items: flex-start; flex-wrap: wrap; }
-.ws-hero-text { flex: 1 1 340px; display: grid; gap: 18px; }
-.ws-hero .ws-lead { color: #F1EAFF; }
-.ws-hero-facts { color: #E4D8FF; font-size: 16px; max-width: 46ch; }
+.ws-hero { background: var(--purple); color: #fff; position: relative; overflow: hidden; }
+.ws-hero-route { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .45; pointer-events: none; }
+.ws-hero .ws-wrap { position: relative; padding-block: 64px 56px; }
+.ws-hero h1 { font-size: clamp(56px, 10vw, 132px); font-weight: 900; font-style: italic; letter-spacing: -.055em; line-height: .86; margin: 0 0 36px -.04em; }
+.ws-hero-facts { color: #E4D8FF; font-size: 16px; margin-top: 22px; }
 .ws-hero-facts b { color: #fff; }
-.ws-quote { flex: 0 1 400px; background: var(--card); color: var(--ink); border-radius: 4px; padding: 18px; display: grid; gap: 12px; }
-.ws-quote label { display: grid; gap: 4px; }
-.ws-quote label span { font-size: 13px; font-weight: 700; color: var(--muted); }
-.ws-q-out { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-height: 36px; }
-.ws-q-price { font-size: 30px; font-weight: 900; letter-spacing: -.02em; line-height: 1; }
-.ws-q-meta { color: var(--muted); font-size: 14px; }
-.ws-read { max-width: 760px; padding-block: 24px 72px; }
-.ws-s { padding-top: 48px; }
-.ws-s h2 { font-size: clamp(28px, 3.6vw, 38px); font-weight: 900; letter-spacing: -.03em; line-height: 1.05; margin-bottom: 14px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ws-say { display: grid; gap: 22px; max-width: 980px; }
+.ws-say-line { font-size: clamp(26px, 3.6vw, 44px); font-weight: 800; letter-spacing: -.025em; line-height: 1.45; margin: 0; }
+.ws-say-sel { position: relative; display: inline-block; }
+.ws-say-w { display: inline-block; border-bottom: 3px solid var(--lilac); padding: 0 26px 0 2px; line-height: 1.15; white-space: nowrap;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(-45deg, transparent 50%, currentColor 50%); background-size: 8px 8px, 8px 8px; background-position: right 9px center, right 2px center; background-repeat: no-repeat; }
+.ws-say-sel select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; appearance: none; -webkit-appearance: none; border: 0; }
+.ws-say-sel:focus-within .ws-say-w { outline: 3px solid currentColor; outline-offset: 4px; }
+.ws-say-sel select option { color: #170F2E; background: #fff; font-size: 16px; font-weight: 600; }
+.ws-say-out { display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; }
+.ws-q-price { font-size: clamp(34px, 4vw, 48px); font-weight: 900; letter-spacing: -.03em; line-height: 1; }
+.ws-q-meta { font-size: 15px; opacity: .8; }
+.ws-hero .ws-btn { background: #fff; color: #170F2E; margin-left: 6px; }
+.ws-read .ws-say { margin: 8px 0 18px; }
+.ws-read .ws-say-line { font-size: clamp(22px, 2.8vw, 30px); line-height: 1.5; }
+.ws-read .ws-say-w { border-bottom-color: var(--purple); color: var(--purple); }
+.ws-read .ws-say-sel select option { color: var(--ink); background: var(--card); }
+.ws-read { max-width: 1000px; padding-block: 16px 80px; position: relative; padding-left: max(84px, env(safe-area-inset-left, 0px)) !important; }
+.ws-read::before { content: ""; position: absolute; left: 40px; top: 0; bottom: 0; border-left: 3px dotted color-mix(in srgb, var(--purple) 45%, transparent); }
+.ws-read > * { max-width: 760px; }
+.ws-s { padding-top: 64px; position: relative; }
+.ws-s::before { content: ""; position: absolute; left: -51px; top: 76px; width: 17px; height: 17px; border-radius: 50%; background: var(--paper); border: 4px solid var(--purple); box-sizing: border-box; }
+.ws-s:last-child::before { background: var(--purple); }
+.ws-s h2 { font-size: clamp(30px, 4vw, 46px); font-weight: 900; letter-spacing: -.035em; line-height: 1.02; margin-bottom: 16px; }
+@media (max-width: 640px) {
+  .ws-read { padding-left: 46px !important; }
+  .ws-read::before { left: 18px; }
+  .ws-s::before { left: -35px; top: 72px; width: 15px; height: 15px; }
+}
+.ws-who { display: grid; gap: 26px; margin-top: 8px; }
+.ws-who-row { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 4px 24px; align-items: baseline; }
+.ws-who-w { font-size: clamp(30px, 4vw, 44px); font-weight: 900; font-style: italic; letter-spacing: -.04em; color: var(--purple); line-height: 1; }
+.ws-who-row p { margin: 0 !important; }
+@media (max-width: 640px) { .ws-who-row { grid-template-columns: minmax(0, 1fr); } }
+.ws-routes { list-style: none; margin: 8px 0 20px; padding: 0; display: grid; gap: 22px; }
+.ws-routes li { display: grid; gap: 6px; }
+.ws-routes .ws-c-what { font-size: 17px; }
+.ws-r { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--muted); }
+.ws-r-line { flex: 0 1 var(--w); min-width: 40px; position: relative; height: 22px; }
+.ws-r-line i { position: absolute; left: 0; right: 0; top: 50%; border-top: 3px dashed var(--purple); }
+.ws-r-line::before, .ws-r-line::after { content: ""; position: absolute; top: 50%; width: 11px; height: 11px; margin-top: -4px; border-radius: 50%; background: var(--purple); }
+.ws-r-line::before { left: -2px; background: var(--paper); border: 3px solid var(--purple); box-sizing: border-box; }
+.ws-r-line::after { right: -2px; }
+.ws-r-line em { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); font-style: normal; font-size: 12px; white-space: nowrap; }
+.ws-r-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.ws-r-top .ws-c-amt { font-size: 19px; }
+.ws-r { margin-top: 10px; }
+
+.ws-stat { display: flex; align-items: center; gap: 8px 28px; flex-wrap: wrap; margin: 8px 0 20px; }
+.ws-stat b { font-size: clamp(84px, 13vw, 150px); font-weight: 900; font-style: italic; letter-spacing: -.06em; line-height: .85; color: var(--purple); }
+.ws-stat p { flex: 1 1 260px; margin: 0 !important; font-size: 20px !important; }
+.ws-steps { list-style: none; counter-reset: st; padding: 0; margin: 8px 0 24px; }
+.ws-steps li { counter-increment: st; position: relative; padding: 0 0 22px 56px; font-size: 18px; line-height: 1.6; }
+.ws-steps li::before { content: counter(st); position: absolute; left: 0; top: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--purple); color: #fff; font-weight: 900; font-size: 16px; display: grid; place-items: center; }
+.ws-steps li::after { content: ""; position: absolute; left: 16px; top: 40px; bottom: 4px; border-left: 2px dashed color-mix(in srgb, var(--purple) 50%, transparent); }
+.ws-steps li:last-child::after { display: none; }
 .ws-read p { font-size: 18px; line-height: 1.6; margin-bottom: 14px; }
 .ws-read p b { font-weight: 800; }
 .ws-sub { color: var(--muted); }
 .ws-read .ws-sub, .ws-plain .ws-sub { font-size: 15px; }
 .ws-big { font-size: 22px !important; line-height: 1.45 !important; }
 .ws-big b { color: var(--purple); }
-.ws-read .ws-pull { font-size: clamp(30px, 4.4vw, 46px); font-weight: 900; font-style: italic; letter-spacing: -.035em; line-height: 1.02; color: var(--purple); margin: 56px 0 8px; max-width: 18ch; }
+.ws-read .ws-pull { font-size: clamp(40px, 6.4vw, 76px); max-width: 14ch !important; line-height: .98; font-weight: 900; font-style: italic; letter-spacing: -.035em; line-height: 1.02; color: var(--purple); margin: 56px 0 8px; max-width: 18ch; }
 .ws-costs, .ws-plain { list-style: none; margin: 0 0 18px; padding: 0; }
 .ws-costs li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 17px; }
 .ws-costs li:first-child { border-top: 1px solid var(--line); }
@@ -451,9 +496,6 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .ws-c-amt { margin-left: auto; font-weight: 800; white-space: nowrap; }
 .ws-plain li { font-size: 17px; line-height: 1.55; padding: 6px 0 6px 18px; position: relative; }
 .ws-plain li::before { content: ""; position: absolute; left: 0; top: 16px; width: 7px; height: 7px; border-radius: 50%; background: var(--purple); }
-.ws-steps { margin: 0 0 18px; padding-left: 26px; }
-.ws-steps li { font-size: 18px; line-height: 1.6; padding: 6px 0 6px 6px; }
-.ws-steps li::marker { color: var(--purple); font-weight: 900; }
 .ws-tape-wrap { overflow-x: auto; margin: 10px 0 20px; -webkit-overflow-scrolling: touch; }
 .ws-tape { display: block; width: 100%; min-width: 560px; height: auto; }
 .ws-arealist { color: var(--muted); }
@@ -1483,6 +1525,14 @@ IT_PATTERNS.push(
   [/^© (\d{4}) (.+)$/, "© $1 $2"]
 );
 IT["DART collects whatever you need moved in the city, from a signed contract to a sofa, and delivers it the same day."] = "DART ritira tutto ciò che devi spostare in città, da un contratto firmato a un divano, e lo consegna in giornata.";
+Object.assign(IT, {
+  "a letter or documents": "una lettera o documenti", "a parcel up to 40 cm": "un pacco fino a 40 cm", "something large or heavy": "qualcosa di grande o pesante", "a piece of furniture": "un mobile",
+  "pickup area": "zona di ritiro", "delivery area": "zona di consegna", "from": "da", "to": "a", "From": "Da", "To": "A",
+  "Boxes.": "Scatoloni.", "Armchair.": "Poltrona.", "Contracts.": "Contratti.",
+  "of every delivery price goes to the courier.": "del prezzo di ogni consegna va al corriere.",
+  "Use your own bicycle, scooter, motorbike, car or van, choose your hours, and only get jobs your vehicle can carry.": "Usi la tua bici, scooter, moto, auto o furgone, scegli i tuoi orari e ricevi solo lavori che il tuo veicolo può portare.",
+  "of every delivery price is yours, paid every Monday.": "del prezzo di ogni consegna è tuo, pagato ogni lunedì."
+});
 
 // ===== DART customer app (phone) and customer website dashboard (web) =====
 
@@ -2315,12 +2365,20 @@ var EXAMPLES = [
   { what: "A wardrobe, taken apart", from: "San Giovanni", to: "Ostiense", item: { type: "furniture", l: 200, w: 60, h: 45, kg: 65, qty: 1, options: {} } }
 ];
 function examplePrice(e) { var cls = classify(e.item); if (!cls.ok) return null; return { cls: cls, q: quote(e.from, e.to, e.item, cls, null) }; }
+// A dashed delivery route sweeping across the hero, ending in the DART arrow.
+function heroRoute() {
+  return '<svg class="ws-hero-route" viewBox="0 0 1200 600" preserveAspectRatio="none" aria-hidden="true"><path d="M-20 560 C 220 520, 260 360, 520 380 S 860 300, 940 170 S 1120 60, 1230 40" fill="none" stroke="var(--lilac)" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+}
 function heroQuote() {
   var hq = S.c.hq, x = hq.from && hq.to ? typicalQuote(hq.type, hq.from, hq.to) : null;
-  return '<form class="ws-quote" data-form="w-quote"><label><span>From</span>' + sel("c.hq.from", hq.from, [["", "Pickup area"]].concat(AREA_NAMES), 'data-live="1"') + "</label>" +
-    '<label><span>To</span>' + sel("c.hq.to", hq.to, [["", "Delivery area"]].concat(AREA_NAMES), 'data-live="1"') + "</label>" +
-    '<label><span>What is it?</span>' + sel("c.hq.type", hq.type, [["letter", "A letter or documents"], ["parcel", "A parcel, up to 40 cm"], ["large", "A large or heavy item"], ["furniture", "A piece of furniture"]], 'data-live="1"') + "</label>" +
-    '<p class="ws-q-out">' + (x ? '<b class="ws-q-price">' + eur(x.q.total) + '</b> <span class="ws-q-meta">' + x.q.km.toFixed(1) + " km · " + x.q.mins + " min</span>" : '<span class="ws-q-meta">Choose two areas to see the price</span>') + '</p><button class="ws-btn" data-act="w-hq-book">Book now</button></form>';
+  // The visible word sizes the blank; the real select sits invisibly on top of it.
+  var pick = function (path, val, opts, label) {
+    var cur = opts.filter(function (o) { return (Array.isArray(o) ? o[0] : o) === val; })[0] || opts[0], txt = Array.isArray(cur) ? cur[1] : cur;
+    return '<span class="ws-say-sel"><span class="ws-say-w" aria-hidden="true">' + esc(txt) + "</span>" + sel(path, val, opts, 'data-live="1" aria-label="' + label + '"') + "</span>";
+  };
+  return '<form class="ws-say" data-form="w-quote"><p class="ws-say-line"><span>Send</span> ' + pick("c.hq.type", hq.type, [["letter", "a letter or documents"], ["parcel", "a parcel up to 40 cm"], ["large", "something large or heavy"], ["furniture", "a piece of furniture"]], "What is it?") +
+    " <span>from</span> " + pick("c.hq.from", hq.from, [["", "pickup area"]].concat(AREA_NAMES), "From") + " <span>to</span> " + pick("c.hq.to", hq.to, [["", "delivery area"]].concat(AREA_NAMES), "To") + '<span>.</span></p>' +
+    '<div class="ws-say-out">' + (x ? '<b class="ws-q-price">' + eur(x.q.total) + '</b><span class="ws-q-meta">' + x.q.km.toFixed(1) + " km · " + x.q.mins + " min</span>" : '<span class="ws-q-meta">Choose two areas to see the price</span>') + '<button class="ws-btn">Book now</button></div></form>';
 }
 FORMS["w-quote"] = function () { ACT["w-hq-book"](); };
 // A measuring tape per size category, each as long as the longest side it allows.
@@ -2341,23 +2399,29 @@ function sizeTape() {
 function pageHead(kicker, title, lead) { return '<section class="ws-page-h"><div class="ws-wrap"><p class="ws-kicker">' + kicker + "</p><h1>" + title + "</h1>" + (lead ? '<p class="ws-lead">' + lead + "</p>" : "") + "</div></section>"; }
 function step(t, b) { return "<li><b>" + t + "</b> " + b + "</li>"; }
 function sec(title, body, id) { return '<section class="ws-s"' + (id ? ' id="' + id + '"' : "") + "><h2>" + title + "</h2>" + body + "</section>"; }
+function who(word, lead, body) { return '<div class="ws-who-row"><span class="ws-who-w" aria-hidden="true">' + word + "</span><p><b>" + lead + "</b> " + body + "</p></div>"; }
+// Example routes drawn as lines, each as long as its distance.
+function routeLines(rows) {
+  rows = rows.filter(Boolean); var max = Math.max.apply(null, rows.map(function (r) { return r.km; }).concat([1]));
+  return '<ul class="ws-routes">' + rows.map(function (r) {
+    return '<li><span class="ws-r-top"><span class="ws-c-what">' + r.what + '</span><b class="ws-c-amt">' + eur(r.price) + '</b></span><span class="ws-r"><span class="ws-r-a">' + esc(r.from) + '</span><span class="ws-r-line" style="--w:' + Math.max(12, Math.round(r.km / max * 100)) + '%"><i></i><em>' + r.km.toFixed(1) + ' km</em></span><span class="ws-r-b">' + esc(r.to) + "</span></span></li>";
+  }).join("") + "</ul>";
+}
 function costLine(what, from, to, price, extra) { return '<li><span class="ws-c-what">' + what + '</span> <span class="ws-c-route">' + esc(from) + " → " + esc(to) + (extra ? " · " + extra : "") + '</span> <b class="ws-c-amt">' + eur(price) + "</b></li>"; }
 
 // ---------- Home ----------
 function siteHome(acc) {
   var P = pricing(), plans = S.plans.filter(function (p) { return p.active !== false; }).sort(function (a, b) { return a.price - b.price; });
-  var h = '<section class="ws-hero"><div class="ws-wrap"><p class="ws-kicker">Same-day delivery inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' +
-    '<div class="ws-hero-row"><div class="ws-hero-text"><p class="ws-lead">DART collects whatever you need moved in the city, from a signed contract to a sofa, and delivers it the same day.</p>' +
-    '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. No account needed.</span></p></div>' + heroQuote() + "</div></div></section>";
+  var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><p class="ws-kicker">Same-day delivery inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' + heroQuote() +
+    '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. No account needed.</span></p></div></section>';
   h += '<div class="ws-wrap ws-read">';
-  h += sec("Who uses DART",
-    '<p><b>People who just moved to Rome.</b> New flat, no car, and boxes or a mattress to get home. Book a car or a van and it\'s done.</p>' +
-    '<p><b>Anyone who found a deal across town.</b> The chair on Facebook Marketplace is perfect, but the seller is in EUR and you\'re in Prati. We collect it and carry it in.</p>' +
-    '<p><b>Shops, offices and studios.</b> Contracts, stock, supplies and samples between offices, shops and clients, paid per delivery or on a monthly plan.</p>');
+  h += sec("Who uses DART", '<div class="ws-who">' +
+    who("Boxes.", "People who just moved to Rome.", "New flat, no car, and boxes or a mattress to get home. Book a car or a van and it's done.") +
+    who("Armchair.", "Anyone who found a deal across town.", "The chair on Facebook Marketplace is perfect, but the seller is in EUR and you're in Prati. We collect it and carry it in.") +
+    who("Contracts.", "Shops, offices and studios.", "Contracts, stock, supplies and samples between offices, shops and clients, paid per delivery or on a monthly plan.") + "</div>");
   h += '<p class="ws-pull">If it fits in a van, we can take it.</p>';
-  h += sec("What things cost", '<p>Real routes, priced with today\'s rates. Distance sets the base; size, weight, the vehicle and extras like stairs are added.</p><ul class="ws-costs">' +
-    EXAMPLES.map(function (e) { var x = examplePrice(e); return x ? costLine(e.what, e.from, e.to, x.q.total) : ""; }).join("") +
-    '</ul><p><button class="ws-more" data-act="w-page" data-v="site-pricing">How the price is worked out →</button></p>');
+  h += sec("What things cost", '<p>Real routes, priced with today\'s rates. Distance sets the base; size, weight, the vehicle and extras like stairs are added.</p>' + routeLines(EXAMPLES.map(function (e) { var x = examplePrice(e); return x ? { what: e.what, from: e.from, to: e.to, km: x.q.km, price: x.q.total } : null; })) +
+    '<p><button class="ws-more" data-act="w-page" data-v="site-pricing">How the price is worked out →</button></p>');
   h += sec("How big can it be?", "<p>Every item goes in the smallest category it fits. These are the longest sides each one allows.</p>" + sizeTape());
   h += sec("What happens after you book", '<ol class="ws-steps">' +
     step("Addresses and access.", "Add the buzzer name and the floor. Plenty of palazzi in the centre have no lift: tick “Stairs, no lift” and the courier arrives ready for it.") +
@@ -2367,7 +2431,7 @@ function siteHome(acc) {
     '</ol><p><button class="ws-btn" data-act="w-book">Book a delivery</button></p>');
   h += sec("For businesses", "<p>Use your normal DART account. Switch it to business in Settings, add your Partita IVA and SDI code, and choose a monthly plan or keep paying per delivery.</p>" +
     (plans.length ? '<ul class="ws-plain">' + plans.map(planLine).join("") + "</ul>" : "") + '<p><button class="ws-more" data-act="w-page" data-v="site-business">Business details →</button></p>');
-  h += sec("Deliver with DART", "<p>Couriers use their own bicycle, scooter, motorbike, car or van, choose their hours, and keep " + num(P.courierShare, 75) + "% of every delivery. You only get jobs your vehicle can carry.</p>" +
+  h += sec("Deliver with DART", '<div class="ws-stat"><b>' + num(P.courierShare, 75) + '%</b><p><span>of every delivery price goes to the courier.</span> <span>Use your own bicycle, scooter, motorbike, car or van, choose your hours, and only get jobs your vehicle can carry.</span></p></div>' +
     '<p><button class="ws-more" data-act="w-page" data-v="site-couriers">What being a courier involves →</button></p>');
   h += sec("Where we deliver", "<p>Anywhere inside the Grande Raccordo Anulare. These are the areas you can choose when booking:</p><p class=\"ws-arealist\">" + AREA_NAMES.join(", ") + ".</p>");
   h += sec("Questions", '<div class="ws-faq">' + FAQ.slice(0, 4).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + '</div><p><button class="ws-more" data-act="w-page" data-v="site-help">More answers and contact →</button></p>');
@@ -2427,15 +2491,15 @@ var COURIER_JOBS = {
 };
 function siteCouriers() {
   var P = pricing(), R = rules(), share = num(P.courierShare, 75), vs = R.vehicles.filter(function (v) { return v.active !== false; });
-  var pay = vs.map(function (v) {
-    var j = COURIER_JOBS[v.id]; if (!j) return "";
-    var cls = classify(j.item); if (!cls.ok) return "";
+  var pay = routeLines(vs.map(function (v) {
+    var j = COURIER_JOBS[v.id]; if (!j) return null;
+    var cls = classify(j.item); if (!cls.ok) return null;
     var q = quote(j.from, j.to, j.item, Object.assign({}, cls, { minVehicle: v.id }), null);
-    return '<li><span class="ws-c-what">' + esc(v.label) + '</span> <span class="ws-c-route">' + j.what + " · " + esc(j.from) + " → " + esc(j.to) + '</span> <b class="ws-c-amt">' + eur(q.total * share / 100) + "</b></li>";
-  }).join("");
+    return { what: esc(v.label) + " · " + j.what, from: j.from, to: j.to, km: q.km, price: q.total * share / 100 };
+  }));
   return pageHead("Couriers", "Deliver with DART", "Use your own bicycle, scooter, motorbike, car or van to deliver across Rome. You choose when you work, and you only get jobs your vehicle can carry.") +
-    '<div class="ws-wrap ws-read"><p class="ws-big"><span>You keep</span> <b>' + share + '%</b> <span>of every delivery price, paid every Monday.</span></p><p><button class="ws-btn" data-act="w-page" data-v="site-courier-apply">Apply to deliver</button></p>' +
-    sec("What you earn", "<p>Each job shows its pay before you accept. Here's what a typical job pays on each vehicle, with today's prices.</p><ul class=\"ws-costs\">" + pay + "</ul><p>Bigger vehicles also see smaller jobs. Furniture and heavy items pay more, and some need two people.</p>") +
+    '<div class="ws-wrap ws-read"><div class="ws-stat"><b>' + share + '%</b><p><span>of every delivery price is yours, paid every Monday.</span></p></div><p><button class="ws-btn" data-act="w-page" data-v="site-courier-apply">Apply to deliver</button></p>' +
+    sec("What you earn", "<p>Each job shows its pay before you accept. Here's what a typical job pays on each vehicle, with today's prices.</p>" + pay + "<p>Bigger vehicles also see smaller jobs. Furniture and heavy items pay more, and some need two people.</p>") +
     sec("From application to first job", '<ol class="ws-steps">' +
       step("Apply online.", "Your name, phone and address, your vehicle with its loading space and weight limit, photos of your documents, and the IBAN you want to be paid to. It takes about ten minutes.") +
       step("We check your documents.", "DART reviews your identity and, for motor vehicles, your licence, insurance and libretto. You'll get a notification when you're approved, or a note telling you what to fix.") +

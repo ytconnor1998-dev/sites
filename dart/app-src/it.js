@@ -360,3 +360,11 @@ IT_PATTERNS.push(
   [/^© (\d{4}) (.+)$/, "© $1 $2"]
 );
 IT["DART collects whatever you need moved in the city, from a signed contract to a sofa, and delivers it the same day."] = "DART ritira tutto ciò che devi spostare in città, da un contratto firmato a un divano, e lo consegna in giornata.";
+Object.assign(IT, {
+  "a letter or documents": "una lettera o documenti", "a parcel up to 40 cm": "un pacco fino a 40 cm", "something large or heavy": "qualcosa di grande o pesante", "a piece of furniture": "un mobile",
+  "pickup area": "zona di ritiro", "delivery area": "zona di consegna", "from": "da", "to": "a", "From": "Da", "To": "A",
+  "Boxes.": "Scatoloni.", "Armchair.": "Poltrona.", "Contracts.": "Contratti.",
+  "of every delivery price goes to the courier.": "del prezzo di ogni consegna va al corriere.",
+  "Use your own bicycle, scooter, motorbike, car or van, choose your hours, and only get jobs your vehicle can carry.": "Usi la tua bici, scooter, moto, auto o furgone, scegli i tuoi orari e ricevi solo lavori che il tuo veicolo può portare.",
+  "of every delivery price is yours, paid every Monday.": "del prezzo di ogni consegna è tuo, pagato ogni lunedì."
+});
