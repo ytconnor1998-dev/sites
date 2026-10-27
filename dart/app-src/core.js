@@ -543,6 +543,10 @@ function fitVB(names, ratio, pad) {
   return [cx - w / 2, cy - h / 2, w, h].map(function (v) { return Math.round(v); }).join(" ");
 }
 function mapSVG(opt) {
+  if (gmapWanted()) { gmapLoad(); if (GMAP.state === "ready") return realMap(opt || {}); }
+  return drawnMap(opt);
+}
+function drawnMap(opt) {
   opt = opt || {};
   var s = '<svg viewBox="' + (opt.vb || "0 0 " + MW + " " + MH) + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of Rome">';
   s += '<rect x="-400" y="-400" width="' + (MW + 800) + '" height="' + (MH + 1200) + '" fill="var(--map-bg)"/>';

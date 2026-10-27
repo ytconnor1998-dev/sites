@@ -1,0 +1,171 @@
+// ===== Real map (Google Maps) in DART colours, with the drawn map as the fallback =====
+// The live build sets window.DART_MAPS = { key } when a Maps key is configured. Until Google has
+// loaded (or if it fails), every map is the drawn one, so nothing breaks without a key.
+var GMAP = { cfg: typeof window !== "undefined" ? window.DART_MAPS || null : null, state: "off", cache: {}, specs: {}, seen: {}, geocoder: null };
+function gmapWanted() { return !!(LIVE && GMAP.cfg); }
+function gmapLoad() {
+  if (GMAP.state !== "off" || !gmapWanted()) return;
+  GMAP.state = "loading";
+  window.__dartMapsReady = function () { GMAP.state = "ready"; render(); };
+  window.gm_authFailure = function () { GMAP.state = "failed"; GMAP.cache = {}; render(); };
+  var s = document.createElement("script");
+  s.src = "https://maps.googleapis.com/maps/api/js?v=weekly&loading=async&callback=__dartMapsReady&region=IT&language=" + (lang() === "it" ? "it" : "en") + (GMAP.cfg.key ? "&key=" + encodeURIComponent(GMAP.cfg.key) : "");
+  s.async = true; s.onerror = function () { GMAP.state = "failed"; render(); };
+  document.head.appendChild(s);
+}
+// DART colours: lavender land, white roads, soft blue river, no shop and transport clutter.
+var GMAP_STYLE = [
+  { elementType: "geometry", stylers: [{ color: "#F1EEF8" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#5B5670" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#FFFFFF" }, { weight: 3 }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.park", stylers: [{ visibility: "on" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#DCEBDD" }] },
+  { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#FFFFFF" }] },
+  { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#FFFFFF" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#D9CFF2" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#C4B5EC" }] },
+  { featureType: "road.local", elementType: "labels", stylers: [{ visibility: "simplified" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#C7D5F5" }] },
+  { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#D6CFE6" }] },
+  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#7A7391" }] },
+  { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#ECE8F5" }] }
+];
+var GMAP_PURPLE = "#452B94";
+
+// Where a map point is: exact coordinates when known (a dropped pin or GPS), else the area's centre.
+function llOf(area, ll) { return ll && isFinite(ll[0]) && isFinite(ll[1]) ? { lat: +ll[0], lng: +ll[1] } : AREAS[area] ? { lat: AREAS[area][0], lng: AREAS[area][1] } : null; }
+function curvePts(a, b) {
+  var mx = (a.lat + b.lat) / 2, my = (a.lng + b.lng) / 2, dx = b.lat - a.lat, dy = b.lng - a.lng, c = { lat: mx - dy * .18, lng: my + dx * .18 }, out = [];
+  for (var i = 0; i <= 24; i++) { var t = i / 24, u = 1 - t; out.push({ lat: u * u * a.lat + 2 * u * t * c.lat + t * t * b.lat, lng: u * u * a.lng + 2 * u * t * c.lng + t * t * b.lng }); }
+  return out;
+}
+// A placeholder in the page; the map itself lives in the cache and is moved in after each render,
+// so maps don't flicker or reload when the page redraws every second.
+function realMap(opt) {
+  var stable = { r: (opt.routes || []).map(function (r) { return [r.from, r.to, r.fromLL, r.toLL, !!r.dashed, !!r.thin]; }), p: (opt.pins || []).map(function (p) { return p.tone || ""; }), d: (opt.dots || []).length, big: !!opt.vb };
+  var key = "m" + hashStr(JSON.stringify(stable));
+  GMAP.specs[key] = opt;
+  return '<div class="gm" data-gm="' + key + '"></div>';
+}
+function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+// Built inside its box (already on the page), so Google knows the size when it centres the map.
+function gmapCreate(ph, opt) {
+  var g = google.maps, el = document.createElement("div"); el.className = "gm-in"; ph.appendChild(el);
+  var big = !!opt.vb || opt.interactive;
+  var map = new g.Map(el, { styles: GMAP_STYLE, disableDefaultUI: true, clickableIcons: false, keyboardShortcuts: false, gestureHandling: big ? "greedy" : "none", backgroundColor: "#F1EEF8", center: { lat: 41.9, lng: 12.49 }, zoom: 12 });
+  var e = { el: el, map: map, movers: [], follow: !!opt.vb, dragged: 0 };
+  map.addListener("dragstart", function () { e.dragged = Date.now(); });
+  var bounds = new g.LatLngBounds(), n = 0, add = function (p) { if (p) { bounds.extend(p); n++; } };
+  (opt.routes || []).forEach(function (r) {
+    var a = llOf(r.from, r.fromLL), b = llOf(r.to, r.toLL); if (!a || !b) return;
+    var pts = curvePts(a, b);
+    new g.Polyline({ map: map, path: pts, strokeColor: GMAP_PURPLE, strokeOpacity: r.dashed ? 0 : .9, strokeWeight: r.thin ? 3 : 5, icons: r.dashed ? [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: GMAP_PURPLE, scale: 3 }, offset: "0", repeat: "12px" }] : null });
+    new g.Marker({ map: map, position: a, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 7, fillColor: "#FFFFFF", fillOpacity: 1, strokeColor: GMAP_PURPLE, strokeWeight: 4 } });
+    new g.Marker({ map: map, position: b, clickable: false, icon: { path: "M -7,-7 7,-7 7,7 -7,7 z", scale: 1, fillColor: "#1B1530", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2 } });
+    add(a); add(b);
+    if (r.t != null) e.movers.push({ r: r, pts: pts, a: a, m: new g.Marker({ map: map, position: a, clickable: false, zIndex: 9, icon: { path: g.SymbolPath.CIRCLE, scale: 9, fillColor: "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 3 } }) });
+  });
+  e.dots = []; e.pins = [];
+  (opt.dots || []).forEach(function (d) { var p = llOf(d.area, d.ll); if (!p) return; e.dots.push(new g.Marker({ map: map, position: p, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 6, fillColor: d.color && d.color.indexOf("ok") >= 0 ? "#1F9D57" : "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2.5 } })); add(p); });
+  (opt.pins || []).forEach(function (p) {
+    var at = llOf(p.area, p.ll); if (!at) return;
+    var col = p.tone === "green" ? "#1F9D57" : p.tone === "ink" ? "#1B1530" : GMAP_PURPLE;
+    e.pins.push(new g.Marker({ map: map, position: at, clickable: false, zIndex: 8, label: { text: tr(String(p.text)), color: "#FFFFFF", fontSize: "11px", fontWeight: "700" }, icon: { path: "M -24,-30 24,-30 24,-12 4,-12 0,-6 -4,-12 -24,-12 z", scale: 1, fillColor: col, fillOpacity: 1, strokeColor: col, strokeWeight: 1, labelOrigin: new g.Point(0, -21) } }));
+    add(at);
+  });
+  if (n > 1) map.fitBounds(bounds, opt.vb ? { top: 90, bottom: 320, left: 40, right: 40 } : 36);
+  else if (n === 1) { map.setCenter(bounds.getCenter()); map.setZoom(14); if (opt.vb) map.panBy(0, 150); }
+  else if (opt.vb) map.panBy(0, 150);
+  return e;
+}
+function gmapMove(e, opt) {
+  (opt.pins || []).forEach(function (p, i) {
+    var m = e.pins[i], at = llOf(p.area, p.ll); if (!m || !at) return;
+    var was = m.getPosition(), moved = was && (Math.abs(was.lat() - at.lat) > .002 || Math.abs(was.lng() - at.lng) > .002);
+    m.setPosition(at);
+    // The big home map follows the first pin (the courier) unless they've just moved the map themselves.
+    if (i === 0 && moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(at); e.map.panBy(0, 150); } var l = m.getLabel(); if (l && l.text !== tr(String(p.text))) m.setLabel(Object.assign({}, l, { text: tr(String(p.text)) })); });
+  (opt.dots || []).forEach(function (d, i) { var m = e.dots[i], at = llOf(d.area, d.ll); if (m && at) m.setPosition(at); });
+  e.movers.forEach(function (mv, i) {
+    var r = (opt.routes || []).filter(function (x) { return x.t != null; })[i]; if (!r) return;
+    var p;
+    if (r.approach != null) p = { lat: mv.a.lat + .006 * (1 - r.approach), lng: mv.a.lng - .006 * (1 - r.approach) };
+    else p = mv.pts[Math.max(0, Math.min(mv.pts.length - 1, Math.round(r.t * (mv.pts.length - 1))))];
+    mv.m.setPosition(p);
+  });
+}
+AFTER.push(function (root) {
+  if (GMAP.state !== "ready") return;
+  var used = {};
+  root.querySelectorAll("[data-gm]").forEach(function (ph) {
+    var key = ph.dataset.gm, opt = GMAP.specs[key] || {};
+    var e = GMAP.cache[key] || (GMAP.cache[key] = gmapCreate(ph, opt));
+    gmapMove(e, opt); ph.appendChild(e.el); used[key] = 1;
+  });
+  // Forget maps that haven't been on screen for a while.
+  Object.keys(GMAP.cache).forEach(function (k) { if (used[k]) GMAP.seen[k] = Date.now(); else if (Date.now() - (GMAP.seen[k] || 0) > 60000) delete GMAP.cache[k]; });
+  GMAP.specs = {};
+});
+
+// ---------- Drop a pin to set an address ----------
+// The customer moves the map under a fixed pin; Google turns the spot into a street address.
+function pinModal(m) {
+  var body = '<div class="pin-wrap"><div class="gm-pin" data-pinmap="1"></div><span class="pin-mark" aria-hidden="true"></span></div>' +
+    '<div class="pin-addr">' + (m.busy ? '<span class="muted">Finding the address…</span>' : m.err ? '<span class="bad-t">' + esc(m.err) + "</span>" : m.street ? "<b>" + esc(m.street) + "</b><span class=\"muted sm\">" + esc(m.area ? "In " + m.area : "") + "</span>" : '<span class="muted">Move the map to put the pin on the door</span>') + "</div>";
+  return modalShell("Put the pin on the address", body, '<button class="btn block" data-act="c-pin-use"' + (m.street && m.area && !m.busy ? "" : " disabled") + ">Use this address</button>");
+}
+ACT["c-pin-open"] = function (d) {
+  var a = getPath(S, d.k) || {};
+  var at = llOf(a.area, a.ll) || { lat: 41.9009, lng: 12.4833 };
+  S.modal = { kind: "pin", k: d.k, lat: at.lat, lng: at.lng, street: "", area: "", busy: false }; GMAP.pinReset = true; render();
+};
+ACT["c-pin-use"] = function () {
+  var m = S.modal, a = m && getPath(S, m.k); if (!a || !m.street || !m.area) return;
+  a.street = m.street; a.area = m.area; a.ll = [+m.lat.toFixed(6), +m.lng.toFixed(6)]; a.areaOpen = false; a.areaManual = true;
+  S.modal = null; render();
+};
+var pinTimer = null;
+function pinLookup(lat, lng) {
+  var m = S.modal; if (!m || m.kind !== "pin") return;
+  m.lat = lat; m.lng = lng; m.busy = true; m.err = ""; pinPaint();
+  clearTimeout(pinTimer);
+  pinTimer = setTimeout(function () {
+    GMAP.geocoder = GMAP.geocoder || new google.maps.Geocoder();
+    GMAP.geocoder.geocode({ location: { lat: lat, lng: lng } }).then(function (r) {
+      var mm = S.modal; if (!mm || mm.kind !== "pin" || mm.lat !== lat) return;
+      var best = (r.results || []).filter(function (x) { return x.types.indexOf("street_address") >= 0 || x.types.indexOf("premise") >= 0; })[0] || (r.results || [])[0];
+      var part = function (t) { var c = best && best.address_components.filter(function (x) { return x.types.indexOf(t) >= 0; })[0]; return c ? c.long_name : ""; };
+      var street = part("route"), no = part("street_number"), cap = part("postal_code");
+      var near = nearestArea(lat, lng), byCap = cap ? findArea(street + ", " + cap) : [];
+      mm.busy = false;
+      if (!street) { mm.street = ""; mm.err = "No street here. Move the pin onto a building."; }
+      else if (near.km > 3.5) { mm.street = ""; mm.err = "That's outside the area DART covers."; }
+      else { mm.street = street + (no ? " " + no : ""); mm.area = byCap.length === 1 ? byCap[0] : byCap.indexOf(near.area) >= 0 || !byCap.length ? near.area : byCap[0]; }
+      pinPaint();
+    }, function () { var mm = S.modal; if (mm && mm.kind === "pin") { mm.busy = false; mm.err = "Couldn't look up this spot. Try again."; pinPaint(); } });
+  }, 450);
+}
+// Only the address line and button change while the map moves; the map itself stays put.
+function pinPaint() {
+  var m = S.modal, box = document.querySelector(".pin-addr"), btn = document.querySelector('[data-act="c-pin-use"]'); if (!m || !box) return;
+  var tmp = document.createElement("div"); tmp.innerHTML = pinModal(m); translateDOM(tmp);
+  box.innerHTML = tmp.querySelector(".pin-addr").innerHTML;
+  if (btn) btn.disabled = !(m.street && m.area && !m.busy);
+}
+AFTER.push(function (root) {
+  var el = root.querySelector("[data-pinmap]"), m = S.modal; if (!el || !m || m.kind !== "pin") return;
+  if (GMAP.state !== "ready") { el.innerHTML = '<p class="muted center pad">Loading the map…</p>'; gmapLoad(); return; }
+  if (!GMAP.pin) {
+    var inner = document.createElement("div"); inner.className = "gm-in";
+    var map = new google.maps.Map(inner, { styles: GMAP_STYLE, disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: "greedy", center: { lat: m.lat, lng: m.lng }, zoom: 17 });
+    map.addListener("idle", function () { var c = map.getCenter(); if (S.modal && S.modal.kind === "pin" && (Math.abs(c.lat() - S.modal.lat) > 1e-6 || Math.abs(c.lng() - S.modal.lng) > 1e-6 || (!S.modal.street && !S.modal.busy && !S.modal.err))) pinLookup(c.lat(), c.lng()); });
+    GMAP.pin = { el: inner, map: map };
+  } else if (GMAP.pinReset) { GMAP.pin.map.setCenter({ lat: m.lat, lng: m.lng }); GMAP.pin.map.setZoom(17); }
+  GMAP.pinReset = false;
+  el.appendChild(GMAP.pin.el);
+});

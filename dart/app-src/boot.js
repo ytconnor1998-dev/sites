@@ -46,6 +46,7 @@ function modalHTML(m) {
     case "a-courier": return aCourierModal(m);
     case "a-ticket": return aTicketModal(m);
     case "d-statement": return statementModal(m);
+    case "pin": return pinModal(m);
   }
   return "";
 }

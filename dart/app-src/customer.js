@@ -226,7 +226,7 @@ function addrBlock(key, label, acc) {
 function newWhere(acc) {
   var d = S.c.draft, ok = d.pickup.area && d.dropoff.area && d.pickup.street && d.dropoff.street;
   var h = addrBlock("pickup", "Pickup", acc) + addrBlock("dropoff", "Delivery", acc);
-  if (d.pickup.area && d.dropoff.area) h += '<div class="map map-sm">' + mapSVG({ routes: [{ from: d.pickup.area, to: d.dropoff.area }] }) + '</div><p class="muted">About ' + tripKm(d.pickup.area, d.dropoff.area).toFixed(1) + " km by road</p>";
+  if (d.pickup.area && d.dropoff.area) h += '<div class="map map-sm">' + mapSVG({ routes: [{ from: d.pickup.area, to: d.dropoff.area, fromLL: d.pickup.ll, toLL: d.dropoff.ll }] }) + '</div><p class="muted">About ' + tripKm(d.pickup.area, d.dropoff.area).toFixed(1) + " km by road</p>";
   if (d.pickup.area && d.dropoff.area) h += whenCard(d);
   return h + '<button class="btn block" data-act="c-step" data-v="2">Next: what you\'re sending</button>';
 }
@@ -275,7 +275,7 @@ function draftQuote(acc) {
 function newSummary(acc) {
   var d = S.c.draft, x = draftQuote(acc);
   var h = '<div class="card"><b>Summary</b>';
-  if (d.pickup.area) h += '<div class="map map-xs">' + mapSVG({ labels: false, routes: d.dropoff.area ? [{ from: d.pickup.area, to: d.dropoff.area }] : [] }) + "</div>";
+  if (d.pickup.area) h += '<div class="map map-xs">' + mapSVG({ labels: false, routes: d.dropoff.area ? [{ from: d.pickup.area, to: d.dropoff.area, fromLL: d.pickup.ll, toLL: d.dropoff.ll }] : [] }) + "</div>";
   h += '<dl class="kv"><dt>From</dt><dd>' + esc(d.pickup.area || "—") + "</dd><dt>To</dt><dd>" + esc(d.dropoff.area || "—") + "</dd><dt>Item</dt><dd>" + esc(x ? x.cls.label : "—") + "</dd></dl>";
   if (x) h += '<div class="row between"><span class="muted">' + x.q.km.toFixed(1) + " km · about " + x.q.mins + ' min</span><span class="price-big">' + eur(x.sub && d.billing === "subscription" ? x.sub.amount : x.q.total) + "</span></div>";
   return h + "</div>";
@@ -286,7 +286,7 @@ function newReview(acc) {
   var biz = !!(acc && acc.business && acc.business.active), cards = acc ? acc.cards || [] : [];
   if (d.billing === "subscription" && !x.sub) d.billing = "card";
   if (d.billing === "invoice" && !biz) d.billing = "card";
-  var h = '<div class="card">' + '<div class="map map-sm">' + mapSVG({ labels: false, routes: [{ from: d.pickup.area, to: d.dropoff.area }] }) + "</div>" +
+  var h = '<div class="card">' + '<div class="map map-sm">' + mapSVG({ labels: false, routes: [{ from: d.pickup.area, to: d.dropoff.area, fromLL: d.pickup.ll, toLL: d.dropoff.ll }] }) + "</div>" +
     legs({ pickup: d.pickup, dropoff: d.dropoff }) + "<span>" + esc(x.cls.label) + (d.item.desc ? " · " + esc(d.item.desc) : "") + "</span>" + (d.item.photos.length ? '<div class="phs">' + photoStrip(d.item.photos) + "</div>" : "") +
     '<div class="row between when-row"><span>Arrives</span><b>' + (d.when && d.when.mode === "set" && +d.when.by ? byLabel(+d.when.by) : "As soon as possible · by about " + hhmm(deliverByOf(d, x.q.mins))) + '</b><button type="button" class="link" data-act="c-step" data-v="1">Change</button></div></div>';
   h += clsCard(x.cls);
@@ -357,7 +357,8 @@ function addressField(base, a) {
     : typed.length > 4 || a.areaOpen ? '<div class="addr-ask"><span>' + (guess.length > 1 ? "This postcode covers more than one area. Which is it?" : a.areaOpen ? "Which area of Rome is it in?" : "We couldn't place this street. Which area of Rome is it in?") + "</span>" +
       (guess.length > 1 ? '<div class="chips">' + guess.map(function (g) { return '<button type="button" class="chipbtn" data-act="c-area-set" data-k="' + base + '" data-v="' + esc(g) + '">' + esc(g) + "</button>"; }).join("") + "</div>" : "") +
       sel(base + ".area", a.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="c-area-chosen" data-k="' + base + '"') + "</div>" : "";
-  return '<div class="field addr"><span>Address</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"><ul class="addr-sug" hidden></ul></div>' + areaLine;
+  return '<div class="field addr"><span>Address</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"><ul class="addr-sug" hidden></ul></div>' +
+    (gmapWanted() ? '<button type="button" class="pin-btn" data-act="c-pin-open" data-k="' + base + '"><i aria-hidden="true"></i>' + (a.ll ? "Pinned on the map · change" : "Or put a pin on the map") + "</button>" : "") + areaLine;
 }
 ACT["c-area-open"] = function (d) { var a = getPath(S, d.k); if (a) { a.areaOpen = true; render(); } };
 ACT["c-area-set"] = function (d) { var a = getPath(S, d.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
@@ -374,6 +375,7 @@ AFTER.push(function (root) {
     var list = el.parentNode.querySelector(".addr-sug"), base = el.dataset.addr;
     var show = function () {
       var m = el.value.trim().length >= 3 ? streetMatches(el.value, 6) : [], a = getPath(S, base);
+      if (a && a.ll && el.value !== a.street) { a.ll = null; a.areaManual = false; }
       if (a && !a.areaManual) { var g = findArea(el.value); var was = a.area; a.area = g.length === 1 ? g[0] : ""; if (was !== a.area) render(); }
       if (!m.length || (m.length === 1 && fold(el.value).indexOf(m[0].key) === 0)) { list.hidden = true; list.innerHTML = ""; return; }
       list.innerHTML = m.map(function (s) { return '<li><button type="button" data-act="c-addr-pick" data-k="' + esc(base) + '" data-v="' + esc(s.street) + '" data-a="' + esc(s.area) + '"><b>' + esc(s.street) + "</b><span>" + esc(s.area) + "</span></button></li>"; }).join("");
@@ -433,8 +435,8 @@ ACT["c-book"] = function () {
   var item = { type: d.item.type, desc: clip(d.item.desc, 120), qty: Math.max(1, Math.round(num(d.item.qty, 1))), l: num(d.item.l, 0), w: num(d.item.w, 0), h: num(d.item.h, 0), kg: num(d.item.kg, 0), photos: d.item.photos.slice(0, 3), options: Object.assign({}, d.item.options), ai: !!d.item.ai };
   var order = {
     customer: null,
-    pickup: { area: d.pickup.area, street: clip(d.pickup.street, 80), notes: clip(d.pickup.notes, 160) },
-    dropoff: { area: d.dropoff.area, street: clip(d.dropoff.street, 80), notes: clip(d.dropoff.notes, 160) },
+    pickup: { area: d.pickup.area, street: clip(d.pickup.street, 80), notes: clip(d.pickup.notes, 160), ll: d.pickup.ll || null },
+    dropoff: { area: d.dropoff.area, street: clip(d.dropoff.street, 80), notes: clip(d.dropoff.notes, 160), ll: d.dropoff.ll || null },
     item: item, cls: x.cls, price: x.q, billing: billing, code: newCode(), deliverBy: deliverByOf(d, x.q.mins), asap: !(d.when && d.when.mode === "set"), status: "awaiting", createdAt: now, timeline: { requested: now, awaiting: now }
   };
   var start = Promise.resolve(acc ? Object.assign({ id: acc.id }, acc) : null);
@@ -478,7 +480,7 @@ function cOrder(acc) {
   if (o.status === "in_transit") eta = "About " + Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min to delivery";
   var top = (web ? '<div class="row between"><h1 class="w-title">Delivery ' + esc(o.id) + '</h1><button class="btn ghost sm" data-act="c-go" data-v="' + backTo + '">← ' + (acc ? "All deliveries" : "Track another") + "</button></div>" : head('<span class="mono">' + esc(o.id) + "</span>", backTo));
   if (!acc && o.customer.guest && o.status === "awaiting") top += '<div class="' + (web ? "" : "pad") + '"><div class="banner">Keep your tracking code <b class="mono">' + esc(o.id) + "</b>. You can track it any time with your email.</div></div>";
-  var mapH = '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area }, pos)] }) + "</div>";
+  var mapH = '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll }, pos)] }) + "</div>";
   var by = o.deliverBy && ACTIVE.indexOf(o.status) >= 0 ? '<p class="by-line">Arrives ' + (o.asap ? "by about " + hhmm(o.deliverBy) : byLabel(o.deliverBy).replace(/^Today by /, "by ").replace(/^Tomorrow by /, "tomorrow by ")) + "</p>" : "";
   var a = '<div class="stack"><div><h2 class="status-h">' + esc(STATUS[o.status]) + "</h2>" + by + (eta ? '<p class="muted">' + eta + "</p>" : o.status === "awaiting" ? '<p class="muted">We\'re offering it to couriers with a suitable vehicle.</p>' : "") + "</div>" +
     (idx >= 0 ? '<div class="progress">' + FLOW.map(function (k, i) { return '<i class="' + (i <= idx ? "on" : "") + '"></i>'; }).join("") + "</div>" : "");
@@ -890,10 +892,10 @@ function cMapHome(acc) {
   var orders = acc ? myOrders() : S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);
   var active = orders.filter(isActive), hq = S.c.hq, st = settings();
   var x = hq.from && hq.to ? typicalQuote(hq.type, hq.from, hq.to) : null;
-  var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, thin: active.length > 1 }, courierPos(o)); });
+  var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, thin: active.length > 1 }, courierPos(o)); });
   var pins = active.map(function (o) {
     var moving = o.status === "in_transit", pos = courierPos(o);
-    return { area: moving || o.status === "at_dest" ? o.dropoff.area : o.pickup.area, text: moving ? Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min" : tr(MAP_PIN[o.status] || "") };
+    return { area: moving || o.status === "at_dest" ? o.dropoff.area : o.pickup.area, ll: moving || o.status === "at_dest" ? o.dropoff.ll : o.pickup.ll, text: moving ? Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min" : tr(MAP_PIN[o.status] || "") };
   });
   if (!active.length && x) { routes = [{ from: hq.from, to: hq.to }]; pins = [{ area: hq.to, text: eur(x.q.total) }]; }
   var title = active.length === 1 ? STATUS[active[0].status] : active.length > 1 ? active.length + " deliveries in progress" : "What are we sending today?";

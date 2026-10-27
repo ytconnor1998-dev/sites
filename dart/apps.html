@@ -289,6 +289,16 @@ table.edit .input.n { width: 76px; }
 /* Map */
 .map { position: relative; background: var(--map-bg); overflow: hidden; border-radius: 6px; flex: none; }
 .map svg { display: block; width: 100%; height: 100%; }
+/* Real map: fills whatever box the drawn map used */
+.gm, .gm-in { position: absolute; inset: 0; }
+.mh-map .gm, .offer-map .gm { position: absolute; inset: 0; }
+.pin-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; color: var(--purple); font-weight: 700; font-size: 14px; padding: 2px 0; margin-top: -4px; }
+.pin-btn i { width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--purple); }
+.pin-wrap { position: relative; height: min(55vh, 420px); border-radius: 8px; overflow: hidden; background: var(--map-bg); }
+.gm-pin { position: absolute; inset: 0; }
+.pin-mark { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -30px 0 0 -15px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--purple); box-shadow: 0 4px 10px rgba(30, 10, 80, .35); pointer-events: none; z-index: 2; }
+.pin-mark::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: #fff; }
+.pin-addr { display: grid; gap: 2px; min-height: 44px; }
 .map-xs { height: 130px; }
 .map-sm { height: 170px; }
 .map-md { height: 220px; }
@@ -1282,6 +1292,10 @@ function fitVB(names, ratio, pad) {
   return [cx - w / 2, cy - h / 2, w, h].map(function (v) { return Math.round(v); }).join(" ");
 }
 function mapSVG(opt) {
+  if (gmapWanted()) { gmapLoad(); if (GMAP.state === "ready") return realMap(opt || {}); }
+  return drawnMap(opt);
+}
+function drawnMap(opt) {
   opt = opt || {};
   var s = '<svg viewBox="' + (opt.vb || "0 0 " + MW + " " + MH) + '" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of Rome">';
   s += '<rect x="-400" y="-400" width="' + (MW + 800) + '" height="' + (MH + 1200) + '" fill="var(--map-bg)"/>';
@@ -2265,7 +2279,7 @@ function addrBlock(key, label, acc) {
 function newWhere(acc) {
   var d = S.c.draft, ok = d.pickup.area && d.dropoff.area && d.pickup.street && d.dropoff.street;
   var h = addrBlock("pickup", "Pickup", acc) + addrBlock("dropoff", "Delivery", acc);
-  if (d.pickup.area && d.dropoff.area) h += '<div class="map map-sm">' + mapSVG({ routes: [{ from: d.pickup.area, to: d.dropoff.area }] }) + '</div><p class="muted">About ' + tripKm(d.pickup.area, d.dropoff.area).toFixed(1) + " km by road</p>";
+  if (d.pickup.area && d.dropoff.area) h += '<div class="map map-sm">' + mapSVG({ routes: [{ from: d.pickup.area, to: d.dropoff.area, fromLL: d.pickup.ll, toLL: d.dropoff.ll }] }) + '</div><p class="muted">About ' + tripKm(d.pickup.area, d.dropoff.area).toFixed(1) + " km by road</p>";
   if (d.pickup.area && d.dropoff.area) h += whenCard(d);
   return h + '<button class="btn block" data-act="c-step" data-v="2">Next: what you\'re sending</button>';
 }
@@ -2314,7 +2328,7 @@ function draftQuote(acc) {
 function newSummary(acc) {
   var d = S.c.draft, x = draftQuote(acc);
   var h = '<div class="card"><b>Summary</b>';
-  if (d.pickup.area) h += '<div class="map map-xs">' + mapSVG({ labels: false, routes: d.dropoff.area ? [{ from: d.pickup.area, to: d.dropoff.area }] : [] }) + "</div>";
+  if (d.pickup.area) h += '<div class="map map-xs">' + mapSVG({ labels: false, routes: d.dropoff.area ? [{ from: d.pickup.area, to: d.dropoff.area, fromLL: d.pickup.ll, toLL: d.dropoff.ll }] : [] }) + "</div>";
   h += '<dl class="kv"><dt>From</dt><dd>' + esc(d.pickup.area || "—") + "</dd><dt>To</dt><dd>" + esc(d.dropoff.area || "—") + "</dd><dt>Item</dt><dd>" + esc(x ? x.cls.label : "—") + "</dd></dl>";
   if (x) h += '<div class="row between"><span class="muted">' + x.q.km.toFixed(1) + " km · about " + x.q.mins + ' min</span><span class="price-big">' + eur(x.sub && d.billing === "subscription" ? x.sub.amount : x.q.total) + "</span></div>";
   return h + "</div>";
@@ -2325,7 +2339,7 @@ function newReview(acc) {
   var biz = !!(acc && acc.business && acc.business.active), cards = acc ? acc.cards || [] : [];
   if (d.billing === "subscription" && !x.sub) d.billing = "card";
   if (d.billing === "invoice" && !biz) d.billing = "card";
-  var h = '<div class="card">' + '<div class="map map-sm">' + mapSVG({ labels: false, routes: [{ from: d.pickup.area, to: d.dropoff.area }] }) + "</div>" +
+  var h = '<div class="card">' + '<div class="map map-sm">' + mapSVG({ labels: false, routes: [{ from: d.pickup.area, to: d.dropoff.area, fromLL: d.pickup.ll, toLL: d.dropoff.ll }] }) + "</div>" +
     legs({ pickup: d.pickup, dropoff: d.dropoff }) + "<span>" + esc(x.cls.label) + (d.item.desc ? " · " + esc(d.item.desc) : "") + "</span>" + (d.item.photos.length ? '<div class="phs">' + photoStrip(d.item.photos) + "</div>" : "") +
     '<div class="row between when-row"><span>Arrives</span><b>' + (d.when && d.when.mode === "set" && +d.when.by ? byLabel(+d.when.by) : "As soon as possible · by about " + hhmm(deliverByOf(d, x.q.mins))) + '</b><button type="button" class="link" data-act="c-step" data-v="1">Change</button></div></div>';
   h += clsCard(x.cls);
@@ -2396,7 +2410,8 @@ function addressField(base, a) {
     : typed.length > 4 || a.areaOpen ? '<div class="addr-ask"><span>' + (guess.length > 1 ? "This postcode covers more than one area. Which is it?" : a.areaOpen ? "Which area of Rome is it in?" : "We couldn't place this street. Which area of Rome is it in?") + "</span>" +
       (guess.length > 1 ? '<div class="chips">' + guess.map(function (g) { return '<button type="button" class="chipbtn" data-act="c-area-set" data-k="' + base + '" data-v="' + esc(g) + '">' + esc(g) + "</button>"; }).join("") + "</div>" : "") +
       sel(base + ".area", a.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="c-area-chosen" data-k="' + base + '"') + "</div>" : "";
-  return '<div class="field addr"><span>Address</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"><ul class="addr-sug" hidden></ul></div>' + areaLine;
+  return '<div class="field addr"><span>Address</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"><ul class="addr-sug" hidden></ul></div>' +
+    (gmapWanted() ? '<button type="button" class="pin-btn" data-act="c-pin-open" data-k="' + base + '"><i aria-hidden="true"></i>' + (a.ll ? "Pinned on the map · change" : "Or put a pin on the map") + "</button>" : "") + areaLine;
 }
 ACT["c-area-open"] = function (d) { var a = getPath(S, d.k); if (a) { a.areaOpen = true; render(); } };
 ACT["c-area-set"] = function (d) { var a = getPath(S, d.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
@@ -2413,6 +2428,7 @@ AFTER.push(function (root) {
     var list = el.parentNode.querySelector(".addr-sug"), base = el.dataset.addr;
     var show = function () {
       var m = el.value.trim().length >= 3 ? streetMatches(el.value, 6) : [], a = getPath(S, base);
+      if (a && a.ll && el.value !== a.street) { a.ll = null; a.areaManual = false; }
       if (a && !a.areaManual) { var g = findArea(el.value); var was = a.area; a.area = g.length === 1 ? g[0] : ""; if (was !== a.area) render(); }
       if (!m.length || (m.length === 1 && fold(el.value).indexOf(m[0].key) === 0)) { list.hidden = true; list.innerHTML = ""; return; }
       list.innerHTML = m.map(function (s) { return '<li><button type="button" data-act="c-addr-pick" data-k="' + esc(base) + '" data-v="' + esc(s.street) + '" data-a="' + esc(s.area) + '"><b>' + esc(s.street) + "</b><span>" + esc(s.area) + "</span></button></li>"; }).join("");
@@ -2472,8 +2488,8 @@ ACT["c-book"] = function () {
   var item = { type: d.item.type, desc: clip(d.item.desc, 120), qty: Math.max(1, Math.round(num(d.item.qty, 1))), l: num(d.item.l, 0), w: num(d.item.w, 0), h: num(d.item.h, 0), kg: num(d.item.kg, 0), photos: d.item.photos.slice(0, 3), options: Object.assign({}, d.item.options), ai: !!d.item.ai };
   var order = {
     customer: null,
-    pickup: { area: d.pickup.area, street: clip(d.pickup.street, 80), notes: clip(d.pickup.notes, 160) },
-    dropoff: { area: d.dropoff.area, street: clip(d.dropoff.street, 80), notes: clip(d.dropoff.notes, 160) },
+    pickup: { area: d.pickup.area, street: clip(d.pickup.street, 80), notes: clip(d.pickup.notes, 160), ll: d.pickup.ll || null },
+    dropoff: { area: d.dropoff.area, street: clip(d.dropoff.street, 80), notes: clip(d.dropoff.notes, 160), ll: d.dropoff.ll || null },
     item: item, cls: x.cls, price: x.q, billing: billing, code: newCode(), deliverBy: deliverByOf(d, x.q.mins), asap: !(d.when && d.when.mode === "set"), status: "awaiting", createdAt: now, timeline: { requested: now, awaiting: now }
   };
   var start = Promise.resolve(acc ? Object.assign({ id: acc.id }, acc) : null);
@@ -2517,7 +2533,7 @@ function cOrder(acc) {
   if (o.status === "in_transit") eta = "About " + Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min to delivery";
   var top = (web ? '<div class="row between"><h1 class="w-title">Delivery ' + esc(o.id) + '</h1><button class="btn ghost sm" data-act="c-go" data-v="' + backTo + '">← ' + (acc ? "All deliveries" : "Track another") + "</button></div>" : head('<span class="mono">' + esc(o.id) + "</span>", backTo));
   if (!acc && o.customer.guest && o.status === "awaiting") top += '<div class="' + (web ? "" : "pad") + '"><div class="banner">Keep your tracking code <b class="mono">' + esc(o.id) + "</b>. You can track it any time with your email.</div></div>";
-  var mapH = '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area }, pos)] }) + "</div>";
+  var mapH = '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll }, pos)] }) + "</div>";
   var by = o.deliverBy && ACTIVE.indexOf(o.status) >= 0 ? '<p class="by-line">Arrives ' + (o.asap ? "by about " + hhmm(o.deliverBy) : byLabel(o.deliverBy).replace(/^Today by /, "by ").replace(/^Tomorrow by /, "tomorrow by ")) + "</p>" : "";
   var a = '<div class="stack"><div><h2 class="status-h">' + esc(STATUS[o.status]) + "</h2>" + by + (eta ? '<p class="muted">' + eta + "</p>" : o.status === "awaiting" ? '<p class="muted">We\'re offering it to couriers with a suitable vehicle.</p>' : "") + "</div>" +
     (idx >= 0 ? '<div class="progress">' + FLOW.map(function (k, i) { return '<i class="' + (i <= idx ? "on" : "") + '"></i>'; }).join("") + "</div>" : "");
@@ -2929,10 +2945,10 @@ function cMapHome(acc) {
   var orders = acc ? myOrders() : S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);
   var active = orders.filter(isActive), hq = S.c.hq, st = settings();
   var x = hq.from && hq.to ? typicalQuote(hq.type, hq.from, hq.to) : null;
-  var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, thin: active.length > 1 }, courierPos(o)); });
+  var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, thin: active.length > 1 }, courierPos(o)); });
   var pins = active.map(function (o) {
     var moving = o.status === "in_transit", pos = courierPos(o);
-    return { area: moving || o.status === "at_dest" ? o.dropoff.area : o.pickup.area, text: moving ? Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min" : tr(MAP_PIN[o.status] || "") };
+    return { area: moving || o.status === "at_dest" ? o.dropoff.area : o.pickup.area, ll: moving || o.status === "at_dest" ? o.dropoff.ll : o.pickup.ll, text: moving ? Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min" : tr(MAP_PIN[o.status] || "") };
   });
   if (!active.length && x) { routes = [{ from: hq.from, to: hq.to }]; pins = [{ area: hq.to, text: eur(x.q.total) }]; }
   var title = active.length === 1 ? STATUS[active[0].status] : active.length > 1 ? active.length + " deliveries in progress" : "What are we sending today?";
@@ -3309,7 +3325,7 @@ function dSched(c) {
   var o = byId(S.orders, S.d.job), now = Date.now();
   if (!o || o.status !== "awaiting") return dHead("Scheduled job", "home") + '<div class="pad">' + emptyState("This job is gone", "Another courier booked it or the customer cancelled.", '<button class="btn sm" data-act="d-go" data-v="home">Back</button>') + "</div>";
   var can = openScheduled(c, now).some(function (x) { return x.id === o.id; }), extras = OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).map(function (x) { return x.label; });
-  return dHead("Scheduled job", "home") + '<div class="map map-md">' + mapSVG({ vb: fitVB([o.pickup.area, o.dropoff.area], 1.7, 34), labels: false, routes: [{ from: o.pickup.area, to: o.dropoff.area }] }) + '</div><div class="pad">' +
+  return dHead("Scheduled job", "home") + '<div class="map map-md">' + mapSVG({ vb: fitVB([o.pickup.area, o.dropoff.area], 1.7, 34), labels: false, routes: [{ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll }] }) + '</div><div class="pad">' +
     '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay">' + eur(payOf(o)) + '</b></div></div><p class="offer-meta">' + o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min</p>" +
     '<div class="by-card"><span>Deliver by</span><b>' + hhmm(o.deliverBy) + "</b><small>Start by " + hhmm(startAt(o)) + ". Be at the pickup in time to make it.</small></div>" +
     '<div class="offer-legs"><div><i class="dot a"></i><span class="muted sm">Pickup</span><b>' + esc(o.pickup.street || o.pickup.area) + "</b><small>" + esc(o.pickup.area) + (o.pickup.notes ? " · " + esc(o.pickup.notes) : "") + '</small></div><div><i class="dot b"></i><span class="muted sm">Delivery</span><b>' + esc(o.dropoff.street || o.dropoff.area) + "</b><small>" + esc(o.dropoff.area) + (o.dropoff.notes ? " · " + esc(o.dropoff.notes) : "") + "</small></div></div>" +
@@ -3555,7 +3571,7 @@ function offerSheet(c, o) {
     (o.deliverBy ? '<p class="offer-by"><b>Deliver ' + byLabel(o.deliverBy).replace(/^Today by /, "by ").replace(/^Tomorrow by /, "tomorrow by ") + "</b>" + (o.asap ? " · ASAP" : "") + "</p>" : "") +
     (chk && chk.batch ? '<p class="offer-batch">Adds to your route: ' + chk.stops + " stops in total, about +" + chk.mins + " min. Your other deliveries stay on time.</p>" : "");
   var acts = '<div class="offer-act"><button class="btn ghost" data-act="d-decline" data-v="' + esc(o.id) + '">Decline</button><button class="btn ghost" data-act="d-offer-more" data-v="' + esc(o.id) + '">' + (more ? "Show less" : "Show more") + '</button><button class="btn" data-act="d-accept" data-v="' + esc(o.id) + '"' + (busy ? " disabled" : "") + ">Accept</button></div>";
-  var map = '<div class="offer-map">' + mapSVG({ vb: fitVB([o.pickup.area, o.dropoff.area].concat(c.area ? [c.area] : []), more ? 1.7 : 2.4, 34), labels: false, routes: [{ from: o.pickup.area, to: o.dropoff.area }], dots: c.area ? [{ area: c.area, color: "var(--ok)" }] : [] }) + '<span class="offer-tag">New delivery</span></div>';
+  var map = '<div class="offer-map">' + mapSVG({ vb: fitVB([o.pickup.area, o.dropoff.area].concat(c.area ? [c.area] : []), more ? 1.7 : 2.4, 34), labels: false, routes: [{ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll }], dots: c.area ? [{ area: c.area, color: "var(--ok)" }] : [] }) + '<span class="offer-tag">New delivery</span></div>';
   if (!more) return '<div class="offer-scrim' + enter + '"><div class="offer-card" role="dialog" aria-modal="true" aria-labelledby="offer-pay">' + map + timer + '<div class="offer-in">' + top + acts + "</div></div></div>";
   return '<div class="offer full' + enter + '" role="dialog" aria-modal="true" aria-labelledby="offer-pay">' + map + '<div class="offer-body">' + timer + top +
     '<div class="offer-legs"><div><i class="dot a"></i><span class="muted sm">Pickup</span><b>' + esc(o.pickup.street || o.pickup.area) + "</b><small>" + esc(o.pickup.area) + (o.pickup.notes ? " · " + esc(o.pickup.notes) : "") + '</small></div><div><i class="dot b"></i><span class="muted sm">Delivery</span><b>' + esc(o.dropoff.street || o.dropoff.area) + "</b><small>" + esc(o.dropoff.area) + (o.dropoff.notes ? " · " + esc(o.dropoff.notes) : "") + "</small></div></div>" +
@@ -3586,7 +3602,7 @@ function dJob(c) {
   if (!o) return dHead("Delivery", "home") + '<div class="pad">' + emptyState("Delivery not found", "", '<button class="btn sm" data-act="d-go" data-v="home">Back</button>') + "</div>";
   var st = o.status === "issue" ? (o.issue && o.issue.prev) : o.status, toPickup = ["assigned", "to_pickup", "at_pickup"].indexOf(st) >= 0;
   var h = dHead('<span class="mono">' + esc(o.id) + "</span>", "home", isActive(o) ? '<button class="btn ghost sm" data-act="d-chat" data-v="' + esc(o.id) + '">Message' + (unread(o, "courier") ? ' <span class="badge in">1</span>' : "") + "</button>" : "") +
-    '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, dashed: toPickup }, courierPos(o))] }) + '</div><div class="pad">';
+    '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, dashed: toPickup }, courierPos(o))] }) + '</div><div class="pad">';
   h += '<div class="row between">' + chip(o.status) + '<span class="price-big">' + eur(payOf(o)) + "</span></div>";
   if (bookedAhead(o)) h += '<div class="banner">Booked ahead. Start by ' + hhmm(startAt(o)) + " to deliver by " + hhmm(o.deliverBy) + ".</div>";
   if (o.deliverBy && JOB_STEPS.indexOf(st) >= 0) { var lateNow = Date.now() > o.deliverBy; h += '<div class="by-card' + (lateNow ? " late" : Date.now() > o.deliverBy - 15 * 60000 ? " soon" : "") + '"><span>Deliver by</span><b>' + hhmm(o.deliverBy) + "</b><small>" + leftLabel(o.deliverBy) + (lateNow ? " · DART may deduct a late fee" : "") + "</small></div>"; }
@@ -3892,9 +3908,9 @@ function dMapHome(c) {
   var today = done.filter(function (o) { return isToday(o.timeline.delivered); }), earned = today.reduce(function (s, o) { return s + earnOf(o); }, 0);
   var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + earnOf(o); }, 0);
   var pins = [];
-  if (c.online && c.area) pins.unshift({ area: c.area, text: tr("You"), tone: "green", dy: 44 });
+  if (c.online && c.area) pins.unshift({ area: c.area, ll: c.pos ? [c.pos.lat, c.pos.lng] : null, text: tr("You"), tone: "green", dy: 44 });
   var jobs = activeJobs(), plan = myRoute(c);
-  var routes = jobs.map(function (j) { return Object.assign({ from: j.pickup.area, to: j.dropoff.area }, courierPos(j)); });
+  var routes = jobs.map(function (j) { return Object.assign({ from: j.pickup.area, to: j.dropoff.area, fromLL: j.pickup.ll, toLL: j.dropoff.ll }, courierPos(j)); });
   var title = !c.online && !job ? "You're offline" : jobs.length > 1 ? jobs.length + " deliveries on your route" : job ? "On a delivery" : "Waiting for a delivery";
   var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Finding your location…";
   var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
@@ -3989,7 +4005,7 @@ function aDash() {
     kpi("Delivery revenue", eur(sumT(paidInv("delivery"))), "") + kpi("Subscription revenue", eur(sumT(paidInv("subscription"))), S.accounts.filter(activeSub).length + " active plans") +
     kpi("Outstanding", eur(sumT(outstanding)), outstanding.length + " invoices") + "</div>";
   h += '<div class="a-cols"><div class="panel"><div class="panel-h">Live map<span class="muted sm">' + act.length + " active · " + onlineCouriers().length + " couriers online</span></div><div class=\"map map-lg\">" +
-    mapSVG({ routes: act.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, thin: true }, courierPos(o)); }), dots: onlineCouriers().filter(function (c) { return c.area; }).map(function (c, i) { return { area: c.area, dx: (i % 3) * 6 - 6, dy: -10, color: "var(--ok)" }; }) }) + "</div></div>";
+    mapSVG({ routes: act.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, thin: true }, courierPos(o)); }), dots: onlineCouriers().filter(function (c) { return c.area; }).map(function (c, i) { return { area: c.area, ll: c.pos ? [c.pos.lat, c.pos.lng] : null, dx: (i % 3) * 6 - 6, dy: -10, color: "var(--ok)" }; }) }) + "</div></div>";
   h += '<div class="stack">';
   if (risky.length) h += '<div class="panel risk"><div class="panel-h">Running late <span class="muted sm">Deliveries that may miss their deliver-by time</span></div><div class="list pad-s">' + risky.map(function (x) {
     var o = x.o; return '<button class="item" data-act="a-order" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + '</b><span class="chip ' + (x.why === "Late" ? "s-bad" : "s-warn") + '">' + esc(x.why) + "</span><small>" + esc(o.id) + " · due " + hhmm(o.deliverBy) + " · " + leftLabel(o.deliverBy) + "</small><small>" + esc(o.courier ? o.courier.name : "No courier") + "</small></button>";
@@ -4033,7 +4049,7 @@ function aOrderModal(m) {
   var acc = byId(S.accounts, o.customer.id), inv = o.invoiceId ? byId(S.invoices, o.invoiceId) : null;
   if (m.chat) return modalShell("Conversation · " + o.id, '<p class="muted sm">Opened by DART support for this reported delivery. Both people can see what support writes.</p>' + chatView(o, "admin", "DART support"), '<button class="btn ghost" data-act="a-order-back">Back to delivery</button>');
   var h = '<div class="a-detail"><div class="stack"><div class="row between">' + chip(o.status) + '<span class="mono">' + esc(o.id) + "</span></div>" + legs(o) +
-    '<div class="map map-sm">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area }, courierPos(o))] }) + "</div>" +
+    '<div class="map map-sm">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll }, courierPos(o))] }) + "</div>" +
     '<div class="card"><b>Item</b><span>' + itemSummary(o) + "</span>" + (o.item.photos && o.item.photos.length ? '<div class="phs">' + photoStrip(o.item.photos) + "</div>" : '<span class="muted sm">No photos</span>') +
     '<dl class="kv">' + (o.deliverBy ? "<dt>Deliver by</dt><dd>" + esc(byLabel(o.deliverBy)) + (o.asap ? " (ASAP)" : "") + (o.late ? ' · <span class="bad-t">' + o.late.mins + " min late" + (o.late.decided ? (o.late.penalty ? ", late fee " + eur(o.late.penalty) : ", no fee") : ", not reviewed") + "</span>" : "") + "</dd>" : "") + '<dt>Classification</dt><dd>' + esc(cLabel(o.cls.category)) + " (from " + esc(o.cls.source) + ")</dd><dt>Eligible vehicles</dt><dd>" + esc((o.cls.vehicles || []).map(vLabel).join(", ")) + "</dd><dt>Couriers needed</dt><dd>" + o.cls.couriers + "</dd>" +
     (OPTIONS.filter(function (x) { return o.item.options && o.item.options[x.id]; }).length ? "<dt>Extras</dt><dd>" + esc(OPTIONS.filter(function (x) { return o.item.options[x.id]; }).map(function (x) { return x.label; }).join(", ")) + "</dd>" : "") + "</dl></div>" +
@@ -4681,6 +4697,178 @@ function liveStart(go) {
   liveSession().then(function () { go("live", liveDb); S.live.ready = true; livePollGuests(); setInterval(livePollGuests, 10000); });
 }
 
+// ===== Real map (Google Maps) in DART colours, with the drawn map as the fallback =====
+// The live build sets window.DART_MAPS = { key } when a Maps key is configured. Until Google has
+// loaded (or if it fails), every map is the drawn one, so nothing breaks without a key.
+var GMAP = { cfg: typeof window !== "undefined" ? window.DART_MAPS || null : null, state: "off", cache: {}, specs: {}, seen: {}, geocoder: null };
+function gmapWanted() { return !!(LIVE && GMAP.cfg); }
+function gmapLoad() {
+  if (GMAP.state !== "off" || !gmapWanted()) return;
+  GMAP.state = "loading";
+  window.__dartMapsReady = function () { GMAP.state = "ready"; render(); };
+  window.gm_authFailure = function () { GMAP.state = "failed"; GMAP.cache = {}; render(); };
+  var s = document.createElement("script");
+  s.src = "https://maps.googleapis.com/maps/api/js?v=weekly&loading=async&callback=__dartMapsReady&region=IT&language=" + (lang() === "it" ? "it" : "en") + (GMAP.cfg.key ? "&key=" + encodeURIComponent(GMAP.cfg.key) : "");
+  s.async = true; s.onerror = function () { GMAP.state = "failed"; render(); };
+  document.head.appendChild(s);
+}
+// DART colours: lavender land, white roads, soft blue river, no shop and transport clutter.
+var GMAP_STYLE = [
+  { elementType: "geometry", stylers: [{ color: "#F1EEF8" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#5B5670" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#FFFFFF" }, { weight: 3 }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.park", stylers: [{ visibility: "on" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#DCEBDD" }] },
+  { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#FFFFFF" }] },
+  { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#FFFFFF" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#D9CFF2" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#C4B5EC" }] },
+  { featureType: "road.local", elementType: "labels", stylers: [{ visibility: "simplified" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#C7D5F5" }] },
+  { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#D6CFE6" }] },
+  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#7A7391" }] },
+  { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#ECE8F5" }] }
+];
+var GMAP_PURPLE = "#452B94";
+
+// Where a map point is: exact coordinates when known (a dropped pin or GPS), else the area's centre.
+function llOf(area, ll) { return ll && isFinite(ll[0]) && isFinite(ll[1]) ? { lat: +ll[0], lng: +ll[1] } : AREAS[area] ? { lat: AREAS[area][0], lng: AREAS[area][1] } : null; }
+function curvePts(a, b) {
+  var mx = (a.lat + b.lat) / 2, my = (a.lng + b.lng) / 2, dx = b.lat - a.lat, dy = b.lng - a.lng, c = { lat: mx - dy * .18, lng: my + dx * .18 }, out = [];
+  for (var i = 0; i <= 24; i++) { var t = i / 24, u = 1 - t; out.push({ lat: u * u * a.lat + 2 * u * t * c.lat + t * t * b.lat, lng: u * u * a.lng + 2 * u * t * c.lng + t * t * b.lng }); }
+  return out;
+}
+// A placeholder in the page; the map itself lives in the cache and is moved in after each render,
+// so maps don't flicker or reload when the page redraws every second.
+function realMap(opt) {
+  var stable = { r: (opt.routes || []).map(function (r) { return [r.from, r.to, r.fromLL, r.toLL, !!r.dashed, !!r.thin]; }), p: (opt.pins || []).map(function (p) { return p.tone || ""; }), d: (opt.dots || []).length, big: !!opt.vb };
+  var key = "m" + hashStr(JSON.stringify(stable));
+  GMAP.specs[key] = opt;
+  return '<div class="gm" data-gm="' + key + '"></div>';
+}
+function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+// Built inside its box (already on the page), so Google knows the size when it centres the map.
+function gmapCreate(ph, opt) {
+  var g = google.maps, el = document.createElement("div"); el.className = "gm-in"; ph.appendChild(el);
+  var big = !!opt.vb || opt.interactive;
+  var map = new g.Map(el, { styles: GMAP_STYLE, disableDefaultUI: true, clickableIcons: false, keyboardShortcuts: false, gestureHandling: big ? "greedy" : "none", backgroundColor: "#F1EEF8", center: { lat: 41.9, lng: 12.49 }, zoom: 12 });
+  var e = { el: el, map: map, movers: [], follow: !!opt.vb, dragged: 0 };
+  map.addListener("dragstart", function () { e.dragged = Date.now(); });
+  var bounds = new g.LatLngBounds(), n = 0, add = function (p) { if (p) { bounds.extend(p); n++; } };
+  (opt.routes || []).forEach(function (r) {
+    var a = llOf(r.from, r.fromLL), b = llOf(r.to, r.toLL); if (!a || !b) return;
+    var pts = curvePts(a, b);
+    new g.Polyline({ map: map, path: pts, strokeColor: GMAP_PURPLE, strokeOpacity: r.dashed ? 0 : .9, strokeWeight: r.thin ? 3 : 5, icons: r.dashed ? [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: GMAP_PURPLE, scale: 3 }, offset: "0", repeat: "12px" }] : null });
+    new g.Marker({ map: map, position: a, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 7, fillColor: "#FFFFFF", fillOpacity: 1, strokeColor: GMAP_PURPLE, strokeWeight: 4 } });
+    new g.Marker({ map: map, position: b, clickable: false, icon: { path: "M -7,-7 7,-7 7,7 -7,7 z", scale: 1, fillColor: "#1B1530", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2 } });
+    add(a); add(b);
+    if (r.t != null) e.movers.push({ r: r, pts: pts, a: a, m: new g.Marker({ map: map, position: a, clickable: false, zIndex: 9, icon: { path: g.SymbolPath.CIRCLE, scale: 9, fillColor: "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 3 } }) });
+  });
+  e.dots = []; e.pins = [];
+  (opt.dots || []).forEach(function (d) { var p = llOf(d.area, d.ll); if (!p) return; e.dots.push(new g.Marker({ map: map, position: p, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 6, fillColor: d.color && d.color.indexOf("ok") >= 0 ? "#1F9D57" : "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2.5 } })); add(p); });
+  (opt.pins || []).forEach(function (p) {
+    var at = llOf(p.area, p.ll); if (!at) return;
+    var col = p.tone === "green" ? "#1F9D57" : p.tone === "ink" ? "#1B1530" : GMAP_PURPLE;
+    e.pins.push(new g.Marker({ map: map, position: at, clickable: false, zIndex: 8, label: { text: tr(String(p.text)), color: "#FFFFFF", fontSize: "11px", fontWeight: "700" }, icon: { path: "M -24,-30 24,-30 24,-12 4,-12 0,-6 -4,-12 -24,-12 z", scale: 1, fillColor: col, fillOpacity: 1, strokeColor: col, strokeWeight: 1, labelOrigin: new g.Point(0, -21) } }));
+    add(at);
+  });
+  if (n > 1) map.fitBounds(bounds, opt.vb ? { top: 90, bottom: 320, left: 40, right: 40 } : 36);
+  else if (n === 1) { map.setCenter(bounds.getCenter()); map.setZoom(14); if (opt.vb) map.panBy(0, 150); }
+  else if (opt.vb) map.panBy(0, 150);
+  return e;
+}
+function gmapMove(e, opt) {
+  (opt.pins || []).forEach(function (p, i) {
+    var m = e.pins[i], at = llOf(p.area, p.ll); if (!m || !at) return;
+    var was = m.getPosition(), moved = was && (Math.abs(was.lat() - at.lat) > .002 || Math.abs(was.lng() - at.lng) > .002);
+    m.setPosition(at);
+    // The big home map follows the first pin (the courier) unless they've just moved the map themselves.
+    if (i === 0 && moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(at); e.map.panBy(0, 150); } var l = m.getLabel(); if (l && l.text !== tr(String(p.text))) m.setLabel(Object.assign({}, l, { text: tr(String(p.text)) })); });
+  (opt.dots || []).forEach(function (d, i) { var m = e.dots[i], at = llOf(d.area, d.ll); if (m && at) m.setPosition(at); });
+  e.movers.forEach(function (mv, i) {
+    var r = (opt.routes || []).filter(function (x) { return x.t != null; })[i]; if (!r) return;
+    var p;
+    if (r.approach != null) p = { lat: mv.a.lat + .006 * (1 - r.approach), lng: mv.a.lng - .006 * (1 - r.approach) };
+    else p = mv.pts[Math.max(0, Math.min(mv.pts.length - 1, Math.round(r.t * (mv.pts.length - 1))))];
+    mv.m.setPosition(p);
+  });
+}
+AFTER.push(function (root) {
+  if (GMAP.state !== "ready") return;
+  var used = {};
+  root.querySelectorAll("[data-gm]").forEach(function (ph) {
+    var key = ph.dataset.gm, opt = GMAP.specs[key] || {};
+    var e = GMAP.cache[key] || (GMAP.cache[key] = gmapCreate(ph, opt));
+    gmapMove(e, opt); ph.appendChild(e.el); used[key] = 1;
+  });
+  // Forget maps that haven't been on screen for a while.
+  Object.keys(GMAP.cache).forEach(function (k) { if (used[k]) GMAP.seen[k] = Date.now(); else if (Date.now() - (GMAP.seen[k] || 0) > 60000) delete GMAP.cache[k]; });
+  GMAP.specs = {};
+});
+
+// ---------- Drop a pin to set an address ----------
+// The customer moves the map under a fixed pin; Google turns the spot into a street address.
+function pinModal(m) {
+  var body = '<div class="pin-wrap"><div class="gm-pin" data-pinmap="1"></div><span class="pin-mark" aria-hidden="true"></span></div>' +
+    '<div class="pin-addr">' + (m.busy ? '<span class="muted">Finding the address…</span>' : m.err ? '<span class="bad-t">' + esc(m.err) + "</span>" : m.street ? "<b>" + esc(m.street) + "</b><span class=\"muted sm\">" + esc(m.area ? "In " + m.area : "") + "</span>" : '<span class="muted">Move the map to put the pin on the door</span>') + "</div>";
+  return modalShell("Put the pin on the address", body, '<button class="btn block" data-act="c-pin-use"' + (m.street && m.area && !m.busy ? "" : " disabled") + ">Use this address</button>");
+}
+ACT["c-pin-open"] = function (d) {
+  var a = getPath(S, d.k) || {};
+  var at = llOf(a.area, a.ll) || { lat: 41.9009, lng: 12.4833 };
+  S.modal = { kind: "pin", k: d.k, lat: at.lat, lng: at.lng, street: "", area: "", busy: false }; GMAP.pinReset = true; render();
+};
+ACT["c-pin-use"] = function () {
+  var m = S.modal, a = m && getPath(S, m.k); if (!a || !m.street || !m.area) return;
+  a.street = m.street; a.area = m.area; a.ll = [+m.lat.toFixed(6), +m.lng.toFixed(6)]; a.areaOpen = false; a.areaManual = true;
+  S.modal = null; render();
+};
+var pinTimer = null;
+function pinLookup(lat, lng) {
+  var m = S.modal; if (!m || m.kind !== "pin") return;
+  m.lat = lat; m.lng = lng; m.busy = true; m.err = ""; pinPaint();
+  clearTimeout(pinTimer);
+  pinTimer = setTimeout(function () {
+    GMAP.geocoder = GMAP.geocoder || new google.maps.Geocoder();
+    GMAP.geocoder.geocode({ location: { lat: lat, lng: lng } }).then(function (r) {
+      var mm = S.modal; if (!mm || mm.kind !== "pin" || mm.lat !== lat) return;
+      var best = (r.results || []).filter(function (x) { return x.types.indexOf("street_address") >= 0 || x.types.indexOf("premise") >= 0; })[0] || (r.results || [])[0];
+      var part = function (t) { var c = best && best.address_components.filter(function (x) { return x.types.indexOf(t) >= 0; })[0]; return c ? c.long_name : ""; };
+      var street = part("route"), no = part("street_number"), cap = part("postal_code");
+      var near = nearestArea(lat, lng), byCap = cap ? findArea(street + ", " + cap) : [];
+      mm.busy = false;
+      if (!street) { mm.street = ""; mm.err = "No street here. Move the pin onto a building."; }
+      else if (near.km > 3.5) { mm.street = ""; mm.err = "That's outside the area DART covers."; }
+      else { mm.street = street + (no ? " " + no : ""); mm.area = byCap.length === 1 ? byCap[0] : byCap.indexOf(near.area) >= 0 || !byCap.length ? near.area : byCap[0]; }
+      pinPaint();
+    }, function () { var mm = S.modal; if (mm && mm.kind === "pin") { mm.busy = false; mm.err = "Couldn't look up this spot. Try again."; pinPaint(); } });
+  }, 450);
+}
+// Only the address line and button change while the map moves; the map itself stays put.
+function pinPaint() {
+  var m = S.modal, box = document.querySelector(".pin-addr"), btn = document.querySelector('[data-act="c-pin-use"]'); if (!m || !box) return;
+  var tmp = document.createElement("div"); tmp.innerHTML = pinModal(m); translateDOM(tmp);
+  box.innerHTML = tmp.querySelector(".pin-addr").innerHTML;
+  if (btn) btn.disabled = !(m.street && m.area && !m.busy);
+}
+AFTER.push(function (root) {
+  var el = root.querySelector("[data-pinmap]"), m = S.modal; if (!el || !m || m.kind !== "pin") return;
+  if (GMAP.state !== "ready") { el.innerHTML = '<p class="muted center pad">Loading the map…</p>'; gmapLoad(); return; }
+  if (!GMAP.pin) {
+    var inner = document.createElement("div"); inner.className = "gm-in";
+    var map = new google.maps.Map(inner, { styles: GMAP_STYLE, disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: "greedy", center: { lat: m.lat, lng: m.lng }, zoom: 17 });
+    map.addListener("idle", function () { var c = map.getCenter(); if (S.modal && S.modal.kind === "pin" && (Math.abs(c.lat() - S.modal.lat) > 1e-6 || Math.abs(c.lng() - S.modal.lng) > 1e-6 || (!S.modal.street && !S.modal.busy && !S.modal.err))) pinLookup(c.lat(), c.lng()); });
+    GMAP.pin = { el: inner, map: map };
+  } else if (GMAP.pinReset) { GMAP.pin.map.setCenter({ lat: m.lat, lng: m.lng }); GMAP.pin.map.setZoom(17); }
+  GMAP.pinReset = false;
+  el.appendChild(GMAP.pin.el);
+});
+
 // ===== Router, rendering, events, startup =====
 function route() { var h = location.hash.replace("#", ""); return ["customer", "web", "courier", "admin"].indexOf(h) >= 0 ? h : LIVE ? "web" : "home"; }
 // The live site has no test launcher: the address on its own opens the website.
@@ -4729,6 +4917,7 @@ function modalHTML(m) {
     case "a-courier": return aCourierModal(m);
     case "a-ticket": return aTicketModal(m);
     case "d-statement": return statementModal(m);
+    case "pin": return pinModal(m);
   }
   return "";
 }
