@@ -40,6 +40,8 @@ function customerApp() {
   if (web && !S.c.webInit) { S.c.webInit = true; if (!acc || S.c.view === "home") S.c.view = "site-home"; }
   if (!web && SITE_VIEWS.indexOf(S.c.view) >= 0) S.c.view = "home";
   if (!acc && GUEST_VIEWS.indexOf(S.c.view) < 0) S.c.view = web ? "site-home" : "home";
+  // Logged in after starting a booking: straight back to it.
+  if (acc && S.c.afterAuth) { S.c.view = S.c.afterAuth; S.c.afterAuth = null; }
   var isSite = SITE_VIEWS.indexOf(S.c.view) >= 0;
   var body = isSite ? sitePage(S.c.view, acc) : !acc ? cGuest() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support from the Help page to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
   var unreadMsgs = acc ? myOrders().reduce(function (s, o) { return s + unread(o, "customer"); }, 0) : 0;
@@ -110,7 +112,7 @@ function cAuth() {
     field("Password", '<input class="input" type="password" data-bind="c.auth.pw" value="' + esc(a.pw || "") + '" autocomplete="' + (reg ? "new-password" : "current-password") + '" required>', LIVE ? (reg ? "At least 8 characters." : "") : "Test build: passwords aren't checked or stored.") +
     (reg ? field("Phone (optional)", inp("c.auth.phone", a.phone, 'type="tel" autocomplete="tel"')) + '<small class="hint">Running a business? Switch to a business account later in Settings to get subscription plans.</small>' : "") +
     '<button class="btn block">' + (reg ? "Create account" : "Log in") + "</button></form>" +
-    '<p class="center"><button class="link" data-act="c-go" data-v="new">Continue without an account</button></p>' +
+    (S.c.afterAuth === "new" ? '<p class="muted sm center">Your delivery details are saved. You\'ll go straight back to them.</p>' : "") +
     '<p class="center">' + (reg ? 'Already have an account? <button class="link" data-act="c-auth-mode" data-v="login">Log in</button>' : 'New to DART? <button class="link" data-act="c-auth-mode" data-v="register">Create an account</button>') + "</p></div>";
 }
 function findAccount(email) { var e = slugEmail(email); return S.accounts.filter(function (x) { return slugEmail(x.email) === e; })[0] || null; }
@@ -209,7 +211,7 @@ function cNew(acc) {
   var steps = ["Where", "What", "Review"];
   var back = d.step > 1 ? '<button class="btn ghost sm" data-act="c-step" data-v="' + (d.step - 1) + '">← Back</button>' : '<button class="btn ghost sm" data-act="c-go" data-v="home">← Back</button>';
   var title = acc ? "New delivery" : "Send something";
-  var h = (web ? '<h1 class="w-title">' + (acc ? "New delivery" : "Send something across Rome") + "</h1>" + (acc ? "" : '<p class="muted">No account needed. Get a price, book and track with just your email.</p>') : '<div class="app-head">' + back + "<h2>" + title + "</h2>" + (acc ? "" : '<button class="btn ghost sm" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>") + '<div class="pad">';
+  var h = (web ? '<h1 class="w-title">' + (acc ? "New delivery" : "Send something across Rome") + "</h1>" + (acc ? "" : '<p class="muted">Get a price now. Booking needs a free DART account, and you can create one at the last step.</p>') : '<div class="app-head">' + back + "<h2>" + title + "</h2>" + (acc ? "" : '<button class="btn ghost sm" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>") + '<div class="pad">';
   if (st.open === false) return h + '<div class="banner bad">DART is closed right now. Bookings open again soon.</div></div>';
   h += '<ol class="stepper">' + steps.map(function (s, i) { return '<li class="' + (d.step === i + 1 ? "on" : d.step > i + 1 ? "done" : "") + '"><button data-act="c-step" data-v="' + (i + 1) + '"' + (i + 1 > d.step ? " disabled" : "") + ">" + (i + 1) + ". " + s + "</button></li>"; }).join("") + "</ol>";
   var main = d.step === 1 ? newWhere(acc) : d.step === 2 ? newWhat(acc) : newReview(acc);
@@ -292,12 +294,11 @@ function newReview(acc) {
   h += clsCard(x.cls);
   h += '<div class="card"><b>Price</b>' + breakdown(x.q, d.billing === "subscription" ? x.sub : null) + '<small class="hint">Prices are set by distance with a minimum fee of ' + eur(pricing().minFee) + ", plus size, weight, vehicle and extra services.</small></div>";
   if (!acc) {
-    var g = S.c.guest;
-    h += '<div class="card"><b>Your details</b><span class="muted sm">For the receipt, the tracking link and so the courier can reach you. No account needed.</span>' +
-      field("Name", inp("c.guest.name", g.name, 'autocomplete="name" required')) + '<div class="grid2">' + field("Email", inp("c.guest.email", g.email, 'type="email" autocomplete="email" required')) + field("Phone", inp("c.guest.phone", g.phone, 'type="tel" autocomplete="tel" required')) + "</div>" +
-      (LIVE ? "" : check("c.guest.create", g.create, "Also create a DART account with these details, to keep your history and invoices in one place")) +
-      '<span class="sm">Already have an account? <button class="link" data-act="c-auth-open" data-v="login">Log in</button></span></div>';
+    // Booking needs a DART account; the draft is kept while they log in or sign up.
+    return h + '<div class="card"><b>Log in to book</b><span class="muted sm">Every delivery is booked from a free DART account, so you can track it, message your courier and keep your receipts in one place. Your delivery details are kept while you sign in.</span>' +
+      '<div class="grid2"><button class="btn" data-act="c-book-auth" data-v="register">Create an account</button><button class="btn ghost" data-act="c-book-auth" data-v="login">Log in</button></div></div>';
   }
+
   var k = checkout(acc, d, x);
   h += savingsCard(acc, d, x);
   h += '<div class="card"><b>How do you want to pay?</b><div class="opts">' +
@@ -416,15 +417,12 @@ ACT["c-ai"] = function () {
     if (e && e.code === "not_granted") Caps.sample = null;
   }).then(function () { d.aiBusy = false; render(); });
 };
+ACT["c-book-auth"] = function (d) { S.c.afterAuth = "new"; S.c.auth.mode = d.v; S.c.view = "auth"; render(); if (isWeb()) window.scrollTo(0, 0); };
 ACT["c-book"] = function () {
-  var acc = me(), d = S.c.draft, x = draftQuote(acc), g = S.c.guest;
+  var acc = me(), d = S.c.draft, x = draftQuote(acc);
   if (!x || busy || settings().open === false) return;
-  if (!acc) {
-    if (!clip(g.name, 60)) return toast("Add your name so the courier knows who it's for.");
-    if (!emailOk(slugEmail(g.email))) return toast("Add your email for the receipt and tracking.");
-    if (!clip(g.phone, 30)) return toast("Add a phone number so the courier can reach you.");
-    if (g.create && findAccount(g.email)) return toast("That email already has a DART account. Log in to book with it.");
-  }
+  if (!acc) return ACT["c-book-auth"]({ v: "register" });
+
   var now = Date.now(), id = "DRT-" + rid(3) + "-" + rid(3), method = d.billing;
   var k = checkout(acc, d, x), amount = k.charge;
   if (d.code && !k.disc) return toast(k.bad || "That code isn't valid.");
@@ -439,14 +437,9 @@ ACT["c-book"] = function () {
     dropoff: { area: d.dropoff.area, street: clip(d.dropoff.street, 80), notes: clip(d.dropoff.notes, 160), ll: d.dropoff.ll || null },
     item: item, cls: x.cls, price: x.q, billing: billing, code: newCode(), deliverBy: deliverByOf(d, x.q.mins), asap: !(d.when && d.when.mode === "set"), status: "awaiting", createdAt: now, timeline: { requested: now, awaiting: now }
   };
-  var start = Promise.resolve(acc ? Object.assign({ id: acc.id }, acc) : null);
-  if (!acc && g.create) {
-    var aid = "a-" + rid(10), doc = newAccountDoc({ name: clip(g.name, 60), email: g.email, phone: clip(g.phone, 30), provider: "email", type: "individual" });
-    start = Store.set("accounts", aid, doc).then(function () { S.me.customerId = aid; saveMe(); return claimGuest(aid, doc); }).then(function () { return Object.assign({ id: aid }, doc); });
-  }
+  var start = Promise.resolve(Object.assign({ id: acc.id }, acc));
   run(start.then(function (a) {
-    order.customer = a ? { id: a.id, name: a.name, email: a.email, phone: a.phone || "", business: !!(a.business && a.business.active), businessName: a.business && a.business.active ? a.business.name : "" }
-      : { id: "g-" + rid(10), name: clip(g.name, 60), email: slugEmail(g.email), phone: clip(g.phone, 30), guest: true, business: false, businessName: "" };
+    order.customer = { id: a.id, name: a.name, email: a.email, phone: a.phone || "", business: !!(a.business && a.business.active), businessName: a.business && a.business.active ? a.business.name : "" };
     return Store.set("orders", id, order).then(function () {
       // Take the credit used off the account balance.
       if (!k.credit || !a) return;
@@ -863,7 +856,7 @@ FORMS["c-ticket"] = function () {
   run(Store.set("tickets", "T-" + rid(6), { from: "customer", accountId: acc.id, name: acc.name, orderId: t.orderId || null, topic: t.topic, subject: labels[t.topic], text: text, status: "open", replies: [], createdAt: Date.now() }), "Sent. DART support will reply here.");
 };
 
-// ---------- Track a delivery (no account needed) ----------
+// ---------- Track a delivery (with the code and the booking email) ----------
 function cTrack(acc) {
   var t = S.c.trk, web = isWeb();
   var local = S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);

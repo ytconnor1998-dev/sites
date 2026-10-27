@@ -119,11 +119,11 @@ function costLine(what, from, to, price, extra) { return '<li><span class="ws-c-
 function siteHome(acc) {
   var P = pricing(), plans = S.plans.filter(function (p) { return p.active !== false; }).sort(function (a, b) { return a.price - b.price; });
   var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><p class="ws-kicker">Delivered within ' + hoursText() + ' inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' + heroQuote() +
-    '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. No account needed.</span></p></div></section>';
+    '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. Book with a free DART account.</span></p></div></section>';
   h += '<div class="ws-wrap ws-read">';
   h += sec("Why DART exists", '<p class="ws-intro">Sometimes you need to get something across Rome, but you don\'t have a car, the time, or an easy way to do it.</p>' +
     "<p>That's the problem DART was started to solve. We're building a local delivery network for the city, for people and for businesses. Tell us what it is and where it's going, and a nearby courier with the right vehicle delivers it within " + hoursText() + ", often much sooner, whether it's a second-hand find, a shop purchase, or documents for another office.</p>" +
-    "<p>No contract, no account unless you want one, and you see the full price before you book.</p>");
+    "<p>No contract, just a free account, and you see the full price before you book.</p>");
   h += sec("Who uses DART", '<div class="ws-who">' +
     who("Boxes.", "People who just moved to Rome.", "New flat, no car, and boxes or a mattress to get home. Book a car or a van and it's done.") +
     who("Armchair.", "Anyone who found a deal across town.", "The chair on Facebook Marketplace is perfect, but the seller is in EUR and you're in Prati. We collect it and carry it in.") +
@@ -158,7 +158,7 @@ function siteHow() {
     step("Describe the item.", "Choose letter, parcel, furniture or something else. Add up to three photos and the length, width, height and weight if you know it.") +
     step("DART checks it fits.", "We find the item's size category, the vehicles that can carry it, and whether it needs two people. If nothing can carry it, you're told before paying.") +
     step("See the full price.", "A distance charge, the size category fee, any weight or extra-item charges, the vehicle, and the extras you ticked. Every line is shown.") +
-    step("Book.", "Pay by card. Guests only need a name, email and phone number. Businesses on a plan use their monthly allowance.") +
+    step("Book.", "Log in or create a free account, then pay by card. Businesses on a plan use their monthly allowance.") +
     step("A courier accepts.", "Nearby couriers with a suitable vehicle see the request. When one accepts, you see their name and vehicle and can message them.") +
     step("It arrives on time.", "As soon as possible means within " + hoursText() + " of booking, usually much sooner. Or choose a set time and it arrives by then.") +
     step("Follow it.", "Travelling to pickup, collected, in transit, arrived. You get a notification at each step.") +
@@ -272,7 +272,7 @@ function siteHelp(acc) {
   var c = S.c.contact;
   var h = pageHead("Help", "Help and contact", settings().supportEmail ? "Write to " + esc(settings().supportEmail) + " or use the form below." : "Use the form below and we'll reply by email.");
   h += '<div class="ws-wrap ws-read">' + sec("Already booked?", '<p>Track it with your code and the email you booked with. From the delivery page you can message your courier or report a problem.</p><p><button class="ws-more" data-act="c-go" data-v="track">Track a delivery →</button></p>') +
-    sec("Common questions", '<div class="ws-faq">' + FAQ.concat([["Do I need an account?", "No. You can book and track with just your name, email and phone. An account keeps your history, saved addresses and invoices together, and lets businesses use plans."], ["Where can I find my tracking code?", "On the confirmation screen after booking. Use it with your email under Track a delivery."]]).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + "</div>") +
+    sec("Common questions", '<div class="ws-faq">' + FAQ.concat([["Do I need an account?", "Yes, a free one. It takes a minute: your name, email and a password. It keeps your deliveries, tracking, saved addresses and invoices together, and businesses can add a plan."], ["Where can I find my tracking code?", "On the confirmation screen after booking. Use it with your email under Track a delivery."]]).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + "</div>") +
     sec("Write to us", c.sent ? "<p><b>Thanks, we've got your message.</b> DART support will reply by email.</p>" :
       '<form class="stack ws-form" data-form="w-contact">' + (acc ? "" : '<div class="grid2">' + field("Name", inp("c.contact.name", c.name, "required")) + field("Email", inp("c.contact.email", c.email, 'type="email" required')) + "</div>") +
       field("About", sel("c.contact.topic", c.topic, [["question", "A question"], ["delivery", "A delivery"], ["business", "Business plans"], ["courier", "Becoming a courier"], ["other", "Something else"]])) + field("Message", txt("c.contact.text", c.text, 'rows="5" required')) + '<button class="ws-btn">Send message</button></form>') + "</div>";

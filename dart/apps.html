@@ -356,7 +356,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .by-line { margin: 2px 0 0; font-weight: 700; color: var(--purple); }
 .when-row { border-top: 1px solid var(--line); padding-top: 10px; gap: 10px; }
 .when-row span { color: var(--muted); }
-.when-row b, .card .when-row b { flex: 1; min-width: 0; text-align: right; white-space: normal; }
+.when-row b, .card .row.between.when-row b { flex: 1; min-width: 0; text-align: right; white-space: normal; }
 .when-row .link { flex: none; }
 .offer-by { margin: -4px 0 0; font-size: 15px; }
 .offer-batch { margin: 0; font-size: 14px; background: var(--ok-soft); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
@@ -1775,7 +1775,7 @@ Object.assign(IT, {
   "Problem reported. DART support will get back to you.": "Problema segnalato. L'assistenza DART ti ricontatterà.", "Profile saved": "Profilo salvato", "Refund recorded": "Rimborso registrato", "Reply sent": "Risposta inviata", "Request updated": "Richiesta aggiornata", "Rules saved and live": "Regole salvate e attive", "Sent to DART for approval": "Inviato a DART per l'approvazione", "Sent to DART support": "Inviato all'assistenza DART",
   "Sent. DART support will reply here.": "Inviato. L'assistenza DART risponderà qui.", "Settings saved and live": "Impostazioni salvate e attive", "Thanks for rating your courier": "Grazie per aver valutato il corriere", "Your plan will renew as normal": "Il tuo piano si rinnoverà normalmente", "Courier approved": "Corriere approvato", "Application rejected": "Candidatura rifiutata", "Courier suspended": "Corriere sospeso",
   "Vehicle change approved": "Cambio veicolo approvato", "Vehicle change declined": "Cambio veicolo non approvato", "Account reactivated": "Account riattivato", "Account suspended": "Account sospeso", "Order cancelled": "Ordine annullato", "Name saved": "Nome salvato", "Delivery cancelled and refunded": "Consegna annullata e rimborsata", "It was already taken.": "Era già stata presa.",
-  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "Today": "Oggi", "This week": "Questa settimana", "Last week": "Settimana scorsa", "This month": "Questo mese", "Last month": "Mese scorso", "Total earnings": "Guadagni totali", "Delivery": "Consegna", "Deliveries": "Consegne", "Delivery fees": "Compensi consegne", "Tips": "Mance", "Late fees": "Penali ritardo", "No deliveries in this period.": "Nessuna consegna in questo periodo.", "Show less": "Mostra meno", "Statements": "Estratti conto", "Current balance": "Saldo attuale", "Nothing waiting to be paid": "Niente in attesa di pagamento", "Previous payments": "Pagamenti precedenti", "None yet": "Ancora nessuno", "Request an invoice": "Richiedi una fattura", "For a month, sent to you by DART": "Per un mese, inviata da DART", "You earn the amount shown on each delivery. Payments go out every Monday.": "Guadagni l'importo mostrato su ogni consegna. I pagamenti partono ogni lunedì.", "No payments yet": "Ancora nessun pagamento", "Each Monday's payment shows up here with the deliveries it covers.": "Qui compare il pagamento di ogni lunedì con le consegne incluse.", "Paid": "Pagato", "Month": "Mese", "Anything to add? (optional)": "Qualcosa da aggiungere? (facoltativo)", "e.g. My Partita IVA, or a different email": "es. La mia Partita IVA o un'altra email", "Send request": "Invia richiesta", "Request sent. DART will email your invoice.": "Richiesta inviata. DART ti invierà la fattura via email.", "This delivery is finished": "Questa consegna è conclusa", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Vai su Aiuto e segnala un problema.", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Contatta DART da Account → Aiuto.", "Finding your location…": "Ricerca della tua posizione…", "Turn on location for DART Courier.": "Attiva la posizione per DART Courier.", "Location check: testing": "Controllo posizione: test", "Give this delivery back?": "Restituire questa consegna?", "Add both addresses to see the price": "Aggiungi i due indirizzi per vedere il prezzo", "Put a pin on the map": "Metti un segnaposto sulla mappa", "Pinned on the map. Change the pin": "Segnato sulla mappa. Cambia il segnaposto", "Pin on the map": "Segnaposto sulla mappa", "Put the pin on the address": "Metti il segnaposto sull'indirizzo", "Use this address": "Usa questo indirizzo", "Finding the address…": "Ricerca dell'indirizzo…", "Move the map to put the pin on the door": "Sposta la mappa per mettere il segnaposto sulla porta", "No street here. Move the pin onto a building.": "Qui non c'è una via. Sposta il segnaposto su un edificio.", "That's outside the area DART covers.": "È fuori dalla zona servita da DART.", "Couldn't look up this spot. Try again.": "Impossibile trovare questo punto. Riprova.", "Loading the map…": "Caricamento della mappa…", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
+  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "Today": "Oggi", "This week": "Questa settimana", "Last week": "Settimana scorsa", "This month": "Questo mese", "Last month": "Mese scorso", "Total earnings": "Guadagni totali", "Delivery": "Consegna", "Deliveries": "Consegne", "Delivery fees": "Compensi consegne", "Tips": "Mance", "Late fees": "Penali ritardo", "No deliveries in this period.": "Nessuna consegna in questo periodo.", "Show less": "Mostra meno", "Statements": "Estratti conto", "Current balance": "Saldo attuale", "Nothing waiting to be paid": "Niente in attesa di pagamento", "Previous payments": "Pagamenti precedenti", "None yet": "Ancora nessuno", "Request an invoice": "Richiedi una fattura", "For a month, sent to you by DART": "Per un mese, inviata da DART", "You earn the amount shown on each delivery. Payments go out every Monday.": "Guadagni l'importo mostrato su ogni consegna. I pagamenti partono ogni lunedì.", "No payments yet": "Ancora nessun pagamento", "Each Monday's payment shows up here with the deliveries it covers.": "Qui compare il pagamento di ogni lunedì con le consegne incluse.", "Paid": "Pagato", "Month": "Mese", "Anything to add? (optional)": "Qualcosa da aggiungere? (facoltativo)", "e.g. My Partita IVA, or a different email": "es. La mia Partita IVA o un'altra email", "Send request": "Invia richiesta", "Request sent. DART will email your invoice.": "Richiesta inviata. DART ti invierà la fattura via email.", "This delivery is finished": "Questa consegna è conclusa", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Vai su Aiuto e segnala un problema.", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Contatta DART da Account → Aiuto.", "Finding your location…": "Ricerca della tua posizione…", "Turn on location for DART Courier.": "Attiva la posizione per DART Courier.", "Location check: testing": "Controllo posizione: test", "Give this delivery back?": "Restituire questa consegna?", "Add both addresses to see the price": "Aggiungi i due indirizzi per vedere il prezzo", "Put a pin on the map": "Metti un segnaposto sulla mappa", "Pinned on the map. Change the pin": "Segnato sulla mappa. Cambia il segnaposto", "Pin on the map": "Segnaposto sulla mappa", "Put the pin on the address": "Metti il segnaposto sull'indirizzo", "Use this address": "Usa questo indirizzo", "Finding the address…": "Ricerca dell'indirizzo…", "Move the map to put the pin on the door": "Sposta la mappa per mettere il segnaposto sulla porta", "No street here. Move the pin onto a building.": "Qui non c'è una via. Sposta il segnaposto su un edificio.", "That's outside the area DART covers.": "È fuori dalla zona servita da DART.", "Couldn't look up this spot. Try again.": "Impossibile trovare questo punto. Riprova.", "Loading the map…": "Caricamento della mappa…", "Log in to book": "Accedi per prenotare", "Every delivery is booked from a free DART account, so you can track it, message your courier and keep your receipts in one place. Your delivery details are kept while you sign in.": "Ogni consegna si prenota da un account DART gratuito, così puoi seguirla, scrivere al corriere e tenere le ricevute in un unico posto. I dettagli della consegna restano salvati mentre accedi.", "Your delivery details are saved. You'll go straight back to them.": "I dettagli della consegna sono salvati. Ci tornerai subito dopo.", "Get a price now. Booking needs a free DART account, and you can create one at the last step.": "Scopri subito il prezzo. Per prenotare serve un account DART gratuito, che puoi creare all'ultimo passaggio.", "a kilometre. VAT included. Book with a free DART account.": "al chilometro. IVA inclusa. Prenota con un account DART gratuito.", "No contract, just a free account, and you see the full price before you book.": "Nessun contratto, solo un account gratuito, e vedi il prezzo completo prima di prenotare.", "Log in or create a free account, then pay by card. Businesses on a plan use their monthly allowance.": "Accedi o crea un account gratuito, poi paga con carta. Le aziende con un piano usano la quota mensile.", "Yes, a free one. It takes a minute: your name, email and a password. It keeps your deliveries, tracking, saved addresses and invoices together, and businesses can add a plan.": "Sì, uno gratuito. Basta un minuto: nome, email e una password. Tiene insieme consegne, tracciamento, indirizzi salvati e fatture, e le aziende possono aggiungere un piano.", "Sign in with Apple is coming soon. Use your email for now.": "L'accesso con Apple arriva presto. Per ora usa la tua email.", "Sign in with Google is coming soon. Use your email for now.": "L'accesso con Google arriva presto. Per ora usa la tua email.", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
   "Booked. We're finding you a courier.": "Prenotato. Stiamo cercando un corriere.", "Business features are on": "Funzioni aziendali attive", "Business details saved": "Dati aziendali salvati", "You're now a business account. Choose a plan below.": "Ora hai un account aziendale. Scegli un piano qui sotto.", "Your plan will renew as normal.": "Il tuo piano si rinnoverà normalmente.",
   "Photo estimates aren't available. Enter the measurements instead.": "Le stime dalle foto non sono disponibili. Inserisci le misure.", "The photo estimate didn't work this time. Enter the measurements instead.": "La stima dalla foto non ha funzionato. Inserisci le misure.", "We couldn't tell the size from these photos. Please measure the item.": "Non riusciamo a capire le misure da queste foto. Misura l'oggetto.",
   "Start with where it's going.": "Inizia da dove deve andare.", "Add the street addresses to continue.": "Aggiungi le vie per continuare.", "Connecting to DART…": "Connessione a DART…", "Loading DART…": "Caricamento di DART…", "Problem reported.": "Problema segnalato.",
@@ -2104,6 +2104,8 @@ function customerApp() {
   if (web && !S.c.webInit) { S.c.webInit = true; if (!acc || S.c.view === "home") S.c.view = "site-home"; }
   if (!web && SITE_VIEWS.indexOf(S.c.view) >= 0) S.c.view = "home";
   if (!acc && GUEST_VIEWS.indexOf(S.c.view) < 0) S.c.view = web ? "site-home" : "home";
+  // Logged in after starting a booking: straight back to it.
+  if (acc && S.c.afterAuth) { S.c.view = S.c.afterAuth; S.c.afterAuth = null; }
   var isSite = SITE_VIEWS.indexOf(S.c.view) >= 0;
   var body = isSite ? sitePage(S.c.view, acc) : !acc ? cGuest() : acc.status === "suspended" ? '<div class="pad">' + emptyState("Your account is paused", "Contact DART support from the Help page to reactivate it.", '<button class="btn ghost sm" data-act="c-logout">Log out</button>') + "</div>" : cView(acc);
   var unreadMsgs = acc ? myOrders().reduce(function (s, o) { return s + unread(o, "customer"); }, 0) : 0;
@@ -2174,7 +2176,7 @@ function cAuth() {
     field("Password", '<input class="input" type="password" data-bind="c.auth.pw" value="' + esc(a.pw || "") + '" autocomplete="' + (reg ? "new-password" : "current-password") + '" required>', LIVE ? (reg ? "At least 8 characters." : "") : "Test build: passwords aren't checked or stored.") +
     (reg ? field("Phone (optional)", inp("c.auth.phone", a.phone, 'type="tel" autocomplete="tel"')) + '<small class="hint">Running a business? Switch to a business account later in Settings to get subscription plans.</small>' : "") +
     '<button class="btn block">' + (reg ? "Create account" : "Log in") + "</button></form>" +
-    '<p class="center"><button class="link" data-act="c-go" data-v="new">Continue without an account</button></p>' +
+    (S.c.afterAuth === "new" ? '<p class="muted sm center">Your delivery details are saved. You\'ll go straight back to them.</p>' : "") +
     '<p class="center">' + (reg ? 'Already have an account? <button class="link" data-act="c-auth-mode" data-v="login">Log in</button>' : 'New to DART? <button class="link" data-act="c-auth-mode" data-v="register">Create an account</button>') + "</p></div>";
 }
 function findAccount(email) { var e = slugEmail(email); return S.accounts.filter(function (x) { return slugEmail(x.email) === e; })[0] || null; }
@@ -2273,7 +2275,7 @@ function cNew(acc) {
   var steps = ["Where", "What", "Review"];
   var back = d.step > 1 ? '<button class="btn ghost sm" data-act="c-step" data-v="' + (d.step - 1) + '">← Back</button>' : '<button class="btn ghost sm" data-act="c-go" data-v="home">← Back</button>';
   var title = acc ? "New delivery" : "Send something";
-  var h = (web ? '<h1 class="w-title">' + (acc ? "New delivery" : "Send something across Rome") + "</h1>" + (acc ? "" : '<p class="muted">No account needed. Get a price, book and track with just your email.</p>') : '<div class="app-head">' + back + "<h2>" + title + "</h2>" + (acc ? "" : '<button class="btn ghost sm" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>") + '<div class="pad">';
+  var h = (web ? '<h1 class="w-title">' + (acc ? "New delivery" : "Send something across Rome") + "</h1>" + (acc ? "" : '<p class="muted">Get a price now. Booking needs a free DART account, and you can create one at the last step.</p>') : '<div class="app-head">' + back + "<h2>" + title + "</h2>" + (acc ? "" : '<button class="btn ghost sm" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>") + '<div class="pad">';
   if (st.open === false) return h + '<div class="banner bad">DART is closed right now. Bookings open again soon.</div></div>';
   h += '<ol class="stepper">' + steps.map(function (s, i) { return '<li class="' + (d.step === i + 1 ? "on" : d.step > i + 1 ? "done" : "") + '"><button data-act="c-step" data-v="' + (i + 1) + '"' + (i + 1 > d.step ? " disabled" : "") + ">" + (i + 1) + ". " + s + "</button></li>"; }).join("") + "</ol>";
   var main = d.step === 1 ? newWhere(acc) : d.step === 2 ? newWhat(acc) : newReview(acc);
@@ -2356,12 +2358,11 @@ function newReview(acc) {
   h += clsCard(x.cls);
   h += '<div class="card"><b>Price</b>' + breakdown(x.q, d.billing === "subscription" ? x.sub : null) + '<small class="hint">Prices are set by distance with a minimum fee of ' + eur(pricing().minFee) + ", plus size, weight, vehicle and extra services.</small></div>";
   if (!acc) {
-    var g = S.c.guest;
-    h += '<div class="card"><b>Your details</b><span class="muted sm">For the receipt, the tracking link and so the courier can reach you. No account needed.</span>' +
-      field("Name", inp("c.guest.name", g.name, 'autocomplete="name" required')) + '<div class="grid2">' + field("Email", inp("c.guest.email", g.email, 'type="email" autocomplete="email" required')) + field("Phone", inp("c.guest.phone", g.phone, 'type="tel" autocomplete="tel" required')) + "</div>" +
-      (LIVE ? "" : check("c.guest.create", g.create, "Also create a DART account with these details, to keep your history and invoices in one place")) +
-      '<span class="sm">Already have an account? <button class="link" data-act="c-auth-open" data-v="login">Log in</button></span></div>';
+    // Booking needs a DART account; the draft is kept while they log in or sign up.
+    return h + '<div class="card"><b>Log in to book</b><span class="muted sm">Every delivery is booked from a free DART account, so you can track it, message your courier and keep your receipts in one place. Your delivery details are kept while you sign in.</span>' +
+      '<div class="grid2"><button class="btn" data-act="c-book-auth" data-v="register">Create an account</button><button class="btn ghost" data-act="c-book-auth" data-v="login">Log in</button></div></div>';
   }
+
   var k = checkout(acc, d, x);
   h += savingsCard(acc, d, x);
   h += '<div class="card"><b>How do you want to pay?</b><div class="opts">' +
@@ -2480,15 +2481,12 @@ ACT["c-ai"] = function () {
     if (e && e.code === "not_granted") Caps.sample = null;
   }).then(function () { d.aiBusy = false; render(); });
 };
+ACT["c-book-auth"] = function (d) { S.c.afterAuth = "new"; S.c.auth.mode = d.v; S.c.view = "auth"; render(); if (isWeb()) window.scrollTo(0, 0); };
 ACT["c-book"] = function () {
-  var acc = me(), d = S.c.draft, x = draftQuote(acc), g = S.c.guest;
+  var acc = me(), d = S.c.draft, x = draftQuote(acc);
   if (!x || busy || settings().open === false) return;
-  if (!acc) {
-    if (!clip(g.name, 60)) return toast("Add your name so the courier knows who it's for.");
-    if (!emailOk(slugEmail(g.email))) return toast("Add your email for the receipt and tracking.");
-    if (!clip(g.phone, 30)) return toast("Add a phone number so the courier can reach you.");
-    if (g.create && findAccount(g.email)) return toast("That email already has a DART account. Log in to book with it.");
-  }
+  if (!acc) return ACT["c-book-auth"]({ v: "register" });
+
   var now = Date.now(), id = "DRT-" + rid(3) + "-" + rid(3), method = d.billing;
   var k = checkout(acc, d, x), amount = k.charge;
   if (d.code && !k.disc) return toast(k.bad || "That code isn't valid.");
@@ -2503,14 +2501,9 @@ ACT["c-book"] = function () {
     dropoff: { area: d.dropoff.area, street: clip(d.dropoff.street, 80), notes: clip(d.dropoff.notes, 160), ll: d.dropoff.ll || null },
     item: item, cls: x.cls, price: x.q, billing: billing, code: newCode(), deliverBy: deliverByOf(d, x.q.mins), asap: !(d.when && d.when.mode === "set"), status: "awaiting", createdAt: now, timeline: { requested: now, awaiting: now }
   };
-  var start = Promise.resolve(acc ? Object.assign({ id: acc.id }, acc) : null);
-  if (!acc && g.create) {
-    var aid = "a-" + rid(10), doc = newAccountDoc({ name: clip(g.name, 60), email: g.email, phone: clip(g.phone, 30), provider: "email", type: "individual" });
-    start = Store.set("accounts", aid, doc).then(function () { S.me.customerId = aid; saveMe(); return claimGuest(aid, doc); }).then(function () { return Object.assign({ id: aid }, doc); });
-  }
+  var start = Promise.resolve(Object.assign({ id: acc.id }, acc));
   run(start.then(function (a) {
-    order.customer = a ? { id: a.id, name: a.name, email: a.email, phone: a.phone || "", business: !!(a.business && a.business.active), businessName: a.business && a.business.active ? a.business.name : "" }
-      : { id: "g-" + rid(10), name: clip(g.name, 60), email: slugEmail(g.email), phone: clip(g.phone, 30), guest: true, business: false, businessName: "" };
+    order.customer = { id: a.id, name: a.name, email: a.email, phone: a.phone || "", business: !!(a.business && a.business.active), businessName: a.business && a.business.active ? a.business.name : "" };
     return Store.set("orders", id, order).then(function () {
       // Take the credit used off the account balance.
       if (!k.credit || !a) return;
@@ -2927,7 +2920,7 @@ FORMS["c-ticket"] = function () {
   run(Store.set("tickets", "T-" + rid(6), { from: "customer", accountId: acc.id, name: acc.name, orderId: t.orderId || null, topic: t.topic, subject: labels[t.topic], text: text, status: "open", replies: [], createdAt: Date.now() }), "Sent. DART support will reply here.");
 };
 
-// ---------- Track a delivery (no account needed) ----------
+// ---------- Track a delivery (with the code and the booking email) ----------
 function cTrack(acc) {
   var t = S.c.trk, web = isWeb();
   var local = S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);
@@ -3100,11 +3093,11 @@ function costLine(what, from, to, price, extra) { return '<li><span class="ws-c-
 function siteHome(acc) {
   var P = pricing(), plans = S.plans.filter(function (p) { return p.active !== false; }).sort(function (a, b) { return a.price - b.price; });
   var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><p class="ws-kicker">Delivered within ' + hoursText() + ' inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' + heroQuote() +
-    '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. No account needed.</span></p></div></section>';
+    '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. Book with a free DART account.</span></p></div></section>';
   h += '<div class="ws-wrap ws-read">';
   h += sec("Why DART exists", '<p class="ws-intro">Sometimes you need to get something across Rome, but you don\'t have a car, the time, or an easy way to do it.</p>' +
     "<p>That's the problem DART was started to solve. We're building a local delivery network for the city, for people and for businesses. Tell us what it is and where it's going, and a nearby courier with the right vehicle delivers it within " + hoursText() + ", often much sooner, whether it's a second-hand find, a shop purchase, or documents for another office.</p>" +
-    "<p>No contract, no account unless you want one, and you see the full price before you book.</p>");
+    "<p>No contract, just a free account, and you see the full price before you book.</p>");
   h += sec("Who uses DART", '<div class="ws-who">' +
     who("Boxes.", "People who just moved to Rome.", "New flat, no car, and boxes or a mattress to get home. Book a car or a van and it's done.") +
     who("Armchair.", "Anyone who found a deal across town.", "The chair on Facebook Marketplace is perfect, but the seller is in EUR and you're in Prati. We collect it and carry it in.") +
@@ -3139,7 +3132,7 @@ function siteHow() {
     step("Describe the item.", "Choose letter, parcel, furniture or something else. Add up to three photos and the length, width, height and weight if you know it.") +
     step("DART checks it fits.", "We find the item's size category, the vehicles that can carry it, and whether it needs two people. If nothing can carry it, you're told before paying.") +
     step("See the full price.", "A distance charge, the size category fee, any weight or extra-item charges, the vehicle, and the extras you ticked. Every line is shown.") +
-    step("Book.", "Pay by card. Guests only need a name, email and phone number. Businesses on a plan use their monthly allowance.") +
+    step("Book.", "Log in or create a free account, then pay by card. Businesses on a plan use their monthly allowance.") +
     step("A courier accepts.", "Nearby couriers with a suitable vehicle see the request. When one accepts, you see their name and vehicle and can message them.") +
     step("It arrives on time.", "As soon as possible means within " + hoursText() + " of booking, usually much sooner. Or choose a set time and it arrives by then.") +
     step("Follow it.", "Travelling to pickup, collected, in transit, arrived. You get a notification at each step.") +
@@ -3253,7 +3246,7 @@ function siteHelp(acc) {
   var c = S.c.contact;
   var h = pageHead("Help", "Help and contact", settings().supportEmail ? "Write to " + esc(settings().supportEmail) + " or use the form below." : "Use the form below and we'll reply by email.");
   h += '<div class="ws-wrap ws-read">' + sec("Already booked?", '<p>Track it with your code and the email you booked with. From the delivery page you can message your courier or report a problem.</p><p><button class="ws-more" data-act="c-go" data-v="track">Track a delivery →</button></p>') +
-    sec("Common questions", '<div class="ws-faq">' + FAQ.concat([["Do I need an account?", "No. You can book and track with just your name, email and phone. An account keeps your history, saved addresses and invoices together, and lets businesses use plans."], ["Where can I find my tracking code?", "On the confirmation screen after booking. Use it with your email under Track a delivery."]]).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + "</div>") +
+    sec("Common questions", '<div class="ws-faq">' + FAQ.concat([["Do I need an account?", "Yes, a free one. It takes a minute: your name, email and a password. It keeps your deliveries, tracking, saved addresses and invoices together, and businesses can add a plan."], ["Where can I find my tracking code?", "On the confirmation screen after booking. Use it with your email under Track a delivery."]]).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + "</div>") +
     sec("Write to us", c.sent ? "<p><b>Thanks, we've got your message.</b> DART support will reply by email.</p>" :
       '<form class="stack ws-form" data-form="w-contact">' + (acc ? "" : '<div class="grid2">' + field("Name", inp("c.contact.name", c.name, "required")) + field("Email", inp("c.contact.email", c.email, 'type="email" required')) + "</div>") +
       field("About", sel("c.contact.topic", c.topic, [["question", "A question"], ["delivery", "A delivery"], ["business", "Business plans"], ["courier", "Becoming a courier"], ["other", "Something else"]])) + field("Message", txt("c.contact.text", c.text, 'rows="5" required')) + '<button class="ws-btn">Send message</button></form>') + "</div>";
@@ -4619,7 +4612,10 @@ if (LIVE) {
   };
   var cLogout = ACT["c-logout"]; ACT["c-logout"] = function (d) { liveSignOut().then(function () { cLogout(d); }); };
   // Apple and Google sign-in arrive with the store builds.
-  socialButtons = function () { return ""; };
+  // Apple and Google sign-in come later: the buttons are in place and say so when tapped.
+  var socialReal = socialButtons;
+  socialButtons = function () { return socialReal("social-soon"); };
+  ACT["social-soon"] = function (d) { toast((d.v === "apple" ? "Sign in with Apple" : "Sign in with Google") + " is coming soon. Use your email for now."); };
 
   // Track a delivery by code and email.
   FORMS["c-track"] = function () {

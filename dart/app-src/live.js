@@ -160,7 +160,10 @@ if (LIVE) {
   };
   var cLogout = ACT["c-logout"]; ACT["c-logout"] = function (d) { liveSignOut().then(function () { cLogout(d); }); };
   // Apple and Google sign-in arrive with the store builds.
-  socialButtons = function () { return ""; };
+  // Apple and Google sign-in come later: the buttons are in place and say so when tapped.
+  var socialReal = socialButtons;
+  socialButtons = function () { return socialReal("social-soon"); };
+  ACT["social-soon"] = function (d) { toast((d.v === "apple" ? "Sign in with Apple" : "Sign in with Google") + " is coming soon. Use your email for now."); };
 
   // Track a delivery by code and email.
   FORMS["c-track"] = function () {

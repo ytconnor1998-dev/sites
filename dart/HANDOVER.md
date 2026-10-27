@@ -39,6 +39,7 @@ Supabase note: the project's own address (`<project>.supabase.co`) must be allow
 ## Owner preferences
 
 - Plain, specific wording; no AI-looking layouts (no grids of four boxes, no pricing tables on the website).
-- Website must stay usable without an account; only businesses get plans.
+- Every booking needs a DART account (owner decision, Oct 2026). Anyone can browse the website and get a price; booking asks them to log in or sign up and then returns to the booking. Only businesses get plans.
+- Apple and Google sign-in: buttons are in place on the live site and say "coming soon" until they are connected.
 - Couriers: no auto-assigning, accept or decline each offer; late fees are decided by admin, never automatic.
 - Explain things simply; the owner often works from a phone.
