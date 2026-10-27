@@ -519,6 +519,11 @@ function dEarnings(c) {
     '<button data-act="d-go" data-v="invreq"><b>Request an invoice</b><span>For a month, sent to you by DART</span><i>›</i></button></div>' +
     '<p class="muted sm">You earn the amount shown on each delivery. Payments go out every Monday.</p></div>';
 }
+// Keep the chosen period fully in view in the sideways-scrolling row.
+AFTER.push(function (root) {
+  var row = root.querySelector(".earn-p"), on = row && row.querySelector(".on"); if (!on) return;
+  if (on.offsetLeft + on.offsetWidth > row.scrollLeft + row.clientWidth || on.offsetLeft < row.scrollLeft) row.scrollLeft = on.offsetLeft - 16;
+});
 ACT["d-earn-p"] = function (d) { S.d.earnP = d.v; S.d.earnAll = false; render(); };
 ACT["d-earn-all"] = function () { S.d.earnAll = !S.d.earnAll; render(); };
 // Each payout DART records groups the deliveries it covered.
