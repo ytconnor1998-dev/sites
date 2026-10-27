@@ -13,29 +13,90 @@ function gmapLoad() {
   s.async = true; s.onerror = function () { GMAP.state = "failed"; render(); };
   document.head.appendChild(s);
 }
-// DART colours: lavender land, white roads, soft blue river, no shop and transport clutter.
-var GMAP_STYLE = [
-  { elementType: "geometry", stylers: [{ color: "#F1EEF8" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#5B5670" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#FFFFFF" }, { weight: 3 }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "poi.park", stylers: [{ visibility: "on" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#DCEBDD" }] },
-  { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#FFFFFF" }] },
-  { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#FFFFFF" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#D9CFF2" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#C4B5EC" }] },
-  { featureType: "road.local", elementType: "labels", stylers: [{ visibility: "simplified" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#C7D5F5" }] },
-  { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#D6CFE6" }] },
-  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#7A7391" }] },
-  { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#ECE8F5" }] }
-];
-var GMAP_PURPLE = "#452B94";
+// Map colour schemes. GMAP_LOOK picks one; the others are kept to compare.
+var GMAP_LOOKS = {
+  // Clean: near-white streets, soft grey blocks, purple-tinted water and main roads.
+  clean: [
+    { elementType: "geometry", stylers: [{ color: "#F6F5F9" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#6B6580" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#FFFFFF" }, { weight: 3 }] },
+    { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#EFEDF4" }] },
+    { featureType: "poi", stylers: [{ visibility: "off" }] },
+    { featureType: "poi.park", stylers: [{ visibility: "on" }] },
+    { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#E3EEDD" }] },
+    { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "transit", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#FFFFFF" }] },
+    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#E4E0EE" }] },
+    { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+    { featureType: "road.highway", elementType: "geometry.fill", stylers: [{ color: "#E6DEF8" }] },
+    { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#D2C6F0" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#D5CDEF" }] },
+    { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ visibility: "off" }] }
+  ],
+  // Night purple: the map in DART's own purple, white routes stand out.
+  purple: [
+    { elementType: "geometry", stylers: [{ color: "#2A1B5C" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#CFC4F2" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#2A1B5C" }, { weight: 3 }] },
+    { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#30205F" }] },
+    { featureType: "poi", stylers: [{ visibility: "off" }] },
+    { featureType: "poi.park", stylers: [{ visibility: "on" }] },
+    { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#2D2A5A" }] },
+    { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "transit", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#46348C" }] },
+    { featureType: "road", elementType: "geometry.stroke", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+    { featureType: "road.arterial", elementType: "geometry.fill", stylers: [{ color: "#5240A0" }] },
+    { featureType: "road.highway", elementType: "geometry.fill", stylers: [{ color: "#6A55BC" }] },
+    { featureType: "road.local", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#170F38" }] },
+    { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ visibility: "off" }] }
+  ],
+  // Neutral: warm grey and white, like most delivery apps, with DART purple only on routes and pins.
+  neutral: [
+    { elementType: "geometry", stylers: [{ color: "#F3F2EF" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#76726B" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#FFFFFF" }, { weight: 3 }] },
+    { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#ECEAE6" }] },
+    { featureType: "poi", stylers: [{ visibility: "off" }] },
+    { featureType: "poi.park", stylers: [{ visibility: "on" }] },
+    { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#E0EAD9" }] },
+    { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "transit", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#FFFFFF" }] },
+    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#E2DFD9" }] },
+    { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+    { featureType: "road.highway", elementType: "geometry.fill", stylers: [{ color: "#FFFFFF" }] },
+    { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#D8D4CC" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#CBDCEB" }] },
+    { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] },
+    { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ visibility: "off" }] }
+  ]
+};
+var GMAP_LOOK = (typeof window !== "undefined" && window.DART_MAP_LOOK) || "clean";
+var GMAP_STYLE = GMAP_LOOKS[GMAP_LOOK] || GMAP_LOOKS.clean;
+var GMAP_PURPLE = GMAP_LOOK === "purple" ? "#B79BFF" : "#452B94";
+// Small pictures for the map: the courier's vehicle in a purple disc, and a pin for the delivery address.
+var VEH_ICON = {
+  bike: '<circle cx="13" cy="25" r="5"/><circle cx="27" cy="25" r="5"/><path d="M13 25l5-9h7l2 9M18 16l-2-3h-3M25 16l2-3"/>',
+  scooter: '<circle cx="12" cy="26" r="4"/><circle cx="28" cy="26" r="4"/><path d="M12 26h9l4-8h-5M25 18l3-6h3M28 26l-3-8"/>',
+  car: '<path d="M9 24v-5l3-6h16l3 6v5z"/><circle cx="14" cy="25" r="2.5"/><circle cx="26" cy="25" r="2.5"/>',
+  van: '<path d="M8 25V13h16l6 5v7z"/><path d="M24 13v6h6"/><circle cx="13" cy="26" r="2.5"/><circle cx="26" cy="26" r="2.5"/>'
+};
+function vehKind(v) { return /bicycle|bike/.test(v || "") ? "bike" : /scooter|motorcycle/.test(v || "") ? "scooter" : /van/.test(v || "") ? "van" : /car/.test(v || "") ? "car" : "scooter"; }
+function svgUrl(s) { return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(s); }
+function vehIcon(v) {
+  return { url: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#452B94" stroke="#fff" stroke-width="3"/><g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + VEH_ICON[vehKind(v)] + "</g></svg>"),
+    scaledSize: new google.maps.Size(40, 40), anchor: new google.maps.Point(20, 20) };
+}
+function addrPin() {
+  return { url: svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path d="M16 41C16 41 3 26 3 16a13 13 0 0 1 26 0c0 10-13 25-13 25z" fill="#452B94" stroke="#fff" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#fff"/></svg>'),
+    scaledSize: new google.maps.Size(32, 42), anchor: new google.maps.Point(16, 41) };
+}
 
 // Where a map point is: exact coordinates when known (a dropped pin or GPS), else the area's centre.
 function llOf(area, ll) { return ll && isFinite(ll[0]) && isFinite(ll[1]) ? { lat: +ll[0], lng: +ll[1] } : AREAS[area] ? { lat: AREAS[area][0], lng: AREAS[area][1] } : null; }
@@ -47,7 +108,7 @@ function curvePts(a, b) {
 // A placeholder in the page; the map itself lives in the cache and is moved in after each render,
 // so maps don't flicker or reload when the page redraws every second.
 function realMap(opt) {
-  var stable = { r: (opt.routes || []).map(function (r) { return [r.from, r.to, r.fromLL, r.toLL, !!r.dashed, !!r.thin]; }), p: (opt.pins || []).map(function (p) { return p.tone || ""; }), d: (opt.dots || []).length, big: !!opt.vb };
+  var stable = { r: (opt.routes || []).map(function (r) { return [r.from, r.to, r.fromLL, r.toLL, !!r.dashed, !!r.thin, r.vehicle || ""]; }), p: (opt.pins || []).map(function (p) { return p.tone || ""; }), d: (opt.dots || []).length, big: !!opt.vb };
   var key = "m" + hashStr(JSON.stringify(stable));
   GMAP.specs[key] = opt;
   return '<div class="gm" data-gm="' + key + '"></div>';
@@ -66,9 +127,9 @@ function gmapCreate(ph, opt) {
     var pts = curvePts(a, b);
     new g.Polyline({ map: map, path: pts, strokeColor: GMAP_PURPLE, strokeOpacity: r.dashed ? 0 : .9, strokeWeight: r.thin ? 3 : 5, icons: r.dashed ? [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: GMAP_PURPLE, scale: 3 }, offset: "0", repeat: "12px" }] : null });
     new g.Marker({ map: map, position: a, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 7, fillColor: "#FFFFFF", fillOpacity: 1, strokeColor: GMAP_PURPLE, strokeWeight: 4 } });
-    new g.Marker({ map: map, position: b, clickable: false, icon: { path: "M -7,-7 7,-7 7,7 -7,7 z", scale: 1, fillColor: "#1B1530", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2 } });
+    new g.Marker({ map: map, position: b, clickable: false, zIndex: 5, icon: addrPin() });
     add(a); add(b);
-    if (r.t != null) e.movers.push({ r: r, pts: pts, a: a, m: new g.Marker({ map: map, position: a, clickable: false, zIndex: 9, icon: { path: g.SymbolPath.CIRCLE, scale: 9, fillColor: "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 3 } }) });
+    if (r.t != null) e.movers.push({ r: r, pts: pts, a: a, m: new g.Marker({ map: map, position: a, clickable: false, zIndex: 9, icon: vehIcon(r.vehicle) }) });
   });
   e.dots = []; e.pins = [];
   (opt.dots || []).forEach(function (d) { var p = llOf(d.area, d.ll); if (!p) return; e.dots.push(new g.Marker({ map: map, position: p, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 6, fillColor: d.color && d.color.indexOf("ok") >= 0 ? "#1F9D57" : "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2.5 } })); add(p); });

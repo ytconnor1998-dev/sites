@@ -480,7 +480,7 @@ function cOrder(acc) {
   if (o.status === "in_transit") eta = "About " + Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min to delivery";
   var top = (web ? '<div class="row between"><h1 class="w-title">Delivery ' + esc(o.id) + '</h1><button class="btn ghost sm" data-act="c-go" data-v="' + backTo + '">← ' + (acc ? "All deliveries" : "Track another") + "</button></div>" : head('<span class="mono">' + esc(o.id) + "</span>", backTo));
   if (!acc && o.customer.guest && o.status === "awaiting") top += '<div class="' + (web ? "" : "pad") + '"><div class="banner">Keep your tracking code <b class="mono">' + esc(o.id) + "</b>. You can track it any time with your email.</div></div>";
-  var mapH = '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll }, pos)] }) + "</div>";
+  var mapH = '<div class="map map-md">' + mapSVG({ labels: false, routes: [Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, vehicle: o.courier && o.courier.vehicle }, pos)] }) + "</div>";
   var by = o.deliverBy && ACTIVE.indexOf(o.status) >= 0 ? '<p class="by-line">Arrives ' + (o.asap ? "by about " + hhmm(o.deliverBy) : byLabel(o.deliverBy).replace(/^Today by /, "by ").replace(/^Tomorrow by /, "tomorrow by ")) + "</p>" : "";
   var a = '<div class="stack"><div><h2 class="status-h">' + esc(STATUS[o.status]) + "</h2>" + by + (eta ? '<p class="muted">' + eta + "</p>" : o.status === "awaiting" ? '<p class="muted">We\'re offering it to couriers with a suitable vehicle.</p>' : "") + "</div>" +
     (idx >= 0 ? '<div class="progress">' + FLOW.map(function (k, i) { return '<i class="' + (i <= idx ? "on" : "") + '"></i>'; }).join("") + "</div>" : "");
@@ -892,7 +892,7 @@ function cMapHome(acc) {
   var orders = acc ? myOrders() : S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);
   var active = orders.filter(isActive), hq = S.c.hq, st = settings();
   var x = hq.from && hq.to ? typicalQuote(hq.type, hq.from, hq.to) : null;
-  var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, thin: active.length > 1 }, courierPos(o)); });
+  var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, vehicle: o.courier && o.courier.vehicle, thin: active.length > 1 }, courierPos(o)); });
   var pins = active.map(function (o) {
     var moving = o.status === "in_transit", pos = courierPos(o);
     return { area: moving || o.status === "at_dest" ? o.dropoff.area : o.pickup.area, ll: moving || o.status === "at_dest" ? o.dropoff.ll : o.pickup.ll, text: moving ? Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min" : tr(MAP_PIN[o.status] || "") };
