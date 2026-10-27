@@ -1,0 +1,21 @@
+{
+  "name": "loose-change",
+  "productName": "Loose Change",
+  "version": "0.1.0",
+  "description": "An incremental game about checking down the back of the sofa.",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "assets": "node tools/copy-assets.js",
+    "sim": "node tools/sim.js",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "devDependencies": {
+    "@fontsource/fredoka": "5.3.0",
+    "@twemoji/svg": "15.0.0"
+  }
+}
