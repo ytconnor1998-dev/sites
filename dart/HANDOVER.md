@@ -23,7 +23,7 @@ Supabase note: the project's own address (`<project>.supabase.co`) must be allow
 
 ## What is live
 
-- Website and admin: https://dart-rome.expo.app (admin at `#admin`), on EAS Hosting, project `@cdavies12s-team/dart`. To update: `python3 dart/app-src/build.py`, copy `dart/dist/live.html` to `dart/mobile/dist/index.html`, then in `dart/mobile` run `npx eas-cli@26.0.0 deploy --prod --non-interactive --export-dir dist`.
+- Website and admin: https://dart-rome.expo.app (admin at `#admin`), on EAS Hosting, project `@cdavies12s-team/dart`. To update: run `dart/deploy.sh`. It builds, deploys, and checks the live page matches, deploying again if EAS hasn't switched over yet (this happens).
 - Android test apps (`dart/mobile`): one Expo project, two apps. `eas build -p android --profile preview` (DART, customers) and `--profile preview-courier` (DART Courier). They show the hosted site full screen.
 - Network access also needs `*.expo.dev` and `*.expo.app` for deploys.
 - Real map (`app-src/maps.js`): Google Maps in DART colours, drop-a-pin addresses, GPS pins. It switches on when the build sees `GOOGLE_MAPS_KEY` (a browser key restricted to `https://dart-rome.expo.app/*`; Maps JavaScript, Geocoding and Places APIs enabled). Without the key every map stays the drawn one. Live since 27 Oct 2026 with the "clean" colours (`GMAP_LOOK`). Every rebuild must run where `GOOGLE_MAPS_KEY` is set, or the deployed site falls back to the drawn map.
