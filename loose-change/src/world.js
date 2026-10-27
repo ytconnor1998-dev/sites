@@ -15,7 +15,7 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
 const EYE = 1.25, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
-const BOUNDS = { x0: -24, x1: 24, z0: -26, z1: 27 };
+const BOUNDS = { x0: -62, x1: 62, z0: -26, z1: 56 };
 
 let renderer, scene, camera, sun, canvas, composer = null, clouds = null, grainPass = null;
 const colliders = [];
@@ -111,7 +111,7 @@ function buildLevel() {
   scene.add(M.box(1.2, 0.6, 0.22, wc, -5.6, 2.5, -5, { shadow: false }), M.box(1.2, 0.6, 0.22, wc2, 3, 2.5, 5, { shadow: false }));
   // windows
   for (const [x, z, ry] of [[-3.5, 5.01, 0], [-3.5, -5.01, 0], [5.2, 5.01, 0], [-7.01, 2.6, Math.PI / 2]]) {
-    const win = M.box(1.6, 1.1, 0.05, 0xbfe7ff, 0, 0, 0, { mat: { emissive: 0x3a5a70 }, shadow: false });
+    const win = M.box(1.6, 1.1, 0.05, M.windowMat(true, 2), 0, 0, 0, { shadow: false, sharp: true });
     add(win, x, 1.6, z, ry);
   }
   // roof (doesn't cast shadows so the inside stays bright)
@@ -190,20 +190,10 @@ function buildLevel() {
   floor(2.6, 5, 3.4, 8, 0xbcb3a3, 0.015); // path
   for (const [x0, x1] of [[-12, 2.4], [3.6, 12]]) { const f = M.fence((x1 - x0), 0x7a6a5a); f.scale.y = 0.6; f.position.set((x0 + x1) / 2, 0, 8); scene.add(f); collide(x0, 7.9, x1, 8.1); }
   for (const s of [-1, 1]) { const f = M.fence(3, 0x7a6a5a); f.scale.y = 0.6; f.rotation.y = Math.PI / 2; f.position.set(s * 12, 0, 6.5); scene.add(f); collide(s * 12 - 0.1, 5, s * 12 + 0.1, 8); }
-  floor(-40, 8, 40, 10, 0xcfcac0, 0.03);   // near pavement
-  floor(-40, 10, 40, 16, 0x4a4a52, 0.02);  // road
-  for (let x = -38; x < 40; x += 4) floor(x, 12.9, x + 2, 13.1, 0xf2f0e6, 0.03);
-  floor(-40, 16, 40, 18, 0xcfcac0, 0.03);  // far pavement
-  // neighbours (Brian is on the left)
-  for (const [x0, x1, col, name] of [[-24, -12, 0xd8b7a0, "BRIAN'S HOUSE"], [12, 24, 0xa8c8b8, 'NUMBER 9']]) {
-    const h = add(M.box(x1 - x0, 4.2, 10, col, 0, 0, 0, { shadow: false }), (x0 + x1) / 2, 2.1, 0);
-    collide(x0, -5, x1, 5);
-    const roof = add(M.box(x1 - x0 + 0.4, 0.3, 10.6, M.C.roof, 0, 0, 0), (x0 + x1) / 2, 4.3, 0);
-    const lbl = M.textSprite(name, { size: 0.5 }); lbl.position.set((x0 + x1) / 2, 3.2, 5.2); scene.add(lbl);
-    for (const s of [-1, 1]) add(M.box(1.4, 1, 0.05, 0xbfe7ff, 0, 0, 0, { mat: { emissive: 0x3a5a70 }, shadow: false }), (x0 + x1) / 2 + s * 3, 1.8, 5.03);
-    void roof; void h;
-  }
-  for (const s of [-1, 1]) collide(s * 12 - 0.2, -26, s * 12 + 0.2, -5);
+  floor(-70, 8, 70, 10, 0xcfcac0, 0.03);   // near pavement
+  floor(-70, 10, 70, 16, 0x4a4a52, 0.02);  // road
+  for (let x = -68; x < 70; x += 4) floor(x, 12.9, x + 2, 13.1, 0xf2f0e6, 0.03);
+  floor(-70, 16, 70, 18, 0xcfcac0, 0.03);  // far pavement
   // the corner shop
   const sx0 = -5, sx1 = 5, sz0 = 18, sz1 = 26;
   floor(sx0, sz0, sx1, sz1, 0xe6e0d0, 0.04);
@@ -214,7 +204,7 @@ function buildLevel() {
   scene.add(M.box(10.6, 0.25, 8.6, 0x7a5a6a, 0, 3.5, 22, { shadow: false }));
   const shopSign = M.textSprite('CORNER SHOP · SCRATCHCARDS', { size: 0.55, bg: '#2d6a4f', color: '#fffaf0', border: '#fffaf0' });
   shopSign.position.set(0, 3.9, sz0 - 0.2); scene.add(shopSign);
-  for (const s of [-1, 1]) add(M.box(2.6, 1.4, 0.05, 0xbfe7ff, 0, 0, 0, { mat: { emissive: 0x3a5a70 }, shadow: false }), s * 3, 1.6, sz0 - 0.12);
+  for (const s of [-1, 1]) add(M.box(2.6, 1.4, 0.05, M.displayMat('charity'), 0, 0, 0, { shadow: false, sharp: true }), s * 3, 1.6, sz0 - 0.12, Math.PI);
   const counter = add(M.counter(4), 0, 0, 23.6); collideObj(counter);
   const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222 }), 0, 0, 24.6, Math.PI);
   agents.push({ obj: keeper, update: (dt, t) => { keeper.rotation.y = Math.PI + Math.sin(t * 0.7) * 0.3; } });
@@ -225,25 +215,140 @@ function buildLevel() {
   }
   const cardStand = add(M.box(0.8, 1.2, 0.3, 0xf2b631, 0, 0, 0), -1.4, 1.55, 23.6);
   void cardStand;
-  // the rest of the street
-  for (const [x0, x1, col, name] of [[-24, -7, 0x9fb7d6, 'LAUNDERETTE'], [7, 24, 0xd6c49f, 'CHIPPY']]) {
-    add(M.box(x1 - x0, 5, 8, col, 0, 0, 0, { shadow: false }), (x0 + x1) / 2, 2.5, 22);
-    collide(x0, 18, x1, 26);
-    const lbl = M.textSprite(name, { size: 0.6 }); lbl.position.set((x0 + x1) / 2, 4, 17.9); scene.add(lbl);
-  }
-  collide(-7, 18, -5, 26); collide(5, 18, 7, 26);
-  for (let x = -20; x <= 20; x += 10) { add(M.lampPost(), x, 0, 9.6, Math.PI / 2); collide(x - 0.15, 9.45, x + 0.15, 9.75); lightCone(x, 3.85, 9.1, 3.2, 1.3, 0xffd9a0, 0.035); }
-  for (const [x, z] of [[-30, 30], [30, 30], [0, 48], [-45, -10], [45, 0], [-35, -38], [30, -40]]) add(M.tree(rand(4, 6)), x, 0, z);
-  // invisible edges of the world
-  collide(BOUNDS.x0 - 1, BOUNDS.z0, BOUNDS.x0, BOUNDS.z1); collide(BOUNDS.x1, BOUNDS.z0, BOUNDS.x1 + 1, BOUNDS.z1);
-  collide(BOUNDS.x0, BOUNDS.z1, BOUNDS.x1, BOUNDS.z1 + 1); collide(BOUNDS.x0, BOUNDS.z0 - 1, BOUNDS.x1, BOUNDS.z0);
+  buildTown();
   spots.pavement = { x0: 7, x1: 22, z: 9 };
-  spots.roadside = { x0: -23, x1: -8, z: 11.4 };
+  spots.roadside = { x0: -22, x1: -10, z: 11.4 };
 
   // sky things
   const moon = new THREE.Mesh(new THREE.SphereGeometry(9, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf4f1e4, fog: false }));
   moon.position.set(-70, 60, -110); scene.add(moon);
   spots.moon = moon;
+}
+
+// ---------- the town: Acacia Road, the high street and the park ----------
+function buildTown() {
+  const brick = (shade = 1) => texMat('brick', 4, 3, new THREE.Color(shade, shade, shade).getHex());
+  // our side of the road: a row of houses (ours is the one in the middle, built separately)
+  const houses = [
+    { x: -54, w: 10, door: 0x2d6a4f, n: 1, tex: brick(0.9) },
+    { x: -42, w: 10, door: 0xf2b631, n: 3, color: 0xe8dcc8 },
+    { x: -30, w: 10, door: 0x9b59b6, n: 5, tex: brick(1.05) },
+    { x: -18, w: 12, door: 0xc8231f, n: 7, color: 0xf3eee4, brian: true },
+    { x: 18, w: 12, door: 0x3b6ea5, n: 11, tex: brick(0.95) },
+    { x: 30, w: 10, door: 0x6aa84f, n: 13, color: 0xd9c2a8 },
+    { x: 42, w: 10, door: 0xd27a5a, n: 15, tex: brick(1.1) },
+    { x: 54, w: 10, door: 0x2d2118, n: 17, color: 0xc8d8e0 },
+  ];
+  for (const h of houses) {
+    const o = add(M.townHouse({ w: h.w, d: 10, wallTex: h.tex, wallColor: h.color, door: h.door, number: h.n }), h.x, 0, 5);
+    void o;
+    collide(h.x - h.w / 2, -5, h.x + h.w / 2, 5);
+    // front garden: low wall with a gap for the path, bins, a hedge or a gnome
+    const gw = h.w;
+    add(M.lowWall(gw / 2 - 1, h.brian ? 0xf3eee4 : 0xb5573b), h.x - gw / 4 - 0.5, 0, 7.9);
+    add(M.lowWall(gw / 2 - 1, h.brian ? 0xf3eee4 : 0xb5573b), h.x + gw / 4 + 0.5, 0, 7.9);
+    collide(h.x - gw / 2, 7.75, h.x - 1, 8.05); collide(h.x + 1, 7.75, h.x + gw / 2, 8.05);
+    floor(h.x - gw / 4 - 0.6, 5, h.x - gw / 4 + 0.6, 7.9, 0xbcb3a3, 0.015);
+    add(M.wheelieBin(pick([0x2d4a2d, 0x3a3a3a, 0x3b5a8a])), h.x + gw / 2 - 1, 0, 6.6, Math.PI);
+    if (h.brian) {
+      // Brian's lawn is perfect. There is a gnome. The gnome is watching.
+      floor(h.x - gw / 2 + 0.3, 5.2, h.x + gw / 2 - 0.3, 7.7, 0x86c964, 0.016);
+      const gn = add(M.gnome(), h.x + 2.5, 0, 6.6, Math.PI * 0.1);
+      interact(gn, { range: 2.5, prompt: () => "Stare at Brian's gnome", use: () => LC.game.gnomeStare() });
+      const sign = M.signPlane('KEEP OFF THE GRASS', 1.4, 0.35, { bg: '#f3eee4', color: '#c8231f' }); sign.position.set(h.x - 2.5, 0.9, 7.6); scene.add(sign);
+    } else add(M.hedge(gw / 2 - 1.6), h.x + gw / 4 - 0.2, 0, 5.8);
+  }
+  // nobody goes round the back of the other houses
+  collide(-62, -26, -12, 5); collide(12, -26, 62, 5);
+  // street furniture
+  for (let x = -54; x <= 54; x += 12) {
+    add(M.lampPost(), x, 0, 9.6, Math.PI / 2); collide(x - 0.15, 9.45, x + 0.15, 9.75); lightCone(x, 3.85, 9.1, 3.2, 1.3, 0xffd9a0, 0.035);
+    add(M.lampPost(), x + 6, 0, 16.4, -Math.PI / 2); collide(x + 5.85, 16.25, x + 6.15, 16.55); lightCone(x + 6, 3.85, 16.9, 3.2, 1.3, 0xffd9a0, 0.035);
+  }
+  add(M.postbox(), 1.0, 0, 9.3); collide(0.7, 9.0, 1.3, 9.6);
+  const pb = add(M.phoneBox(), -15.6, 0, 17.2); collide(-16.2, 16.6, -15, 17.8);
+  interact(pb, { range: 2.6, prompt: () => 'Check the coin return', use: () => LC.game.phoneBox() });
+  add(M.busStop(), -30, 0, 9.4); collide(-31.5, 8.7, -28.5, 9.0);
+  const busSign = M.signPlane('ACACIA ROAD', 2.4, 0.4, { bg: '#3a5a7a' }); busSign.position.set(-30, 2.25, 8.79); scene.add(busSign);
+  for (const [x, z, ry, c] of [[-47, 11, Math.PI / 2, 0xd9534f], [-36, 11, Math.PI / 2, 0x6aa84f], [24, 11, Math.PI / 2, 0x3a3a3a], [48, 11, Math.PI / 2, 0xf2b631], [-38, 15, -Math.PI / 2, 0x3b6ea5], [-2, 15, -Math.PI / 2, 0x9b59b6], [16, 15, -Math.PI / 2, 0xd27a5a], [36, 15, -Math.PI / 2, 0x8f8f8f]]) {
+    const car = add(M.car(c), x, 0, z, ry);
+    car.children.filter((k) => k.isGroup).forEach((k) => (k.visible = false)); // parked cars, no car-boot table
+    collideObj(car);
+  }
+  // the high street (across the road). Fronts face our side.
+  const shops = [
+    { x: -54, w: 12, name: 'THE RUSTY ANCHOR', kind: 'pub', bg: '#3a2a1a', wall: brick(0.8), awning: [0x2d4a2d, 0xe8dcc8], line: 'The pub. You are not allowed in. You are nine.' },
+    { x: -41.5, w: 11, name: 'BUN IN THE OVEN', kind: 'bakery', bg: '#d27a5a', color: 0xf3e2c8, awning: [0xf7a8bd, 0xfff6e6], line: 'The bakery. It smells like heaven and sausage rolls.' },
+    { x: -29.5, w: 11, name: 'SPIN CITY LAUNDERETTE', kind: 'launderette', bg: '#3b6ea5', color: 0xc8d8e8, awning: [0x3b6ea5, 0xffffff], line: 'The launderette. People leave coins in their pockets. Interesting.' },
+    { x: -19, w: 8, name: 'HAIR TODAY', kind: 'barber', bg: '#c8231f', wall: brick(1), awning: [0xc8231f, 0xffffff], line: 'The barber. The barber is also called Barry.' },
+    { x: -9.5, w: 8, name: 'SECOND CHANCES CHARITY SHOP', kind: 'charity', bg: '#6a3a7a', color: 0xe8d8e8, awning: [0x9b59b6, 0xfff6e6], line: 'The charity shop. Everything is 50p. Including a suit of armour.' },
+    { x: 11, w: 10, name: 'THE CODFATHER', kind: 'chippy', bg: '#2a5a8a', color: 0xf6f0d8, awning: [0x2a5a8a, 0xfff6e6], line: 'The chippy. Smells like vinegar and dreams.' },
+    { x: 22.5, w: 11, name: 'POST OFFICE', kind: 'post', bg: '#c8231f', wall: brick(0.9), awning: [0xc8231f, 0xf2b631], line: 'The post office. There is always a queue. Always.' },
+  ];
+  for (const sh of shops) {
+    const o = add(M.shopFront({ w: sh.w, d: 9, name: sh.name, kind: sh.kind, bg: sh.bg, wallTex: sh.wall, wallColor: sh.color, awning: sh.awning }), sh.x, 0, 18, Math.PI);
+    collide(sh.x - sh.w / 2, 18, sh.x + sh.w / 2, 27);
+    const door = new THREE.Mesh(new THREE.BoxGeometry(sh.w, 3, 0.4), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    door.position.set(sh.x, 1.5, 17.8); door.userData.noAO = true; scene.add(door);
+    interact(door, { range: 3, prompt: () => sh.name.charAt(0) + sh.name.slice(1).toLowerCase(), use: () => LC.game.say(sh.line) });
+    void o;
+  }
+  collide(-62, 26, 28, 56); collide(-62, 18, -60, 26); collide(-5.5, 18, -5, 26); collide(5, 18, 6, 26);
+  // houses peeking over the back fences, and a church spire on the skyline
+  for (let x = -40; x <= 40; x += 11) add(M.townHouse({ w: 10, d: 8, wallColor: pick([0xd9c2a8, 0xe8dcc8, 0xc8b8a0]), lit: false }), x, 0, -32, Math.PI);
+  const spire = add(new THREE.Group(), -35, 0, 70);
+  spire.add(M.box(5, 12, 5, 0xbab3a6, 0, 6, 0, { sharp: true }), M.cone(3.2, 9, 0x6a6a72, 0, 16.5, 0, { seg: 8 }), M.ball(0.3, 0xf2b631, 0, 21.2, 0));
+
+  // ---- the park ----
+  floor(28, 18, 62, 56, 0x86c964, 0.012);
+  add(M.hedge(30), 46, 0, 18.3); collide(31, 18, 62, 18.8);   // front hedge with a gap at the gate (x 28-31)
+  const gate = M.signPlane('ACACIA PARK', 2.6, 0.5, { bg: '#2d6a4f' }); gate.position.set(29.5, 2.2, 17.9); gate.rotation.y = Math.PI; scene.add(gate);
+  add(M.box(0.2, 2.4, 0.2, 0x333333, 0, 0, 0), 28.2, 1.2, 18); add(M.box(0.2, 2.4, 0.2, 0x333333, 0, 0, 0), 30.8, 1.2, 18);
+  collide(62, 18, 63, 56); collide(28, 55.5, 62, 56.5); collide(27.5, 26, 28, 56);
+  const pondAt = new THREE.Vector3(49, 0, 43);
+  add(M.pond(6), pondAt.x, 0, pondAt.z); collide(pondAt.x - 5.5, pondAt.z - 5.5, pondAt.x + 5.5, pondAt.z + 5.5);
+  for (let i = 0; i < 5; i++) {
+    const d = add(M.duck(), pondAt.x + rand(-3, 3), 0.03, pondAt.z + rand(-3, 3));
+    const a0 = rand(0, 6), r0 = rand(1.5, 4.5), sp = rand(0.1, 0.25) * (i % 2 ? 1 : -1);
+    agents.push({ obj: d, update: (dt, t) => { const a = a0 + t * sp; d.position.set(pondAt.x + Math.cos(a) * r0, 0.03 + Math.sin(t * 2 + i) * 0.01, pondAt.z + Math.sin(a) * r0); d.rotation.y = -a + (sp > 0 ? 0 : Math.PI); } });
+  }
+  const ft = add(M.fountain(), 40, 0, 30); collide(37.6, 27.6, 42.4, 32.4);
+  interact(ft, { range: 4, prompt: () => LC.game.fountainPrompt(), use: () => LC.game.fountain() });
+  spots.fountain = ft;
+  const sw = add(M.swings(), 55, 0, 25); collide(53.3, 24.3, 56.7, 25.7);
+  agents.push({ obj: sw, update: (dt, t) => { sw.children.filter((c) => c.name === 'swing').forEach((c, i) => (c.rotation.x = Math.sin(t * 1.6 + i * 2) * 0.35)); } });
+  add(M.slide(), 57, 0, 32, -Math.PI / 2); collide(55.5, 31.4, 58.6, 32.6);
+  for (const [x, z, ry] of [[34, 36, Math.PI / 2], [44, 50, Math.PI], [36, 46, Math.PI / 2], [52, 34, 0]]) { const b = add(M.bench(), x, 0, z, ry); collideObj(b); interact(b, { range: 2.5, prompt: () => 'Check under the bench', use: () => LC.game.checkBench() }); }
+  for (const [x, z, h] of [[33, 22, 5], [59, 21, 4.5], [32, 52, 6], [58, 52, 5], [42, 40, 4], [60, 40, 5.5], [36, 42, 4.5]]) { add(M.tree(h), x, 0, z); collide(x - 0.3, z - 0.3, x + 0.3, z + 0.3); }
+  spots.park = [{ x0: 31, x1: 60, z0: 20, z1: 54 }];
+
+  // ---- townsfolk, wandering about ----
+  const pave = [{ x0: -60, x1: 60, z0: 8.5, z1: 9.4 }, { x0: -60, x1: 60, z0: 16.6, z1: 17.4 }];
+  const folk = [
+    { look: { shirt: 0xd9534f, legs: 0x222222, hat: 'cap' }, speed: 3.2, zone: pave, lines: 'jogger' },
+    { look: { shirt: 0x6a8a4a, legs: 0x5a4a3a, hair: 0xcccccc }, speed: 0.9, zone: spots.park, lines: 'oldman', dog: true },
+    { look: { shirt: 0xc8231f, legs: 0x2a3a5a, hat: 'cap' }, speed: 1.6, zone: pave, lines: 'postman' },
+    { look: { shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a }, speed: 1.1, zone: pave, lines: 'mum', pram: true },
+    { look: { shirt: 0x3a7bd5, legs: 0x3a3f58, hair: 0x222222, height: 0.7 }, speed: 1.8, zone: spots.park, lines: 'kid' },
+    { look: { shirt: 0x9b59b6, legs: 0x5a4a6a, hat: 'bun', height: 0.92 }, speed: 0.7, zone: pave, lines: 'lady' },
+  ];
+  for (const f of folk) {
+    const o = add(M.person(f.look), 0, 0, 0);
+    o.position.copy(randomIn(f.zone));
+    if (f.pram) { const pr = M.pram(); pr.position.set(0, 0, 0.8); o.add(pr); }
+    walker(o, f.zone, f.speed, { pause: 4 });
+    interact(o, { range: 2.5, prompt: () => 'Say hello', use: () => LC.game.chat(f.lines) });
+    if (f.dog) {
+      const dg = add(M.dog(), o.position.x + 1, 0, o.position.z);
+      agents.push({ obj: dg, update: (dt, t) => {
+        const target = o.position.clone().add(new THREE.Vector3(Math.sin(t * 0.7) * 1.2, 0, Math.cos(t * 0.7) * 1.2));
+        const d = target.sub(dg.position); d.y = 0;
+        if (d.length() > 0.2) { dg.position.addScaledVector(d.normalize(), Math.min(2.5, d.length() * 2) * dt); dg.rotation.y = Math.atan2(d.x, d.z); limbs(dg, Math.sin(t * 14)); }
+        const tail = dg.getObjectByName('tail'); if (tail) tail.rotation.z = Math.sin(t * 18) * 0.6;
+      } });
+      interact(dg, { range: 2.2, prompt: () => 'Pat the dog', use: () => { LC.audio.sfx('woof'); LC.game.say(pick(['Good dog.', 'The dog has found a coin. The dog gives it to you. Best dog.', 'The dog licks your hand. Your hand is now worth slightly less.'])); if (Math.random() < 0.3) LC.game.tip(20, 'dog'); } });
+    }
+  }
 }
 
 // ---------- characters & helpers that appear as you buy them ----------

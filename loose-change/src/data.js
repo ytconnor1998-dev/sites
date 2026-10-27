@@ -359,6 +359,21 @@ Colin does not want to be put down.` },
 Derek likes: being shiny, the radio.
 Derek dislikes: the coin pusher (bad memories).
 Derek is NOT for spending.` },
+  { id: 'places', title: 'Places to check', when: (s) => s.lifetime >= 15, body:
+`Places money might be:
+- sofa (obviously)
+- the floor (look DOWN)
+- piggy bank (sorry Gerald)
+- the garden (dig)
+- ??? (ask Nan, she knows things)
+- ??? (the park??)` },
+  { id: 'grandad', title: "Grandad's habits", when: (s) => s.lifetime >= 60, body:
+`Things Grandad always did:
+- whistled
+- checked the phone box (WHY)
+- fed the ducks
+- said "a penny saved is a penny found"
+- went quiet whenever anyone mentioned the sofa` },
   { id: 'million', title: 'I AM A MILLIONAIRE', when: (s) => s.lifetime >= 1e6, body:
 `I have found a MILLION POUNDS.
 Down the sofa. And other places.
@@ -389,6 +404,10 @@ LC.TEXTS = [
   { id: 'unknown2', from: 'Unknown number', when: (s) => s.lifetime >= 1e6, msgs: ['honk'] },
   { id: 'brian3', from: 'Brian (next door)', when: (s) => s.lifetime >= 1e7, msgs: ["OK how are you doing this", "I've been digging for three days", "I found a sock"] },
   { id: 'grandad1', from: 'Grandad', when: (s) => s.lifetime >= 1e9, msgs: ["Hello. It's Grandad. Nan showed me how to text.", 'Proud of you. Keep going.', "Don't let Brian peek under the sheet."] },
+  { id: 'nan3', from: 'Nan', when: (s) => s.lifetime >= 30, msgs: ['Your grandad never walked past that red phone box without checking the little coin flap.', 'Said it paid for his paper every morning.'] },
+  { id: 'mate1', from: 'Jamal (school)', when: (s) => s.lifetime >= 120, msgs: ['yo r u coming to the park', 'someone said u can get money out the fountain??', 'i got 30p and a duck bit me'] },
+  { id: 'mum4', from: 'Mum', when: (s) => s.lifetime >= 400, msgs: ["If you're going to the park, take a bag for the litter under the benches.", 'You would not BELIEVE what people drop.'] },
+  { id: 'brian4', from: 'Brian (next door)', when: (s) => s.lifetime >= 2000, msgs: ['Stop staring at my gnome.', 'He has been in the family for 40 years.', 'He sees EVERYTHING.'] },
   { id: 'moon1', from: 'NASA (probably)', when: (s) => (s.gens.moon || 0) >= 1, msgs: ['Hi. Could you please stop checking the Moon sofa.', 'The astronauts were going to check it.'] },
 ];
 
@@ -398,8 +417,33 @@ LC.FORECASTS = [
   ['🌦️', 'Light showers', 'Of pigeons. Bring an umbrella. A strong one.'],
   ['🪿', 'Goose warning', 'A goose has been spotted in your area. Stay indoors. Lock the cat flap.'],
   ['☁️', 'Overcast', 'Grey all day. Perfect sofa weather.'],
-  ['🌈', 'Rainbow', 'Something valuable may be at the end of it. Probably a 2p.'],
+  ['🌈', 'Rainbow', 'Ending somewhere around the park fountain today. Probably a 2p.'],
+  ['🍃', 'Breezy', 'Expect litter under park benches. And possibly treasure.'],
   ['🌬️', 'Windy', 'Brian\'s leaf blower expected from 7am.'],
   ['🌙', 'Clear skies', 'Good night for looking at the Moon. Is that a sofa up there?'],
   ['🌧️', 'Rain', 'Worms will come up. Gary sends his regards.'],
 ];
+
+// ---- Secrets: hidden ways to earn and Easter eggs. The phone's Secrets app shows hints. ----
+LC.SECRETS = [
+  { id: 'fountain', icon: '⛲', name: 'Wishing fountain', hint: 'People throw their wishes into water. Somebody has to get them out.', found: 'Fish coins out of the park fountain. It refills as people make wishes.' },
+  { id: 'bench', icon: '🪑', name: 'Under the benches', hint: 'Old men sit in the park and drop things.', found: 'Check under park benches for dropped change.' },
+  { id: 'phonebox', icon: '☎️', name: 'Coin return', hint: 'Grandad always checked the phone box.', found: 'Check the coin return in the red phone box.' },
+  { id: 'dog', icon: '🐕', name: 'Good boy', hint: 'Pat everything with fur.', found: 'The dog in the park sometimes finds you coins.' },
+  { id: 'floor', icon: '🪙', name: 'Eyes down', hint: 'Money is everywhere if you look down.', found: 'Coins turn up on the floor all over town. Walk over them.' },
+  { id: 'golden', icon: '✨', name: 'Shiny!', hint: 'When the arrow appears, run.', found: 'Golden coins appear somewhere in town. Follow the arrow.' },
+  { id: 'gnome', icon: '🧙', name: "The gnome's notebook", hint: "Brian's gnome is always watching. Watch it back.", found: 'Stare down the gnome five times.', egg: true },
+  { id: 'colin', icon: '🐸', name: 'Colin', hint: 'Not every scratchcard prize is a prize.', found: 'Win a frog on a scratchcard. His name is Colin.', egg: true },
+  { id: 'chatty', icon: '💬', name: 'Local celebrity', hint: 'Say hello to everyone in town.', found: 'Chat to every kind of townsperson.', egg: true },
+  { id: 'notes', icon: '📝', name: 'Diary of a millionaire', hint: 'Read your own notes. All of them.', found: 'Read every note on your phone.', egg: true },
+];
+
+// ---- What townsfolk say when you say hello. The first lines often hide a hint. ----
+LC.CHAT = {
+  jogger: ['"Can\'t stop! Personal best!"', '"Found a quid on my run once. By the phone box."', '"Do you ever just... run?"', '"I\'ve been running for nine years. I don\'t know how to stop."'],
+  oldman: ['"Back in my day you\'d find a pound under every park bench."', '"That fountain\'s full of wishes. Shame to waste them."', '"Your grandad and I used to go metal detecting. He never told me what he found."', '"The dog\'s called Biscuit. Biscuit is smarter than me."'],
+  postman: ['"Lot of post for your Grandad lately. Big parcels. Heavy."', '"That goose bit me on Tuesday. And Wednesday."', '"Brian at number 7 gets a lot of parcels from a shop called SPADES R US."', '"Never trust a letterbox with brushes in it."'],
+  mum: ['"Oh hello love! Saving up for something?"', '"The baby swallowed a 2p once. We got it back. Don\'t ask how."', '"I always leave my change in the washing. Every time."', '"Have you seen the size of the hole next door to Brian\'s?"'],
+  kid: ['"I\'m saving up too. I have 4p."', '"The fountain is magic. My mate got 50p out of it."', '"Brian shouted at me for touching his gnome."', '"Do you want to swap a Lego for a button?"'],
+  lady: ['"Ooh, you\'re Ken\'s grandchild aren\'t you! Lovely man. Hid money everywhere."', '"I put 20p in the phone box in 1994 and it never gave it back."', '"The pigeons round here are organised, dear. Be careful."', '"Have you tried the benches in the park?"'],
+};

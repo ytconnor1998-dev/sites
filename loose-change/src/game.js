@@ -54,12 +54,12 @@
       depth: 0, finds: [], buttons: 0, socks: 0, frogs: 0,
       pig: null, cardStock: 3, cardRestockAt: 0,
       goose: { met: false, friend: false },
-      texts: {}, notesSeen: [], openedNotes: [],
+      texts: {}, notesSeen: [], openedNotes: [], cooldowns: {}, chatted: [],
       buffs: [], flags: {},
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
       // carried across runs
-      endings: keep.endings || [], achievements: keep.achievements || [], runs: keep.runs || 0,
+      endings: keep.endings || [], achievements: keep.achievements || [], runs: keep.runs || 0, secrets: keep.secrets || [],
       allTime: keep.allTime || 0, settings: keep.settings || { sfx: true, music: true, volume: 0.6 },
     };
   }
@@ -428,7 +428,7 @@
       else { const n = lump(300); gain(n); msg = `You won another goose. Your goose eats it, and coughs up <b>${fmt(n)}</b>.`; }
     } else if (sym.special === 'buttons') { S.buttons += 25; msg = `A "lifetime supply" of buttons! It's 25 buttons. ${ic('🔘')}`; LC.audio.sfx('win'); }
     else if (sym.special === 'sock') { S.socks++; msg = `You won one sock. It's warm. It feels lucky. (All income +1%)`; LC.audio.sfx('win'); }
-    else { S.frogs++; msg = `You won... a frog. It's not a prize, it just got on the card. It's yours now. (Frogs: ${S.frogs})`; LC.audio.sfx('ribbit'); }
+    else { S.frogs++; findSecret('colin'); msg = `You won... a frog. It's not a prize, it just got on the card. It's yours now. (Frogs: ${S.frogs})`; LC.audio.sfx('ribbit'); }
     res.innerHTML = msg;
     res.classList.add('show');
     $('#card-canvas').classList.add('cleared');
@@ -487,6 +487,67 @@
     return clear / n;
   }
 
+  // ---------- secrets & little earners around town ----------
+  function findSecret(id) {
+    if (S.secrets.includes(id)) return;
+    const sec = LC.SECRETS.find((x) => x.id === id);
+    if (!sec) return;
+    S.secrets.push(id);
+    LC.audio.sfx('sparkle');
+    toast(`${ic(sec.icon)}<div><b>Secret found: ${sec.name}</b><br><small>${sec.found}</small></div>`, 'gold');
+  }
+  // a cooldown helper: true (and restarts the timer) if `secs` have passed
+  function ready(key, secs) {
+    const now = Date.now();
+    if ((S.cooldowns[key] || 0) > now) return false;
+    S.cooldowns[key] = now + secs * 1000;
+    return true;
+  }
+  const waitFor = (key) => Math.max(0, Math.ceil(((S.cooldowns[key] || 0) - Date.now()) / 1000));
+  function fountainPrompt() {
+    const w = waitFor('fountain');
+    return w ? `The fountain is empty<small>More wishes in ${w}s</small>` : 'Fish coins out of the fountain<small>Nobody is looking</small>';
+  }
+  function fountain() {
+    if (!ready('fountain', 75)) { LC.audio.sfx('nope'); return; }
+    const n = lump(40, 0.3);
+    gain(n); floatAt(null, n);
+    LC.audio.sfx('splash');
+    findSecret('fountain');
+    if (chance(0.15)) { S.buttons += 2; say('Among the coins: two buttons. Somebody wished for buttons.'); }
+    else say(pick(['You fish out a handful of wishes.', 'Wet coins. Still coins.', "A duck watches you. It won't tell anyone.", 'One of these coins says "please let me pass my driving test".']));
+  }
+  function checkBench() {
+    if (!ready('bench', 45)) { say(pick(["You've already checked. There's only a crisp packet.", 'A pigeon got here first.'])); return; }
+    findSecret('bench');
+    const r = Math.random();
+    if (r < 0.65) { const n = lump(25, 0.2); gain(n); floatAt(null, n); LC.audio.sfx('coin'); say(pick(['Loose change under the bench!', 'A pound coin, stuck to some chewing gum. Worth it.', 'Coins. And a sock. You take the coins.'])); }
+    else if (r < 0.8) { S.buttons++; LC.audio.sfx('coin'); say('A button. Of course.'); }
+    else say(pick(['Nothing. Just a very old sandwich.', 'A note that says "TOLD YOU - KEN". Grandad was here.', 'An old man is sitting on this bench. He says "no".']));
+  }
+  function phoneBox() {
+    if (!ready('phonebox', 120)) { say(pick(['The coin return is empty.', 'You press the buttons. Nothing happens. It smells of 1994.'])); return; }
+    findSecret('phonebox');
+    if (chance(0.15)) { LC.audio.sfx('text'); say('The phone rings. You answer. "Hello, is this the sofa?" Click.'); return; }
+    const n = lump(60, 0.5); gain(n); floatAt(null, n); LC.audio.sfx('coin');
+    say(pick(['The coin return clunks. Coins!', 'Somebody forgot their change. Thanks, somebody.', 'Coins! And a business card for a man who fixes ghosts.']));
+  }
+  let gnomeStares = 0;
+  function gnomeStare() {
+    gnomeStares++;
+    if (gnomeStares >= 5) { findSecret('gnome'); say("You stare the gnome down. It blinks first. Inside its tiny notebook: 'KID IS WINNING. TELL BRIAN.'"); return; }
+    say(pick(['The gnome is watching you.', 'The gnome has a tiny notebook. Your name is in it.', 'The gnome says nothing. Loudly.', 'You stare at the gnome. The gnome stares back.']));
+  }
+  const chatIdx = {};
+  function chat(who) {
+    const lines = LC.CHAT[who] || ['"Hello."'];
+    const i = chatIdx[who] = ((chatIdx[who] ?? -1) + 1) % lines.length;
+    LC.audio.sfx('babble');
+    say(lines[i]);
+    if (!S.chatted.includes(who)) S.chatted.push(who);
+    if (Object.keys(LC.CHAT).every((k) => S.chatted.includes(k))) findSecret('chatty');
+  }
+
   // ---------- things you pick up in the world ----------
   function goldenReward() {
     S.stats.golden++;
@@ -498,7 +559,8 @@
     LC.world.coinRain(30); toast(`${ic('🌧️')}<div><b>It's raining coins!</b> Run around and grab them!</div>`, 'gold'); return null;
   }
   function collect(kind) {
-    if (kind === 'golden') return goldenReward();
+    if (kind === 'golden') { findSecret('golden'); return goldenReward(); }
+    if (kind === 'floor') findSecret('floor');
     if (kind === 'piglet') { const n = lump(60, 1); gain(n); LC.audio.sfx('smash'); return n; }
     const n = kind === 'rain' ? lump(12, 0.05) : lump(8, 0.02);
     gain(n);
@@ -655,7 +717,7 @@
     }, 900 + e.lines.length * 2200 + 600);
   }
   function newRun() {
-    S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings });
+    S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings, secrets: S.secrets });
     newPig(); card = null; renderCard();
     renderShop(true); gardenDirty = true; buildGarden();
     LC.world.reset();
@@ -707,6 +769,7 @@
     { id: 'notes', icon: '📝', label: 'Notes', color: '#ffd84a' },
     { id: 'bank', icon: '🏦', label: 'Bank', color: '#3b6ea5' },
     { id: 'weather', icon: '⛅', label: 'Weather', color: '#8fd0e8' },
+    { id: 'secrets', icon: '🔍', label: 'Secrets', color: '#e58a6b' },
     { id: 'notebook', icon: '📊', label: 'Stats', color: '#9b59b6' },
     { id: 'endings', icon: '🏁', label: 'Endings', color: '#2d2118' },
     { id: 'settings', icon: '⚙️', label: 'Settings', color: '#8f8f8f' },
@@ -802,6 +865,15 @@
     if (id === 'notes') renderNotes();
     if (id === 'bank') renderBank();
     if (id === 'weather') renderWeather();
+    if (id === 'secrets') renderSecrets();
+  }
+  function renderSecrets() {
+    const found = LC.SECRETS.filter((x) => S.secrets.includes(x.id)).length;
+    // no hints here: they're hidden in your messages, notes, the weather and what people say
+    const left = LC.SECRETS.length - found;
+    $('#secrets-view').innerHTML = `<p class="muted small">Found ${found} of ${LC.SECRETS.length}. ${left ? `${left} still hidden somewhere in town. People talk. Read your messages.` : 'You found them all!'}</p>` +
+      LC.SECRETS.filter((x) => S.secrets.includes(x.id)).map((x) => `<div class="secret got">${ic(x.icon)}<div><b>${x.name}${x.egg ? ' <span class="egg">Easter egg</span>' : ''}</b><small>${x.found}</small></div></div>`).join('') +
+      (left ? `<div class="secret">${ic('❓')}<div><b>??? x ${left}</b><small>Keep exploring.</small></div></div>` : '');
   }
   function renderMessages() {
     const v = $('#msg-view');
@@ -827,6 +899,7 @@
     if (openNote) {
       const n = LC.NOTES.find((x) => x.id === openNote);
       if (!S.openedNotes.includes(n.id)) S.openedNotes.push(n.id);
+      if (LC.NOTES.every((x) => S.openedNotes.includes(x.id))) findSecret('notes');
       v.innerHTML = `<div class="note-page"><h3>${n.title}</h3><pre>${noteText(n)}</pre></div>`;
       return;
     }
@@ -1185,7 +1258,8 @@
     LC.game = {
       rummage, dig, hitPig, nextPig, collect, gooseBite, tryBuyThing, say, floatAt, setPrompt, setCompass,
       sofaPrompt, digPrompt, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
-      tip: (secs) => { const n = lump(secs, 0.05); gain(n); floatAt(null, n); },
+      fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
+      tip: (secs, secret) => { const n = lump(secs, 0.05); gain(n); floatAt(null, n); if (secret) findSecret(secret); },
       depth: () => S.depth,
       toolTier: (kind) => (S.tools && S.tools[kind]) || 0,
       togglePhone: () => { if (endingPlaying || modalOpen) return; if (screenOpen) closeScreen(); else openScreen('phone'); },

@@ -350,3 +350,170 @@ export function textSprite(text, { size = 0.5, color = '#2d2118', bg = '#fffaf0'
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
+
+
+// ---------- painted windows ----------
+const winCache = {};
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+// a house window: dark glass, warm light inside, curtains
+export function windowMat(lit = true, seed = 0) {
+  const key = (lit ? 'L' : 'D') + (seed % 6);
+  if (!winCache[key]) {
+    const curtains = ['#c0504d', '#5b8bd9', '#e8d8a8', '#6aa84f', '#9b59b6', '#f2b631'][seed % 6];
+    const tex = canvasTex(128, 128, (g, w, h) => {
+      const gr = g.createLinearGradient(0, 0, 0, h);
+      gr.addColorStop(0, lit ? '#6a5040' : '#2a3a4a'); gr.addColorStop(1, lit ? '#d89850' : '#46586a');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      if (lit) { const r = g.createRadialGradient(w * 0.5, h * 0.3, 2, w * 0.5, h * 0.3, 60); r.addColorStop(0, 'rgba(255,220,150,.9)'); r.addColorStop(1, 'rgba(255,220,150,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }
+      g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.moveTo(10, h); g.lineTo(50, 0); g.lineTo(70, 0); g.lineTo(30, h); g.fill();
+      g.fillStyle = curtains;
+      g.fillRect(0, 0, 26, h); g.fillRect(w - 26, 0, 26, h);
+      g.fillStyle = 'rgba(0,0,0,.18)'; for (let x = 4; x < 26; x += 7) { g.fillRect(x, 0, 2, h); g.fillRect(w - 26 + x, 0, 2, h); }
+    });
+    winCache[key] = new THREE.MeshStandardMaterial({ map: tex, emissive: lit ? 0xffffff : 0x000000, emissiveMap: lit ? tex : null, emissiveIntensity: lit ? 0.55 : 0, roughness: 0.2 });
+  }
+  return winCache[key];
+}
+// a shop window display
+export function displayMat(kind) {
+  const key = 'disp-' + kind;
+  if (!winCache[key]) {
+    const tex = canvasTex(512, 220, (g, w, h) => {
+      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#f6e2b8'); gr.addColorStop(1, '#c89a68');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.fillStyle = 'rgba(80,50,30,.5)'; g.fillRect(0, h * 0.55, w, 6); g.fillRect(0, h * 0.9, w, 8);
+      const rnd = (a, b) => a + Math.random() * (b - a);
+      if (kind === 'bakery') for (let i = 0; i < 9; i++) { g.fillStyle = ['#c8843a', '#e8b060', '#f7a8bd', '#a8602a'][i % 4]; g.beginPath(); g.ellipse(40 + i * 54, h * 0.48, 22, 13, 0, 0, 7); g.fill(); g.beginPath(); g.ellipse(40 + i * 54, h * 0.84, 20, 16, 0, 0, 7); g.fill(); }
+      if (kind === 'launderette') for (let i = 0; i < 5; i++) { g.fillStyle = '#f3f3f3'; g.fillRect(20 + i * 98, h * 0.3, 80, 120); g.fillStyle = '#4a7aa8'; g.beginPath(); g.arc(60 + i * 98, h * 0.3 + 70, 26, 0, 7); g.fill(); g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.arc(52 + i * 98, h * 0.3 + 62, 8, 0, 7); g.fill(); }
+      if (kind === 'charity') for (let i = 0; i < 10; i++) { g.fillStyle = ['#c0504d', '#5b8bd9', '#6aa84f', '#f2b631', '#9b59b6'][i % 5]; g.fillRect(14 + i * 50, h * (i % 2 ? 0.25 : 0.62), 30, rnd(40, 70)); }
+      if (kind === 'chippy') { g.fillStyle = '#bcc6cc'; g.fillRect(0, h * 0.6, w, h * 0.4); g.fillStyle = '#2a5a8a'; g.fillRect(w * 0.55, 20, 200, 110); g.fillStyle = '#fff'; g.font = '700 22px Fredoka, sans-serif'; ['COD £5.20', 'CHIPS £2.80', 'SAVELOY £1.90'].forEach((t, i) => g.fillText(t, w * 0.58, 50 + i * 30)); g.fillStyle = '#e8b060'; g.beginPath(); g.ellipse(120, h * 0.55, 70, 26, 0.2, 0, 7); g.fill(); }
+      if (kind === 'pub') { g.fillStyle = 'rgba(140,70,20,.6)'; g.fillRect(0, 0, w, h); for (let i = 0; i < 12; i++) { g.fillStyle = ['#3a6a2a', '#8a3a1a', '#d8a040'][i % 3]; g.fillRect(20 + i * 40, h * 0.3, 16, 50); } }
+      if (kind === 'post') { g.fillStyle = '#c8231f'; g.fillRect(30, 30, 180, 120); g.fillStyle = '#fff'; g.font = '700 26px Fredoka, sans-serif'; g.fillText('SEND IT!', 50, 100); for (let i = 0; i < 6; i++) { g.fillStyle = '#c8a070'; g.fillRect(260 + (i % 3) * 80, 40 + Math.floor(i / 3) * 80, 64, 56); } }
+      if (kind === 'barber') { for (let i = 0; i < 3; i++) { g.fillStyle = '#3a3a3a'; g.fillRect(60 + i * 150, h * 0.4, 70, 90); g.fillStyle = '#c8231f'; g.fillRect(60 + i * 150, h * 0.4, 70, 30); } }
+      g.fillStyle = 'rgba(255,255,255,.22)'; g.beginPath(); g.moveTo(40, h); g.lineTo(140, 0); g.lineTo(190, 0); g.lineTo(90, h); g.fill();
+    });
+    winCache[key] = new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4, roughness: 0.15 });
+  }
+  return winCache[key];
+}
+
+// ---------- the town ----------
+// text painted on a flat panel (shop signs, house numbers): faces the street, unlike sprites
+export function signPlane(text, w, h, { bg = '#2d6a4f', color = '#fffaf0', font = 700, glow = false } = {}) {
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(256 * w / h); cv.height = 256;
+  const g = cv.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, cv.width, cv.height);
+  g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 10; g.strokeRect(14, 14, cv.width - 28, cv.height - 28);
+  let px = 150;
+  g.font = `${font} ${px}px Fredoka, sans-serif`;
+  while (g.measureText(text).width > cv.width - 90 && px > 30) { px -= 6; g.font = `${font} ${px}px Fredoka, sans-serif`; }
+  g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, cv.width / 2, cv.height / 2 + 8);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, emissive: glow ? 0xffffff : 0x000000, emissiveMap: glow ? tex : null, emissiveIntensity: glow ? 0.9 : 0 }));
+  return m;
+}
+const triShape = (w, h) => new THREE.Shape([new THREE.Vector2(-w / 2, 0), new THREE.Vector2(w / 2, 0), new THREE.Vector2(0, h)]);
+// a two-storey British terraced/semi house, front facing +z. Origin at the middle of the front wall, on the ground.
+export function townHouse({ w = 9, d = 9, wallTex = null, wallColor = 0xb5573b, door = 0x3b6ea5, roof = M_ROOF, trim = 0xf3eee4, number = null, lit = true } = {}) {
+  const g = new THREE.Group();
+  const H = 5.4;
+  const walls = box(w, H, d, wallTex || wallColor, 0, H / 2, -d / 2, { sharp: true });
+  g.add(walls);
+  // pitched roof along x, gables at the sides
+  for (const s of [-1, 1]) g.add(box(w + 0.5, 0.18, d / 2 / Math.cos(0.6) + 0.4, roof, 0, H + 1.55, -d / 2 + s * d / 4, { rot: [s * -0.6 * -1, 0, 0], sharp: true }));
+  const gable = new THREE.ExtrudeGeometry(triShape(d, 3.0), { depth: w - 0.02, bevelEnabled: false });
+  const gm = part(gable, wallTex || wallColor, -w / 2 + 0.01, H, -d / 2, { rot: [0, Math.PI / 2, 0] });
+  g.add(gm);
+  g.add(box(0.7, 1.6, 0.7, 0x8a4a35, w / 2 - 1.2, H + 2.2, -d / 2 - 1, { sharp: true }), cyl(0.12, 0.12, 0.4, 0x9a6a50, w / 2 - 1.2, H + 3.1, -d / 2 - 1));
+  // door, step, windows
+  g.add(box(1.1, 2.1, 0.12, door, -w / 4, 1.12, 0.03, { sharp: true }), ball(0.05, M_GOLD, -w / 4 + 0.38, 1.1, 0.12), box(1.5, 0.15, 0.6, 0xbab3a6, -w / 4, 0.075, 0.3, { sharp: true }));
+  g.add(box(1.3, 0.4, 0.06, 0xd9eef7, -w / 4, 2.42, 0.05, { mat: { emissive: lit ? 0xffb860 : 0, emissiveIntensity: lit ? 0.6 : 0 }, sharp: true }));
+  const win = (x, y, ww = 1.9, hh = 1.4) => {
+    g.add(box(ww + 0.25, hh + 0.25, 0.1, trim, x, y, 0.02, { sharp: true }));
+    g.add(box(ww, hh, 0.12, windowMat(lit && Math.random() < 0.75, Math.floor(Math.random() * 6)), x, y, 0.04, { sharp: true }));
+    g.add(box(0.06, hh, 0.14, trim, x, y, 0.05, { sharp: true }), box(ww, 0.06, 0.14, trim, x, y, 0.05, { sharp: true }));
+    g.add(box(ww + 0.4, 0.1, 0.25, trim, x, y - hh / 2 - 0.1, 0.1, { sharp: true }));
+  };
+  win(w / 4, 1.6, 2.4, 1.5);
+  win(-w / 4, 4.0); win(w / 4, 4.0);
+  if (number) { const n = signPlane(String(number), 0.4, 0.3, { bg: '#f3eee4', color: '#2d2118' }); n.position.set(-w / 4 + 0.85, 2.1, 0.1); g.add(n); }
+  return g;
+}
+const M_ROOF = 0x5b4a5f, M_GOLD = 0xf2b631;
+// a shop on the high street, front facing +z
+export function shopFront({ w = 10, d = 8, name = 'SHOP', bg = '#2d6a4f', wallTex = null, wallColor = 0xd6c49f, awning = [0xd9534f, 0xfff6e6], lit = true, display = null, kind = 'charity' } = {}) {
+  const g = new THREE.Group();
+  const H = 6;
+  g.add(box(w, H, d, wallTex || wallColor, 0, H / 2, -d / 2, { sharp: true }));
+  g.add(box(w + 0.3, 0.4, d + 0.3, 0x6a5a5a, 0, H + 0.2, -d / 2, { sharp: true }));
+  // big shop window and door
+  g.add(box(w - 3.4, 2.4, 0.12, displayMat(kind), -1.0, 1.75, 0.04, { sharp: true }));
+  g.add(box(w - 3.2, 0.5, 0.2, 0x3a3a3a, -1.0, 0.3, 0.06, { sharp: true }));
+  g.add(box(1.2, 2.3, 0.12, 0x5a4a3a, w / 2 - 1.2, 1.15, 0.04, { sharp: true }), box(0.9, 1.4, 0.13, 0xa8cfe0, w / 2 - 1.2, 1.4, 0.05, { mat: { roughness: 0.1 }, sharp: true }));
+  // sign
+  const sign = signPlane(name, w - 0.6, 1.0, { bg, glow: lit });
+  sign.position.set(0, 3.55, 0.1); g.add(sign);
+  // striped awning
+  const stripes = 8, aw = w - 0.8;
+  for (let i = 0; i < stripes; i++) g.add(box(aw / stripes, 0.06, 1.3, awning[i % 2], -aw / 2 + (i + 0.5) * aw / stripes, 2.95, 0.6, { rot: [0.35, 0, 0], sharp: true }));
+  // upstairs flat windows
+  for (const x of [-w / 4, w / 4]) g.add(box(1.6, 1.2, 0.12, windowMat(Math.random() < 0.6, Math.floor(Math.random() * 6)), x, 4.9, 0.04, { sharp: true }), box(1.85, 1.45, 0.08, 0xf3eee4, x, 4.9, 0.0, { sharp: true }));
+  if (display) { display.position.set(-1, 0.55, -0.4); g.add(display); }
+  return g;
+}
+export function phoneBox() {
+  const red = 0xc8231f;
+  const g = group(box(1.1, 2.6, 1.1, red, 0, 1.3, 0), box(1.25, 0.25, 1.25, red, 0, 2.7, 0), part(new THREE.CylinderGeometry(0.62, 0.62, 0.3, 4, 1, false, Math.PI / 4), red, 0, 2.9, 0));
+  for (const r of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    const pane = box(0.8, 1.6, 0.04, 0xbfe0f0, 0, 1.3, 0.56, { mat: { emissive: 0x806030, roughness: 0.1 } });
+    const sgn = signPlane('TELEPHONE', 0.9, 0.18, { bg: '#1a1a1a', color: '#ffffff', glow: true }); sgn.position.set(0, 2.42, 0.565);
+    const face = group(pane, sgn); face.rotation.y = r; g.add(face);
+  }
+  return g;
+}
+export function postbox() { return group(cyl(0.28, 0.3, 1.25, 0xc8231f, 0, 0.62, 0, { seg: 18 }), ball(0.3, 0xc8231f, 0, 1.25, 0, { scale: [1, 0.5, 1] }), box(0.3, 0.05, 0.05, 0x222222, 0, 1.0, 0.28), cyl(0.33, 0.33, 0.12, 0x222222, 0, 0.06, 0)); }
+export function busStop() {
+  const g = group(box(0.1, 2.5, 0.1, 0x333333, -1.4, 1.25, -0.6), box(0.1, 2.5, 0.1, 0x333333, 1.4, 1.25, -0.6), box(3.1, 0.1, 1.3, 0x3a5a7a, 0, 2.5, -0.1),
+    box(3.0, 1.9, 0.05, 0xcfe8f5, 0, 1.3, -0.62, { mat: { transparent: true, opacity: 0.35, roughness: 0.1 } }), box(2.2, 0.1, 0.4, 0x8a6a4a, 0, 0.5, -0.35));
+  const pole = group(cyl(0.04, 0.04, 2.8, 0x888888, 0, 1.4, 0)); const s = signPlane('BUS', 0.6, 0.6, { bg: '#c8231f' }); s.position.set(0, 2.6, 0.03); pole.add(s); pole.position.set(2.0, 0, 0.2);
+  g.add(pole);
+  return g;
+}
+export function wheelieBin(color = 0x2d4a2d) { return group(box(0.6, 0.95, 0.7, color, 0, 0.55, 0), box(0.66, 0.08, 0.76, color, 0, 1.05, 0.02), cyl(0.09, 0.09, 0.06, 0x111111, -0.25, 0.09, -0.32, { rot: [0, 0, Math.PI / 2] }), cyl(0.09, 0.09, 0.06, 0x111111, 0.25, 0.09, -0.32, { rot: [0, 0, Math.PI / 2] })); }
+export function hedge(len) { const g = group(box(len, 1.1, 0.9, 0x3f7a2e, 0, 0.55, 0)); for (let x = -len / 2 + 0.4; x < len / 2; x += 0.8) g.add(ball(0.45, 0x4a8a35, x, 1.1, 0, { seg: 6, mat: { flatShading: true }, scale: [1, 0.6, 1.1] })); return g; }
+export function lowWall(len, color = 0xb5573b) { return group(box(len, 0.6, 0.3, color, 0, 0.3, 0), box(len + 0.05, 0.08, 0.38, 0xd8d0c0, 0, 0.64, 0)); }
+export function bench() { return group(box(1.8, 0.08, 0.5, C.wood, 0, 0.48, 0), box(1.8, 0.45, 0.06, C.wood, 0, 0.8, -0.24, { rot: [-0.15, 0, 0] }), box(0.08, 0.48, 0.5, 0x333333, -0.8, 0.24, 0), box(0.08, 0.48, 0.5, 0x333333, 0.8, 0.24, 0)); }
+export function swings() {
+  const g = group(box(0.1, 2.6, 0.1, 0xd9534f, -1.6, 1.25, -0.5, { rot: [0.2, 0, 0] }), box(0.1, 2.6, 0.1, 0xd9534f, -1.6, 1.25, 0.5, { rot: [-0.2, 0, 0] }),
+    box(0.1, 2.6, 0.1, 0xd9534f, 1.6, 1.25, -0.5, { rot: [0.2, 0, 0] }), box(0.1, 2.6, 0.1, 0xd9534f, 1.6, 1.25, 0.5, { rot: [-0.2, 0, 0] }), box(3.4, 0.1, 0.1, 0xd9534f, 0, 2.5, 0));
+  for (const x of [-0.7, 0.7]) { const seat = group(cyl(0.01, 0.01, 1.9, 0x999999, -0.22, -0.95, 0), cyl(0.01, 0.01, 1.9, 0x999999, 0.22, -0.95, 0), box(0.55, 0.05, 0.25, 0x333333, 0, -1.9, 0)); seat.position.set(x, 2.45, 0); seat.name = 'swing'; g.add(seat); }
+  return g;
+}
+export function slide() {
+  return group(box(0.8, 0.08, 3.2, 0x5bb0e0, 0, 1.0, 0.7, { rot: [0.62, 0, 0] }), box(0.8, 0.1, 0.8, 0xf2b631, 0, 1.9, -0.9), ...[[-0.35, -1.25], [0.35, -1.25], [-0.35, -0.55], [0.35, -0.55]].map(([x, z]) => box(0.08, 1.9, 0.08, 0xf2b631, x, 0.95, z)),
+    ...[0.4, 0.9, 1.4].map((y) => box(0.7, 0.05, 0.12, 0x999999, 0, y, -1.35)));
+}
+export function fountain() {
+  const g = group(cyl(2.4, 2.5, 0.6, C.stone, 0, 0.3, 0, { seg: 24 }), cyl(2.1, 2.1, 0.05, 0x4a8ac0, 0, 0.55, 0, { seg: 24, mat: { roughness: 0.1, emissive: 0x0a2a4a } }),
+    cyl(0.3, 0.4, 1.4, C.stone, 0, 1.0, 0, { seg: 12 }), cyl(0.9, 0.5, 0.25, C.stone, 0, 1.75, 0, { seg: 16 }), ball(0.25, 0x9fd8f0, 0, 2.05, 0, { mat: { transparent: true, opacity: 0.6, emissive: 0x2a5a7a } }));
+  for (let i = 0; i < 18; i++) g.add(coin(0.07, false).translateX(Math.random() * 3 - 1.5).translateY(0.57).translateZ(Math.random() * 3 - 1.5));
+  return g;
+}
+export function pond(r = 5) { return group(cyl(r, r, 0.04, 0x3f7aa0, 0, 0.02, 0, { seg: 28, mat: { roughness: 0.08, emissive: 0x0a2236 }, shadow: false }), part(new THREE.TorusGeometry(r, 0.25, 6, 28), 0x8a7a5a, 0, 0.05, 0, { rot: [Math.PI / 2, 0, 0] })); }
+export function duck() { return group(ball(0.16, 0x8a6a4a, 0, 0.12, 0, { scale: [0.9, 0.7, 1.3] }), ball(0.09, 0x2a6a3a, 0, 0.28, 0.14), cone(0.03, 0.08, C.orange, 0, 0.27, 0.25, { rot: [Math.PI / 2, 0, 0] })); }
+export function dog(color = 0xb07a4a) {
+  const g = group(box(0.25, 0.22, 0.55, color, 0, 0.32, 0), ball(0.14, color, 0, 0.48, 0.3), box(0.08, 0.06, 0.12, 0x222222, 0, 0.45, 0.44),
+    box(0.06, 0.12, 0.04, color, -0.09, 0.6, 0.27), box(0.06, 0.12, 0.04, color, 0.09, 0.6, 0.27));
+  const legs = [[-0.08, 0.18], [0.08, 0.18], [-0.08, -0.18], [0.08, -0.18]].map(([x, z]) => box(0.07, 0.22, 0.07, color, x, 0.11, z));
+  legs[0].name = 'legL'; legs[1].name = 'legR';
+  g.add(...legs);
+  const tail = cyl(0.02, 0.03, 0.25, color, 0, 0.45, -0.32, { rot: [-0.8, 0, 0] }); tail.name = 'tail'; g.add(tail);
+  return g;
+}
+export function pram() { return group(ball(0.4, 0x3b6ea5, 0, 0.75, 0, { scale: [0.8, 0.7, 1.1] }), cyl(0.1, 0.1, 0.05, 0x222222, -0.3, 0.12, 0.35, { rot: [0, 0, Math.PI / 2] }), cyl(0.1, 0.1, 0.05, 0x222222, 0.3, 0.12, 0.35, { rot: [0, 0, Math.PI / 2] }), cyl(0.1, 0.1, 0.05, 0x222222, -0.3, 0.12, -0.35, { rot: [0, 0, Math.PI / 2] }), cyl(0.1, 0.1, 0.05, 0x222222, 0.3, 0.12, -0.35, { rot: [0, 0, Math.PI / 2] }), cyl(0.02, 0.02, 0.7, 0x333333, 0, 0.95, -0.55, { rot: [Math.PI / 2, 0, 0] })); }

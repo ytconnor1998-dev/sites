@@ -314,3 +314,9 @@ textarea { width: 100%; font: 13px monospace; border: var(--line); border-radius
 .wx-row { display: flex; gap: 10px; align-items: center; padding: 8px 2px; border-bottom: 2px dashed var(--paper-2); }
 .wx-row span { margin-left: auto; color: var(--ink-soft); }
 .toast.msg { background: #e8f6e0; }
+
+.secret { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 2px dashed var(--paper-2); border-radius: 14px; margin-bottom: 8px; }
+.secret .ic { width: 34px; height: 34px; flex: none; }
+.secret small { display: block; color: var(--ink-soft); }
+.secret.got { border-style: solid; border-color: var(--gold); background: #fff7dc; }
+.egg { font-size: 11px; background: var(--pig); border: 1.5px solid var(--ink); border-radius: 999px; padding: 0 6px; margin-left: 4px; vertical-align: 2px; }
