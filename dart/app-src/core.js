@@ -544,6 +544,7 @@ function fitVB(names, ratio, pad) {
 }
 function mapSVG(opt) {
   if (gmapWanted()) { gmapLoad(); if (GMAP.state === "ready") return realMap(opt || {}); }
+  if (opt && opt.me && opt.me.area) opt = Object.assign({}, opt, { pins: [{ area: opt.me.area, text: tr("You"), tone: "green", dy: 44 }].concat(opt.pins || []) });
   return drawnMap(opt);
 }
 function drawnMap(opt) {

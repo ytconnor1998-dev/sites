@@ -631,12 +631,12 @@ function dMapHome(c) {
   var today = done.filter(function (o) { return isToday(o.timeline.delivered); }), earned = today.reduce(function (s, o) { return s + earnOf(o); }, 0);
   var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + earnOf(o); }, 0);
   var pins = [];
-  if (c.online && c.area) pins.unshift({ area: c.area, ll: c.pos ? [c.pos.lat, c.pos.lng] : null, text: tr("You"), tone: "green", dy: 44 });
+  var me = c.online && c.area ? { area: c.area, ll: c.pos ? [c.pos.lat, c.pos.lng] : null, vehicle: c.vehicle.type } : null;
   var jobs = activeJobs(), plan = myRoute(c);
   var routes = jobs.map(function (j) { return Object.assign({ from: j.pickup.area, to: j.dropoff.area, fromLL: j.pickup.ll, toLL: j.dropoff.ll, vehicle: j.courier && j.courier.vehicle }, courierPos(j)); });
   var title = !c.online && !job ? "You're offline" : jobs.length > 1 ? jobs.length + " deliveries on your route" : job ? "On a delivery" : "Waiting for a delivery";
   var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Finding your location…";
-  var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
+  var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins, me: me }) + "</div>" +
     '<div class="mh-top"><button class="mh-online ' + (c.online ? "on" : "") + '" data-act="d-online" role="switch" aria-checked="' + !!c.online + '"><i></i>' + (c.online ? "Online" : "Offline") + "</button>" +
     '<button class="mh-chip icon" data-act="d-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (courierUnseen() ? '<span class="badge">' + courierUnseen() + "</span>" : "") + "</button></div>" +
     '<div class="mh-title"><p>' + esc(sub) + "</p><h1>" + esc(title) + "</h1></div>";

@@ -108,7 +108,7 @@ function curvePts(a, b) {
 // A placeholder in the page; the map itself lives in the cache and is moved in after each render,
 // so maps don't flicker or reload when the page redraws every second.
 function realMap(opt) {
-  var stable = { r: (opt.routes || []).map(function (r) { return [r.from, r.to, r.fromLL, r.toLL, !!r.dashed, !!r.thin, r.vehicle || ""]; }), p: (opt.pins || []).map(function (p) { return p.tone || ""; }), d: (opt.dots || []).length, big: !!opt.vb };
+  var stable = { r: (opt.routes || []).map(function (r) { return [r.from, r.to, r.fromLL, r.toLL, !!r.dashed, !!r.thin, r.vehicle || ""]; }), p: (opt.pins || []).map(function (p) { return p.tone || ""; }), d: (opt.dots || []).length, big: !!opt.vb, me: opt.me ? (opt.me.vehicle || "dot") : "" };
   var key = "m" + hashStr(JSON.stringify(stable));
   GMAP.specs[key] = opt;
   return '<div class="gm" data-gm="' + key + '"></div>';
@@ -133,6 +133,15 @@ function gmapCreate(ph, opt) {
   });
   e.dots = []; e.pins = [];
   (opt.dots || []).forEach(function (d) { var p = llOf(d.area, d.ll); if (!p) return; e.dots.push(new g.Marker({ map: map, position: p, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 6, fillColor: d.color && d.color.indexOf("ok") >= 0 ? "#1F9D57" : "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2.5 } })); add(p); });
+  // Where the person looking at the map is: a courier's vehicle, or a soft purple dot for a customer.
+  if (opt.me) {
+    var mp = llOf(opt.me.area, opt.me.ll);
+    if (mp) {
+      e.me = new g.Marker({ map: map, position: mp, clickable: false, zIndex: 10, icon: opt.me.vehicle ? vehIcon(opt.me.vehicle) : { path: g.SymbolPath.CIRCLE, scale: 8, fillColor: GMAP_PURPLE, fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 3 } });
+      if (!opt.me.vehicle) e.halo = new g.Circle({ map: map, center: mp, radius: 120, fillColor: GMAP_PURPLE, fillOpacity: .12, strokeOpacity: 0, clickable: false });
+      add(mp);
+    }
+  }
   (opt.pins || []).forEach(function (p) {
     var at = llOf(p.area, p.ll); if (!at) return;
     var col = p.tone === "green" ? "#1F9D57" : p.tone === "ink" ? "#1B1530" : GMAP_PURPLE;
@@ -145,12 +154,17 @@ function gmapCreate(ph, opt) {
   return e;
 }
 function gmapMove(e, opt) {
+  var mp = opt.me && llOf(opt.me.area, opt.me.ll);
+  if (e.me && mp) {
+    var was = e.me.getPosition(), moved = was && (Math.abs(was.lat() - mp.lat) > .002 || Math.abs(was.lng() - mp.lng) > .002);
+    e.me.setPosition(mp); if (e.halo) e.halo.setCenter(mp);
+    if (moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(mp); e.map.panBy(0, 150); }
+  }
   (opt.pins || []).forEach(function (p, i) {
     var m = e.pins[i], at = llOf(p.area, p.ll); if (!m || !at) return;
-    var was = m.getPosition(), moved = was && (Math.abs(was.lat() - at.lat) > .002 || Math.abs(was.lng() - at.lng) > .002);
     m.setPosition(at);
-    // The big home map follows the first pin (the courier) unless they've just moved the map themselves.
-    if (i === 0 && moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(at); e.map.panBy(0, 150); } var l = m.getLabel(); if (l && l.text !== tr(String(p.text))) m.setLabel(Object.assign({}, l, { text: tr(String(p.text)) })); });
+    var l = m.getLabel(); if (l && l.text !== tr(String(p.text))) m.setLabel(Object.assign({}, l, { text: tr(String(p.text)) }));
+  });
   (opt.dots || []).forEach(function (d, i) { var m = e.dots[i], at = llOf(d.area, d.ll); if (m && at) m.setPosition(at); });
   e.movers.forEach(function (mv, i) {
     var r = (opt.routes || []).filter(function (x) { return x.t != null; })[i]; if (!r) return;
@@ -173,6 +187,13 @@ AFTER.push(function (root) {
   GMAP.specs = {};
 });
 
+// The customer's own position, asked for once on the home screen (the app asks the phone for permission).
+AFTER.push(function () {
+  if (!gmapWanted() || S.c.hereAsked || route() !== "customer" || !(S.c.view === "home" || !S.c.view) || !navigator.geolocation) return;
+  S.c.hereAsked = true;
+  navigator.geolocation.getCurrentPosition(function (p) { S.c.here = { lat: p.coords.latitude, lng: p.coords.longitude }; render(); }, function () {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+});
+
 // ---------- Drop a pin to set an address ----------
 // The customer moves the map under a fixed pin; Google turns the spot into a street address.
 function pinModal(m) {
@@ -182,7 +203,9 @@ function pinModal(m) {
 }
 ACT["c-pin-open"] = function (d) {
   var a = getPath(S, d.k) || {};
-  var at = llOf(a.area, a.ll) || { lat: 41.9009, lng: 12.4833 };
+  // Start on the address if there is one, else where the customer is (when in Rome), else the centre.
+  var here = S.c.here && nearestArea(S.c.here.lat, S.c.here.lng).km < 3.5 ? S.c.here : null;
+  var at = llOf(a.area, a.ll) || here || { lat: 41.9009, lng: 12.4833 };
   S.modal = { kind: "pin", k: d.k, lat: at.lat, lng: at.lng, street: "", area: "", busy: false }; GMAP.pinReset = true; render();
 };
 ACT["c-pin-use"] = function () {

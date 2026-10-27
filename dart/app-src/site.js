@@ -1,5 +1,5 @@
 // ===== DART public website (the #web view): marketing pages around the working booking flow =====
-S.c.hq = { from: "", to: "", type: "parcel" };
+S.c.hq = { from: "", to: "", type: "parcel", pickup: { street: "", area: "" }, dropoff: { street: "", area: "" } };
 S.c.contact = { name: "", email: "", topic: "question", text: "", sent: false };
 var SITE_VIEWS = ["site-home", "site-how", "site-pricing", "site-business", "site-couriers", "site-courier-apply", "site-help", "site-terms", "site-privacy"];
 GUEST_VIEWS.push.apply(GUEST_VIEWS, SITE_VIEWS);
@@ -56,8 +56,10 @@ ACT["w-hq-type"] = function (d) { S.c.hq.type = d.v; render(); };
 ACT["w-hq-book"] = function () {
   var hq = S.c.hq, dr = newDraft(), t = TYPICAL[hq.type];
   dr.pickup.area = hq.from; dr.dropoff.area = hq.to; dr.item.type = t.item.type;
+  // The app's home screen collects full addresses; carry them over.
+  ["pickup", "dropoff"].forEach(function (k) { var a = hq[k]; if (a && a.street) { dr[k].street = a.street; dr[k].area = a.area; dr[k].ll = a.ll || null; dr[k].areaManual = a.areaManual; } });
   S.c.draft = dr; S.c.view = "new"; S.c.navOpen = false; render(); window.scrollTo(0, 0);
-  toast(hq.from && hq.to ? "Add the street addresses to continue." : "Start with where it's going.");
+  if (!(dr.pickup.street && dr.dropoff.street)) toast(dr.pickup.area && dr.dropoff.area ? "Add the street addresses to continue." : "Start with where it's going.");
 };
 
 // ---------- Shared pieces ----------

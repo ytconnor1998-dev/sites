@@ -292,6 +292,10 @@ table.edit .input.n { width: 76px; }
 /* Real map: fills whatever box the drawn map used */
 .gm, .gm-in { position: absolute; inset: 0; }
 .mh-map .gm, .offer-map .gm { position: absolute; inset: 0; }
+.pin-in { position: absolute; right: 4px; bottom: 4px; width: 38px; height: calc(100% - 26px); min-height: 34px; border: 0; border-radius: 6px; background: var(--purple-soft); display: grid; place-items: center; }
+.pin-in i { width: 13px; height: 13px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2.5px solid var(--purple); }
+.pin-in.on { background: var(--purple); }
+.pin-in.on i { border-color: #fff; background: #fff; }
 .pin-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; color: var(--purple); font-weight: 700; font-size: 14px; padding: 2px 0; margin-top: -4px; }
 .pin-btn i { width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--purple); }
 .pin-wrap { position: relative; height: min(55vh, 420px); border-radius: 8px; overflow: hidden; background: var(--map-bg); }
@@ -437,11 +441,14 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 @keyframes pulse { to { box-shadow: 0 0 0 14px transparent; } }
 @media (prefers-reduced-motion: reduce) { .offer, .offer-card, .offer-scrim, .pulse { animation: none; } }
 .mh-sheet .grab { width: 40px; height: 5px; border-radius: 4px; background: var(--line); margin: 2px auto 2px; }
-.mh-q { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.mh-q { display: grid; gap: 8px; }
+.mh-q .field > span { font-size: 11px; }
+.mh-q .input { padding-top: 9px; padding-bottom: 9px; }
+.mh-q .addr-area { font-size: 13px; margin-top: -4px; }
 .mh-types { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.mh-types button { border: 1.5px solid var(--line); background: var(--card); border-radius: 6px; padding: 8px 2px; font-weight: 700; font-size: 12.5px; }
+.mh-types button { border: 1.5px solid var(--line); background: var(--card); border-radius: 6px; padding: 6px 2px; font-weight: 700; font-size: 12.5px; }
 .mh-types button.on { border-color: var(--purple); background: var(--purple-soft); color: var(--purple); }
-.mh-price { display: block; font-size: 24px; font-weight: 900; font-family: var(--mono); letter-spacing: -.02em; }
+.mh-price { display: block; font-size: 21px; font-weight: 900; font-family: var(--mono); letter-spacing: -.02em; }
 .mh-q .row.between > div { display: grid; }
 .mh-online { display: inline-flex; align-items: center; gap: 10px; border: 0; background: var(--ink); color: var(--paper); font-weight: 800; font-size: 16px; padding: 11px 18px 11px 14px; border-radius: 8px; box-shadow: 0 6px 18px -8px rgba(30, 10, 80, .5); }
 .mh-online i { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 3px rgba(255,255,255,.2); }
@@ -1293,6 +1300,7 @@ function fitVB(names, ratio, pad) {
 }
 function mapSVG(opt) {
   if (gmapWanted()) { gmapLoad(); if (GMAP.state === "ready") return realMap(opt || {}); }
+  if (opt && opt.me && opt.me.area) opt = Object.assign({}, opt, { pins: [{ area: opt.me.area, text: tr("You"), tone: "green", dy: 44 }].concat(opt.pins || []) });
   return drawnMap(opt);
 }
 function drawnMap(opt) {
@@ -1764,7 +1772,7 @@ Object.assign(IT, {
   "Problem reported. DART support will get back to you.": "Problema segnalato. L'assistenza DART ti ricontatterà.", "Profile saved": "Profilo salvato", "Refund recorded": "Rimborso registrato", "Reply sent": "Risposta inviata", "Request updated": "Richiesta aggiornata", "Rules saved and live": "Regole salvate e attive", "Sent to DART for approval": "Inviato a DART per l'approvazione", "Sent to DART support": "Inviato all'assistenza DART",
   "Sent. DART support will reply here.": "Inviato. L'assistenza DART risponderà qui.", "Settings saved and live": "Impostazioni salvate e attive", "Thanks for rating your courier": "Grazie per aver valutato il corriere", "Your plan will renew as normal": "Il tuo piano si rinnoverà normalmente", "Courier approved": "Corriere approvato", "Application rejected": "Candidatura rifiutata", "Courier suspended": "Corriere sospeso",
   "Vehicle change approved": "Cambio veicolo approvato", "Vehicle change declined": "Cambio veicolo non approvato", "Account reactivated": "Account riattivato", "Account suspended": "Account sospeso", "Order cancelled": "Ordine annullato", "Name saved": "Nome salvato", "Delivery cancelled and refunded": "Consegna annullata e rimborsata", "It was already taken.": "Era già stata presa.",
-  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "Today": "Oggi", "This week": "Questa settimana", "Last week": "Settimana scorsa", "This month": "Questo mese", "Last month": "Mese scorso", "Total earnings": "Guadagni totali", "Delivery": "Consegna", "Deliveries": "Consegne", "Delivery fees": "Compensi consegne", "Tips": "Mance", "Late fees": "Penali ritardo", "No deliveries in this period.": "Nessuna consegna in questo periodo.", "Show less": "Mostra meno", "Statements": "Estratti conto", "Current balance": "Saldo attuale", "Nothing waiting to be paid": "Niente in attesa di pagamento", "Previous payments": "Pagamenti precedenti", "None yet": "Ancora nessuno", "Request an invoice": "Richiedi una fattura", "For a month, sent to you by DART": "Per un mese, inviata da DART", "You earn the amount shown on each delivery. Payments go out every Monday.": "Guadagni l'importo mostrato su ogni consegna. I pagamenti partono ogni lunedì.", "No payments yet": "Ancora nessun pagamento", "Each Monday's payment shows up here with the deliveries it covers.": "Qui compare il pagamento di ogni lunedì con le consegne incluse.", "Paid": "Pagato", "Month": "Mese", "Anything to add? (optional)": "Qualcosa da aggiungere? (facoltativo)", "e.g. My Partita IVA, or a different email": "es. La mia Partita IVA o un'altra email", "Send request": "Invia richiesta", "Request sent. DART will email your invoice.": "Richiesta inviata. DART ti invierà la fattura via email.", "This delivery is finished": "Questa consegna è conclusa", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Vai su Aiuto e segnala un problema.", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Contatta DART da Account → Aiuto.", "Finding your location…": "Ricerca della tua posizione…", "Turn on location for DART Courier.": "Attiva la posizione per DART Courier.", "Location check: testing": "Controllo posizione: test", "Give this delivery back?": "Restituire questa consegna?", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
+  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "Today": "Oggi", "This week": "Questa settimana", "Last week": "Settimana scorsa", "This month": "Questo mese", "Last month": "Mese scorso", "Total earnings": "Guadagni totali", "Delivery": "Consegna", "Deliveries": "Consegne", "Delivery fees": "Compensi consegne", "Tips": "Mance", "Late fees": "Penali ritardo", "No deliveries in this period.": "Nessuna consegna in questo periodo.", "Show less": "Mostra meno", "Statements": "Estratti conto", "Current balance": "Saldo attuale", "Nothing waiting to be paid": "Niente in attesa di pagamento", "Previous payments": "Pagamenti precedenti", "None yet": "Ancora nessuno", "Request an invoice": "Richiedi una fattura", "For a month, sent to you by DART": "Per un mese, inviata da DART", "You earn the amount shown on each delivery. Payments go out every Monday.": "Guadagni l'importo mostrato su ogni consegna. I pagamenti partono ogni lunedì.", "No payments yet": "Ancora nessun pagamento", "Each Monday's payment shows up here with the deliveries it covers.": "Qui compare il pagamento di ogni lunedì con le consegne incluse.", "Paid": "Pagato", "Month": "Mese", "Anything to add? (optional)": "Qualcosa da aggiungere? (facoltativo)", "e.g. My Partita IVA, or a different email": "es. La mia Partita IVA o un'altra email", "Send request": "Invia richiesta", "Request sent. DART will email your invoice.": "Richiesta inviata. DART ti invierà la fattura via email.", "This delivery is finished": "Questa consegna è conclusa", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Vai su Aiuto e segnala un problema.", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Contatta DART da Account → Aiuto.", "Finding your location…": "Ricerca della tua posizione…", "Turn on location for DART Courier.": "Attiva la posizione per DART Courier.", "Location check: testing": "Controllo posizione: test", "Give this delivery back?": "Restituire questa consegna?", "Add both addresses to see the price": "Aggiungi i due indirizzi per vedere il prezzo", "Put a pin on the map": "Metti un segnaposto sulla mappa", "Pinned on the map. Change the pin": "Segnato sulla mappa. Cambia il segnaposto", "Pin on the map": "Segnaposto sulla mappa", "Put the pin on the address": "Metti il segnaposto sull'indirizzo", "Use this address": "Usa questo indirizzo", "Finding the address…": "Ricerca dell'indirizzo…", "Move the map to put the pin on the door": "Sposta la mappa per mettere il segnaposto sulla porta", "No street here. Move the pin onto a building.": "Qui non c'è una via. Sposta il segnaposto su un edificio.", "That's outside the area DART covers.": "È fuori dalla zona servita da DART.", "Couldn't look up this spot. Try again.": "Impossibile trovare questo punto. Riprova.", "Loading the map…": "Caricamento della mappa…", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
   "Booked. We're finding you a courier.": "Prenotato. Stiamo cercando un corriere.", "Business features are on": "Funzioni aziendali attive", "Business details saved": "Dati aziendali salvati", "You're now a business account. Choose a plan below.": "Ora hai un account aziendale. Scegli un piano qui sotto.", "Your plan will renew as normal.": "Il tuo piano si rinnoverà normalmente.",
   "Photo estimates aren't available. Enter the measurements instead.": "Le stime dalle foto non sono disponibili. Inserisci le misure.", "The photo estimate didn't work this time. Enter the measurements instead.": "La stima dalla foto non ha funzionato. Inserisci le misure.", "We couldn't tell the size from these photos. Please measure the item.": "Non riusciamo a capire le misure da queste foto. Misura l'oggetto.",
   "Start with where it's going.": "Inizia da dove deve andare.", "Add the street addresses to continue.": "Aggiungi le vie per continuare.", "Connecting to DART…": "Connessione a DART…", "Loading DART…": "Caricamento di DART…", "Problem reported.": "Problema segnalato.",
@@ -2404,14 +2412,14 @@ ACT["c-pay"] = function (d) { S.c.draft.billing = d.v; render(); };
 ACT["c-photo-del"] = function (d) { S.c.draft.item.photos.splice(+d.v, 1); render(); };
 // One address box: type the address, pick a suggestion, and the area fills itself in.
 // The area dropdown only shows when the street isn't known, or if the customer says it's wrong.
-function addressField(base, a) {
+function addressField(base, a, label) {
   var typed = clip(a.street, 80), guess = typed ? findArea(typed) : [];
   var areaLine = a.area && !a.areaOpen ? '<p class="addr-area"><i aria-hidden="true"></i>In <b>' + esc(a.area) + '</b><button type="button" class="link" data-act="c-area-open" data-k="' + base + '">Not right?</button></p>'
     : typed.length > 4 || a.areaOpen ? '<div class="addr-ask"><span>' + (guess.length > 1 ? "This postcode covers more than one area. Which is it?" : a.areaOpen ? "Which area of Rome is it in?" : "We couldn't place this street. Which area of Rome is it in?") + "</span>" +
       (guess.length > 1 ? '<div class="chips">' + guess.map(function (g) { return '<button type="button" class="chipbtn" data-act="c-area-set" data-k="' + base + '" data-v="' + esc(g) + '">' + esc(g) + "</button>"; }).join("") + "</div>" : "") +
       sel(base + ".area", a.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="c-area-chosen" data-k="' + base + '"') + "</div>" : "";
-  return '<div class="field addr"><span>Address</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"><ul class="addr-sug" hidden></ul></div>' +
-    (gmapWanted() ? '<button type="button" class="pin-btn" data-act="c-pin-open" data-k="' + base + '"><i aria-hidden="true"></i>' + (a.ll ? "Pinned on the map · change" : "Or put a pin on the map") + "</button>" : "") + areaLine;
+  return '<div class="field addr"><span>' + (label || "Address") + '</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"' + (gmapWanted() ? ' style="padding-right:46px"' : "") + '>' +
+    (gmapWanted() ? '<button type="button" class="pin-in' + (a.ll ? " on" : "") + '" data-act="c-pin-open" data-k="' + base + '" aria-label="' + (a.ll ? "Pinned on the map. Change the pin" : "Put a pin on the map") + '" title="Pin on the map"><i aria-hidden="true"></i></button>' : "") + '<ul class="addr-sug" hidden></ul></div>' + areaLine;
 }
 ACT["c-area-open"] = function (d) { var a = getPath(S, d.k); if (a) { a.areaOpen = true; render(); } };
 ACT["c-area-set"] = function (d) { var a = getPath(S, d.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
@@ -2944,15 +2952,17 @@ var MAP_PIN = { awaiting: "Searching", assigned: "To pickup", to_pickup: "To pic
 function cMapHome(acc) {
   var orders = acc ? myOrders() : S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);
   var active = orders.filter(isActive), hq = S.c.hq, st = settings();
-  var x = hq.from && hq.to ? typicalQuote(hq.type, hq.from, hq.to) : null;
+  var hp = hq.pickup, hd = hq.dropoff, x = hp.area && hd.area ? typicalQuote(hq.type, hp.area, hd.area) : null;
   var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, vehicle: o.courier && o.courier.vehicle, thin: active.length > 1 }, courierPos(o)); });
   var pins = active.map(function (o) {
     var moving = o.status === "in_transit", pos = courierPos(o);
     return { area: moving || o.status === "at_dest" ? o.dropoff.area : o.pickup.area, ll: moving || o.status === "at_dest" ? o.dropoff.ll : o.pickup.ll, text: moving ? Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min" : tr(MAP_PIN[o.status] || "") };
   });
-  if (!active.length && x) { routes = [{ from: hq.from, to: hq.to }]; pins = [{ area: hq.to, text: eur(x.q.total) }]; }
+  if (!active.length && x) { routes = [{ from: hp.area, to: hd.area, fromLL: hp.ll, toLL: hd.ll }]; pins = [{ area: hd.area, ll: hd.ll, text: eur(x.q.total) }]; }
+  // With nothing on the way, the map opens where the customer is.
+  var me = !active.length && !x && S.c.here ? { ll: [S.c.here.lat, S.c.here.lng] } : null;
   var title = active.length === 1 ? STATUS[active[0].status] : active.length > 1 ? active.length + " deliveries in progress" : "What are we sending today?";
-  var h = '<div class="mh"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
+  var h = '<div class="mh"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins, me: me }) + "</div>" +
     '<div class="mh-top"><span class="mh-chip"><svg><use href="#mark"/></svg>DART</span>' +
     (acc ? '<button class="mh-chip icon" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button>" : '<button class="mh-chip" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>" +
     '<div class="mh-title"><p>' + (acc ? "Hi " + esc(acc.name.split(" ")[0]) : "Delivered within " + hoursText() + " in Rome") + "</p><h1>" + esc(title) + "</h1></div>";
@@ -2960,16 +2970,14 @@ function cMapHome(acc) {
   if (st.open === false) h += '<div class="banner bad">DART is closed right now. You can book again when we reopen.</div>';
   else if (st.banner) h += '<div class="banner">' + esc(st.banner) + "</div>";
   if (active.length) h += '<div class="list">' + active.slice(0, 3).map(orderRow).join("") + "</div>";
-  h += '<div class="mh-q"><div class="grid2">' + field("From", sel("c.hq.from", hq.from, [["", "Pickup area"]].concat(AREA_NAMES), 'data-live="1"')) + field("To", sel("c.hq.to", hq.to, [["", "Delivery area"]].concat(AREA_NAMES), 'data-live="1"')) + "</div>" +
+  h += '<div class="mh-q">' + addressField("c.hq.pickup", hp, "From") + addressField("c.hq.dropoff", hd, "To") +
     '<div class="mh-types" role="radiogroup" aria-label="What are you sending">' + Object.keys(TYPICAL).map(function (k) { var on = hq.type === k; return '<button type="button" role="radio" aria-checked="' + on + '" class="' + (on ? "on" : "") + '" data-act="w-hq-type" data-v="' + k + '">' + TYPICAL[k].label.split(" and")[0] + "</button>"; }).join("") + "</div>" +
-    '<div class="row between"><div><span class="mh-price">' + (x ? eur(x.q.total) : "from " + eur(pricing().minFee)) + '</span><span class="muted sm">' + (x ? x.q.km.toFixed(1) + " km · about " + x.q.mins + " min" : "Pick two areas to see a price") + '</span></div><button class="btn" data-act="w-hq-book">Continue</button></div></div>';
-  h += acc ? '<div class="quick"><button data-act="c-go" data-v="deliveries"><b>Deliveries</b><span>' + orders.length + " total</span></button><button data-act=\"c-go\" data-v=\"invoices\"><b>Invoices</b><span>" + myInvoices().length + " total</span></button></div>"
-    : '<div class="quick"><button data-act="c-go" data-v="track"><b>Track a delivery</b><span>Code and email</span></button><button data-act="c-auth-open" data-v="register"><b>Create an account</b><span>History and invoices</span></button></div>';
+    '<div class="row between"><div><span class="mh-price">' + (x ? eur(x.q.total) : "from " + eur(pricing().minFee)) + '</span><span class="muted sm">' + (x ? x.q.km.toFixed(1) + " km · about " + x.q.mins + " min" : "Add both addresses to see the price") + '</span></div><button class="btn" data-act="w-hq-book">Continue</button></div></div>';
   return h + "</div></div>";
 }
 
 // ===== DART public website (the #web view): marketing pages around the working booking flow =====
-S.c.hq = { from: "", to: "", type: "parcel" };
+S.c.hq = { from: "", to: "", type: "parcel", pickup: { street: "", area: "" }, dropoff: { street: "", area: "" } };
 S.c.contact = { name: "", email: "", topic: "question", text: "", sent: false };
 var SITE_VIEWS = ["site-home", "site-how", "site-pricing", "site-business", "site-couriers", "site-courier-apply", "site-help", "site-terms", "site-privacy"];
 GUEST_VIEWS.push.apply(GUEST_VIEWS, SITE_VIEWS);
@@ -3026,8 +3034,10 @@ ACT["w-hq-type"] = function (d) { S.c.hq.type = d.v; render(); };
 ACT["w-hq-book"] = function () {
   var hq = S.c.hq, dr = newDraft(), t = TYPICAL[hq.type];
   dr.pickup.area = hq.from; dr.dropoff.area = hq.to; dr.item.type = t.item.type;
+  // The app's home screen collects full addresses; carry them over.
+  ["pickup", "dropoff"].forEach(function (k) { var a = hq[k]; if (a && a.street) { dr[k].street = a.street; dr[k].area = a.area; dr[k].ll = a.ll || null; dr[k].areaManual = a.areaManual; } });
   S.c.draft = dr; S.c.view = "new"; S.c.navOpen = false; render(); window.scrollTo(0, 0);
-  toast(hq.from && hq.to ? "Add the street addresses to continue." : "Start with where it's going.");
+  if (!(dr.pickup.street && dr.dropoff.street)) toast(dr.pickup.area && dr.dropoff.area ? "Add the street addresses to continue." : "Start with where it's going.");
 };
 
 // ---------- Shared pieces ----------
@@ -3908,12 +3918,12 @@ function dMapHome(c) {
   var today = done.filter(function (o) { return isToday(o.timeline.delivered); }), earned = today.reduce(function (s, o) { return s + earnOf(o); }, 0);
   var pending = done.filter(function (o) { return !o.courierPaid; }).reduce(function (s, o) { return s + earnOf(o); }, 0);
   var pins = [];
-  if (c.online && c.area) pins.unshift({ area: c.area, ll: c.pos ? [c.pos.lat, c.pos.lng] : null, text: tr("You"), tone: "green", dy: 44 });
+  var me = c.online && c.area ? { area: c.area, ll: c.pos ? [c.pos.lat, c.pos.lng] : null, vehicle: c.vehicle.type } : null;
   var jobs = activeJobs(), plan = myRoute(c);
   var routes = jobs.map(function (j) { return Object.assign({ from: j.pickup.area, to: j.dropoff.area, fromLL: j.pickup.ll, toLL: j.dropoff.ll, vehicle: j.courier && j.courier.vehicle }, courierPos(j)); });
   var title = !c.online && !job ? "You're offline" : jobs.length > 1 ? jobs.length + " deliveries on your route" : job ? "On a delivery" : "Waiting for a delivery";
   var sub = !c.online ? "Go online to get deliveries" : c.area ? "In " + c.area : "Finding your location…";
-  var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
+  var h = '<div class="mh courier"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins, me: me }) + "</div>" +
     '<div class="mh-top"><button class="mh-online ' + (c.online ? "on" : "") + '" data-act="d-online" role="switch" aria-checked="' + !!c.online + '"><i></i>' + (c.online ? "Online" : "Offline") + "</button>" +
     '<button class="mh-chip icon" data-act="d-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (courierUnseen() ? '<span class="badge">' + courierUnseen() + "</span>" : "") + "</button></div>" +
     '<div class="mh-title"><p>' + esc(sub) + "</p><h1>" + esc(title) + "</h1></div>";
@@ -4807,7 +4817,7 @@ function curvePts(a, b) {
 // A placeholder in the page; the map itself lives in the cache and is moved in after each render,
 // so maps don't flicker or reload when the page redraws every second.
 function realMap(opt) {
-  var stable = { r: (opt.routes || []).map(function (r) { return [r.from, r.to, r.fromLL, r.toLL, !!r.dashed, !!r.thin, r.vehicle || ""]; }), p: (opt.pins || []).map(function (p) { return p.tone || ""; }), d: (opt.dots || []).length, big: !!opt.vb };
+  var stable = { r: (opt.routes || []).map(function (r) { return [r.from, r.to, r.fromLL, r.toLL, !!r.dashed, !!r.thin, r.vehicle || ""]; }), p: (opt.pins || []).map(function (p) { return p.tone || ""; }), d: (opt.dots || []).length, big: !!opt.vb, me: opt.me ? (opt.me.vehicle || "dot") : "" };
   var key = "m" + hashStr(JSON.stringify(stable));
   GMAP.specs[key] = opt;
   return '<div class="gm" data-gm="' + key + '"></div>';
@@ -4832,6 +4842,15 @@ function gmapCreate(ph, opt) {
   });
   e.dots = []; e.pins = [];
   (opt.dots || []).forEach(function (d) { var p = llOf(d.area, d.ll); if (!p) return; e.dots.push(new g.Marker({ map: map, position: p, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 6, fillColor: d.color && d.color.indexOf("ok") >= 0 ? "#1F9D57" : "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2.5 } })); add(p); });
+  // Where the person looking at the map is: a courier's vehicle, or a soft purple dot for a customer.
+  if (opt.me) {
+    var mp = llOf(opt.me.area, opt.me.ll);
+    if (mp) {
+      e.me = new g.Marker({ map: map, position: mp, clickable: false, zIndex: 10, icon: opt.me.vehicle ? vehIcon(opt.me.vehicle) : { path: g.SymbolPath.CIRCLE, scale: 8, fillColor: GMAP_PURPLE, fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 3 } });
+      if (!opt.me.vehicle) e.halo = new g.Circle({ map: map, center: mp, radius: 120, fillColor: GMAP_PURPLE, fillOpacity: .12, strokeOpacity: 0, clickable: false });
+      add(mp);
+    }
+  }
   (opt.pins || []).forEach(function (p) {
     var at = llOf(p.area, p.ll); if (!at) return;
     var col = p.tone === "green" ? "#1F9D57" : p.tone === "ink" ? "#1B1530" : GMAP_PURPLE;
@@ -4844,12 +4863,17 @@ function gmapCreate(ph, opt) {
   return e;
 }
 function gmapMove(e, opt) {
+  var mp = opt.me && llOf(opt.me.area, opt.me.ll);
+  if (e.me && mp) {
+    var was = e.me.getPosition(), moved = was && (Math.abs(was.lat() - mp.lat) > .002 || Math.abs(was.lng() - mp.lng) > .002);
+    e.me.setPosition(mp); if (e.halo) e.halo.setCenter(mp);
+    if (moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(mp); e.map.panBy(0, 150); }
+  }
   (opt.pins || []).forEach(function (p, i) {
     var m = e.pins[i], at = llOf(p.area, p.ll); if (!m || !at) return;
-    var was = m.getPosition(), moved = was && (Math.abs(was.lat() - at.lat) > .002 || Math.abs(was.lng() - at.lng) > .002);
     m.setPosition(at);
-    // The big home map follows the first pin (the courier) unless they've just moved the map themselves.
-    if (i === 0 && moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(at); e.map.panBy(0, 150); } var l = m.getLabel(); if (l && l.text !== tr(String(p.text))) m.setLabel(Object.assign({}, l, { text: tr(String(p.text)) })); });
+    var l = m.getLabel(); if (l && l.text !== tr(String(p.text))) m.setLabel(Object.assign({}, l, { text: tr(String(p.text)) }));
+  });
   (opt.dots || []).forEach(function (d, i) { var m = e.dots[i], at = llOf(d.area, d.ll); if (m && at) m.setPosition(at); });
   e.movers.forEach(function (mv, i) {
     var r = (opt.routes || []).filter(function (x) { return x.t != null; })[i]; if (!r) return;
@@ -4872,6 +4896,13 @@ AFTER.push(function (root) {
   GMAP.specs = {};
 });
 
+// The customer's own position, asked for once on the home screen (the app asks the phone for permission).
+AFTER.push(function () {
+  if (!gmapWanted() || S.c.hereAsked || route() !== "customer" || !(S.c.view === "home" || !S.c.view) || !navigator.geolocation) return;
+  S.c.hereAsked = true;
+  navigator.geolocation.getCurrentPosition(function (p) { S.c.here = { lat: p.coords.latitude, lng: p.coords.longitude }; render(); }, function () {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+});
+
 // ---------- Drop a pin to set an address ----------
 // The customer moves the map under a fixed pin; Google turns the spot into a street address.
 function pinModal(m) {
@@ -4881,7 +4912,9 @@ function pinModal(m) {
 }
 ACT["c-pin-open"] = function (d) {
   var a = getPath(S, d.k) || {};
-  var at = llOf(a.area, a.ll) || { lat: 41.9009, lng: 12.4833 };
+  // Start on the address if there is one, else where the customer is (when in Rome), else the centre.
+  var here = S.c.here && nearestArea(S.c.here.lat, S.c.here.lng).km < 3.5 ? S.c.here : null;
+  var at = llOf(a.area, a.ll) || here || { lat: 41.9009, lng: 12.4833 };
   S.modal = { kind: "pin", k: d.k, lat: at.lat, lng: at.lng, street: "", area: "", busy: false }; GMAP.pinReset = true; render();
 };
 ACT["c-pin-use"] = function () {

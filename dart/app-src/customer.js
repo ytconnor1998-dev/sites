@@ -351,14 +351,14 @@ ACT["c-pay"] = function (d) { S.c.draft.billing = d.v; render(); };
 ACT["c-photo-del"] = function (d) { S.c.draft.item.photos.splice(+d.v, 1); render(); };
 // One address box: type the address, pick a suggestion, and the area fills itself in.
 // The area dropdown only shows when the street isn't known, or if the customer says it's wrong.
-function addressField(base, a) {
+function addressField(base, a, label) {
   var typed = clip(a.street, 80), guess = typed ? findArea(typed) : [];
   var areaLine = a.area && !a.areaOpen ? '<p class="addr-area"><i aria-hidden="true"></i>In <b>' + esc(a.area) + '</b><button type="button" class="link" data-act="c-area-open" data-k="' + base + '">Not right?</button></p>'
     : typed.length > 4 || a.areaOpen ? '<div class="addr-ask"><span>' + (guess.length > 1 ? "This postcode covers more than one area. Which is it?" : a.areaOpen ? "Which area of Rome is it in?" : "We couldn't place this street. Which area of Rome is it in?") + "</span>" +
       (guess.length > 1 ? '<div class="chips">' + guess.map(function (g) { return '<button type="button" class="chipbtn" data-act="c-area-set" data-k="' + base + '" data-v="' + esc(g) + '">' + esc(g) + "</button>"; }).join("") + "</div>" : "") +
       sel(base + ".area", a.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="c-area-chosen" data-k="' + base + '"') + "</div>" : "";
-  return '<div class="field addr"><span>Address</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"><ul class="addr-sug" hidden></ul></div>' +
-    (gmapWanted() ? '<button type="button" class="pin-btn" data-act="c-pin-open" data-k="' + base + '"><i aria-hidden="true"></i>' + (a.ll ? "Pinned on the map · change" : "Or put a pin on the map") + "</button>" : "") + areaLine;
+  return '<div class="field addr"><span>' + (label || "Address") + '</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"' + (gmapWanted() ? ' style="padding-right:46px"' : "") + '>' +
+    (gmapWanted() ? '<button type="button" class="pin-in' + (a.ll ? " on" : "") + '" data-act="c-pin-open" data-k="' + base + '" aria-label="' + (a.ll ? "Pinned on the map. Change the pin" : "Put a pin on the map") + '" title="Pin on the map"><i aria-hidden="true"></i></button>' : "") + '<ul class="addr-sug" hidden></ul></div>' + areaLine;
 }
 ACT["c-area-open"] = function (d) { var a = getPath(S, d.k); if (a) { a.areaOpen = true; render(); } };
 ACT["c-area-set"] = function (d) { var a = getPath(S, d.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
@@ -891,15 +891,17 @@ var MAP_PIN = { awaiting: "Searching", assigned: "To pickup", to_pickup: "To pic
 function cMapHome(acc) {
   var orders = acc ? myOrders() : S.me.guestOrders.map(function (id) { return byId(S.orders, id); }).filter(Boolean);
   var active = orders.filter(isActive), hq = S.c.hq, st = settings();
-  var x = hq.from && hq.to ? typicalQuote(hq.type, hq.from, hq.to) : null;
+  var hp = hq.pickup, hd = hq.dropoff, x = hp.area && hd.area ? typicalQuote(hq.type, hp.area, hd.area) : null;
   var routes = active.map(function (o) { return Object.assign({ from: o.pickup.area, to: o.dropoff.area, fromLL: o.pickup.ll, toLL: o.dropoff.ll, vehicle: o.courier && o.courier.vehicle, thin: active.length > 1 }, courierPos(o)); });
   var pins = active.map(function (o) {
     var moving = o.status === "in_transit", pos = courierPos(o);
     return { area: moving || o.status === "at_dest" ? o.dropoff.area : o.pickup.area, ll: moving || o.status === "at_dest" ? o.dropoff.ll : o.pickup.ll, text: moving ? Math.max(1, Math.round((o.price.mins - 10) * (1 - (pos.t || 0)))) + " min" : tr(MAP_PIN[o.status] || "") };
   });
-  if (!active.length && x) { routes = [{ from: hq.from, to: hq.to }]; pins = [{ area: hq.to, text: eur(x.q.total) }]; }
+  if (!active.length && x) { routes = [{ from: hp.area, to: hd.area, fromLL: hp.ll, toLL: hd.ll }]; pins = [{ area: hd.area, ll: hd.ll, text: eur(x.q.total) }]; }
+  // With nothing on the way, the map opens where the customer is.
+  var me = !active.length && !x && S.c.here ? { ll: [S.c.here.lat, S.c.here.lng] } : null;
   var title = active.length === 1 ? STATUS[active[0].status] : active.length > 1 ? active.length + " deliveries in progress" : "What are we sending today?";
-  var h = '<div class="mh"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins }) + "</div>" +
+  var h = '<div class="mh"><div class="mh-map">' + mapSVG({ vb: "-40 -200 440 1000", routes: routes, pins: pins, me: me }) + "</div>" +
     '<div class="mh-top"><span class="mh-chip"><svg><use href="#mark"/></svg>DART</span>' +
     (acc ? '<button class="mh-chip icon" data-act="c-go" data-v="notes" aria-label="Notifications"><svg><use href="#t-bell"/></svg>' + (custUnseen() ? '<span class="badge">' + custUnseen() + "</span>" : "") + "</button>" : '<button class="mh-chip" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>" +
     '<div class="mh-title"><p>' + (acc ? "Hi " + esc(acc.name.split(" ")[0]) : "Delivered within " + hoursText() + " in Rome") + "</p><h1>" + esc(title) + "</h1></div>";
@@ -907,10 +909,8 @@ function cMapHome(acc) {
   if (st.open === false) h += '<div class="banner bad">DART is closed right now. You can book again when we reopen.</div>';
   else if (st.banner) h += '<div class="banner">' + esc(st.banner) + "</div>";
   if (active.length) h += '<div class="list">' + active.slice(0, 3).map(orderRow).join("") + "</div>";
-  h += '<div class="mh-q"><div class="grid2">' + field("From", sel("c.hq.from", hq.from, [["", "Pickup area"]].concat(AREA_NAMES), 'data-live="1"')) + field("To", sel("c.hq.to", hq.to, [["", "Delivery area"]].concat(AREA_NAMES), 'data-live="1"')) + "</div>" +
+  h += '<div class="mh-q">' + addressField("c.hq.pickup", hp, "From") + addressField("c.hq.dropoff", hd, "To") +
     '<div class="mh-types" role="radiogroup" aria-label="What are you sending">' + Object.keys(TYPICAL).map(function (k) { var on = hq.type === k; return '<button type="button" role="radio" aria-checked="' + on + '" class="' + (on ? "on" : "") + '" data-act="w-hq-type" data-v="' + k + '">' + TYPICAL[k].label.split(" and")[0] + "</button>"; }).join("") + "</div>" +
-    '<div class="row between"><div><span class="mh-price">' + (x ? eur(x.q.total) : "from " + eur(pricing().minFee)) + '</span><span class="muted sm">' + (x ? x.q.km.toFixed(1) + " km · about " + x.q.mins + " min" : "Pick two areas to see a price") + '</span></div><button class="btn" data-act="w-hq-book">Continue</button></div></div>';
-  h += acc ? '<div class="quick"><button data-act="c-go" data-v="deliveries"><b>Deliveries</b><span>' + orders.length + " total</span></button><button data-act=\"c-go\" data-v=\"invoices\"><b>Invoices</b><span>" + myInvoices().length + " total</span></button></div>"
-    : '<div class="quick"><button data-act="c-go" data-v="track"><b>Track a delivery</b><span>Code and email</span></button><button data-act="c-auth-open" data-v="register"><b>Create an account</b><span>History and invoices</span></button></div>';
+    '<div class="row between"><div><span class="mh-price">' + (x ? eur(x.q.total) : "from " + eur(pricing().minFee)) + '</span><span class="muted sm">' + (x ? x.q.km.toFixed(1) + " km · about " + x.q.mins + " min" : "Add both addresses to see the price") + '</span></div><button class="btn" data-act="w-hq-book">Continue</button></div></div>';
   return h + "</div></div>";
 }

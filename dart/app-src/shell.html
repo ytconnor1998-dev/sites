@@ -292,6 +292,10 @@ table.edit .input.n { width: 76px; }
 /* Real map: fills whatever box the drawn map used */
 .gm, .gm-in { position: absolute; inset: 0; }
 .mh-map .gm, .offer-map .gm { position: absolute; inset: 0; }
+.pin-in { position: absolute; right: 4px; bottom: 4px; width: 38px; height: calc(100% - 26px); min-height: 34px; border: 0; border-radius: 6px; background: var(--purple-soft); display: grid; place-items: center; }
+.pin-in i { width: 13px; height: 13px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2.5px solid var(--purple); }
+.pin-in.on { background: var(--purple); }
+.pin-in.on i { border-color: #fff; background: #fff; }
 .pin-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; color: var(--purple); font-weight: 700; font-size: 14px; padding: 2px 0; margin-top: -4px; }
 .pin-btn i { width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--purple); }
 .pin-wrap { position: relative; height: min(55vh, 420px); border-radius: 8px; overflow: hidden; background: var(--map-bg); }
@@ -437,11 +441,14 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 @keyframes pulse { to { box-shadow: 0 0 0 14px transparent; } }
 @media (prefers-reduced-motion: reduce) { .offer, .offer-card, .offer-scrim, .pulse { animation: none; } }
 .mh-sheet .grab { width: 40px; height: 5px; border-radius: 4px; background: var(--line); margin: 2px auto 2px; }
-.mh-q { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.mh-q { display: grid; gap: 8px; }
+.mh-q .field > span { font-size: 11px; }
+.mh-q .input { padding-top: 9px; padding-bottom: 9px; }
+.mh-q .addr-area { font-size: 13px; margin-top: -4px; }
 .mh-types { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.mh-types button { border: 1.5px solid var(--line); background: var(--card); border-radius: 6px; padding: 8px 2px; font-weight: 700; font-size: 12.5px; }
+.mh-types button { border: 1.5px solid var(--line); background: var(--card); border-radius: 6px; padding: 6px 2px; font-weight: 700; font-size: 12.5px; }
 .mh-types button.on { border-color: var(--purple); background: var(--purple-soft); color: var(--purple); }
-.mh-price { display: block; font-size: 24px; font-weight: 900; font-family: var(--mono); letter-spacing: -.02em; }
+.mh-price { display: block; font-size: 21px; font-weight: 900; font-family: var(--mono); letter-spacing: -.02em; }
 .mh-q .row.between > div { display: grid; }
 .mh-online { display: inline-flex; align-items: center; gap: 10px; border: 0; background: var(--ink); color: var(--paper); font-weight: 800; font-size: 16px; padding: 11px 18px 11px 14px; border-radius: 8px; box-shadow: 0 6px 18px -8px rgba(30, 10, 80, .5); }
 .mh-online i { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 3px rgba(255,255,255,.2); }

@@ -9,9 +9,9 @@ module.exports = ({ config }) => {
     android: {
       ...config.android,
       package: courier ? "it.dart.courier" : "it.dart.app",
-      permissions: courier ? [...config.android.permissions, "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"] : config.android.permissions,
+      permissions: [...config.android.permissions, "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"],
     },
-    plugins: courier ? [["expo-location", { locationWhenInUsePermission: "DART Courier uses your location to send you nearby deliveries and to check you're at each pickup and drop-off." }]] : [],
+    plugins: [["expo-location", { locationWhenInUsePermission: courier ? "DART Courier uses your location to send you nearby deliveries and to check you're at each pickup and drop-off." : "DART uses your location to open the map where you are and to help you set a pickup address." }]],
     ios: { ...config.ios, bundleIdentifier: courier ? "it.dart.courier" : "it.dart.app" },
     extra: { ...config.extra, site: SITE, screen: courier ? "courier" : "customer" },
   };

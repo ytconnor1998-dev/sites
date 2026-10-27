@@ -28,9 +28,9 @@ export default function App() {
     return () => sub.remove();
   }, [failed]);
 
-  // Couriers: ask for location once, so the page can use GPS for nearby jobs and arrival checks.
+  // Ask for location once: couriers need it for nearby jobs and arrival checks, customers to open the map where they are.
   useEffect(() => {
-    if (screen === 'courier') Location.requestForegroundPermissionsAsync().catch(() => {});
+    Location.requestForegroundPermissionsAsync().catch(() => {});
   }, []);
 
   const onMessage = (e) => { if (e.nativeEvent.data === 'back:exit') BackHandler.exitApp(); };
