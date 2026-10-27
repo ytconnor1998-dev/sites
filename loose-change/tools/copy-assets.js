@@ -44,6 +44,11 @@ for (const w of [400, 500, 600, 700]) {
   fs.copyFileSync(path.join(fredoka, file), path.join(fontsOut, file));
   css += `@font-face { font-family: 'Fredoka'; font-style: normal; font-weight: ${w}; font-display: swap; src: url('${file}') format('woff2'); }\n`;
 }
+// Bebas Neue (OFL) for the HUD
+const bebas = path.join(root, 'node_modules', '@fontsource', 'bebas-neue', 'files', 'bebas-neue-latin-400-normal.woff2');
+fs.copyFileSync(bebas, path.join(fontsOut, 'bebas-neue-latin-400-normal.woff2'));
+css += `@font-face { font-family: 'Bebas Neue'; font-style: normal; font-weight: 400; font-display: swap; src: url('bebas-neue-latin-400-normal.woff2') format('woff2'); }\n`;
+fs.copyFileSync(path.join(root, 'node_modules', '@fontsource', 'bebas-neue', 'LICENSE'), path.join(fontsOut, 'OFL-BebasNeue.txt'));
 fs.writeFileSync(path.join(fontsOut, 'fredoka.css'), css);
 fs.copyFileSync(path.join(root, 'node_modules', '@fontsource', 'fredoka', 'LICENSE'), path.join(fontsOut, 'OFL.txt'));
 console.log('Copied Fredoka font.');
@@ -59,7 +64,8 @@ console.log('Copied three.js.');
 // three.js add-ons (also MIT): post-processing, rounded boxes, model loading
 const addons = [
   'postprocessing/EffectComposer.js', 'postprocessing/RenderPass.js', 'postprocessing/OutputPass.js', 'postprocessing/GTAOPass.js',
-  'postprocessing/Pass.js', 'postprocessing/MaskPass.js', 'postprocessing/ShaderPass.js',
+  'postprocessing/Pass.js', 'postprocessing/MaskPass.js', 'postprocessing/ShaderPass.js', 'postprocessing/UnrealBloomPass.js',
+  'shaders/LuminosityHighPassShader.js',
   'shaders/CopyShader.js', 'shaders/OutputShader.js', 'shaders/GTAOShader.js', 'shaders/PoissonDenoiseShader.js',
   'math/SimplexNoise.js', 'geometries/RoundedBoxGeometry.js',
   'loaders/GLTFLoader.js', 'utils/BufferGeometryUtils.js', 'utils/SkeletonUtils.js',

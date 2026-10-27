@@ -274,3 +274,132 @@ LC.ACHIEVEMENTS = [
 for (const a of LC.ACHIEVEMENTS) {
   if (a.ending) { const e = LC.ENDINGS.find((x) => x.id === a.ending); a.name = 'Ending: ' + e.title; a.desc = e.secret ? 'A secret ending.' : 'See this ending.'; }
 }
+
+// ---- Phone: notes the kid has written. They unlock as you play. ----
+// `when` gets the save state and returns true once the note should appear.
+LC.NOTES = [
+  { id: 'plan', title: 'THE PLAN', when: () => true, body:
+`1. Find money
+2. Find more money
+3. Buy The Thing
+4. ???
+5. Don't tell Brian` },
+  { id: 'thing', title: 'What is The Thing??', when: () => true, body:
+`Things it could be:
+- a hovercraft
+- a horse (please)
+- a smaller Thing inside a bigger sheet
+- infinite Haribo
+- a portal
+- Grandad (no)
+
+Things it's NOT:
+- socks
+- a "learning experience"` },
+  { id: 'sofa', title: 'Sofa facts', when: (s) => s.stats.clicks >= 25, body:
+`The sofa has given me ${'{clicks}'} coins so far.
+I don't know how. Nobody sits on it.
+Dad says "it's just where coins go".
+I think the sofa is a bank.
+I think the sofa is the REAL bank.` },
+  { id: 'cat', title: 'The cat (observations)', when: (s) => (s.gens.cat || 0) >= 1, body:
+`Day 1: Hired the cat. Payment: one (1) sardine.
+Day 1 later: The cat knocked a 20p off the table. Looked at me. Did not apologise.
+Day 2: The cat has a second job. I don't know where.
+Day 3: Found the cat asleep on £4.60. Respect.` },
+  { id: 'brother', title: 'Little brother contract', when: (s) => (s.gens.brother || 0) >= 1, body:
+`I, LITTLE BROTHER, agree to go down the sofa
+for 1 Haribo per hour.
+I am not allowed to keep: coins, crisps, the remote.
+I am allowed to keep: fluff.
+
+Signed: [crayon scribble]
+Witness: the cat` },
+  { id: 'pig', title: 'Pig names', when: (s) => s.stats.pigs >= 1, body:
+`Piggy banks I have smashed (RIP):
+- Gerald
+- Gerald 2
+- Kevin (he fought back)
+- an owl? (still counts)
+
+I feel bad. I also feel rich.` },
+  { id: 'hole', title: 'Hole log', when: (s) => s.depth >= 1, body:
+`The hole is going great.
+Mum asked what the hole is for.
+I said "for science".
+She said "fill it in".
+I have not filled it in.
+I have made it deeper.` },
+  { id: 'goose', title: 'GOOSE', when: (s) => s.goose.met, body:
+`DO NOT LOOK THE GOOSE IN THE EYE
+DO NOT LOOK THE GOOSE IN THE EYE
+DO NOT LOOK THE GOOSE IN THE EYE
+
+(I looked the goose in the eye)` },
+  { id: 'brian', title: 'Reasons Brian is evil', when: (s) => s.lifetime >= 50, body:
+`1. Says The Thing is his
+2. Has a moustache (suspicious)
+3. Waves at me "normally"
+4. Mows his lawn on Sundays at 7am
+5. Owns a leaf blower and USES it
+6. I'm pretty sure he's working with the goose` },
+  { id: 'scratch', title: 'Scratchcard strategy', when: (s) => s.stats.cards >= 1, body:
+`Tips from the man at the corner shop:
+- "Scratch from the left, it's luckier"
+- "No wait, from the right"
+- "Actually it doesn't matter, it's random"
+- "Please buy another one"` },
+  { id: 'frog', title: 'Frog', when: (s) => s.frogs >= 1, body:
+`I won a frog on a scratchcard.
+The frog's name is Colin.
+Colin lives in my pocket now.
+Colin does not want to be put down.` },
+  { id: 'derek', title: 'Derek', when: (s) => s.flags.derek, body:
+`Derek (1p) is doing well.
+Derek likes: being shiny, the radio.
+Derek dislikes: the coin pusher (bad memories).
+Derek is NOT for spending.` },
+  { id: 'million', title: 'I AM A MILLIONAIRE', when: (s) => s.lifetime >= 1e6, body:
+`I have found a MILLION POUNDS.
+Down the sofa. And other places.
+This is normal. Everything is normal.
+Still not enough for The Thing.
+How much IS a trillion???
+(Googled it. It's a lot.)` },
+  { id: 'moon', title: 'Moon admin', when: (s) => (s.gens.moon || 0) >= 1, body:
+`Things I need to do on the Moon:
+- check the sofa (done)
+- check behind the sofa
+- say hi to the moon cat
+- do NOT tell Mum I've been to the Moon` },
+];
+
+// ---- Phone: text messages. Each arrives once its `when` is true. ----
+LC.TEXTS = [
+  { id: 'mum1', from: 'Mum', when: () => true, msgs: ['Morning love. Have you seen the big thing in the hall??', "Grandad's note says it's yours if you can pay for it. Good luck with that x"] },
+  { id: 'nan1', from: 'Nan', when: (s) => s.lifetime >= 2, msgs: ['HELLO DEAR THIS IS NAN', 'HOW DO I TURN OFF CAPITALS', 'I have put a fiver aside for you. It is under the fiver I put aside last time.'] },
+  { id: 'brian1', from: 'Brian (next door)', when: (s) => s.lifetime >= 20, msgs: ["Just so you know, your grandad promised that Thing to ME.", "I'm saving up too. I have a spreadsheet.", "Good luck kiddo 🙂"] },
+  { id: 'mum2', from: 'Mum', when: (s) => s.depth >= 0.5, msgs: ['Why is there a hole in the garden', 'Fill it in please', 'Is that my good spoon'] },
+  { id: 'unknown1', from: 'Unknown number', when: (s) => s.lifetime >= 200, msgs: ['hello is this the sofa'] },
+  { id: 'brother1', from: 'Little brother', when: (s) => (s.gens.brother || 0) >= 1, msgs: ["i am in the sofa", "it is dark", "i found a crisp", "i am staying here forever"] },
+  { id: 'nan2', from: 'Nan', when: (s) => s.lifetime >= 1000, msgs: ['A GOOSE CAME TO MY HOUSE AND ASKED FOR YOU', 'Well it honked. I assumed it was for you.'] },
+  { id: 'brian2', from: 'Brian (next door)', when: (s) => s.lifetime >= 5000, msgs: ['Is that a METAL DETECTORIST in your garden?', "That's cheating.", "...where did you get him? Asking for a friend."] },
+  { id: 'bank1', from: 'Bank', when: (s) => s.lifetime >= 1e5, msgs: ['Dear Customer, we have noticed unusual sofa activity on your account.', 'Please confirm you are a real person and not a sofa. Reply Y or N.'] },
+  { id: 'mum3', from: 'Mum', when: (s) => (s.gens.pigeons || 0) >= 1, msgs: ['Why are there 40 pigeons on the roof', 'They are looking at me', 'One of them has a tiny briefcase'] },
+  { id: 'unknown2', from: 'Unknown number', when: (s) => s.lifetime >= 1e6, msgs: ['honk'] },
+  { id: 'brian3', from: 'Brian (next door)', when: (s) => s.lifetime >= 1e7, msgs: ["OK how are you doing this", "I've been digging for three days", "I found a sock"] },
+  { id: 'grandad1', from: 'Grandad', when: (s) => s.lifetime >= 1e9, msgs: ["Hello. It's Grandad. Nan showed me how to text.", 'Proud of you. Keep going.', "Don't let Brian peek under the sheet."] },
+  { id: 'moon1', from: 'NASA (probably)', when: (s) => (s.gens.moon || 0) >= 1, msgs: ['Hi. Could you please stop checking the Moon sofa.', 'The astronauts were going to check it.'] },
+];
+
+// ---- Phone: weather app forecasts ----
+LC.FORECASTS = [
+  ['☀️', 'Sunny', 'Highs of 24°. 40% chance of coins.'],
+  ['🌦️', 'Light showers', 'Of pigeons. Bring an umbrella. A strong one.'],
+  ['🪿', 'Goose warning', 'A goose has been spotted in your area. Stay indoors. Lock the cat flap.'],
+  ['☁️', 'Overcast', 'Grey all day. Perfect sofa weather.'],
+  ['🌈', 'Rainbow', 'Something valuable may be at the end of it. Probably a 2p.'],
+  ['🌬️', 'Windy', 'Brian\'s leaf blower expected from 7am.'],
+  ['🌙', 'Clear skies', 'Good night for looking at the Moon. Is that a sofa up there?'],
+  ['🌧️', 'Rain', 'Worms will come up. Gary sends his regards.'],
+];

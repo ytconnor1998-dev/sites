@@ -3,10 +3,25 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
+// a faint grain on every surface gives the painted look
+let grainTex = null;
+function grain() {
+  if (grainTex) return grainTex;
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const img = g.createImageData(128, 128);
+  for (let i = 0; i < img.data.length; i += 4) { const v = 222 + Math.random() * 33; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+  g.putImageData(img, 0, 0);
+  grainTex = new THREE.CanvasTexture(c);
+  grainTex.colorSpace = THREE.SRGBColorSpace;
+  grainTex.wrapS = grainTex.wrapT = THREE.RepeatWrapping;
+  grainTex.repeat.set(3, 3);
+  return grainTex;
+}
 const matCache = new Map();
 export function mat(color, opts = {}) {
   const key = color + JSON.stringify(opts);
-  if (!matCache.has(key)) matCache.set(key, new THREE.MeshLambertMaterial({ color, ...opts }));
+  if (!matCache.has(key)) matCache.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0, map: opts.map === null ? null : grain(), ...opts }));
   return matCache.get(key);
 }
 export function part(geo, color, x = 0, y = 0, z = 0, opts = {}) {
@@ -55,12 +70,12 @@ export function coffeeTable() {
     cyl(0.06, 0.05, 0.1, 0xffffff, 0.3, 0.51, 0), box(0.25, 0.03, 0.18, 0xd9534f, -0.25, 0.47, 0.05, { rot: [0, 0.3, 0] }));
 }
 export function tv() {
-  const screen = box(1.5, 0.85, 0.04, 0x1a2a3a, 0, 1.15, 0.05, { mat: { emissive: 0x2a5070 } });
+  const screen = box(1.5, 0.85, 0.04, 0x1a2a3a, 0, 1.15, 0.05, { mat: { emissive: 0x4a90d0, emissiveIntensity: 1.4, map: null } });
   screen.name = 'screen';
   return group(box(1.6, 0.5, 0.45, C.woodDark, 0, 0.25, 0), box(1.6, 0.95, 0.06, C.ink, 0, 1.15, 0), screen);
 }
 export function lamp() {
-  const shade = cone(0.28, 0.35, 0xf8b04a, 0, 1.55, 0, { seg: 10, mat: { emissive: 0x5a3a10 } });
+  const shade = cone(0.28, 0.35, 0xf8b04a, 0, 1.55, 0, { seg: 16, mat: { emissive: 0xffa040, emissiveIntensity: 1.6, map: null } });
   return group(cyl(0.18, 0.2, 0.05, C.ink, 0, 0.03, 0), cyl(0.025, 0.025, 1.4, 0xdddddd, 0, 0.72, 0), shade);
 }
 export function plant() {
@@ -78,7 +93,7 @@ export function bookshelf() {
 }
 export function fireplace() {
   return group(box(1.8, 1.1, 0.5, C.brick, 0, 0.55, 0), box(0.9, 0.6, 0.1, 0x241a14, 0, 0.35, 0.22), box(2.1, 0.1, 0.65, C.white, 0, 1.15, 0.03),
-    box(0.5, 0.18, 0.12, 0xf08a24, 0, 0.15, 0.2, { mat: { emissive: 0xc04a00 } }));
+    box(0.5, 0.18, 0.12, 0xf08a24, 0, 0.15, 0.2, { mat: { emissive: 0xff6a10, emissiveIntensity: 2.5, map: null } }));
 }
 export function rug(color = 0xc0504d) { return cyl(1.4, 1.4, 0.02, color, 0, 0.011, 0, { seg: 24, shadow: false }); }
 export function counter(len = 3) {
@@ -162,6 +177,47 @@ export function person({ shirt = 0x5b8bd9, legs = 0x3a3f58, skin = C.skin, hair 
   g.scale.setScalar(s);
   return g;
 }
+
+// ---------- tools you hold (first person) ----------
+// the player's hand: a kid's hand poking out of a hoodie sleeve
+export function glove(sleeve = 0x3b6ea5) {
+  const g = new THREE.Group();
+  g.add(cyl(0.06, 0.068, 0.22, sleeve, 0, -0.03, 0.14, { rot: [Math.PI / 2, 0, 0] }));
+  g.add(cyl(0.066, 0.066, 0.04, 0xeeeeee, 0, -0.03, 0.03, { rot: [Math.PI / 2, 0, 0] }));
+  g.add(box(0.1, 0.045, 0.1, C.skin, 0, -0.02, -0.04));
+  for (let i = 0; i < 4; i++) {
+    const f = part(new THREE.CapsuleGeometry(0.012, 0.045, 4, 8), C.skin, -0.036 + i * 0.024, -0.025, -0.11 + Math.abs(i - 1.5) * 0.006, { rot: [Math.PI / 2 - 0.5, 0, 0] });
+    g.add(f);
+  }
+  g.add(part(new THREE.CapsuleGeometry(0.013, 0.035, 4, 8), C.skin, 0.058, -0.02, -0.04, { rot: [Math.PI / 2, 0, -0.9] }));
+  return g;
+}
+export function heldTool(kind, tier = 0) {
+  const g = new THREE.Group();
+  const handle = (len, col) => cyl(0.022, 0.026, len, col, 0, len / 2 - 0.1, 0);
+  if (kind === 'sofa') {
+    if (tier === 0) { g.add(glove()); return g; }
+    if (tier === 1) { g.add(handle(0.7, 0x888888), box(0.02, 0.12, 0.05, 0xf2b631, 0.02, 0.62, 0), box(0.02, 0.12, 0.05, 0xf2b631, -0.02, 0.62, 0), box(0.06, 0.1, 0.08, 0xd9534f, 0, -0.05, 0.05)); g.rotation.x = 1.0; return g; }
+    if (tier === 2) { g.add(handle(0.6, 0x5b8bd9), box(0.18, 0.05, 0.08, 0x333333, 0, 0.55, 0.02), cyl(0.05, 0.05, 0.14, 0xd9534f, 0, -0.08, 0)); g.rotation.x = 1.0; return g; }
+    g.add(box(0.26, 0.09, 0.08, 0x3fb3c9, 0, 0, 0, { mat: { emissive: 0x1a6a7a } })); return g;
+  }
+  if (kind === 'pig') {
+    if (tier === 3) { for (let i = 0; i < 3; i++) g.add(cyl(0.035, 0.035, 0.22, 0xd9534f, (i - 1) * 0.07, 0.1, 0)); g.add(box(0.24, 0.04, 0.08, 0x3a2a1a, 0, 0.05, 0), cyl(0.004, 0.004, 0.12, 0x222222, 0, 0.27, 0)); return g; }
+    const len = [0.35, 0.45, 0.75][tier], headC = [0xd9534f, 0x666666, 0x444444][tier], hc = [0xf2b631, C.wood, C.woodDark][tier];
+    const hs = [0.12, 0.14, 0.26][tier];
+    g.add(handle(len, hc), box(hs, hs * 0.6, hs * 0.6, headC, 0, len - 0.12, 0, { mat: { metalness: tier ? 0.5 : 0, roughness: tier ? 0.4 : 0.6 } }));
+    return g;
+  }
+  if (kind === 'dig') {
+    if (tier === 0) { g.add(handle(0.25, 0xcccccc), ball(0.045, 0xcccccc, 0, 0.17, 0, { scale: [1, 1.4, 0.4], mat: { metalness: 0.7, roughness: 0.3 } })); return g; }
+    if (tier === 1) { g.add(handle(0.3, 0x6aa84f), box(0.09, 0.14, 0.01, 0x999999, 0, 0.26, 0, { mat: { metalness: 0.6, roughness: 0.35 } })); return g; }
+    if (tier === 2) { g.add(handle(0.8, C.wood), box(0.18, 0.24, 0.02, 0x8a8a8a, 0, 0.78, 0, { mat: { metalness: 0.6, roughness: 0.35 } }), box(0.14, 0.04, 0.04, 0x222222, 0, -0.08, 0)); return g; }
+    g.add(box(0.12, 0.2, 0.28, 0xf2b631, 0, 0, 0), cyl(0.02, 0.01, 0.3, 0x999999, 0, 0, 0.28, { rot: [Math.PI / 2, 0, 0], mat: { metalness: 0.8, roughness: 0.3 } }));
+    return g;
+  }
+  return g;
+}
+
 export function detector() {
   return group(cyl(0.015, 0.015, 1.1, 0x333333, 0, 0, 0), cyl(0.13, 0.13, 0.03, 0x333333, 0, -0.55, 0.05, { rot: [0.3, 0, 0] }), box(0.08, 0.1, 0.12, 0xf2b631, 0, 0.3, 0.05));
 }
@@ -233,7 +289,7 @@ export function portal(color = 0xa070ff) {
   return g;
 }
 export function lampPost() {
-  return group(cyl(0.07, 0.09, 4, 0x333333, 0, 2, 0), box(0.6, 0.08, 0.08, 0x333333, 0.25, 4, 0), box(0.3, 0.15, 0.3, 0xfff2b0, 0.5, 3.92, 0, { mat: { emissive: 0x8a7a30 } }));
+  return group(cyl(0.07, 0.09, 4, 0x333333, 0, 2, 0), box(0.6, 0.08, 0.08, 0x333333, 0.25, 4, 0), box(0.3, 0.15, 0.3, 0xfff2b0, 0.5, 3.92, 0, { mat: { emissive: 0xffc070, emissiveIntensity: 3, map: null } }));
 }
 export function hole() {
   const g = new THREE.Group();
@@ -262,18 +318,22 @@ export function theThing() {
 }
 
 // ---------- text on a plane (signs, labels) ----------
-export function textSprite(text, { size = 0.5, color = '#2d2118', bg = '#fffaf0', border = '#2d2118', font = 600 } = {}) {
+export function textSprite(text, { size = 0.5, color = '#2d2118', bg = '#fffaf0', border = '#2d2118', font = 600, width = 1024 } = {}) {
+  // fixed canvas size: the label is drawn centred and the rest left transparent,
+  // so changing the text never reallocates the texture
   const cv = document.createElement('canvas');
+  cv.width = width; cv.height = 100;
   const ctx = cv.getContext('2d');
   const draw = (t) => {
-    const px = 64;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    let px = 64;
     ctx.font = `${font} ${px}px Fredoka, sans-serif`;
+    while (ctx.measureText(t).width > cv.width - 60 && px > 20) { px -= 4; ctx.font = `${font} ${px}px Fredoka, sans-serif`; }
     const w = Math.ceil(ctx.measureText(t).width) + 48;
-    cv.width = w; cv.height = px + 36;
-    ctx.font = `${font} ${px}px Fredoka, sans-serif`;
-    if (bg) { ctx.fillStyle = bg; ctx.strokeStyle = border; ctx.lineWidth = 8; roundRect(ctx, 4, 4, w - 8, cv.height - 8, 22); ctx.fill(); ctx.stroke(); }
+    const x0 = (cv.width - w) / 2;
+    if (bg) { ctx.fillStyle = bg; ctx.strokeStyle = border; ctx.lineWidth = 8; roundRect(ctx, x0 + 4, 4, w - 8, cv.height - 8, 22); ctx.fill(); ctx.stroke(); }
     ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(t, w / 2, cv.height / 2 + 3);
+    ctx.fillText(t, cv.width / 2, cv.height / 2 + 3);
   };
   draw(text);
   const tex = new THREE.CanvasTexture(cv);
@@ -284,7 +344,6 @@ export function textSprite(text, { size = 0.5, color = '#2d2118', bg = '#fffaf0'
   sp.userData.setText = (t) => {
     if (t === last) return;
     last = t; draw(t); tex.needsUpdate = true;
-    sp.scale.set(size * cv.width / cv.height, size, 1);
   };
   return sp;
 }

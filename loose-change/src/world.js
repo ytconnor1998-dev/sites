@@ -5,6 +5,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import * as M from './models.js';
 import { tex } from './textures.js';
 
@@ -12,10 +14,10 @@ const LC = globalThis.LC;
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-const EYE = 1.6, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
+const EYE = 1.25, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
 const BOUNDS = { x0: -24, x1: 24, z0: -26, z1: 27 };
 
-let renderer, scene, camera, sun, canvas, composer = null, clouds = null;
+let renderer, scene, camera, sun, canvas, composer = null, clouds = null, grainPass = null;
 const colliders = [];
 const interactables = [];
 const agents = [];
@@ -38,7 +40,7 @@ function texMat(name, rx, ry, color = 0xffffff) { return new THREE.MeshLambertMa
 function wall(x0, z0, x1, z1, color = 0xf3e6c8, h = 2.8, t = 0.2) {
   const w = Math.abs(x1 - x0) || t, d = Math.abs(z1 - z0) || t;
   const tn = WALL_TEX[color];
-  const m = M.box(w, h, d, tn ? texMat(tn, Math.max(w, d) / 2, h / 2) : color, (x0 + x1) / 2, h / 2, (z0 + z1) / 2, { shadow: false, sharp: true });
+  const m = M.box(w, h, d, tn ? texMat(tn, Math.max(w, d) / 2, h / 2) : color, (x0 + x1) / 2, h / 2, (z0 + z1) / 2, { sharp: true });
   m.receiveShadow = true;
   scene.add(m);
   collide(x0 - (w === t ? t / 2 : 0), z0 - (d === t ? t / 2 : 0), x1 + (w === t ? t / 2 : 0), z1 + (d === t ? t / 2 : 0));
@@ -52,6 +54,35 @@ function floor(x0, z0, x1, z1, color, y = 0.01) {
   m.receiveShadow = true; scene.add(m); return m;
 }
 function interact(obj, def) { obj.traverse((o) => { o.userData.interact = def; }); interactables.push(obj); def.obj = obj; return def; }
+
+// fake volumetric light: a soft additive cone under a lamp
+let coneTex = null;
+function lightCone(x, y, z, h, r, color = 0xffd9a0, strength = 0.045) {
+  if (!coneTex) {
+    const c = document.createElement('canvas'); c.width = 4; c.height = 128;
+    const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 128);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.55, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 4, 128);
+    coneTex = new THREE.CanvasTexture(c);
+  }
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.2, r, h, 24, 1, true), new THREE.MeshBasicMaterial({ color, map: coneTex, transparent: true, opacity: strength, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  m.position.set(x, y - h / 2, z);
+  m.userData.noAO = true;
+  scene.add(m);
+  return m;
+}
+// floating dust in the warm indoor light
+let dust = null;
+function buildDust() {
+  const n = 260, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { pos[i * 3] = rand(-6.8, 6.8); pos[i * 3 + 1] = rand(0.2, 2.7); pos[i * 3 + 2] = rand(-4.8, 4.8); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const g = c.getContext('2d'); const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, 'rgba(255,240,210,1)'); gr.addColorStop(1, 'rgba(255,240,210,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
+  dust = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.035, map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+  scene.add(dust);
+}
 
 // ---------- the level ----------
 const spots = {};
@@ -87,7 +118,7 @@ function buildLevel() {
   const roofMat = M.mat(M.C.roof);
   for (const s of [-1, 1]) {
     const r = new THREE.Mesh(new THREE.BoxGeometry(14.8, 0.2, 6.2), roofMat);
-    r.position.set(0, 3.95, s * 2.75); r.rotation.x = s * 0.42; scene.add(r);
+    r.position.set(0, 3.95, s * 2.75); r.rotation.x = s * 0.42; r.castShadow = true; scene.add(r);
   }
   // gable ends: triangles from the top of the walls up to the ridge
   const tri = new THREE.Shape([new THREE.Vector2(-5.1, 0), new THREE.Vector2(5.1, 0), new THREE.Vector2(0, 2.35)]);
@@ -97,16 +128,20 @@ function buildLevel() {
     gable.rotation.y = Math.PI / 2; gable.position.set(s * 7 - 0.1, 2.8, 0); scene.add(gable);
   }
   // ceiling, so the inside feels like a room
-  const ceiling = M.box(14, 0.1, 10, new THREE.MeshLambertMaterial({ color: 0xfbf6ea, emissive: 0x6a6458 }), 0, 2.85, 0, { shadow: false, sharp: true });
-  ceiling.receiveShadow = false; scene.add(ceiling);
-  for (const x of [-3.5, 3.5]) scene.add(M.cyl(0.25, 0.3, 0.12, 0xfff2c0, x, 2.75, 0, { mat: { emissive: 0xa08a40 }, shadow: false }));
+  const ceiling = M.box(14, 0.1, 10, new THREE.MeshStandardMaterial({ color: 0xf3ece0, roughness: 0.9 }), 0, 2.85, 0, { sharp: true });
+  scene.add(ceiling);
+  // ceiling lamps: glowing shades with a soft cone of light underneath
+  for (const x of [-3.5, 3.5]) {
+    scene.add(M.cyl(0.25, 0.32, 0.14, 0xfff2c0, x, 2.74, 0, { mat: { emissive: 0xffc880, emissiveIntensity: 2.2, map: null }, shadow: false }));
+    lightCone(x, 2.68, 0, 2.2, 1.5);
+  }
   spots.ridge = { x0: -6.5, x1: 6.5, y: 5.15, z: 0 };
   add(M.box(0.6, 1.6, 0.6, M.C.brick, 0, 0, 0), -4, 4.4, 1.5);
 
   // living room
   const sofa = add(M.sofa(), -3.5, 0, 3.9, Math.PI); collideObj(sofa, 0.05);
   spots.sofa = sofa;
-  interact(sofa, { range: 3.4, hold: true, prompt: () => LC.game.sofaPrompt(), use: () => rummage(sofa) });
+  interact(sofa, { range: 3.4, hold: true, tool: 'sofa', prompt: () => LC.game.sofaPrompt(), use: () => rummage(sofa) });
   const arm = add(M.armchair(), -6.1, 0, 1.4, Math.PI / 2); collideObj(arm, 0.05); spots.armchair = arm;
   add(M.rug(texMat('carpet', 1, 1)), -3.5, 0, 1.4);
   const tbl = add(M.coffeeTable(), -3.5, 0, 2.3); collideObj(tbl);
@@ -139,7 +174,7 @@ function buildLevel() {
   // a bigger invisible target so the hole is easy to aim at
   const holeHit = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 1.2, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
   holeHit.position.y = 0.6; holeG.add(holeHit);
-  interact(holeG, { range: 4.5, hold: true, prompt: () => LC.game.digPrompt(), use: () => dig(holeG) });
+  interact(holeG, { range: 4.5, hold: true, tool: 'dig', prompt: () => LC.game.digPrompt(), use: () => dig(holeG) });
   const sign = M.textSprite('0 m', { size: 0.45 }); sign.position.set(-2, 1.9, -12.4); scene.add(sign);
   add(M.box(0.08, 1.6, 0.08, M.C.woodDark, 0, 0, 0), -2, 0.8, -12.45);
   spots.depthSign = sign;
@@ -197,7 +232,7 @@ function buildLevel() {
     const lbl = M.textSprite(name, { size: 0.6 }); lbl.position.set((x0 + x1) / 2, 4, 17.9); scene.add(lbl);
   }
   collide(-7, 18, -5, 26); collide(5, 18, 7, 26);
-  for (let x = -20; x <= 20; x += 10) { add(M.lampPost(), x, 0, 9.6, Math.PI / 2); collide(x - 0.15, 9.45, x + 0.15, 9.75); }
+  for (let x = -20; x <= 20; x += 10) { add(M.lampPost(), x, 0, 9.6, Math.PI / 2); collide(x - 0.15, 9.45, x + 0.15, 9.75); lightCone(x, 3.85, 9.1, 3.2, 1.3, 0xffd9a0, 0.035); }
   for (const [x, z] of [[-30, 30], [30, 30], [0, 48], [-45, -10], [45, 0], [-35, -38], [30, -40]]) add(M.tree(rand(4, 6)), x, 0, z);
   // invisible edges of the world
   collide(BOUNDS.x0 - 1, BOUNDS.z0, BOUNDS.x0, BOUNDS.z1); collide(BOUNDS.x1, BOUNDS.z0, BOUNDS.x1 + 1, BOUNDS.z1);
@@ -530,7 +565,7 @@ function setPig(kind, scale = 1) {
   pig.scale.setScalar(scale * 0.9);
   pig.userData.base = scale * 0.9;
   scene.add(pig);
-  interact(pig, { range: 3.2, hold: true, prompt: () => LC.game.pigPrompt(), use: hitPig });
+  interact(pig, { range: 3.2, hold: true, tool: 'pig', prompt: () => LC.game.pigPrompt(), use: hitPig });
   pig.position.y += 0.6;
   pigDrop = 0.6;
 }
@@ -572,6 +607,42 @@ function hitPig() {
   }
 }
 
+// ---------- what you're holding (first-person view model) ----------
+const view = { group: null, meshes: {}, current: null, swing: 0, sway: 0 };
+function buildViewModel() {
+  view.group = new THREE.Group();
+  view.group.position.set(0.24, -0.22, -0.42);
+  camera.add(view.group);
+  scene.add(camera);
+}
+function viewMesh(kind, tier) {
+  const key = kind + tier;
+  if (!view.meshes[key]) {
+    const m = kind === 'hand' ? M.glove() : M.heldTool(kind, tier);
+    if (kind !== 'hand' && !(kind === 'sofa' && tier === 0)) {
+      const hand = M.glove(); hand.position.set(0, 0, 0.02); hand.rotation.x = -0.4; m.add(hand);
+    }
+    m.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
+    m.visible = false;
+    view.group.add(m);
+    view.meshes[key] = m;
+  }
+  return view.meshes[key];
+}
+function updateViewModel(dt, moving) {
+  const kind = focus && focus.tool ? focus.tool : 'hand';
+  const tier = kind === 'hand' ? 0 : LC.game.toolTier(kind);
+  const m = viewMesh(kind, tier);
+  if (view.current !== m) { if (view.current) view.current.visible = false; m.visible = true; view.current = m; view.swing = 0; }
+  view.swing = Math.max(0, view.swing - dt * 4.5);
+  const sw = Math.sin(view.swing * Math.PI);
+  view.sway += dt * (moving ? 9 : 1.5);
+  const bobX = Math.sin(view.sway) * (moving ? 0.018 : 0.004), bobY = Math.abs(Math.cos(view.sway)) * (moving ? 0.02 : 0.005);
+  m.position.set(bobX, bobY - sw * 0.08, sw * -0.12);
+  const base = kind === 'dig' ? [0.5, 0, 0.2] : kind === 'pig' ? [0.3, 0.1, 0.25] : [0.2, 0.2, 0];
+  m.rotation.set(base[0] - sw * 1.1, base[1], base[2]);
+}
+
 // ---------- player movement ----------
 function tryMove(dx, dz) {
   const nx = player.pos.x + dx, nz = player.pos.z + dz;
@@ -606,7 +677,7 @@ function updatePlayer(dt) {
     player.pos.y + EYE + (moving ? Math.sin(player.bob) * 0.04 : 0) + (shake ? rand(-shake, shake) * 0.3 : 0),
     player.pos.z);
   camera.rotation.set(player.pitch, player.yaw, flip * Math.PI, 'YXZ');
-  sun.position.set(player.pos.x + 18, 30, player.pos.z + 12);
+  sun.position.set(player.pos.x - 30, 15, player.pos.z + 20);
   sun.target.position.set(player.pos.x, 0, player.pos.z);
 }
 
@@ -627,7 +698,7 @@ function updateFocus() {
   focus = f;
   LC.game.setPrompt(f && !LC.game.isBlocked() ? f.prompt() : '');
 }
-function useFocus() { if (focus && !LC.game.isBlocked()) focus.use(); }
+function useFocus() { if (focus && !LC.game.isBlocked()) { view.swing = 1; focus.use(); } }
 
 // ---------- projection for floating text ----------
 function project(v) {
@@ -688,16 +759,39 @@ function setQuality(high) {
   composer.addPass(new RenderPass(scene, camera));
   const ao = new GTAOPass(scene, camera, innerWidth, innerHeight);
   ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.2, scale: 1.1, samples: 12 });
-  ao.blendIntensity = 0.85;
+  ao.blendIntensity = 1.0;
+  // also keep signs, glows and see-through light cones out of the occlusion pass (they'd go black)
+  ao._overrideVisibility = function () {
+    const cache = this._visibilityCache;
+    this.scene.traverse((o) => {
+      if ((o.isPoints || o.isLine || o.isSprite || o.userData.noAO) && o.visible) { o.visible = false; cache.push(o); }
+    });
+  };
   composer.addPass(ao);
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.5, 1.0));
   composer.addPass(new OutputPass());
+  // vignette and film grain, after tone mapping
+  grainPass = new ShaderPass({
+    uniforms: { tDiffuse: { value: null }, time: { value: 0 } },
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv;
+      float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + time) * 43758.5453); }
+      void main() {
+        vec4 c = texture2D(tDiffuse, vUv);
+        vec2 d = vUv - 0.5;
+        c.rgb *= 1.0 - smoothstep(0.35, 0.95, length(d * vec2(1.15, 1.0))) * 0.55;
+        c.rgb += (hash(vUv * 1000.0) - 0.5) * 0.045;
+        gl_FragColor = c;
+      }`,
+  });
+  composer.addPass(grainPass);
   composer.setSize(innerWidth, innerHeight);
 }
 // a soft gradient sky dome with a few slow clouds
 function buildSky() {
   const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { top: { value: new THREE.Color(0x4fa8e0) }, bottom: { value: new THREE.Color(0xd8f0f7) } },
+    uniforms: { top: { value: new THREE.Color(0x36588f) }, bottom: { value: new THREE.Color(0xf6b98a) } },
     vertexShader: 'varying vec3 vP; void main() { vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: 'uniform vec3 top; uniform vec3 bottom; varying vec3 vP; void main() { float h = clamp(vP.y * 1.6, 0.0, 1.0); gl_FragColor = vec4(mix(bottom, top, pow(h, 0.8)), 1.0); }',
   }));
@@ -705,7 +799,7 @@ function buildSky() {
   scene.add(sky);
   scene.userData.sky = sky;
   clouds = new THREE.Group();
-  const cm = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x9aa8b0, fog: false });
+  const cm = new THREE.MeshLambertMaterial({ color: 0xffe2c8, emissive: 0xb0705a, fog: false });
   for (let i = 0; i < 14; i++) {
     const c = new THREE.Group();
     for (let k = 0; k < 5; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(rand(4, 7), 10, 8), cm); b.position.set(k * 5 - 10, rand(-1, 1.5), rand(-2, 2)); b.scale.y = 0.55; c.add(b); }
@@ -725,6 +819,7 @@ function frame(now) {
   last = now; time += dt;
   updatePlayer(dt);
   updateFocus();
+  updateViewModel(dt, keys.has('KeyW') || keys.has('KeyA') || keys.has('KeyS') || keys.has('KeyD'));
   if (holding && focus && focus.hold) { holdTimer -= dt; if (holdTimer <= 0) { holdTimer = 0.2; useFocus(); } }
   for (const a of [...agents]) a.update(dt, time);
   updatePickups(dt);
@@ -744,6 +839,8 @@ function frame(now) {
   }
   LC.game.setCompass(goldenBearing());
   if (clouds) clouds.rotation.y += dt * 0.004;
+  if (grainPass) grainPass.uniforms.time.value = time % 10;
+  if (dust) { dust.rotation.y += dt * 0.01; dust.position.y = Math.sin(time * 0.2) * 0.05; }
   scene.userData.sky.position.copy(camera.position);
   if (composer) composer.render(dt); else renderer.render(scene, camera);
 }
@@ -757,14 +854,14 @@ function init() {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 0.95;
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xa9dcf2);
-  scene.fog = new THREE.Fog(0xcbe8f2, 40, 140);
+  scene.background = new THREE.Color(0xe0a882);
+  scene.fog = new THREE.Fog(0xd89c78, 22, 120);
   buildSky();
   camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 400);
-  scene.add(new THREE.HemisphereLight(0xeaf6ff, 0x7a8a5a, 2.3));
-  sun = new THREE.DirectionalLight(0xffeccc, 3.2);
+  scene.add(new THREE.HemisphereLight(0xa8bce0, 0x4a3a2e, 0.9));
+  sun = new THREE.DirectionalLight(0xffbf86, 3.4);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 90 });
@@ -772,10 +869,19 @@ function init() {
   sun.shadow.normalBias = 0.02;
   sun.shadow.radius = 3;
   scene.add(sun, sun.target);
-  const indoor = new THREE.PointLight(0xffe2b0, 18, 14, 1.6); indoor.position.set(-3.5, 2.6, 0); scene.add(indoor);
-  const indoor2 = new THREE.PointLight(0xffe2b0, 14, 12, 1.6); indoor2.position.set(3.5, 2.6, 0); scene.add(indoor2);
-  const shopLight = new THREE.PointLight(0xfff6e0, 14, 12, 1.6); shopLight.position.set(0, 3, 22); scene.add(shopLight);
+  // warm practical lights: the lamps do the work indoors
+  const lamp = (color, intensity, dist, x, y, z) => { const l = new THREE.PointLight(color, intensity, dist, 1.8); l.position.set(x, y, z); scene.add(l); return l; };
+  lamp(0xffc27a, 16, 11, -3.5, 2.55, 0);
+  lamp(0xffc27a, 12, 10, 3.5, 2.55, 0);
+  lamp(0xffa850, 5, 5, -0.6, 1.5, 4.3);          // floor lamp
+  lamp(0xff8a40, 4, 4, -6.3, 0.6, -2);           // fireplace glow
+  lamp(0x6ab0ff, 3, 4, -3.5, 1.2, -4.0);         // TV glow
+  lamp(0xfff0d0, 14, 12, 0, 3, 22);              // corner shop
+  lightCone(0, 3.4, 22, 2.8, 1.8, 0xfff0d0, 0.04);
+  for (let x = -20; x <= 20; x += 10) lamp(0xffc27a, 4, 7, x + 0.5, 3.7, 9.6);
+  buildDust();
   buildLevel();
+  buildViewModel();
   setQuality(true);
   resize();
   setupInput();

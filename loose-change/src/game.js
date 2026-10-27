@@ -54,6 +54,7 @@
       depth: 0, finds: [], buttons: 0, socks: 0, frogs: 0,
       pig: null, cardStock: 3, cardRestockAt: 0,
       goose: { met: false, friend: false },
+      texts: {}, notesSeen: [], openedNotes: [],
       buffs: [], flags: {},
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
@@ -698,45 +699,180 @@
     return `Dig the hole: <b>${fmtDepth(S.depth)}</b> deep${next ? `<small>Something is buried at ${fmtDepth(next.at)}</small>` : ''}`;
   }
 
-  // ---------- screens: phone, shed, corner shop ----------
+  // ---------- screens: the phone, the shed, the corner shop ----------
+  const APPS = [
+    { id: 'finders', icon: '🛒', label: 'Hire', color: '#f2b631' },
+    { id: 'upgrades', icon: '⬆️', label: 'Upgrades', color: '#6aa84f' },
+    { id: 'messages', icon: '💬', label: 'Messages', color: '#5bc236' },
+    { id: 'notes', icon: '📝', label: 'Notes', color: '#ffd84a' },
+    { id: 'bank', icon: '🏦', label: 'Bank', color: '#3b6ea5' },
+    { id: 'weather', icon: '⛅', label: 'Weather', color: '#8fd0e8' },
+    { id: 'notebook', icon: '📊', label: 'Stats', color: '#9b59b6' },
+    { id: 'endings', icon: '🏁', label: 'Endings', color: '#2d2118' },
+    { id: 'settings', icon: '⚙️', label: 'Settings', color: '#8f8f8f' },
+  ];
   const SCREENS = {
-    phone: { title: 'Your Phone', icon: '📱', tabs: [['finders', '🛒', 'Coin Finders'], ['upgrades', '⬆️', 'Upgrades'], ['notebook', '📓', 'Notebook'], ['endings', '🏁', 'Endings'], ['settings', '⚙️', 'Settings']] },
-    shed: { title: 'The Shed', icon: '🛖', tabs: [['shed', '⛏️', 'Diggers & finds']] },
-    scratch: { title: 'Corner Shop', icon: '🏪', tabs: [['scratch', '🎟️', 'Scratchcards']] },
+    phone: { title: 'Phone', icon: '📱' },
+    shed: { title: 'The Shed', icon: '🛖', tab: 'shed' },
+    scratch: { title: 'Corner Shop', icon: '🏪', tab: 'scratch' },
   };
-  let screenOpen = null;
-  let lastPhoneTab = 'finders';
+  let screenOpen = null, phoneApp = null, msgThread = null, openNote = null;
   function openScreen(name, tab) {
-    const def = SCREENS[name];
     screenOpen = name;
     LC.world.unlock();
     hideTip();
-    $('#screen-title').innerHTML = `${ic(def.icon)} ${def.title}`;
-    $('#screen-tabs').innerHTML = def.tabs.length > 1 ? def.tabs.map(([id, icon, label]) => `<button class="tab" data-tab="${id}">${ic(icon)} ${label}</button>`).join('') : '';
-    $('#screen-tabs').querySelectorAll('.tab').forEach((b) => (b.onclick = () => { LC.audio.sfx('click'); setTab(b.dataset.tab); }));
+    const card = $('.screen-card');
+    card.classList.toggle('phone', name === 'phone');
     $('#screen').classList.add('show');
     $('#pause').classList.remove('show');
     LC.audio.sfx('open');
-    setTab(tab || (name === 'phone' ? lastPhoneTab : def.tabs[0][0]));
+    if (name === 'phone') { if (tab) openApp(tab); else phoneHome(); return; }
+    const def = SCREENS[name];
+    $('#screen-title').innerHTML = `${ic(def.icon)} ${def.title}`;
+    $('#screen-close').innerHTML = 'Back <kbd>Esc</kbd>';
+    setTab(def.tab);
+  }
+  function phoneHome() {
+    phoneApp = null; msgThread = null; openNote = null;
+    $('#screen-title').innerHTML = '';
+    $('#screen-close').innerHTML = 'Put away <kbd>Esc</kbd>';
+    renderHome();
+    setTab('home');
+  }
+  function openApp(id) {
+    const app = APPS.find((a) => a.id === id);
+    phoneApp = id;
+    $('#screen-title').innerHTML = `${ic(app.icon)} ${app.label}`;
+    $('#screen-close').innerHTML = '‹ Home';
+    LC.audio.sfx('click');
+    setTab(id);
+  }
+  function back() {
+    if (screenOpen === 'phone') {
+      if (msgThread || openNote) { msgThread = null; openNote = null; renderPhoneApp(phoneApp); return; }
+      if (phoneApp) { phoneHome(); return; }
+    }
+    closeScreen();
   }
   function closeScreen() {
     if (!screenOpen) return;
-    screenOpen = null;
+    screenOpen = null; phoneApp = null;
     hideTip();
     $('#screen').classList.remove('show');
     LC.audio.sfx('click');
     LC.world.lock();
   }
   function setTab(id) {
-    document.querySelectorAll('#screen-tabs .tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === id));
     document.querySelectorAll('.panel').forEach((p) => (p.hidden = p.id !== 'panel-' + id));
-    if (screenOpen === 'phone') lastPhoneTab = id;
     if (id === 'notebook') renderStats();
     if (id === 'endings') renderEndings();
     if (id === 'finders' || id === 'upgrades') renderShop(true);
     if (id === 'shed') { gardenDirty = true; renderGarden(); }
     if (id === 'scratch') { renderShopCards(); setTimeout(renderCard, 0); }
+    renderPhoneApp(id);
   }
+
+  // ---------- phone apps ----------
+  const unreadTexts = () => Object.values(S.texts).filter((t) => !t.read).length;
+  const unlockedNotes = () => LC.NOTES.filter((n) => S.notesSeen.includes(n.id));
+  const newNotes = () => unlockedNotes().filter((n) => !S.openedNotes.includes(n.id)).length;
+  function appBadge(id) {
+    if (id === 'messages') return unreadTexts();
+    if (id === 'notes') return newNotes();
+    if (id === 'upgrades') return ALL_UPS.filter((u) => !has(u.id) && (u.gen ? (S.gens[u.gen] || 0) >= u.at : S.lifetime >= u.cost * 0.4) && S.money >= upCost(u)).length;
+    return 0;
+  }
+  function renderHome() {
+    const now = new Date();
+    $('#phone-clock').textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    $('#phone-date').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · Summer holidays';
+    const grid = $('#app-grid');
+    if (!grid.children.length) {
+      grid.innerHTML = APPS.map((a) => `<button class="app" data-app="${a.id}"><span class="app-icon" style="--app:${a.color}">${ic(a.icon)}<i class="badge" hidden></i></span><span class="app-label">${a.label}</span></button>`).join('');
+      grid.querySelectorAll('.app').forEach((b) => (b.onclick = () => openApp(b.dataset.app)));
+    }
+    for (const b of grid.children) {
+      const n = appBadge(b.dataset.app), badge = b.querySelector('.badge');
+      badge.hidden = !n;
+      badge.textContent = n > 99 ? '99+' : n;
+    }
+  }
+  function renderPhoneApp(id) {
+    if (id === 'messages') renderMessages();
+    if (id === 'notes') renderNotes();
+    if (id === 'bank') renderBank();
+    if (id === 'weather') renderWeather();
+  }
+  function renderMessages() {
+    const v = $('#msg-view');
+    if (msgThread) {
+      const threads = LC.TEXTS.filter((t) => S.texts[t.id] && t.from === msgThread);
+      threads.forEach((t) => (S.texts[t.id].read = true));
+      v.innerHTML = `<div class="thread-head">${msgThread}</div><div class="bubbles">${threads.map((t) => t.msgs.map((m) => `<div class="bubble">${m}</div>`).join('')).join('<div class="bubble-gap"></div>')}</div>`;
+      return;
+    }
+    const from = [];
+    for (const t of [...LC.TEXTS].reverse()) if (S.texts[t.id] && !from.includes(t.from)) from.push(t.from);
+    v.innerHTML = from.length ? from.map((f) => {
+      const ts = LC.TEXTS.filter((t) => S.texts[t.id] && t.from === f);
+      const lastT = ts[ts.length - 1];
+      const unread = ts.some((t) => !S.texts[t.id].read);
+      return `<button class="msg-row ${unread ? 'unread' : ''}" data-from="${f}"><span class="avatar">${f[0]}</span><span><b>${f}</b><small>${lastT.msgs[lastT.msgs.length - 1]}</small></span></button>`;
+    }).join('') : '<p class="muted">No messages yet.</p>';
+    v.querySelectorAll('.msg-row').forEach((b) => (b.onclick = () => { msgThread = b.dataset.from; $('#screen-close').innerHTML = '‹ Back'; renderMessages(); }));
+  }
+  function noteText(n) { return n.body.replace('{clicks}', fmtInt(S.stats.clicks)); }
+  function renderNotes() {
+    const v = $('#notes-view');
+    if (openNote) {
+      const n = LC.NOTES.find((x) => x.id === openNote);
+      if (!S.openedNotes.includes(n.id)) S.openedNotes.push(n.id);
+      v.innerHTML = `<div class="note-page"><h3>${n.title}</h3><pre>${noteText(n)}</pre></div>`;
+      return;
+    }
+    const list = unlockedNotes().reverse();
+    v.innerHTML = list.map((n) => `<button class="note-row ${S.openedNotes.includes(n.id) ? '' : 'unread'}" data-id="${n.id}"><b>${n.title}</b><small>${noteText(n).split('\n')[0]}</small></button>`).join('') || '<p class="muted">No notes yet.</p>';
+    v.querySelectorAll('.note-row').forEach((b) => (b.onclick = () => { openNote = b.dataset.id; $('#screen-close').innerHTML = '‹ Back'; renderNotes(); }));
+  }
+  function renderBank() {
+    const p = Math.min(1, S.money / LC.THING_COST);
+    $('#bank-view').innerHTML = `
+      <div class="bank-card"><small>CURRENT ACCOUNT</small><div class="bank-bal">${fmt(S.money)}</div><small>Sort code 12-34-56 · Kid's Saver</small></div>
+      <div class="bank-row"><span>Income</span><b>${fmtRate(income())}</b></div>
+      <div class="bank-row"><span>Saved for The Thing</span><b>${(p * 100).toFixed(p < 0.01 ? 4 : 2)}%</b></div>
+      <div class="bank-bar"><i style="width:${p * 100}%"></i></div>
+      <div class="bank-row"><span>Interest rate</span><b>0.00%</b></div>
+      <div class="bank-row"><span>Money found ever</span><b>${fmt(S.allTime)}</b></div>
+      <p class="muted small">Your bank appreciates your business. Your bank does not understand where it is coming from. Your bank would like you to stop paying in 2p coins.</p>`;
+  }
+  function renderWeather() {
+    const day = Math.floor(Date.now() / 3.6e6);
+    const days = [0, 1, 2, 3].map((i) => LC.FORECASTS[(day + i * 3) % LC.FORECASTS.length]);
+    const [icon, name, text] = days[0];
+    $('#weather-view').innerHTML = `
+      <div class="wx-now">${ic(icon, 'huge')}<div><div class="wx-name">${name}</div><div>${text}</div></div></div>
+      ${days.slice(1).map(([i, n, t], k) => `<div class="wx-row">${ic(i)}<b>${['Tomorrow', 'Day after', 'Then'][k]}</b><span>${n}</span></div>`).join('')}
+      <p class="muted small">Forecast provided by a man called Steve who looks out of the window.</p>`;
+  }
+  // texts arrive and notes unlock as you play
+  function checkPhone() {
+    for (const t of LC.TEXTS) {
+      if (S.texts[t.id] || !t.when(S)) continue;
+      S.texts[t.id] = { read: false };
+      LC.audio.sfx('text');
+      toast(`${ic('💬')}<div><b>${t.from}</b><br><small>${t.msgs[0]}</small></div>`, 'msg');
+      break; // one at a time
+    }
+    for (const n of LC.NOTES) {
+      if (S.notesSeen.includes(n.id) || !n.when(S)) continue;
+      S.notesSeen.push(n.id);
+      if (S.notesSeen.length > 2) toast(`${ic('📝')}<div>New note: <b>${n.title}</b></div>`);
+    }
+    const unread = unreadTexts() + newNotes();
+    $('#phone-dot').hidden = !unread;
+    $('#phone-dot').textContent = unread;
+  }
+
   const panelVisible = (id) => screenOpen && !$('#panel-' + id).hidden;
 
   // ---------- shop lists ----------
@@ -928,6 +1064,10 @@
       slow = 0;
       checkAchievements();
       if (panelVisible('notebook')) renderStats();
+      if (panelVisible('bank')) renderBank();
+      if (panelVisible('home')) renderHome();
+      checkPhone();
+      $('#phone-time').textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       document.title = `${fmt(S.money)} · Loose Change`;
       LC.world.syncHelpers(S.gens);
       LC.world.setDepthText(fmtDepth(S.depth));
@@ -1013,7 +1153,7 @@
       choices: [{ label: "Let's go", fn: () => { LC.audio.unlock(); LC.audio.music(S.settings.music); } }] }));
 
     $('#pause').onclick = () => { LC.audio.unlock(); LC.audio.music(S.settings.music); LC.world.lock(); };
-    $('#screen-close').onclick = closeScreen;
+    $('#screen-close').onclick = back;
     $('#screen').addEventListener('mousedown', (e) => { if (e.target.id === 'screen') closeScreen(); });
     document.querySelectorAll('[data-amt]').forEach((b) => (b.onclick = () => {
       buyAmount = b.dataset.amt === 'max' ? 'max' : +b.dataset.amt;
@@ -1028,7 +1168,7 @@
         if (n && btns[n - 1]) { e.preventDefault(); btns[n - 1].click(); }
         return;
       }
-      if (screenOpen && (e.code === 'Escape' || e.code === 'KeyE')) { e.preventDefault(); closeScreen(); }
+      if (screenOpen && (e.code === 'Escape' || e.code === 'KeyE' || e.code === 'Backspace') && !e.target.matches('textarea, input')) { e.preventDefault(); back(); }
     });
     $('#news-text').addEventListener('animationend', nextNews);
     LC.audio.volume(S.settings.volume);
@@ -1047,14 +1187,15 @@
       sofaPrompt, digPrompt, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
       tip: (secs) => { const n = lump(secs, 0.05); gain(n); floatAt(null, n); },
       depth: () => S.depth,
+      toolTier: (kind) => (S.tools && S.tools[kind]) || 0,
       togglePhone: () => { if (endingPlaying || modalOpen) return; if (screenOpen) closeScreen(); else openScreen('phone'); },
       isBlocked: () => modalOpen || !!screenOpen || endingPlaying,
       canLock: () => !screenOpen && !endingPlaying,
     };
     // Handy for testing: LC.debug.gain(1e9)
-    LC.debug = { gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden() };
+    LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden() };
   }
   // the world module needs LC.game before its first frame, so set a stub early
-  LC.game = { isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };
+  LC.game = { toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };
   addEventListener('load', boot);
 })();
