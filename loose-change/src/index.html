@@ -8,61 +8,66 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="top">
-    <div class="brand"><img class="ic" src="assets/icons/1fa99.svg" alt=""> Loose <span>Change</span></div>
+  <canvas id="view"></canvas>
+
+  <!-- HUD -->
+  <div class="hud">
     <div class="wallet">
       <div id="money" class="money">0p</div>
       <div class="rate"><span id="rate">0p/s</span> · <img class="ic tiny" src="assets/icons/1f518.svg" alt="buttons"> <span id="buttons-count">0</span></div>
     </div>
-    <div class="thing">
+    <div id="thing" class="thing">
       <div class="thing-label">Saving up for: <b>???</b> <span id="thing-pct">0%</span></div>
       <div class="thing-track"><div id="thing-bar"></div></div>
-      <button id="thing-buy" class="btn small" disabled>Buy The Thing · £1tn</button>
     </div>
-  </header>
-  <div id="buffs" class="buffs"></div>
+    <div id="buffs" class="buffs"></div>
+    <div class="crosshair"></div>
+    <div id="prompt" class="prompt"></div>
+    <div id="say" class="say"></div>
+    <div id="compass" class="compass"><div class="arrow"><img class="ic" src="assets/icons/1fa99.svg" alt=""></div><span></span></div>
+    <div class="keys"><kbd>Tab</kbd> Phone · <kbd>E</kbd> Use · <kbd>Shift</kbd> Run</div>
+  </div>
+  <footer class="news"><span class="news-tag">NEWS</span><div class="news-track"><span id="news-text"></span></div></footer>
 
-  <main class="layout">
-    <section class="col col-left">
-      <div class="card sofa-card">
-        <button id="sofa" class="sofa" aria-label="Check down the sofa">
-          <img class="ic" src="assets/icons/1f6cb.svg" alt="">
-        </button>
-        <div class="sofa-label">Check down the back of the sofa</div>
-        <ul id="sofa-log" class="sofa-log"><li>The sofa looks... promising.</li></ul>
+  <!-- pause / start -->
+  <div id="pause" class="pause">
+    <div class="pause-card">
+      <div class="logo"><img class="ic" src="assets/icons/1fa99.svg" alt=""> Loose <span>Change</span></div>
+      <p class="click">Click to play</p>
+      <div class="controls">
+        <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk</div>
+        <div><kbd>Mouse</kbd> Look</div>
+        <div><kbd>E</kbd> / <kbd>Click</kbd> Use things (hold to keep going)</div>
+        <div><kbd>Shift</kbd> Run · <kbd>Space</kbd> Jump</div>
+        <div><kbd>Tab</kbd> Your phone (shopping, stats, settings)</div>
+        <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Answer when something happens</div>
       </div>
-      <div class="card pig-card">
-        <div class="card-title">Piggy Bank</div>
-        <button id="pig" class="pig" aria-label="Smash the piggy bank">
-          <div class="pig-body"></div>
-          <svg class="cracks" viewBox="0 0 100 100" aria-hidden="true">
-            <path class="crack" d="M50 18 L46 30 L54 38 L48 50"/>
-            <path class="crack" d="M30 40 L40 46 L36 56 L44 62"/>
-            <path class="crack" d="M70 36 L62 44 L68 52 L58 58"/>
-            <path class="crack" d="M48 50 L52 64 L44 74"/>
-            <path class="crack" d="M36 56 L24 62 L28 72"/>
-            <path class="crack" d="M58 58 L72 66 L66 78"/>
-            <path class="crack" d="M44 74 L50 84 L58 80"/>
-            <path class="crack" d="M54 38 L66 30 L74 22"/>
-          </svg>
-        </button>
-        <div id="pig-name" class="pig-name"></div>
-        <div id="pig-text" class="pig-text muted small"></div>
-        <div class="pig-bar"><div id="pig-fill"></div></div>
-        <div class="pig-meta"><span>Inside: <b id="pig-stored">0p</b></span><span id="pig-hits"></span></div>
+    </div>
+  </div>
+
+  <!-- phone / shed / shop -->
+  <div id="screen" class="screen">
+    <div class="screen-card">
+      <header class="screen-head">
+        <div id="screen-title" class="screen-title"></div>
+        <nav id="screen-tabs" class="tabs"></nav>
+        <button id="screen-close" class="btn small ghost">Back <kbd>Esc</kbd></button>
+      </header>
+
+      <div class="panel" id="panel-finders">
+        <div class="shop-head">
+          <p class="muted">Hire helpers to find coins for you. They turn up in the world when you buy them.</p>
+          <div class="amt"><button data-amt="1" class="on">x1</button><button data-amt="10">x10</button><button data-amt="max">Max</button></div>
+        </div>
+        <div id="gen-list" class="list"></div>
       </div>
-    </section>
 
-    <section class="col col-mid">
-      <nav class="tabs">
-        <button class="tab" data-tab="garden"><img class="ic" src="assets/icons/1f331.svg" alt=""> Garden</button>
-        <button class="tab" data-tab="scratch"><img class="ic" src="assets/icons/1f39f.svg" alt=""> Scratchcards</button>
-        <button class="tab" data-tab="stats"><img class="ic" src="assets/icons/1f4ca.svg" alt=""> Stats</button>
-        <button class="tab" data-tab="endings"><img class="ic" src="assets/icons/1f3c1.svg" alt=""> Endings</button>
-        <button class="tab" data-tab="settings" aria-label="Settings" title="Settings"><img class="ic" src="assets/icons/2699.svg" alt=""></button>
-      </nav>
+      <div class="panel" id="panel-upgrades" hidden>
+        <div class="sub-title">Upgrades <span id="up-count" class="muted"></span></div>
+        <div id="up-grid" class="up-grid"></div>
+      </div>
 
-      <div class="panel card" id="panel-garden">
+      <div class="panel" id="panel-shed" hidden>
         <div class="garden">
           <div class="shaft" aria-hidden="true">
             <div class="layer grass"></div><div class="layer soil"></div><div class="layer clay"></div><div class="layer rock"></div><div class="layer mantle"></div><div class="layer core"></div>
@@ -70,11 +75,10 @@
           </div>
           <div class="garden-main">
             <div class="depth-row">
-              <div><div class="muted small">Depth of hole</div><div id="depth" class="depth">0 m</div><div class="muted small">Auto-digging <b id="dig-rate">0 m/s</b></div></div>
-              <button id="dig" class="btn big dig"><img class="ic" src="assets/icons/26cf.svg" alt=""> Dig</button>
+              <div><div class="muted small">Depth of the hole</div><div id="depth" class="depth">0 m</div><div class="muted small">Auto-digging <b id="dig-rate">0 m/s</b></div></div>
             </div>
             <p id="dig-next" class="dig-next"></p>
-            <div class="sub-title">Diggers</div>
+            <div class="sub-title">Diggers for hire</div>
             <div id="tool-list" class="list"></div>
             <div class="sub-title">Things you've dug up</div>
             <ul id="finds" class="finds"></ul>
@@ -82,31 +86,32 @@
         </div>
       </div>
 
-      <div class="panel card" id="panel-scratch" hidden>
+      <div class="panel" id="panel-scratch" hidden>
         <div class="shop-row">
-          <div><div class="card-title">Corner Shop</div><div id="stock" class="muted small"></div></div>
+          <div><div class="card-title">Scratchcards</div><div id="stock" class="muted small"></div></div>
           <button id="buy-dip" class="btn card-btn" style="--c:var(--grass)">Lucky Dip<span class="cost"></span></button>
           <button id="buy-gold" class="btn card-btn" style="--c:var(--gold)">Golden Goose<span class="cost"></span></button>
         </div>
         <div id="card-area" class="card-area"></div>
       </div>
 
-      <div class="panel card" id="panel-stats" hidden>
+      <div class="panel" id="panel-notebook" hidden>
         <table class="stats"><tbody id="stats"></tbody></table>
         <div class="sub-title">Achievements <span id="ach-count" class="muted"></span></div>
         <div id="ach-grid" class="ach-grid"></div>
       </div>
 
-      <div class="panel card" id="panel-endings" hidden>
+      <div class="panel" id="panel-endings" hidden>
         <p>Every time you buy The Thing you get a random ending. Find them all. Some endings can't be bought at all.</p>
         <div class="sub-title">Endings found <span id="end-count" class="muted"></span></div>
         <div id="end-grid" class="end-grid"></div>
       </div>
 
-      <div class="panel card" id="panel-settings" hidden>
+      <div class="panel" id="panel-settings" hidden>
         <label class="set"><input type="checkbox" id="set-music"> Music</label>
         <label class="set"><input type="checkbox" id="set-sfx"> Sound effects</label>
         <label class="set">Volume <input type="range" id="set-volume" min="0" max="1" step="0.05"></label>
+        <label class="set">Mouse sensitivity <input type="range" id="set-sens" min="0.2" max="3" step="0.1"></label>
         <div class="sub-title">Save</div>
         <p class="muted small">The game saves by itself every 10 seconds.</p>
         <textarea id="save-code" rows="3" placeholder="Paste a save code here to load it"></textarea>
@@ -117,31 +122,18 @@
           <button id="set-credits" class="btn small ghost">Credits</button>
         </div>
       </div>
-    </section>
-
-    <section class="col col-right">
-      <div class="card shop">
-        <div class="shop-head">
-          <div class="card-title">Coin Finders</div>
-          <div class="amt"><button data-amt="1" class="on">x1</button><button data-amt="10">x10</button><button data-amt="max">Max</button></div>
-        </div>
-        <div id="gen-list" class="list"></div>
-        <div class="sub-title">Upgrades</div>
-        <div id="up-grid" class="up-grid"></div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="news"><span class="news-tag">NEWS</span><div class="news-track"><span id="news-text"></span></div></footer>
+    </div>
+  </div>
 
   <div id="tip" class="tip"></div>
   <div id="toasts" class="toasts"></div>
-  <div id="rain" class="rain"></div>
   <div id="overlay" class="overlay"><div id="modal" class="modal-card" role="dialog" aria-modal="true"></div></div>
   <div id="ending" class="ending"></div>
 
   <script src="data.js"></script>
   <script src="audio.js"></script>
   <script src="game.js"></script>
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/addons/" } }</script>
+  <script type="module" src="world.js"></script>
 </body>
 </html>

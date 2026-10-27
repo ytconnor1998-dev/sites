@@ -63,6 +63,11 @@
     event: (t) => { tone(t, { freq: 784, type: 'triangle', dur: 0.12, gain: 0.2 }); tone(t + 0.12, { freq: 1175, type: 'triangle', dur: 0.25, gain: 0.2 }); },
     honk: (t) => { tone(t, { freq: 330, type: 'sawtooth', dur: 0.28, gain: 0.18, slideTo: 260, filter: 1400 }); tone(t, { freq: 336, type: 'square', dur: 0.28, gain: 0.08, slideTo: 250, filter: 900 }); },
     oink: (t) => { tone(t, { freq: 220, type: 'sawtooth', dur: 0.12, gain: 0.15, slideTo: 330, filter: 900 }); tone(t + 0.16, { freq: 240, type: 'sawtooth', dur: 0.14, gain: 0.15, slideTo: 300, filter: 900 }); },
+    step: (t) => { noise(t, { dur: 0.07, gain: 0.07, freq: 500 + Math.random() * 300, type: 'lowpass' }); },
+    meow: (t) => { tone(t, { freq: 700, type: 'sawtooth', dur: 0.35, gain: 0.07, slideTo: 450, filter: 1800 }); tone(t, { freq: 1400, type: 'sine', dur: 0.3, gain: 0.03, slideTo: 900 }); },
+    beep: (t) => { for (let i = 0; i < 3; i++) tone(t + i * 0.14, { freq: 1800, type: 'square', dur: 0.08, gain: 0.05, filter: 3000 }); },
+    open: (t) => { tone(t, { freq: 600, type: 'triangle', dur: 0.06, gain: 0.15 }); tone(t + 0.05, { freq: 900, type: 'triangle', dur: 0.08, gain: 0.15 }); },
+    sparkle: (t) => { [1568, 2093, 2637, 3136].forEach((f, i) => tone(t + i * 0.07, { freq: f, type: 'sine', dur: 0.3, gain: 0.08 })); },
     ribbit: (t) => { for (let i = 0; i < 3; i++) tone(t + i * 0.05, { freq: 180, type: 'square', dur: 0.04, gain: 0.12, slideTo: 320, filter: 1500 }); },
   };
   function sfx(name) {

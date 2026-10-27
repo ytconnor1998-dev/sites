@@ -65,6 +65,8 @@ LC.UPGRADES = [
   { id: 'hugepig', icon: '🐘', name: 'Pig The Size Of An Elephant', cost: 5e6, kind: 'piggyCap', value: 3, desc: 'Piggy banks hold 3x as much. Is it still a pig?' },
   { id: 'luckypen', icon: '🖊️', name: 'Lucky Scratching Coin', cost: 5000, kind: 'luck', value: 1, desc: 'Better scratch card odds.' },
   { id: 'shopmate', icon: '🏪', name: 'Mate At The Corner Shop', cost: 30000, kind: 'stock', value: 3, desc: 'Shop keeps 3 more cards for you.' },
+  { id: 'magnet1', icon: '🧲', name: 'Magnetic Trousers', cost: 250, kind: 'magnet', value: 1.5, desc: 'Coins on the floor fly to you from further away.' },
+  { id: 'magnet2', icon: '👖', name: 'Extremely Magnetic Trousers', cost: 2e6, kind: 'magnet', value: 2.5, desc: 'Coins fly to you from even further. Your keys are stuck to you.' },
   { id: 'horseshoe', icon: '🧲', name: 'Magnetic Horseshoe', cost: 5e7, kind: 'luck', value: 1, desc: 'Even better scratch card odds. Mildly cursed.' },
 ];
 

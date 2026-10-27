@@ -47,3 +47,26 @@ for (const w of [400, 500, 600, 700]) {
 fs.writeFileSync(path.join(fontsOut, 'fredoka.css'), css);
 fs.copyFileSync(path.join(root, 'node_modules', '@fontsource', 'fredoka', 'LICENSE'), path.join(fontsOut, 'OFL.txt'));
 console.log('Copied Fredoka font.');
+
+// three.js (MIT) for the 3D world
+const vendorOut = path.join(src, 'vendor');
+fs.mkdirSync(vendorOut, { recursive: true });
+const three = path.join(root, 'node_modules', 'three');
+for (const f of ['three.module.js', 'three.core.js']) fs.copyFileSync(path.join(three, 'build', f), path.join(vendorOut, f));
+fs.copyFileSync(path.join(three, 'LICENSE'), path.join(vendorOut, 'three-LICENSE.txt'));
+console.log('Copied three.js.');
+
+// three.js add-ons (also MIT): post-processing, rounded boxes, model loading
+const addons = [
+  'postprocessing/EffectComposer.js', 'postprocessing/RenderPass.js', 'postprocessing/OutputPass.js', 'postprocessing/GTAOPass.js',
+  'postprocessing/Pass.js', 'postprocessing/MaskPass.js', 'postprocessing/ShaderPass.js',
+  'shaders/CopyShader.js', 'shaders/OutputShader.js', 'shaders/GTAOShader.js', 'shaders/PoissonDenoiseShader.js',
+  'math/SimplexNoise.js', 'geometries/RoundedBoxGeometry.js',
+  'loaders/GLTFLoader.js', 'utils/BufferGeometryUtils.js', 'utils/SkeletonUtils.js',
+];
+for (const f of addons) {
+  const to = path.join(vendorOut, 'addons', f);
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  fs.copyFileSync(path.join(three, 'examples', 'jsm', f), to);
+}
+console.log(`Copied ${addons.length} three.js add-ons.`);

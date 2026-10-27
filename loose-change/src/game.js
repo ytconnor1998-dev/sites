@@ -166,7 +166,9 @@
   // ---------- UI: toasts, floaters, log ----------
   function toast(html, cls = '') {
     const t = el('div', 'toast ' + cls, html);
-    $('#toasts').appendChild(t);
+    const box = $('#toasts');
+    box.appendChild(t);
+    while (box.children.length > 3) box.firstChild.remove();
     setTimeout(() => t.classList.add('out'), 4200);
     setTimeout(() => t.remove(), 4800);
   }
@@ -176,22 +178,33 @@
     document.body.appendChild(f);
     setTimeout(() => f.remove(), 1100);
   }
-  function coinBurst(x, y, n = 5) {
-    for (let i = 0; i < n; i++) {
-      const c = el('div', 'burst', ic('🪙'));
-      c.style.left = x + 'px'; c.style.top = y + 'px';
-      c.style.setProperty('--dx', rand(-80, 80) + 'px');
-      c.style.setProperty('--dy', rand(-110, -40) + 'px');
-      c.style.setProperty('--rot', rand(-360, 360) + 'deg');
-      document.body.appendChild(c);
-      setTimeout(() => c.remove(), 900);
-    }
+  // text floating up from something in the world (pos is a screen position, or null)
+  function floatAt(pos, v, cls = '') {
+    const p = pos || { x: innerWidth / 2, y: innerHeight / 2 - 40 };
+    floater(p.x + rand(-20, 20), p.y - 10, typeof v === 'number' ? '+' + fmt(v) : v, cls);
   }
-  function sofaLog(html) {
-    const log = $('#sofa-log');
-    const li = el('li', '', html);
-    log.prepend(li);
-    while (log.children.length > 5) log.lastChild.remove();
+  // a line of dialogue or narration under the crosshair
+  let sayTimer = 0;
+  function say(text) {
+    const b = $('#say');
+    b.innerHTML = text;
+    b.classList.add('show');
+    clearTimeout(sayTimer);
+    sayTimer = setTimeout(() => b.classList.remove('show'), 3200);
+  }
+  function setPrompt(html) {
+    const p = $('#prompt');
+    if (p.dataset.html === html) return;
+    p.dataset.html = html;
+    p.innerHTML = html ? `<kbd>E</kbd> ${html}` : '';
+    p.classList.toggle('show', !!html);
+  }
+  function setCompass(b) {
+    const c = $('#compass');
+    if (!b) { c.classList.remove('show'); return; }
+    c.classList.add('show');
+    c.querySelector('.arrow').style.transform = `rotate(${b.angle}rad)`;
+    c.querySelector('span').textContent = Math.round(b.dist) + ' m';
   }
 
   // ---------- modal (events, endings, offline) ----------
@@ -202,8 +215,8 @@
     box.className = 'modal-card ' + cls;
     box.innerHTML = `<div class="modal-icon">${icon ? ic(icon) : ''}</div><h2>${title}</h2><p>${text}</p><div class="modal-choices"></div>`;
     const row = box.querySelector('.modal-choices');
-    choices.forEach((c) => {
-      const b = el('button', 'btn ' + (c.cls || ''), c.label);
+    choices.forEach((c, i) => {
+      const b = el('button', 'btn ' + (c.cls || ''), `<kbd>${i + 1}</kbd> ${c.label}`);
       b.onclick = () => {
         LC.audio.sfx('click');
         const result = c.fn ? c.fn() : null;
@@ -211,7 +224,7 @@
           box.querySelector('p').innerHTML = result.text || result;
           if (result.icon) box.querySelector('.modal-icon').innerHTML = ic(result.icon);
           row.innerHTML = '';
-          const ok = el('button', 'btn', 'OK');
+          const ok = el('button', 'btn', '<kbd>1</kbd> OK');
           ok.onclick = closeModal; row.appendChild(ok); ok.focus();
         } else closeModal();
       };
@@ -235,19 +248,15 @@
     }
   }
 
-  // ---------- sofa clicking ----------
-  function clickSofa(ev) {
+  // ---------- the sofa ----------
+  function rummage() {
     LC.audio.unlock();
     const v = clickValue();
     gain(v);
     S.stats.clicks++;
-    const r = ev.currentTarget.getBoundingClientRect();
-    const x = ev.clientX || r.left + r.width / 2, y = ev.clientY || r.top + r.height / 2;
-    floater(x, y - 20, '+' + fmt(v));
-    coinBurst(x, y, 2);
     LC.audio.sfx('coin');
-    ev.currentTarget.classList.remove('squish'); void ev.currentTarget.offsetWidth; ev.currentTarget.classList.add('squish');
     if (chance(0.04)) sofaFind();
+    return { value: v };
   }
   function sofaFind() {
     const f = pick(LC.SOFA_FINDS);
@@ -256,7 +265,7 @@
     if (f.cash) { const n = lump(f.cash, f.cash / 100); gain(n); reward = ` <b>+${fmt(n)}</b>`; }
     if (f.flat) { gain(f.flat); reward = ` <b>+${fmt(f.flat)}</b>`; }
     if (f.buttons) { S.buttons += f.buttons; reward = ` <b>+${f.buttons} ${ic('🔘')}</b>`; }
-    sofaLog(`You found ${f.text}${reward}`);
+    toast(`${ic('🛋️')}<div>You found ${f.text}${reward}</div>`, 'find');
   }
 
   // ---------- buying ----------
@@ -281,13 +290,14 @@
   }
 
   // ---------- garden ----------
-  function digOnce(ev) {
+  function dig() {
     LC.audio.unlock();
-    addDepth(digClick());
+    if (S.depth >= LC.EARTH_DIAMETER) return null;
+    const m = digClick();
+    addDepth(m);
     LC.audio.sfx('dig');
-    const r = ev.currentTarget.getBoundingClientRect();
-    floater(ev.clientX || r.left + r.width / 2, (ev.clientY || r.top) - 20, '+' + fmtDepth(digClick()), 'dirt');
     if (chance(0.03)) { const n = lump(20, 0.2); gain(n); toast(`${ic('🪙')}<div>Your spade hit a coin. <b>+${fmt(n)}</b></div>`); }
+    return { text: '+' + fmtDepth(m) };
   }
   function addDepth(m) {
     if (S.depth >= LC.EARTH_DIAMETER) return;
@@ -325,54 +335,49 @@
       ] }));
   }
 
-  // ---------- piggy bank ----------
+  // ---------- piggy bank (sits on the mantelpiece) ----------
   function newPig(nestLevel = 0, carried = 0) {
-    const type = nestLevel > 0 ? LC.PIGS.find((p) => p.id === 'nesting') : LC.PIGS.find((p) => p.id === weighted(LC.PIGS.map((p) => [p.id, p.weight])));
+    const id = nestLevel > 0 ? 'nesting' : weighted(LC.PIGS.map((p) => [p.id, p.weight]));
+    const type = LC.PIGS.find((p) => p.id === id);
     S.pig = { type: type.id, stored: carried, hits: 0, nest: nestLevel };
-    renderPig(true);
+    showPig();
   }
+  function showPig() { LC.world.setPig(S.pig.type, S.pig.nest ? Math.pow(0.78, S.pig.nest) : 1); }
   function pigType() { return LC.PIGS.find((p) => p.id === S.pig.type); }
   function pigHitsNeeded() { const t = pigType(); return Math.max(2, Math.ceil(t.hits * pigHitsMult() * (S.pig.nest ? 0.7 : 1))); }
-  let pigBusy = false;
-  function hitPig(ev) {
-    LC.audio.unlock();
-    if (pigBusy || !S.pig) return;
+  function pigPrompt() {
+    if (!S.pig) return '';
     const t = pigType();
-    const pigEl = $('#pig');
+    if (t.real) return 'Smash the... piggy bank?';
+    const name = S.pig.nest ? `Smaller Pig (level ${S.pig.nest + 1})` : t.name;
+    return `Smash ${name}: ${S.pig.hits}/${pigHitsNeeded()} · inside ${fmt(S.pig.stored * t.mult)}${S.pig.stored >= pigCap() ? ' (full!)' : ''}<small>${t.text}</small>`;
+  }
+  function hitPig() {
+    LC.audio.unlock();
+    if (!S.pig) return null;
+    const t = pigType();
     if (t.real) {
-      pigBusy = true;
       S.flags.realPig = true;
       LC.audio.sfx('oink');
-      pigEl.classList.add('runaway');
-      $('#pig-name').textContent = 'It was a real pig.';
-      $('#pig-text').textContent = 'It has left. It took nothing, but it judged you.';
-      setTimeout(() => { pigBusy = false; newPig(); }, 2500);
-      return;
+      say('It was a real pig. It has left. It took nothing, but it judged you.');
+      S.pig = null;
+      return { type: 'real' };
     }
     S.pig.hits++;
     LC.audio.sfx('tap');
-    pigEl.classList.remove('shake'); void pigEl.offsetWidth; pigEl.classList.add('shake');
-    if (t.id === 'kevin' && chance(0.12)) floater(ev.clientX, ev.clientY - 30, pick(['Oi!', 'Rude.', 'Kevin remembers.', 'Not the face!']), 'speech');
-    if (S.pig.hits >= pigHitsNeeded()) smashPig(ev);
-    else renderPig();
-  }
-  function smashPig(ev) {
-    const t = pigType();
+    if (t.id === 'kevin' && chance(0.15)) say(pick(['Kevin: "Oi!"', 'Kevin: "Rude."', 'Kevin: "Kevin remembers."', 'Kevin: "Not the face!"']));
+    if (S.pig.hits < pigHitsNeeded()) return { type: 'hit' };
     const payout = S.pig.stored * t.mult;
     gain(payout);
     S.stats.pigs++;
     LC.audio.sfx('smash');
-    const r = $('#pig').getBoundingClientRect();
-    coinBurst(r.left + r.width / 2, r.top + r.height / 2, 14);
-    floater(r.left + r.width / 2, r.top, '+' + fmt(payout), 'big');
-    pigBusy = true;
-    $('#pig').classList.add('smashed');
+    S.pig.smashed = true;
+    return { type: 'smash', payout };
+  }
+  function nextPig() {
     const nestMax = LC.PIGS.find((p) => p.id === 'nesting').nest;
-    setTimeout(() => {
-      pigBusy = false;
-      if (t.id === 'nesting' && S.pig.nest < nestMax) { toast(`${ic('🪆')}<div>There was another pig inside!</div>`); newPig(S.pig.nest + 1, S.pig.stored * 0.8); }
-      else newPig();
-    }, 900);
+    if (S.pig && S.pig.type === 'nesting' && S.pig.nest < nestMax) { toast(`${ic('🪆')}<div>There was another pig inside!</div>`); newPig(S.pig.nest + 1, S.pig.stored * 0.8); }
+    else newPig();
   }
 
   // ---------- scratch cards ----------
@@ -415,7 +420,7 @@
       const n = card.cost * sym.mult;
       gain(n);
       msg = `Three ${ic(sym.icon)}! You win <b>${fmt(n)}</b>!`;
-      if (card.outcome === 'gem') { S.flags.jackpot = true; LC.audio.sfx('fanfare'); coinRain(14); } else LC.audio.sfx('win');
+      if (card.outcome === 'gem') { S.flags.jackpot = true; LC.audio.sfx('fanfare'); LC.world.coinRain(20); } else LC.audio.sfx('win');
     } else if (sym.special === 'goose') {
       LC.audio.sfx('honk');
       if (!S.goose.met) { S.goose.met = true; S.goose.friend = true; msg = `You won <b>a goose</b>. A real one. It seems to like you. (All income +10%)`; }
@@ -481,57 +486,31 @@
     return clear / n;
   }
 
-  // ---------- golden coin & coin rain ----------
-  function spawnGolden() {
-    const g = el('button', 'golden', ic('🪙'));
-    g.setAttribute('aria-label', 'Golden coin');
-    const fromLeft = chance(0.5);
-    const y0 = rand(15, 70);
-    g.style.top = y0 + 'vh';
-    g.style.left = fromLeft ? '-80px' : 'calc(100vw + 10px)';
-    document.body.appendChild(g);
-    const start = performance.now(), dur = 13000;
-    let alive = true;
-    const step = (t) => {
-      if (!alive) return;
-      const p = (t - start) / dur;
-      if (p >= 1) { g.remove(); return; }
-      const x = fromLeft ? -80 + p * (innerWidth + 160) : innerWidth + 10 - p * (innerWidth + 160);
-      g.style.left = x + 'px';
-      g.style.top = `calc(${y0}vh + ${Math.sin(p * 12) * 40}px)`;
-      requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-    g.onclick = (e) => {
-      alive = false; g.remove();
-      S.stats.golden++;
-      LC.audio.unlock(); LC.audio.sfx('fanfare');
-      coinBurst(e.clientX, e.clientY, 12);
-      const roll = Math.random();
-      if (roll < 0.45) { const n = lump(300, 25); gain(n); toast(`${ic('🪙')}<div><b>Golden coin!</b> +${fmt(n)}</div>`, 'gold'); }
-      else if (roll < 0.75) { addBuff({ id: 'frenzy', icon: '🤑', label: 'Coin Frenzy: income x7', income: 7, secs: 30 }); toast(`${ic('🤑')}<div><b>Coin Frenzy!</b> Income x7 for 30 seconds.</div>`, 'gold'); }
-      else if (roll < 0.92) { addBuff({ id: 'fingers', icon: '👆', label: 'Golden Fingers: clicks x77', click: 77, secs: 15 }); toast(`${ic('👆')}<div><b>Golden Fingers!</b> Sofa clicks x77 for 15 seconds. GO GO GO.</div>`, 'gold'); }
-      else { coinRain(30); toast(`${ic('🌧️')}<div><b>It's raining coins!</b> Catch them!</div>`, 'gold'); }
-    };
+  // ---------- things you pick up in the world ----------
+  function goldenReward() {
+    S.stats.golden++;
+    LC.audio.sfx('fanfare');
+    const roll = Math.random();
+    if (roll < 0.45) { const n = lump(300, 25); gain(n); toast(`${ic('🪙')}<div><b>Golden coin!</b> +${fmt(n)}</div>`, 'gold'); return n; }
+    if (roll < 0.75) { addBuff({ id: 'frenzy', icon: '🤑', label: 'Coin Frenzy: income x7', income: 7, secs: 30 }); toast(`${ic('🤑')}<div><b>Coin Frenzy!</b> Income x7 for 30 seconds.</div>`, 'gold'); return null; }
+    if (roll < 0.92) { addBuff({ id: 'fingers', icon: '👆', label: 'Golden Fingers: sofa x77', click: 77, secs: 20 }); toast(`${ic('👆')}<div><b>Golden Fingers!</b> Sofa rummaging x77 for 20 seconds. RUN TO THE SOFA.</div>`, 'gold'); return null; }
+    LC.world.coinRain(30); toast(`${ic('🌧️')}<div><b>It's raining coins!</b> Run around and grab them!</div>`, 'gold'); return null;
   }
-  function coinRain(n = 25) {
-    for (let i = 0; i < n; i++) {
-      setTimeout(() => {
-        const c = el('button', 'raindrop', ic('🪙'));
-        c.style.left = rand(3, 95) + 'vw';
-        c.style.animationDuration = rand(2.6, 4.2) + 's';
-        c.onpointerdown = (e) => { const v = lump(15, 0.05); gain(v); floater(e.clientX, e.clientY - 10, '+' + fmt(v)); LC.audio.sfx('coin'); c.remove(); };
-        c.addEventListener('animationend', () => c.remove());
-        $('#rain').appendChild(c);
-      }, i * rand(150, 320));
-    }
+  function collect(kind) {
+    if (kind === 'golden') return goldenReward();
+    if (kind === 'piglet') { const n = lump(60, 1); gain(n); LC.audio.sfx('smash'); return n; }
+    const n = kind === 'rain' ? lump(12, 0.05) : lump(8, 0.02);
+    gain(n);
+    LC.audio.sfx('coin');
+    return n;
   }
+  const magnet = () => 1.1 + upgradesOf('magnet').reduce((t, u) => t + u.value, 0);
 
   // ---------- random events ----------
   const pending = [];
   function queueEvent(fn) { pending.push(fn); }
   const EVENTS = [
-    { id: 'seagull', w: 10, run: () => modal({ icon: '🐦', title: 'A seagull is eyeing your coins',
+    { id: 'seagull', w: 10, run: () => LC.world.visitor('seagull') || modal({ icon: '🐦', title: 'A seagull is eyeing your coins',
       text: 'It has the look of a bird that has done this before.',
       choices: [
         { label: 'Shoo it away', fn: () => { const n = S.money * 0.05; S.money -= n; return { text: `It took ${fmt(n)} on the way out. Classic seagull.` }; } },
@@ -540,7 +519,7 @@
           ? (gain(S.money * 0.25 + 1), { text: 'You win! The seagull drops its stash of stolen coins. +25%!' })
           : (S.money *= 0.85, { text: 'You lose. Badly. It took 15% and your dignity.' }) },
       ] }) },
-    { id: 'nan', w: 10, run: () => modal({ icon: '👵', title: "Nan's popped round",
+    { id: 'nan', w: 10, run: () => LC.world.visitor('nan') || modal({ icon: '👵', title: "Nan's popped round",
       text: 'She has her handbag. The handbag always has something in it.',
       choices: [
         { label: 'Put the kettle on', fn: () => { const n = lump(120, 5); gain(n); return { text: `She gives you ${fmt(n)} and says you look thin.` }; } },
@@ -550,9 +529,9 @@
       if (!S.goose.met) return modal({ icon: '🪿', title: 'A goose has entered the garden',
         text: 'It is staring at you. It has not blinked.',
         choices: [
-          { label: 'Befriend it', fn: () => { S.goose.met = true; if (chance(0.7)) { S.goose.friend = true; LC.audio.sfx('honk'); return { text: 'The goose accepts you. You are now goose friends. (All income +10%)' }; } LC.audio.sfx('honk'); return { text: 'The goose bites you and leaves. It will be back.' }; } },
+          { label: 'Befriend it', fn: () => { S.goose.met = true; if (chance(0.7)) { S.goose.friend = true; LC.audio.sfx('honk'); return { text: 'The goose accepts you. You are now goose friends. (All income +10%)' }; } LC.audio.sfx('honk'); return { text: 'The goose bites you. It is now hunting you. Keep moving.' }; } },
           { label: 'Honk back', fn: () => { S.goose.met = true; LC.audio.sfx('honk'); S.goose.friend = chance(0.4); return { text: S.goose.friend ? 'The goose respects this. You are now goose friends. (All income +10%)' : 'The goose did not like your accent.' }; } },
-          { label: 'Run', cls: 'ghost', fn: () => ({ text: 'You run. The goose does not chase you. It simply remembers.' }) },
+          { label: 'Run', cls: 'ghost', fn: () => { S.goose.met = true; return { text: 'You run. The goose follows. The goose will always follow.' }; } },
         ] });
       if (S.goose.friend) { LC.audio.sfx('honk'); const n = lump(240, 5); gain(n); return modal({ icon: '🪿', title: 'Your goose brought you a gift', text: `It's ${fmt(n)}. You decide not to ask where from.` }); }
       LC.audio.sfx('honk');
@@ -562,13 +541,13 @@
           { label: 'Honk aggressively', cls: 'danger', fn: () => { LC.audio.sfx('honk'); if (S.pig) S.pig.stored = 0; return { text: 'The goose honks louder. It eats everything in your piggy bank.' }; } },
         ] });
     } },
-    { id: 'badger', w: 7, run: () => modal({ icon: '🦡', title: 'The Tax Badger has arrived',
+    { id: 'badger', w: 7, run: () => LC.world.visitor('badger') || modal({ icon: '🦡', title: 'The Tax Badger has arrived',
       text: 'He is wearing a tiny tie. He would like his cut.',
       choices: [
         { label: 'Pay him (5%)', fn: () => { S.money *= 0.95; return { text: 'The badger nods respectfully and leaves you a receipt. It is a leaf.' }; } },
         { label: 'Hide in the sofa', fn: () => chance(0.55) ? (gain(lump(90, 2)), { text: 'He gives up. While in the sofa you find a load of coins.' }) : (S.money *= 0.85, { text: 'He found you. He always finds you. 15%, plus a late fee.' }) },
       ] }) },
-    { id: 'icecream', w: 8, run: () => modal({ icon: '🍦', title: 'The ice cream van is playing its song',
+    { id: 'icecream', w: 8, run: () => LC.world.visitor('icecream') || modal({ icon: '🍦', title: 'The ice cream van is playing its song',
       text: 'It is coming down your street. It is not stopping unless you run.',
       choices: [
         { label: 'RUN for a 99', fn: () => { S.money *= 0.98; addBuff({ id: 'brainfreeze', icon: '🍦', label: 'Brain Freeze: clicks x10', click: 10, secs: 30 }); return { text: 'You got one. Brain freeze gives you strange powers. Sofa clicks x10 for 30 seconds!' }; } },
@@ -581,11 +560,11 @@
         { label: 'Give them a coin bath', fn: () => { S.money *= 0.97; addBuff({ id: 'bath', icon: '🛁', label: 'Clean coins: income +50%', income: 1.5, secs: 120 }); return { text: 'They love it. Income +50% for 2 minutes.' }; } },
       ] }) },
     { id: 'sale', w: 6, run: () => { addBuff({ id: 'sale', icon: '🏷️', label: 'Shop 50% off', cost: 0.5, secs: 25 }); modal({ icon: '🏷️', title: 'EVERYTHING IS HALF PRICE', text: 'For 25 seconds. A man in a van said so. Quick!' }); } },
-    { id: 'flip', w: 4, run: () => { S.flags.flipped = true; document.body.classList.add('flipped'); addBuff({ id: 'flip', icon: '🙃', label: 'Upside down: income x3', income: 3, secs: 15 }); setTimeout(() => document.body.classList.remove('flipped'), 15000); toast(`${ic('🙃')}<div><b>A cursed penny has flipped reality.</b> Income x3 while it lasts.</div>`); } },
+    { id: 'flip', w: 4, run: () => { S.flags.flipped = true; LC.world.setFlip(true); addBuff({ id: 'flip', icon: '🙃', label: 'Upside down: income x3', income: 3, secs: 15 }); setTimeout(() => LC.world.setFlip(false), 15000); toast(`${ic('🙃')}<div><b>A cursed penny has flipped reality.</b> Income x3 while it lasts.</div>`); } },
     { id: 'goblin', w: 4, run: () => { document.body.classList.add('goblin'); addBuff({ id: 'goblin', icon: '🔤', label: 'Font Goblin: clicks x5', click: 5, secs: 30 }); setTimeout(() => document.body.classList.remove('goblin'), 30000); toast(`${ic('👺')}<div><b>The Font Goblin has struck!</b> Everything looks silly. Clicks x5 for 30 seconds.</div>`); } },
-    { id: 'piglets', w: 5, run: () => { spawnPiglets(); toast(`${ic('🐽')}<div><b>Your piggy bank has had piglets!</b> Smash them before they get away!</div>`); } },
-    { id: 'rain', w: 4, run: () => { coinRain(28); toast(`${ic('🌧️')}<div><b>It's raining coins!</b> Click them!</div>`); } },
-    { id: 'fox', w: 6, run: () => modal({ icon: '🦊', title: 'A fox has got into the bins',
+    { id: 'piglets', w: 5, run: () => { LC.world.piglets(3); toast(`${ic('🐽')}<div><b>Your piggy bank has had piglets!</b> Catch them before they get away!</div>`); } },
+    { id: 'rain', w: 4, run: () => { LC.world.coinRain(30); toast(`${ic('🌧️')}<div><b>It's raining coins!</b> Run around and grab them!</div>`); } },
+    { id: 'fox', w: 6, run: () => LC.world.visitor('fox') || modal({ icon: '🦊', title: 'A fox has got into the bins',
       text: 'It is making the noise foxes make. You know the one.',
       choices: [
         { label: 'Let it rummage', fn: () => { const n = lump(150, 2); gain(n); return { text: `Foxes are just sofa-checkers with tails. It finds ${fmt(n)} and gives it to you.` }; } },
@@ -604,13 +583,13 @@
         { label: 'Spend Derek', cls: 'danger', fn: () => { S.flags.derekGone = true; gain(0.01); return { text: 'You spent Derek. He was 1p. You got a single Haribo. You think about Derek a lot.' }; } },
       ] }) },
     { id: 'meteor', w: 2, run: () => { const n = lump(600, 10); gain(n); modal({ icon: '☄️', title: 'A meteorite has landed in the garden', text: `Scientists rush over. It's a 50p. Well, technically it's worth ${fmt(n)} now because it's from space.` }); } },
-    { id: 'doorbell', w: 5, cond: () => baseIncome() > 0.5, run: () => modal({ icon: '🛎️', title: 'Ding dong',
+    { id: 'doorbell', w: 5, cond: () => baseIncome() > 0.5, run: () => LC.world.visitor('man') || modal({ icon: '🛎️', title: 'Ding dong',
       text: 'A man at the door wants to sell you a slightly bigger sofa.',
       choices: [
         { label: 'Buy it (10%)', fn: () => { S.money *= 0.9; const g = [...LC.GENERATORS].reverse().find((x) => (S.gens[x.id] || 0) > 0) || LC.GENERATORS[0]; const free = Math.max(1, Math.ceil((S.gens[g.id] || 0) * 0.1)); S.gens[g.id] = (S.gens[g.id] || 0) + free; return { text: `The sofa comes with ${free} free ${g.name}${free > 1 ? 's' : ''} already inside.` }; } },
         { label: 'No thanks', cls: 'ghost', fn: () => ({ text: 'He leaves. As he goes you notice a goose in the back of his van.' }) },
       ] }) },
-    { id: 'buttonman', w: 50, cond: () => S.buttons >= 100 && !S.flags.buttonmanNo, run: () => modal({ icon: '🔘', title: 'The Button Man is here',
+    { id: 'buttonman', w: 50, cond: () => S.buttons >= 100 && !S.flags.buttonmanNo, run: () => LC.world.visitor('buttonman', 30) || modal({ icon: '🔘', title: 'The Button Man is here',
       text: 'A tall man in a coat made entirely of buttons is standing in your garden. "You have 100 buttons," he whispers. "Come with me."',
       choices: [
         { label: 'Go with him', fn: () => { closeModal(); playEnding('buttons'); } },
@@ -625,22 +604,13 @@
     if (now >= nextEventAt) {
       nextEventAt = now + rand(60000, 140000);
       const pool = EVENTS.filter((e) => !e.cond || e.cond());
-      const ev = EVENTS.find((e) => e.id === weighted(pool.map((e) => [e.id, e.w])));
+      const evId = weighted(pool.map((e) => [e.id, e.w]));
+      const ev = EVENTS.find((e) => e.id === evId);
       S.stats.events++;
       LC.audio.sfx('event');
       ev.run();
     }
-    if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000); spawnGolden(); }
-  }
-  function spawnPiglets() {
-    for (let i = 0; i < 3; i++) {
-      const p = el('button', 'piglet', ic('🐷'));
-      p.style.left = rand(10, 85) + 'vw'; p.style.top = rand(20, 75) + 'vh';
-      p.style.animationDelay = rand(0, 1) + 's';
-      p.onclick = (e) => { const n = lump(60, 1); gain(n); coinBurst(e.clientX, e.clientY, 8); floater(e.clientX, e.clientY - 20, '+' + fmt(n)); LC.audio.sfx('smash'); p.remove(); };
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 9000);
-    }
+    if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
   }
 
   // ---------- The Thing & endings ----------
@@ -654,6 +624,8 @@
     const e = LC.ENDINGS.find((x) => x.id === id);
     endingPlaying = true;
     closeModal();
+    closeScreen();
+    LC.world.unlock();
     LC.audio.music(false);
     const isNew = !S.endings.includes(id);
     if (isNew) S.endings.push(id);
@@ -676,7 +648,7 @@
         <p>${isNew ? 'New ending found!' : 'You have seen this one before.'} Endings found: <b>${found} / ${total}</b></p>
         <p class="small">Starting again keeps your endings and achievements. Each ending found gives +25% to everything, forever.</p>`);
       const again = el('button', 'btn big', 'Check down the sofa again');
-      again.onclick = () => { scr.classList.remove('show', 'upside'); endingPlaying = false; newRun(); };
+      again.onclick = () => { scr.classList.remove('show', 'upside'); endingPlaying = false; newRun(); LC.world.lock(); };
       box.appendChild(again);
       scr.querySelector('.ending-inner').appendChild(box);
     }, 900 + e.lines.length * 2200 + 600);
@@ -685,22 +657,20 @@
     S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings });
     newPig(); card = null; renderCard();
     renderShop(true); gardenDirty = true; buildGarden();
-    $('#sofa-log').innerHTML = '<li>Another day, another sofa.</li>';
+    LC.world.reset();
+    gooseShown = '';
     save();
     LC.audio.music(S.settings.music);
   }
 
-  // ---------- rendering ----------
+  // ---------- HUD ----------
   function renderTop() {
     $('#money').textContent = fmt(S.money);
     $('#rate').textContent = fmtRate(income());
     const p = Math.min(1, S.money / LC.THING_COST);
     $('#thing-bar').style.width = (p * 100).toFixed(3) + '%';
     $('#thing-pct').textContent = (p * 100).toFixed(p < 0.01 ? 4 : 2) + '%';
-    const btn = $('#thing-buy');
-    const can = S.money >= LC.THING_COST;
-    btn.disabled = !can;
-    btn.classList.toggle('ready', can);
+    $('#thing').classList.toggle('ready', p >= 1);
     $('#buttons-count').textContent = fmtInt(S.buttons);
   }
   function renderBuffs() {
@@ -708,7 +678,68 @@
     const now = Date.now();
     box.innerHTML = S.buffs.map((b) => `<div class="buff" title="${b.label}">${ic(b.icon)}<span>${b.label}</span><i style="width:${Math.max(0, (b.until - now) / (b.total * 1000)) * 100}%"></i></div>`).join('');
   }
+  function thingPrompt() {
+    const p = S.money / LC.THING_COST;
+    if (p >= 1) return '<b>Buy The Thing</b>. This is it.';
+    return `The Thing. You're saving up for it. Price: <b>${fmt(LC.THING_COST)}</b><small>${(p * 100).toFixed(p < 0.01 ? 4 : 2)}% saved</small>`;
+  }
+  function tryBuyThing() {
+    if (S.money < LC.THING_COST) { LC.audio.sfx('nope'); say(pick(["You lift the sheet a tiny bit. You can't see anything. You put it back.", "It's not time yet.", "You poke it. It feels expensive."])); return; }
+    modal({ icon: '❓', title: 'Buy The Thing?', text: `You've saved up ${fmt(LC.THING_COST)}. This is it. Whatever it is.`,
+      choices: [{ label: 'Buy it', fn: () => { closeModal(); buyThing(); } }, { label: 'Wait...', cls: 'ghost' }] });
+  }
+  function sofaPrompt() {
+    const fingers = S.buffs.some((b) => b.id === 'fingers');
+    return `Rummage down the back of the sofa${fingers ? ' <b>(GOLDEN FINGERS!)</b>' : ''}<small>Hold to keep rummaging</small>`;
+  }
+  function digPrompt() {
+    if (S.depth >= LC.EARTH_DIAMETER) return 'The hole goes all the way through.';
+    const next = LC.DIG_FINDS.find((f) => !S.finds.includes(f.name));
+    return `Dig the hole: <b>${fmtDepth(S.depth)}</b> deep${next ? `<small>Something is buried at ${fmtDepth(next.at)}</small>` : ''}`;
+  }
 
+  // ---------- screens: phone, shed, corner shop ----------
+  const SCREENS = {
+    phone: { title: 'Your Phone', icon: '📱', tabs: [['finders', '🛒', 'Coin Finders'], ['upgrades', '⬆️', 'Upgrades'], ['notebook', '📓', 'Notebook'], ['endings', '🏁', 'Endings'], ['settings', '⚙️', 'Settings']] },
+    shed: { title: 'The Shed', icon: '🛖', tabs: [['shed', '⛏️', 'Diggers & finds']] },
+    scratch: { title: 'Corner Shop', icon: '🏪', tabs: [['scratch', '🎟️', 'Scratchcards']] },
+  };
+  let screenOpen = null;
+  let lastPhoneTab = 'finders';
+  function openScreen(name, tab) {
+    const def = SCREENS[name];
+    screenOpen = name;
+    LC.world.unlock();
+    hideTip();
+    $('#screen-title').innerHTML = `${ic(def.icon)} ${def.title}`;
+    $('#screen-tabs').innerHTML = def.tabs.length > 1 ? def.tabs.map(([id, icon, label]) => `<button class="tab" data-tab="${id}">${ic(icon)} ${label}</button>`).join('') : '';
+    $('#screen-tabs').querySelectorAll('.tab').forEach((b) => (b.onclick = () => { LC.audio.sfx('click'); setTab(b.dataset.tab); }));
+    $('#screen').classList.add('show');
+    $('#pause').classList.remove('show');
+    LC.audio.sfx('open');
+    setTab(tab || (name === 'phone' ? lastPhoneTab : def.tabs[0][0]));
+  }
+  function closeScreen() {
+    if (!screenOpen) return;
+    screenOpen = null;
+    hideTip();
+    $('#screen').classList.remove('show');
+    LC.audio.sfx('click');
+    LC.world.lock();
+  }
+  function setTab(id) {
+    document.querySelectorAll('#screen-tabs .tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === id));
+    document.querySelectorAll('.panel').forEach((p) => (p.hidden = p.id !== 'panel-' + id));
+    if (screenOpen === 'phone') lastPhoneTab = id;
+    if (id === 'notebook') renderStats();
+    if (id === 'endings') renderEndings();
+    if (id === 'finders' || id === 'upgrades') renderShop(true);
+    if (id === 'shed') { gardenDirty = true; renderGarden(); }
+    if (id === 'scratch') { renderShopCards(); setTimeout(renderCard, 0); }
+  }
+  const panelVisible = (id) => screenOpen && !$('#panel-' + id).hidden;
+
+  // ---------- shop lists ----------
   const genRows = {};
   let upKey = '';
   function buildShop() {
@@ -717,10 +748,10 @@
     for (const g of LC.GENERATORS) {
       const row = el('button', 'gen');
       row.innerHTML = `<div class="gen-icon">${ic(g.icon)}</div>
-        <div class="gen-main"><div class="gen-name">${g.name}</div><div class="gen-cost"></div></div>
+        <div class="gen-main"><div class="gen-name">${g.name}</div><div class="gen-desc"></div><div class="gen-cost"></div></div>
         <div class="gen-count"></div>`;
       row.onclick = () => buyGen(g);
-      row.onmouseenter = () => showTip(row, `<b>${g.name}</b><p>${g.desc}</p><p class="tip-stat">Each finds <b>${fmtRate(g.income * genMult(g) * globalMult())}</b></p><p class="tip-stat">${S.gens[g.id] || 0} owned: <b>${fmtRate(genIncome(g) * globalMult())}</b> total</p>`);
+      row.onmouseenter = () => showTip(row, `<b>${g.name}</b><p>Each finds <b>${fmtRate(g.income * genMult(g) * globalMult())}</b></p><p>${S.gens[g.id] || 0} owned: <b>${fmtRate(genIncome(g) * globalMult())}</b> total</p>`);
       row.onmouseleave = hideTip;
       list.appendChild(row);
       genRows[g.id] = row;
@@ -740,7 +771,8 @@
       row.classList.toggle('poor', S.money < cost);
       row.classList.toggle('mystery', !known);
       row.querySelector('.gen-name').textContent = known ? g.name : '???';
-      row.querySelector('.gen-cost').innerHTML = `${ic('🪙', 'tiny')} ${fmt(cost)}${n > 1 ? ` <small>(x${n})</small>` : ''}`;
+      row.querySelector('.gen-desc').textContent = known ? g.desc : 'Keep finding money to find out.';
+      row.querySelector('.gen-cost').innerHTML = `${ic('🪙', 'tiny')} ${fmt(cost)}${n > 1 ? ` <small>(x${n})</small>` : ''} · <span class="muted">${fmtRate(g.income * genMult(g) * globalMult())} each</span>`;
       row.querySelector('.gen-count').textContent = owned || '';
     });
     const avail = ALL_UPS.filter((u) => !has(u.id) && (u.gen ? (S.gens[u.gen] || 0) >= u.at : S.lifetime >= u.cost * 0.4));
@@ -750,13 +782,12 @@
     if (force || key !== upKey) {
       upKey = key;
       grid.innerHTML = '';
-      if (!avail.length) grid.innerHTML = '<p class="muted small">Upgrades appear here as you find more money.</p>';
+      if (!avail.length) grid.innerHTML = '<p class="muted">Upgrades appear here as you find more money.</p>';
       for (const u of avail) {
-        const b = el('button', 'up', ic(u.icon));
+        const b = el('button', 'up');
+        b.innerHTML = `${ic(u.icon)}<div><b>${u.name}</b><small>${u.desc}</small><span class="up-cost">${ic('🪙', 'tiny')} ${fmt(upCost(u))}</span></div>`;
         b.dataset.id = u.id;
         b.onclick = () => buyUpgrade(u);
-        b.onmouseenter = () => showTip(b, `<b>${u.name}</b><p>${u.desc}</p><p class="tip-stat">${ic('🪙', 'tiny')} ${fmt(upCost(u))}</p>`);
-        b.onmouseleave = hideTip;
         grid.appendChild(b);
       }
     }
@@ -764,6 +795,7 @@
       const u = ALL_UPS.find((x) => x.id === b.dataset.id);
       b.classList.toggle('poor', S.money < upCost(u));
     }
+    $('#up-count').textContent = avail.length ? `(${avail.length})` : '';
   }
 
   // tooltip
@@ -773,39 +805,14 @@
     tip.classList.add('show');
     const r = anchor.getBoundingClientRect();
     const tw = tip.offsetWidth, th = tip.offsetHeight;
-    let x = r.left - tw - 12;
-    if (x < 8) x = Math.min(innerWidth - tw - 8, r.right + 12);
+    let x = r.right + 12;
+    if (x + tw > innerWidth - 8) x = Math.max(8, r.left - tw - 12);
     const y = Math.max(8, Math.min(innerHeight - th - 8, r.top + r.height / 2 - th / 2));
     tip.style.left = x + 'px'; tip.style.top = y + 'px';
   }
   function hideTip() { $('#tip').classList.remove('show'); }
 
-  function renderPig(fresh) {
-    if (!S.pig) return;
-    const t = pigType();
-    const pigEl = $('#pig');
-    if (fresh) {
-      pigEl.className = 'pig enter' + (t.gold ? ' gold' : '');
-      pigEl.style.setProperty('--scale', S.pig.nest ? Math.pow(0.8, S.pig.nest) : 1);
-      pigEl.querySelector('.pig-body').innerHTML = ic(t.icon);
-      $('#pig-name').textContent = S.pig.nest ? `Smaller Pig (level ${S.pig.nest + 1})` : t.name;
-      $('#pig-text').textContent = t.text;
-    }
-    const need = pigHitsNeeded();
-    const cracks = pigEl.querySelectorAll('.crack');
-    const shown = Math.floor((S.pig.hits / need) * cracks.length);
-    cracks.forEach((c, i) => c.classList.toggle('on', i < shown));
-    $('#pig-hits').textContent = t.real ? '' : `${S.pig.hits} / ${need} hits`;
-  }
-  function renderPigFill() {
-    if (!S.pig) return;
-    const cap = pigCap();
-    $('#pig-fill').style.width = Math.min(100, (S.pig.stored / cap) * 100) + '%';
-    const t = pigType();
-    $('#pig-stored').textContent = t.real ? '???' : fmt(S.pig.stored * t.mult) + (S.pig.stored >= cap ? ' (full!)' : '');
-  }
-
-  // garden
+  // shed
   let gardenDirty = true;
   const toolRows = {};
   function buildGarden() {
@@ -813,10 +820,8 @@
     list.innerHTML = '';
     for (const t of LC.DIG_TOOLS) {
       const row = el('button', 'gen small');
-      row.innerHTML = `<div class="gen-icon">${ic(t.icon)}</div><div class="gen-main"><div class="gen-name">${t.name}</div><div class="gen-cost"></div></div><div class="gen-count"></div>`;
+      row.innerHTML = `<div class="gen-icon">${ic(t.icon)}</div><div class="gen-main"><div class="gen-name">${t.name}</div><div class="gen-desc">${t.desc}</div><div class="gen-cost"></div></div><div class="gen-count"></div>`;
       row.onclick = () => buyDigTool(t);
-      row.onmouseenter = () => showTip(row, `<b>${t.name}</b><p>${t.desc}</p>`);
-      row.onmouseleave = hideTip;
       list.appendChild(row);
       toolRows[t.id] = row;
     }
@@ -847,7 +852,7 @@
   }
 
   function renderShopCards() {
-    $('#stock').textContent = `${S.cardStock} / ${maxStock()} in stock`;
+    $('#stock').textContent = `${S.cardStock} / ${maxStock()} cards in stock` + (S.cardStock < maxStock() && S.cardRestockAt ? ` · next delivery in ${Math.ceil((S.cardRestockAt - Date.now()) / 1000)}s` : '');
     for (const c of LC.CARDS) {
       const b = $(`#buy-${c.id}`);
       const cost = cardCost(c);
@@ -859,12 +864,12 @@
   function renderStats() {
     const rows = [
       ['Money found this run', fmt(S.lifetime)], ['Money found ever', fmt(S.allTime)],
-      ['Income', fmtRate(income())], ['Each sofa check finds about', fmt(clickValue())],
-      ['Sofa checks', fmtInt(S.stats.clicks)], ['Things found in the sofa', fmtInt(S.stats.sofaFinds)],
+      ['Income', fmtRate(income())], ['Each sofa rummage finds about', fmt(clickValue())],
+      ['Sofa rummages', fmtInt(S.stats.clicks)], ['Things found in the sofa', fmtInt(S.stats.sofaFinds)],
       ['Piggy banks smashed', fmtInt(S.stats.pigs)], ['Scratch cards scratched', fmtInt(S.stats.cards)],
       ['Golden coins caught', fmtInt(S.stats.golden)], ['Random events', fmtInt(S.stats.events)],
       ['Deepest hole', fmtDepth(S.depth)], ['Buttons', fmtInt(S.buttons)], ['Lucky socks', fmtInt(S.socks)], ['Frogs', fmtInt(S.frogs)],
-      ['Goose status', S.goose.friend ? 'Best friends' : S.goose.met ? 'Suspicious' : 'Unknown'],
+      ['Goose status', S.goose.friend ? 'Best friends' : S.goose.met ? 'Hunting you' : 'Unknown'],
       ['Derek', S.flags.derek ? 'Doing well, thanks' : S.flags.derekGone ? 'Spent :(' : 'Not met yet'],
       ['Endings bonus', '+' + Math.round((karmaMult() - 1) * 100) + '% to everything'], ['Runs finished', fmtInt(S.runs)],
     ];
@@ -888,6 +893,7 @@
   function nextNews() {
     const items = [...LC.NEWS];
     if (S.goose.friend) items.push('Local goose "actually quite nice once you get to know it".');
+    if (S.goose.met && !S.goose.friend) items.push('Goose seen chasing local resident around garden. Again.');
     if (S.depth > 100) items.push(`Hole in local garden now ${fmtDepth(S.depth)} deep. Brian "furious".`);
     if (S.frogs) items.push(`Person wins ${S.frogs} frog${S.frogs > 1 ? 's' : ''} on scratch cards. "We don't know how either," says shop.`);
     if (S.flags.derekGone) items.push('Man still thinking about Derek.');
@@ -897,18 +903,8 @@
     t.classList.add('roll');
   }
 
-  // tabs
-  function setTab(id) {
-    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === id));
-    document.querySelectorAll('.panel').forEach((p) => (p.hidden = p.id !== 'panel-' + id));
-    if (id === 'stats') renderStats();
-    if (id === 'endings') renderEndings();
-    if (id === 'scratch' && card && !card.done) setTimeout(renderCard, 0);
-    try { localStorage.setItem('loose-change-tab', id); } catch (e) { /* ignore */ }
-  }
-
   // ---------- main loop ----------
-  let lastTick = Date.now(), slow = 0;
+  let lastTick = Date.now(), slow = 0, gooseShown = '';
   function tick() {
     const now = Date.now();
     const dt = Math.min(1, (now - lastTick) / 1000);
@@ -916,7 +912,7 @@
     if (!endingPlaying) {
       gain(income() * dt);
       addDepth(digRate() * dt);
-      if (S.pig && !pigType().real) S.pig.stored = Math.min(pigCap(), S.pig.stored + pigFill() * dt);
+      if (S.pig && !S.pig.smashed && !pigType().real) S.pig.stored = Math.min(pigCap(), S.pig.stored + pigFill() * dt);
       if (S.cardRestockAt && now >= S.cardRestockAt) {
         S.cardStock = Math.min(maxStock(), S.cardStock + 1);
         S.cardRestockAt = S.cardStock < maxStock() ? now + LC.CARD_RESTOCK_SECS * 1000 : 0;
@@ -925,30 +921,45 @@
     const before = S.buffs.length;
     S.buffs = S.buffs.filter((b) => b.until > now);
     renderTop();
-    renderShop(false);
-    renderPigFill();
-    if (!$('#panel-garden').hidden) renderGarden();
-    if (!$('#panel-scratch').hidden) renderShopCards();
+    if (panelVisible('finders') || panelVisible('upgrades')) renderShop(false);
+    if (panelVisible('shed')) renderGarden();
+    if (panelVisible('scratch')) renderShopCards();
     if ((slow += dt) >= 1) {
       slow = 0;
       checkAchievements();
-      if (!$('#panel-stats').hidden) renderStats();
+      if (panelVisible('notebook')) renderStats();
       document.title = `${fmt(S.money)} · Loose Change`;
+      LC.world.syncHelpers(S.gens);
+      LC.world.setDepthText(fmtDepth(S.depth));
+      LC.world.setThingText(S.money >= LC.THING_COST ? 'READY!' : fmt(LC.THING_COST));
+      const gm = S.goose.friend ? 'friend' : S.goose.met ? 'enemy' : 'none';
+      if (gm !== gooseShown) { gooseShown = gm; LC.world.setGoose(gm); }
     }
     if (S.buffs.length || before) renderBuffs();
     eventTick(now);
+  }
+  function gooseBite() {
+    const n = S.money * 0.03;
+    S.money -= n;
+    floatAt(null, '-' + fmt(n), 'bad');
+    say(pick(['HONK. The goose bit you and took ' + fmt(n) + '.', 'The goose got you. ' + fmt(n) + ' gone.', 'You have been goosed. -' + fmt(n)]));
   }
 
   // ---------- settings ----------
   function buildSettings() {
     const s = S.settings;
+    if (s.sens == null) s.sens = 1;
     $('#set-music').checked = s.music;
     $('#set-sfx').checked = s.sfx;
     $('#set-volume').value = s.volume;
+    $('#set-sens').value = s.sens;
+    LC.world.setSensitivity(s.sens);
     $('#set-music').onchange = (e) => { s.music = e.target.checked; LC.audio.unlock(); LC.audio.music(s.music); save(); };
     $('#set-sfx').onchange = (e) => { s.sfx = e.target.checked; save(); };
     $('#set-volume').oninput = (e) => { s.volume = +e.target.value; LC.audio.volume(s.volume); };
     $('#set-volume').onchange = save;
+    $('#set-sens').oninput = (e) => { s.sens = +e.target.value; LC.world.setSensitivity(s.sens); };
+    $('#set-sens').onchange = save;
     $('#set-export').onclick = async () => {
       const code = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
       $('#save-code').value = code;
@@ -968,9 +979,10 @@
         { label: 'Keep my coins', cls: 'ghost' },
       ] });
     $('#set-credits').onclick = () => modal({ icon: '📜', title: 'Credits',
-      text: `Game design, code, music and sound: made for this game, all original.<br><br>
+      text: `Game design, code, 3D models, music and sound: made for this game, all original.<br><br>
         Icons: <b>Twemoji</b> by Twitter, Inc. and other contributors, licensed under CC-BY 4.0 (creativecommons.org/licenses/by/4.0).<br><br>
-        Font: <b>Fredoka</b>, copyright 2016 The Fredoka Project Authors, SIL Open Font License 1.1.` });
+        Font: <b>Fredoka</b>, copyright 2016 The Fredoka Project Authors, SIL Open Font License 1.1.<br><br>
+        3D engine: <b>three.js</b>, MIT License.` });
   }
 
   // ---------- boot ----------
@@ -982,48 +994,67 @@
     addDepth(digRate() * away * 0.5);
     const h = Math.floor(away / 3600), m = Math.floor((away % 3600) / 60);
     queueEvent(() => modal({ icon: '🐈', title: 'Welcome back',
-      text: `You were away for ${h ? h + 'h ' : ''}${m}m. While you were gone, the cat found <b>${fmt(n)}</b>.<br><small>It would like a treat.</small>` }));
+      text: `You were away for ${h ? h + 'h ' : ''}${m}m. While you were gone, your helpers found <b>${fmt(n)}</b>.<br><small>The cat would like a treat.</small>` }));
+  }
+  function onLockChange(locked) {
+    if (locked) { $('#pause').classList.remove('show'); return; }
+    if (!screenOpen && !endingPlaying) $('#pause').classList.add('show');
   }
 
   function boot() {
+    LC.world.init();
     const loaded = load();
     buildShop(); buildGarden(); buildSettings();
-    if (!S.pig) newPig(); else renderPig(true);
+    if (!S.pig || S.pig.smashed) newPig(); else showPig();
     renderCard();
     if (loaded) offlineProgress();
     else queueEvent(() => modal({ icon: '🛋️', title: 'Loose Change',
-      text: "You're saving up for something. You're not sure what. It costs <b>£1,000,000,000,000</b>.<br><br>You have 0p.<br><br>Better check down the back of the sofa.",
+      text: `You're saving up for something. You're not sure what. It's under a sheet in the hall, and it costs <b>${fmt(LC.THING_COST)}</b>.<br><br>You have 0p.<br><br>Better check down the back of the sofa.`,
       choices: [{ label: "Let's go", fn: () => { LC.audio.unlock(); LC.audio.music(S.settings.music); } }] }));
 
-    $('#sofa').onclick = clickSofa;
-    $('#pig').onclick = hitPig;
-    $('#dig').onclick = digOnce;
-    $('#thing-buy').onclick = () => modal({ icon: '❓', title: 'Buy The Thing?', text: "You've saved up £1,000,000,000,000. This is it. Whatever it is.",
-      choices: [{ label: 'Buy it', fn: () => { closeModal(); buyThing(); } }, { label: 'Wait...', cls: 'ghost' }] });
-    document.querySelectorAll('.tab').forEach((b) => (b.onclick = () => { LC.audio.sfx('click'); setTab(b.dataset.tab); }));
+    $('#pause').onclick = () => { LC.audio.unlock(); LC.audio.music(S.settings.music); LC.world.lock(); };
+    $('#screen-close').onclick = closeScreen;
+    $('#screen').addEventListener('mousedown', (e) => { if (e.target.id === 'screen') closeScreen(); });
     document.querySelectorAll('[data-amt]').forEach((b) => (b.onclick = () => {
       buyAmount = b.dataset.amt === 'max' ? 'max' : +b.dataset.amt;
       document.querySelectorAll('[data-amt]').forEach((x) => x.classList.toggle('on', x === b));
       renderShop(true);
     }));
     LC.CARDS.forEach((c) => { $(`#buy-${c.id}`).onclick = () => buyCard(c); });
-    document.addEventListener('pointerdown', () => { if (LC.audio.unlock()) LC.audio.music(S.settings.music); }, { once: true });
+    addEventListener('keydown', (e) => {
+      if (modalOpen) {
+        const btns = [...$('#modal').querySelectorAll('.modal-choices button')];
+        const n = e.code.startsWith('Digit') ? +e.code.slice(5) : (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyE') ? 1 : 0;
+        if (n && btns[n - 1]) { e.preventDefault(); btns[n - 1].click(); }
+        return;
+      }
+      if (screenOpen && (e.code === 'Escape' || e.code === 'KeyE')) { e.preventDefault(); closeScreen(); }
+    });
     $('#news-text').addEventListener('animationend', nextNews);
     LC.audio.volume(S.settings.volume);
     LC.audio.setSfxEnabled(() => S.settings.sfx);
+    $('#pause').classList.add('show');
 
-    let tab = 'garden';
-    try { tab = localStorage.getItem('loose-change-tab') || tab; } catch (e) { /* ignore */ }
-    setTab(document.getElementById('panel-' + tab) ? tab : 'garden');
     nextNews();
     tick();
     setInterval(tick, TICK_MS);
     setInterval(save, 10000);
     addEventListener('beforeunload', save);
-    addEventListener('resize', () => { if (card && !card.done && !$('#panel-scratch').hidden) renderCard(); });
+    addEventListener('resize', () => { if (card && !card.done && panelVisible('scratch')) renderCard(); });
 
+    LC.game = {
+      rummage, dig, hitPig, nextPig, collect, gooseBite, tryBuyThing, say, floatAt, setPrompt, setCompass,
+      sofaPrompt, digPrompt, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
+      tip: (secs) => { const n = lump(secs, 0.05); gain(n); floatAt(null, n); },
+      depth: () => S.depth,
+      togglePhone: () => { if (endingPlaying || modalOpen) return; if (screenOpen) closeScreen(); else openScreen('phone'); },
+      isBlocked: () => modalOpen || !!screenOpen || endingPlaying,
+      canLock: () => !screenOpen && !endingPlaying,
+    };
     // Handy for testing: LC.debug.gain(1e9)
-    LC.debug = { gain, spawnGolden, coinRain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth) };
+    LC.debug = { gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden() };
   }
-  document.addEventListener('DOMContentLoaded', boot);
+  // the world module needs LC.game before its first frame, so set a stub early
+  LC.game = { isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };
+  addEventListener('load', boot);
 })();
