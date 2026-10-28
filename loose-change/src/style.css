@@ -501,3 +501,8 @@ body.cutscene .hud, body.cutscene .news { opacity: 0; transition: opacity .6s; p
 .menu-btns .btn.ghost { background: var(--card); color: var(--ink); }
 .menu .muted { color: #fff8ec; opacity: .7; }
 body.in-menu .hud, body.in-menu .news { visibility: hidden; }
+.clock.urgent { color: #ffd34d; font-weight: 700; animation: glowpulse 0.8s infinite alternate; }
+
+.guide-page { background: #fffaf0; border: 2px solid var(--ink); border-radius: 14px; padding: 10px 14px; margin-bottom: 10px; box-shadow: 3px 3px 0 rgba(45, 33, 24, .25); }
+.guide-head { font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.guide-page p { margin: 6px 0 0; line-height: 1.45; }

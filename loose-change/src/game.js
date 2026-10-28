@@ -212,7 +212,7 @@
     return m * buffMult('dig');
   }
   const digRate = () => LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.rate, 0) * digMult();
-  const digClick = () => (perk('oldman', 5) ? 1.5 : 1) * ((0.05 + LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.click, 0)) * (eff('dig').mult || 1) + digRate() * 0.05) * digMult();
+  const digClick = () => 0.5 * (perk('oldman', 5) ? 1.5 : 1) * ((0.05 + LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.click, 0)) * (eff('dig').mult || 1) + digRate() * 0.05) * digMult();
 
   const pigCap = () => Math.max(1, baseIncome() * 180) * upgradesOf('piggyCap').reduce((m, u) => m * u.value, 1);
   const pigFill = () => (0.02 + baseIncome() * 0.3) * upgradesOf('piggyFill').reduce((m, u) => m * u.value, 1);
@@ -634,7 +634,7 @@
   let held = 0; // index into pockets
   function stallSlots() { while (S.stall.length < 10) S.stall.push(null); return S.stall; }
   const stallItems = () => stallSlots().slice(0, stallSize()).filter(Boolean);
-  function syncStall() { LC.world.setStallItems(stallSlots().map((x, i) => (x && i < stallSize() ? { icon: LC.JUNK[x.id].icon, price: x.price || 'fair' } : null))); }
+  function syncStall() { LC.world.setStallItems(stallSlots().map((x, i) => (x && i < stallSize() ? { id: x.id, icon: LC.JUNK[x.id].icon, price: x.price || 'fair' } : null))); }
   const itemPrice = (x) => x.value * LC.STALL_PRICES[x.price || 'fair'].mult * (chal('skinflint') ? 0.7 : 1) * (perk('jamal', 3) && LC.JUNK[x.id].rarity >= 3 ? 1.25 : 1);
   function slotPrompt(i) {
     const x = stallSlots()[i];
@@ -710,13 +710,8 @@
   }
   // A customer has arrived. If you're not there they wait (and you get a ping); if you take too long they might steal.
   let waiting = 0;
-  function customerArrived(kind, npc) {
-    if (LC.world.nearStall(7)) return customerAtStall(kind, npc);
-    waiting++;
-    LC.audio.sfx('text');
-    toast(`${ic('🛎️')}<div><b>Someone's waiting at your stall!</b><br><small>Don't leave them too long...</small></div>`, 'msg');
-    return { wait: kind === 'collector' ? 45 : 28 };
-  }
+  // the stall sells on its own (honesty box); being there gets you haggling and a better chance of a sale
+  function customerArrived(kind, npc) { return customerAtStall(kind, npc); }
   function customerGaveUp(kind) {
     waiting = Math.max(0, waiting - 1);
     const live = stallSlots().map((x, i) => (x && i < stallSize() ? i : -1)).filter((i) => i >= 0);
@@ -770,6 +765,7 @@
     if (!buy) return { say: pick(LC.STALL_LINES.pass) };
     sell(idx, price);
     if (collector) S.stats.collector = (S.stats.collector || 0) + 1;
+    if (!near) toast(`${ic(j.icon)}<div><b>Sold at your stall!</b><br><small>Someone bought your ${j.name.toLowerCase()} for ${fmt(price)}. The honesty box is honest. Mostly.</small></div>`);
     return { say: collector ? pick(LC.STALL_LINES.collector) : pick(LC.STALL_LINES.buy), sold: price };
   }
   function sell(idx, price) {
@@ -1109,9 +1105,12 @@
     if (a === 'under') { S.flags.wentDown = true; say(pick(['It is dark. It smells of soil and 2p coins.', 'You climb down. Your hole has become... a place.', 'Somewhere, something squeaks.'])); }
     if (a === 'loft') { S.flags.loft = true; say(pick(['The loft. Dusty. Quiet. Full of Grandad\'s things.', 'It smells of old books and Christmas decorations.'])); }
   }
-  function pilePrompt(i) { const w = waitFor('pile' + i); return w ? `A pile of junk<small>Searched. Give it ${w}s.</small>` : 'Search the junk pile'; }
+  const PILE_GOES = 3;
+  const pileLeft = (i) => PILE_GOES - ((S.pileUses || {})[i] || 0);
+  function pilePrompt(i) { const n = pileLeft(i); return n > 0 ? `Search the junk pile<small>${n} more rummage${n === 1 ? '' : 's'} in it today</small>` : 'A picked-clean pile of junk<small>Something new will turn up tomorrow</small>'; }
   function searchPile(i, tier) {
-    if (!ready('pile' + i, 60)) { LC.audio.sfx('nope'); return; }
+    if (pileLeft(i) <= 0) { LC.audio.sfx('nope'); say(pick(['Nothing left but a damp crisp packet. Try tomorrow.', 'You\'ve had everything good out of this one. For today.'])); return; }
+    S.pileUses = S.pileUses || {}; S.pileUses[i] = (S.pileUses[i] || 0) + 1;
     LC.audio.sfx('dig');
     if (chance(0.55)) giveJunk(pick(LC.DIG_JUNK[Math.min(tier, LC.DIG_JUNK.length - 1)].ids));
     const n = lump(30 + tier * 30, 0.5); gain(n); floatAt(null, n);
@@ -1275,13 +1274,13 @@
         { label: 'Not today', cls: 'ghost', fn: () => { S.flags.buttonmanNo = true; setTimeout(() => (S.flags.buttonmanNo = false), 180000); return { text: '"I will return," he says, and walks into a hedge.' }; } },
       ] }) },
   ];
-  let nextEventAt = Date.now() + 25000, nextGoldenAt = Date.now() + 40000;
+  let nextEventAt = Date.now() + 4 * 60000, nextGoldenAt = Date.now() + 40000;
   function eventTick(now) {
     if (modalOpen || endingPlaying || tut) return;
     if (pending.length) { pending.shift()(); return; }
     if (S.lifetime < 2) return;
     if (now >= nextEventAt) {
-      nextEventAt = now + rand(60000, 140000);
+      nextEventAt = now + rand(11, 17) * 60000;   // a day is 28 minutes: one or two of these per day
       const pool = EVENTS.filter((e) => !e.cond || e.cond());
       const evId = weighted(pool.map((e) => [e.id, e.w]));
       const ev = EVENTS.find((e) => e.id === evId);
@@ -1302,10 +1301,38 @@
     const before = S.tod;
     S.tod += dt / DAY_SECS * (chal('nightowl') ? 2 : 1);
     if (before < 0.7 && S.tod >= 0.7) toast(`${ic('🌇')}<div><b>It's getting late.</b><br><small>Everyone's indoors watching telly. Sofa rummaging ×1.5, fewer stall customers.</small></div>`);
-    if (before < 0.95 && S.tod >= 0.95) { LC.audio.sfx('text'); toast(`${ic('💬')}<div><b>Mum</b><br><small>Bedtime in 5 minutes. I mean it this time.</small></div>`, 'msg'); }
-    if (before < 1 && S.tod >= 1) toast(`${ic('🌙')}<div><b>Night time.</b><br><small>Mum's in bed. Brian's asleep. Everyone is. The sofa's all yours (×2)... if you don't get caught out of bed.</small></div>`, 'gold');
+    if (!S.curfew && before < CURFEW_AT && S.tod >= CURFEW_AT && !tut) startCurfew();
+    if (S.curfew) curfewTick(dt);
     mumTick(dt);
-    if (S.tod >= NIGHT_END && !modalOpen && !screenOpen && !endingPlaying) newDay();
+  }
+  // ---------- bedtime: get home before the timer runs out, or Mum comes to get you ----------
+  const CURFEW_AT = 0.95, CURFEW_SECS = 90;
+  function startCurfew() {
+    S.curfew = { left: CURFEW_SECS };
+    LC.audio.sfx('text');
+    if (mumObj && LC.world.inHouse()) mumSayLine('bed');
+    else toast(`${ic('💬')}<div><b>Mum</b><br><small>BEDTIME. Home. Now. You've got ${CURFEW_SECS} seconds or I'm coming to get you, and I'll be in my dressing gown.</small></div>`, 'msg');
+  }
+  function curfewTick(dt) {
+    S.tod = Math.min(S.tod, 0.999);                 // the clock waits for you
+    if (modalOpen || endingPlaying || LC.world.cutActive()) return;
+    if (LC.world.inHouse()) { bedtime(); return; }
+    S.curfew.left -= dt;
+    if (S.curfew.left <= 0) mumFetch();
+  }
+  function bedtime() {
+    S.curfew = null;
+    toast(`${ic('🛏️')}<div><b>Home in time.</b><br><small>Teeth brushed (ish). Mum says goodnight. You dream about money.</small></div>`, 'gold');
+    newDay();
+  }
+  function mumFetch() {
+    S.curfew = null;
+    const n = Math.floor(S.money * 0.05 * 100) / 100; S.money -= n;
+    LC.audio.sfx('nope');
+    const m = LC.world.isUnderground() ? null : LC.world.spawnActor('mum', ...LC.world.inFront(1.8));
+    const done = () => { if (m) LC.world.removeActor(m); newDay(); return null; };
+    modal({ speaker: m ? 'mum' : null, npc: m, icon: '😠', title: 'Mum', text: `THERE you are! In my DRESSING GOWN, I've had to come out. That's ${fmt(n)} in the swear jar. I don't care that you didn't swear. I'm about to. HOME.`,
+      choices: [{ label: 'Sorry Mum...', fn: done }, { label: 'I was going to come home!', fn: done }] });
   }
   // ---------- Mum: home in the morning, at work all day, home in the evening, bed at ten ----------
   let mumObj = null, mumCheck = 30;
@@ -1318,7 +1345,7 @@
   };
   function mumSayLine(kind) { if (mumObj) { LC.world.speak(mumObj, pick(mumLines[kind]), 'Mum'); LC.audio.sfx('babbleHigh'); } }
   function mumTick(dt) {
-    if (tut || endingPlaying) return;
+    if (tut || endingPlaying || inMenu || LC.world.cutActive()) return;
     const st = S.mumAt || 'home';
     if (st === 'home' && !mumObj && S.tod < 0.1) { mumObj = LC.world.spawnActor('mum', 4.2, -3.0); }
     if (st === 'home' && S.tod >= 0.1 && S.tod < 0.7) {
@@ -1363,7 +1390,7 @@
     LC.audio.sfx('ding');
     const dream = pick(['You dreamt about a sofa made of money.', 'You dreamt Brian was a goose. He was still Brian.', 'You dreamt you finally saw The Thing. It was a sandwich.', 'You dreamt about Grandad. He winked.', 'You dreamt you were a 2p coin. It was quite relaxing.']);
     setTimeout(() => toast(`${ic('🌅')}<div><b>Day ${S.day} of the summer holidays</b><br><small>${dream} Under your pillow: ${fmt(n)}.</small></div>`, 'gold'), 900);
-    S.cooldowns = {};
+    S.cooldowns = {}; S.pileUses = {};
   }
   // ---------- hidden ways underground ----------
   const siteOpen = (id) => !!(S.sites[id] && S.sites[id].open);
@@ -1418,11 +1445,11 @@
     toast(`${ic('📱')}<div><b>Mum</b><br><small>${line}</small></div>`, 'msg'); LC.audio.sfx('tap');
   };
   const TUTORIAL = [
-    { goal: 'Go and look at the big thing under the sheet in the hall', hint: 'WASD to walk, mouse to look', guide: 'thing',
+    { goal: 'Go and look at the massive box in the hall', hint: 'WASD to walk, mouse to look', guide: 'thing',
       start: () => {},
       done: () => LC.world.near('thing', 2.6) },
-    { goal: 'Read Grandad\'s note', hint: 'It\'s pinned to the sheet',
-      start: () => modal({ icon: '✉️', title: 'A note pinned to the sheet', text: `<i>"It's yours when you can pay for it. <b>${fmt(LC.THING_COST)}</b>. No peeking. Love, Grandad.<br><br>P.S. Don't let Brian have it."</i>`, choices: [{ label: 'A TRILLION?!' }] }),
+    { goal: 'Read Grandad\'s note', hint: 'It\'s taped to the box',
+      start: () => modal({ icon: '✉️', title: 'A note taped to the box', text: `<i>"It's yours when you can pay for it. <b>${fmt(LC.THING_COST)}</b>. No peeking. Love, Grandad.<br><br>P.S. Don't let Brian have it."</i>`, choices: [{ label: 'A TRILLION?!' }] }),
       done: () => !modalOpen },
     { goal: 'Rummage down the back of the sofa 3 times', hint: 'Look at the sofa and click (or press E)', guide: 'sofa',
       start: () => mumSay('Did you look?? A TRILLION. You\'ve got £0.00. Start with the sofa, love. Your dad\'s lost about forty quid down there since 2009.'),
@@ -1430,9 +1457,9 @@
     { goal: 'Get a PERFECT rummage', hint: 'Click just as the ring lines up with the circle',
       start: () => mumSay('Tip from your mother: wait for the ring to line up, then go for it. Three times the coins. Your grandad called it "the rhythm of the cushions". He was a strange man.'),
       done: () => (S.stats.perfect || 0) >= 1 },
-    { goal: 'Open your phone', hint: 'Press Tab', guide: null,
-      start: () => mumSay('Brilliant! Check your phone, love. Press Tab. It\'s been buzzing all morning. Probably your mates. Or the bank, laughing.'),
-      done: () => screenOpen === 'phone' },
+    { goal: 'Open your phone and read Grandad\'s Guide', hint: 'Press Tab, then tap Grandad\'s Guide', guide: null,
+      start: () => mumSay('Brilliant! Now check your phone, love (Tab). Grandad put a guide on it for you. Read it, he went to a lot of trouble. He can\'t work a phone.'),
+      done: () => screenOpen === 'phone' && phoneApp === 'guide' },
     { goal: 'Put your phone away', hint: 'Press Tab or Esc',
       start: () => toast(`${ic('📱')}<div><b>Your phone</b><br><small>Messages and notes are full of hints, and people tell you secrets. Nobody will tell you everything. Snoop.</small></div>`, 'msg'),
       done: () => !screenOpen },
@@ -1568,7 +1595,7 @@
     LC.audio.sfx('win');
     say(`The ${LC.JUNK[h.id].name.toLowerCase()} is now in the Museum of Finds. Income +${Math.round(MUSEUM_BONUS[LC.JUNK[h.id].rarity] * 100)}%`);
   }
-  function syncMuseum() { LC.world.setMuseum(S.museum.map((id) => (id ? LC.JUNK[id].icon : null))); }
+  function syncMuseum() { LC.world.setMuseum(S.museum.map((id) => (id ? { id, icon: LC.JUNK[id].icon } : null))); }
 
   // ---------- Grandad's sticker album (kept between runs) ----------
   const ALBUM_SIZE = { junk: () => Object.keys(LC.JUNK).length, finds: () => LC.DIG_FINDS.length, friends: () => Object.keys(LC.FRIENDS).length, town: () => LC.TOWN_EVENTS.length, letters: () => LC.LETTERS.length };
@@ -1662,7 +1689,7 @@
   }
   const randJunk = (maxR = 2) => pick(Object.keys(LC.JUNK).filter((k) => LC.JUNK[k].rarity <= maxR && !LC.JUNK[k].noDrop));
   function hookADuck() {
-    const cost = lump(20, 0.5);
+    const cost = Math.max(1, lump(20, 0.5));
     if (!spend(cost)) { say(`It's ${fmt(cost)} a go. You can't afford a duck.`); LC.audio.sfx('nope'); return; }
     LC.audio.sfx('ding');
     const r = Math.random();
@@ -1858,7 +1885,8 @@
     $('#money').textContent = fmt(S.money);
     $('#rate').textContent = fmtRate(income());
     const tm = $('#timer'); tm.hidden = !S.settings.timer; if (S.settings.timer) tm.textContent = '⏱ ' + fmtTime(S.playSecs) + (S.best.any ? ` · PB ${fmtTime(S.best.any)}` : '');
-    $('#clock').textContent = `${evening() ? '🌙' : '☀️'} ${clockText()} · Day ${S.day}`;
+    $('#clock').textContent = S.curfew ? `🛏️ Home for bed: ${Math.max(0, Math.ceil(S.curfew.left))}s · Day ${S.day}` : `${evening() ? '🌙' : '☀️'} ${clockText()} · Day ${S.day}`;
+    $('#clock').classList.toggle('urgent', !!S.curfew);
     const p = Math.min(1, S.money / LC.THING_COST);
     $('#thing-bar').style.width = (p * 100).toFixed(3) + '%';
     $('#thing-pct').textContent = (p * 100).toFixed(p < 0.01 ? 4 : 2) + '%';
@@ -1876,7 +1904,7 @@
     return `The Thing. You're saving up for it. Price: <b>${fmt(LC.THING_COST)}</b><small>${(p * 100).toFixed(p < 0.01 ? 4 : 2)}% saved</small>`;
   }
   function tryBuyThing() {
-    if (S.money < LC.THING_COST) { LC.audio.sfx('nope'); say(pick(["You lift the sheet a tiny bit. You can't see anything. You put it back.", "It's not time yet.", "You poke it. It feels expensive."])); return; }
+    if (S.money < LC.THING_COST) { LC.audio.sfx('nope'); say(pick(["You lift a flap a tiny bit. You can't see anything. You put it back.", "It's not time yet.", "You poke it. It feels expensive."])); return; }
     modal({ icon: '❓', title: 'Buy The Thing?', text: `You've saved up ${fmt(LC.THING_COST)}. This is it. Whatever it is.`,
       choices: [{ label: 'Buy it', fn: () => { closeModal(); buyThing(); } }, { label: 'Wait...', cls: 'ghost' }] });
   }
@@ -1891,6 +1919,7 @@
 
   // ---------- screens: the phone, the shed, the corner shop ----------
   const APPS = [
+    { id: 'guide', icon: '📖', label: 'Grandad\'s Guide', color: '#c8823a' },
     { id: 'roster', icon: '👥', label: 'Helpers', color: '#f2b631' },
     { id: 'messages', icon: '💬', label: 'Messages', color: '#5bc236' },
     { id: 'notes', icon: '📝', label: 'Notes', color: '#ffd84a' },
@@ -1991,7 +2020,9 @@
     LC.world.menuCam(false);
     LC.audio.unlock(); LC.audio.music(S.settings.music);
     LC.world.lock();
+    if (!isNew) LC.world.teleportHome();
     if (isNew || (!S.flags.tutorialDone && S.runs === 0)) {
+      S.mumAt = 'work';
       LC.world.playScene(LC.INTRO_SCENE, () => { LC.world.endScene(); LC.world.debug.view(-2.4, 0.9, -1.2, -0.02); tutorialStart(); });
     }
   }
@@ -2004,6 +2035,7 @@
     if (shopOpen) renderShopPanel();
     if (id === 'workbench') renderWorkbench();
     if (id === 'roster') renderRoster();
+    if (id === 'guide') { S.flags.readGuide = true; $('#panel-guide').innerHTML = LC.GUIDE.map((p) => `<div class="guide-page"><div class="guide-head">${ic(p.icon)} <b>${p.title}</b></div><p>${p.text}</p></div>`).join(''); }
     if (id === 'notebook') renderStats();
     if (id === 'endings') renderEndings();
     if (id === 'finders' || id === 'upgrades') renderShop(true);
@@ -2566,6 +2598,11 @@
     addEventListener('resize', () => { if (card && !card.done && panelVisible('scratch')) renderCard(); });
 
     LC.game = {
+      onContextLost: () => {
+        S.settings.gfx = 'low'; save(); leaving = true;
+        modal({ icon: '⚙️', title: 'Your graphics card needed a breather', text: 'The game saved and is restarting on Low graphics. You can change this in Settings on your phone.', choices: [{ label: 'OK', fn: () => location.reload() }] });
+        setTimeout(() => location.reload(), 4000);
+      },
       onAutoQuality: (level, fps) => { $('#set-gfx').value = 'auto'; toast(`${ic('⚙️')}<div><b>Graphics set to ${level}</b><br><small>It was running at ${fps} fps. Change it in Settings on your phone.</small></div>`); },
       rummage, dig, hitPig, nextPig, collect, gooseBite, tryBuyThing, say, floatAt, setPrompt, setCompass,
       sofaPrompt, digPrompt, setPulse, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,

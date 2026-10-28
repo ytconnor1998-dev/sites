@@ -183,14 +183,28 @@ export function fireplace() {
     box(0.5, 0.18, 0.12, 0xf08a24, 0, 0.15, 0.2, { mat: { emissive: 0xff6a10, emissiveIntensity: 2.5, map: null } }));
 }
 export function rug(color = 0xc0504d) { if (typeof color === 'object') { const r = fit('kf:rug_oval_A', { w: 2.8 }); if (r) return r; } return cyl(1.4, 1.4, 0.02, color, 0, 0.011, 0, { seg: 24, shadow: false }); }
+export const COUNTER_H = 0.92;
+// the corner shop: a wooden counter with a till, not a kitchen
+export function shopCounter(len = 3) {
+  const g = group(box(len, 0.95, 0.7, C.woodDark, 0, 0.475, 0, { sharp: true }), box(len + 0.1, 0.06, 0.8, C.wood, 0, 0.98, 0, { sharp: true }));
+  for (let i = 0; i < Math.floor(len / 0.6); i++) g.add(box(0.5, 0.7, 0.02, C.wood, -len / 2 + 0.35 + i * 0.6, 0.45, 0.36, { sharp: true }));
+  g.add(box(0.36, 0.22, 0.3, 0x3a3a3e, len / 2 - 0.5, 1.12, 0, { sharp: true }), box(0.3, 0.12, 0.02, 0x7ad07a, len / 2 - 0.5, 1.26, -0.12, { rot: [-0.4, 0, 0], mat: { emissive: 0x2a8a2a, map: null } }));
+  const sweets = [0xd9534f, 0xf2b631, 0x6aa84f, 0x9b59b6, 0x5b8bd9, 0xf7a8bd];
+  for (let i = 0; i < 6; i++) g.add(cyl(0.07, 0.07, 0.2, sweets[i], -len / 2 + 0.3 + i * 0.18, 1.11, 0.15, { mat: { transparent: true, opacity: 0.8 } }));
+  return g;
+}
 export function counter(len = 3) {
   if (lib['kk:kitchencounter_straight_A_backsplash']) {
-    // a run of cosy KayKit units: counter, sink in the middle, hob at the end
-    const g = new THREE.Group(), n = Math.max(2, Math.round(len / 1.0));
+    // a run of KayKit units all at one worktop height: counters, the sink, and a hob sitting on top of the last one
+    const g = new THREE.Group(), n = Math.max(2, Math.round(len / 1.0)), uw = len / n;
     for (let i = 0; i < n; i++) {
-      const kind = i === Math.floor(n / 2) ? 'kk:kitchencounter_sink_backsplash' : i === n - 1 ? 'kk:stove_multi_countertop' : i % 2 ? 'kk:kitchencounter_straight_A_decorated' : 'kk:kitchencounter_straight_A_backsplash';
-      const c = fit(kind, { w: len / n }) || fit('kk:kitchencounter_straight_A_backsplash', { w: len / n });
-      c.position.x = -len / 2 + (i + 0.5) * (len / n); g.add(c);
+      const kind = i === Math.floor(n / 2) ? 'kk:kitchencounter_sink_backsplash' : 'kk:kitchencounter_straight_A_backsplash';
+      const c = fit(kind, { w: uw }) || fit('kk:kitchencounter_straight_A_backsplash', { w: uw });
+      // KayKit units are 2 wide, 2 deep, with the worktop at 0.93: squash to a real worktop height and depth
+      const s = uw / 2;
+      c.scale.y *= COUNTER_H / (0.93 * s); c.scale.z *= 0.62;
+      c.position.x = -len / 2 + (i + 0.5) * uw; g.add(c);
+      if (i === n - 1) { const hob = fit('kk:stove_multi_countertop', { w: uw * 0.8 }); if (hob) { hob.position.set(c.position.x, COUNTER_H, 0); g.add(hob); } }
     }
     return g;
   }
@@ -201,7 +215,12 @@ export function counter(len = 3) {
   }
   return group(box(len, 0.9, 0.65, 0xe8e2d4, 0, 0.45, 0), box(len + 0.05, 0.06, 0.7, 0x5c5c66, 0, 0.93, 0));
 }
-export function fridge() { const real = fit('kk:fridge_A_decorated', { h: 1.9 }) || fit('f:kitchenFridge', { h: 1.9 }); if (real) return real; return fridgeOld(); }
+export function fridge() {
+  // the KayKit fridge is an American double: slim it to a British one that fits the kitchen
+  const real = fit('kk:fridge_A_decorated', { h: 1.85 });
+  if (real) { const m = real.children[0], b = new THREE.Box3().setFromObject(m), sz = b.getSize(new THREE.Vector3()); m.scale.x *= 0.82 / sz.x; m.scale.z *= 0.7 / sz.z; m.updateMatrixWorld(true); const c = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()); m.position.x -= c.x; m.position.z -= c.z; return real; }
+  return fit('f:kitchenFridge', { h: 1.9 }) || fridgeOld();
+}
 function fridgeOld() { return group(box(0.75, 1.9, 0.7, 0xeeeeee, 0, 0.95, 0), box(0.04, 0.5, 0.04, 0x999999, -0.28, 1.3, 0.36)); }
 export function door(color = 0x3b6ea5) { return group(box(1.0, 2.1, 0.08, color, 0, 1.05, 0), ball(0.04, C.gold, 0.38, 1.0, 0.06)); }
 
@@ -411,7 +430,7 @@ export function car(color = 0x3b6ea5) {
   const table = group(box(1.4, 0.05, 0.7, 0xeeeeee, 0, 0.75, 0), box(0.05, 0.75, 0.6, 0x999999, -0.6, 0.37, 0), box(0.05, 0.75, 0.6, 0x999999, 0.6, 0.37, 0));
   const junk = [0xd9534f, 0xf2b631, 0x6aa84f, 0x9b59b6, 0x5b8bd9];
   for (let i = 0; i < 5; i++) table.add(box(0.15 + Math.random() * 0.15, 0.1 + Math.random() * 0.25, 0.15, junk[i], -0.5 + i * 0.25, 0.85, 0));
-  table.position.set(0, 0, -2.8);
+  table.position.set(0, 0, -2.8); table.name = 'bootTable';
   g.add(table);
   return g;
 }
@@ -489,9 +508,16 @@ export function coin(r = 0.12, shadow = true, golden = false) {
   m.castShadow = shadow;
   return m;
 }
+// The Thing: a huge taped-up cardboard box. children[0] is the lid, which flies off in the endings.
 export function theThing() {
-  const g = group(cone(1.2, 2.3, 0xe9e1cf, 0, 1.15, 0, { seg: 7 }), cyl(1.25, 1.3, 0.25, 0xd8cfb8, 0, 0.12, 0, { seg: 7 }),
-    box(0.5, 0.3, 0.02, 0xffffff, 0.7, 1.0, 0.95, { rot: [0, 0.4, 0.2] }));
+  const card = 0xc8a070, dark = 0xa8834f, tape = 0xd8c48a;
+  const lid = group(box(1.62, 0.12, 1.42, card, 0, 0.06, 0, { sharp: true }), box(0.22, 0.13, 1.44, tape, 0, 0.065, 0, { sharp: true }));
+  lid.position.y = 1.62;
+  const g = group(lid, box(1.6, 1.62, 1.4, card, 0, 0.81, 0, { sharp: true }), box(1.62, 0.04, 1.42, dark, 0, 0.02, 0, { sharp: true }),
+    box(0.22, 1.62, 0.02, tape, 0, 0.81, 0.71, { sharp: true }), box(0.22, 1.62, 0.02, tape, 0, 0.81, -0.71, { sharp: true }));
+  for (const [text, x, y, z, ry, w] of [['FRAGILE', 0, 1.1, 0.712, 0, 1.0], ['THIS WAY UP ↑', 0, 0.45, 0.712, 0, 1.1], ['DO NOT OPEN TILL PAID — G.', 0.81, 1.0, 0, Math.PI / 2, 1.2], ['HANDLE WITH CARE', -0.81, 1.0, 0, -Math.PI / 2, 1.2]]) {
+    const s = signPlane(text, w, 0.22, { bg: '#c8a070', color: text === 'FRAGILE' ? '#b02a1f' : '#3a2a1a' }); s.position.set(x, y, z); s.rotation.y = ry; g.add(s);
+  }
   return g;
 }
 
@@ -835,6 +861,38 @@ export function washingMachine() {
 export function basket() { return group(cyl(0.3, 0.25, 0.45, 0xd8b878, 0, 0.23, 0, { seg: 12 }), ball(0.25, 0x5b8bd9, 0.05, 0.45, 0, { scale: [1, 0.4, 1] }), ball(0.18, 0xd9534f, -0.1, 0.5, 0.05, { scale: [1, 0.4, 1] })); }
 export function rockingHorse() { return group(box(1.0, 0.06, 0.3, C.woodDark, 0, 0.1, 0, { rot: [0, 0, 0] }), box(0.7, 0.3, 0.25, 0xf3eee4, 0, 0.6, 0), box(0.25, 0.35, 0.2, 0xf3eee4, 0.4, 0.85, 0), box(0.06, 0.45, 0.06, C.woodDark, -0.25, 0.3, 0), box(0.06, 0.45, 0.06, C.woodDark, 0.25, 0.3, 0), box(0.25, 0.08, 0.26, 0xd9534f, 0, 0.78, 0)); }
 export function cardboardBox(label) { const g = group(box(0.7, 0.5, 0.5, 0xc8a070, 0, 0.25, 0), box(0.72, 0.04, 0.2, 0xb08a5a, 0, 0.5, -0.12)); if (label) { const l = signPlane(label, 0.5, 0.16, { bg: '#f3eee4', color: '#2d2118' }); l.position.set(0, 0.3, 0.26); g.add(l); } return g; }
+
+// ---------- the junk you find, as little 3D things for the stall and the museum shelf ----------
+// each is roughly 0.2-0.3m across, sitting on y = 0
+export function junkModel(id) {
+  const gold = { mat: { metalness: 0.7, roughness: 0.3 } }, silver = { mat: { metalness: 0.8, roughness: 0.25 } };
+  const glass = (c) => ({ mat: { transparent: true, opacity: 0.55, roughness: 0.05, map: null } });
+  switch (id) {
+    case 'remote': return group(box(0.06, 0.03, 0.2, 0x2a2a2e, 0, 0.015, 0), box(0.02, 0.006, 0.02, 0xd9534f, 0, 0.033, 0.07), ...[0, 1, 2].map((i) => box(0.035, 0.005, 0.012, 0x8a8a8a, 0, 0.032, -0.02 + i * 0.03)));
+    case 'lego': { const g = group(box(0.16, 0.1, 0.08, 0xd9534f, 0, 0.05, 0)); for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) g.add(cyl(0.015, 0.015, 0.02, 0xd9534f, -0.06 + i * 0.04, 0.11, -0.02 + j * 0.04)); return g; }
+    case 'phone': return group(box(0.08, 0.025, 0.16, 0x3a3a46, 0, 0.0125, 0), box(0.065, 0.004, 0.06, 0x8ac8e8, 0, 0.027, -0.035, { mat: { emissive: 0x2a5a7a, map: null } }), ...[0, 1, 2].map((r) => box(0.06, 0.004, 0.012, 0x6a6a76, 0, 0.027, 0.02 + r * 0.02)));
+    case 'ticket': return group(box(0.14, 0.004, 0.07, 0xf2e6c8, 0, 0.002, 0, { rot: [0, 0.3, 0] }), box(0.14, 0.005, 0.015, 0xd9534f, 0, 0.003, -0.02, { rot: [0, 0.3, 0] }));
+    case 'foreign': return group(cyl(0.05, 0.05, 0.012, 0xc0c4c8, 0, 0.006, 0, { seg: 16, ...silver }), cyl(0.032, 0.032, 0.014, 0xd8b850, 0, 0.007, 0, { seg: 16, ...gold }));
+    case 'marble': return group(ball(0.045, 0x5bb0e0, 0, 0.045, 0, { mat: { transparent: true, opacity: 0.75, roughness: 0.05, map: null } }), ball(0.02, 0xf2b631, 0.005, 0.045, 0.005));
+    case 'toycar': { const c = fit('car', { d: 0.26, n: 3 }); if (c) return c; return group(box(0.12, 0.05, 0.24, 0xd9534f, 0, 0.04, 0), box(0.1, 0.04, 0.12, 0xbfe0f0, 0, 0.085, -0.01)); }
+    case 'sock': return group(box(0.07, 0.03, 0.18, 0x6aa84f, 0, 0.015, 0), box(0.07, 0.03, 0.1, 0x6aa84f, 0, 0.015, 0.12, { rot: [0, 0.7, 0] }), box(0.072, 0.032, 0.03, 0xffffff, 0, 0.016, -0.08));
+    case 'bottlecap': return group(cyl(0.035, 0.035, 0.02, 0xd9534f, 0, 0.01, 0, { seg: 14, ...silver }));
+    case 'spoon': return group(box(0.025, 0.008, 0.16, 0xc8ccd0, 0, 0.006, 0.02, silver), ball(0.035, 0xc8ccd0, 0, 0.012, -0.09, { scale: [1, 0.3, 1.3], ...silver }));
+    case 'horseshoe': { const t = part(new THREE.TorusGeometry(0.07, 0.016, 8, 16, Math.PI * 1.4), 0x6a6a72, 0, 0.016, 0, { rot: [Math.PI / 2, 0, 0.9], ...silver }); return group(t); }
+    case 'pipe': return group(cyl(0.012, 0.012, 0.16, 0xe8e0d0, 0, 0.012, 0.02, { rot: [Math.PI / 2, 0, 0] }), cyl(0.03, 0.022, 0.06, 0xe8e0d0, 0, 0.04, -0.07));
+    case 'soldier': return group(box(0.04, 0.06, 0.03, 0x2a3a6a, 0, 0.03, 0), box(0.045, 0.05, 0.03, 0xc8231f, 0, 0.085, 0), ball(0.018, 0xf1c39b, 0, 0.125, 0), cyl(0.02, 0.022, 0.05, 0x1a1a1a, 0, 0.16, 0));
+    case 'bottle': { const b = fit('food:soda-bottle', { h: 0.24, tint: 0x6a9a7a, tintMat: 'glass' }); if (b) return b; return group(cyl(0.045, 0.045, 0.16, 0x6a9a7a, 0, 0.08, 0, glass()), cyl(0.018, 0.03, 0.07, 0x6a9a7a, 0, 0.195, 0, glass())); }
+    case 'key': return group(part(new THREE.TorusGeometry(0.03, 0.009, 8, 14), 0xc8a050, -0.06, 0.009, 0, { rot: [Math.PI / 2, 0, 0], ...gold }), box(0.11, 0.012, 0.014, 0xc8a050, 0.02, 0.009, 0, gold), box(0.012, 0.012, 0.03, 0xc8a050, 0.065, 0.009, 0.015, gold), box(0.012, 0.012, 0.022, 0xc8a050, 0.045, 0.009, 0.011, gold));
+    case 'roman': return group(cyl(0.045, 0.045, 0.012, 0xd8a83a, 0, 0.006, 0, { seg: 9, ...gold }), ball(0.018, 0xb88a2a, 0, 0.014, 0, { scale: [1, 0.25, 1.2], ...gold }));
+    case 'fossil': { const g = group(cyl(0.075, 0.08, 0.04, 0x9a8a72, 0, 0.02, 0, { seg: 10 })); g.add(part(new THREE.TorusGeometry(0.04, 0.012, 6, 14, Math.PI * 1.7), 0xd8c8a8, 0, 0.042, 0, { rot: [Math.PI / 2, 0, 0] }), ball(0.016, 0xd8c8a8, 0.012, 0.045, 0.01)); return g; }
+    case 'tamagotchi': return group(ball(0.055, 0xf7a8bd, 0, 0.06, 0, { scale: [1, 1.15, 0.6] }), box(0.05, 0.04, 0.005, 0xb8e0a8, 0, 0.07, 0.033, { mat: { emissive: 0x4a7a3a, map: null } }), ...[-0.02, 0, 0.02].map((x) => ball(0.008, 0x6a3a8a, x, 0.035, 0.032)));
+    case 'medal': return group(box(0.05, 0.08, 0.008, 0x3b6ea5, 0, 0.11, 0), box(0.018, 0.08, 0.009, 0xd9534f, 0, 0.11, 0), cyl(0.035, 0.035, 0.01, 0xd8a83a, 0, 0.05, 0, { rot: [Math.PI / 2, 0, 0], seg: 16, ...gold }));
+    case 'ring': return group(part(new THREE.TorusGeometry(0.035, 0.01, 10, 20), 0xe8c050, 0, 0.035, 0, gold), ball(0.016, 0xa8e8ff, 0, 0.072, 0, { mat: { transparent: true, opacity: 0.8, roughness: 0.02, metalness: 0.2, emissive: 0x2a6a8a, map: null } }));
+    case 'crown': { const g = group(cyl(0.06, 0.06, 0.05, 0xe8c050, 0, 0.025, 0, { seg: 10, ...gold })); for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; g.add(cone(0.016, 0.05, 0xe8c050, Math.cos(a) * 0.05, 0.075, Math.sin(a) * 0.05, gold), ball(0.008, 0xd9534f, Math.cos(a) * 0.05, 0.1, Math.sin(a) * 0.05)); } return g; }
+    case 'helmet': return group(ball(0.09, 0xb8b0a0, 0, 0.04, 0, { scale: [1, 0.85, 1.05], ...silver }), box(0.02, 0.07, 0.17, 0xc8231f, 0, 0.13, 0), box(0.19, 0.012, 0.19, 0xb8b0a0, 0, 0.012, 0, silver));
+    default: return null;
+  }
+}
 
 // ---------- town event props ----------
 export function bunting(len) {

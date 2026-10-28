@@ -35,9 +35,21 @@ let sensitivity = 1;
 // ---------- building helpers ----------
 function add(obj, x = 0, y = 0, z = 0, ry = 0) { obj.position.set(x, y, z); obj.rotation.y = ry; scene.add(obj); return obj; }
 function collide(x0, z0, x1, z1) { const c = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(c); return c; }
+// only the parts of a model you could bump into at body height count (tree trunks, not their canopies)
+const _fv = new THREE.Vector3();
+function footprint(obj, maxY = 1.5) {
+  obj.updateMatrixWorld(true);
+  const b = new THREE.Box3(); let n = 0;
+  obj.traverse((o) => {
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+    const pos = o.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / 3000));
+    for (let i = 0; i < pos.count; i += step) { _fv.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); if (_fv.y < maxY) { b.expandByPoint(_fv); n++; } }
+  });
+  return n ? b : new THREE.Box3().setFromObject(obj);
+}
 function collideObj(obj, pad = 0) {
-  const b = new THREE.Box3().setFromObject(obj);
-  collide(b.min.x - pad, b.min.z - pad, b.max.x + pad, b.max.z + pad);
+  const b = footprint(obj);
+  return collide(b.min.x - pad, b.min.z - pad, b.max.x + pad, b.max.z + pad);
 }
 const WALL_TEX = { 0xf3e6c8: 'wallpaper', 0xe8d9f0: 'wallpaper2', 0xe58a6b: 'brick' };
 function texMat(name, rx, ry, color = 0xffffff) { return new THREE.MeshLambertMaterial({ color, map: tex(name, rx, ry) }); }
@@ -118,6 +130,9 @@ function buildLevel() {
   swingDoor(2.4, 5, 1.2, 0, 1, 0x2d5a3a);
   swingDoor(-6.2, -5, 1.2, 0, -1, 0x8a5a3a);
   swingDoor(0, -0.7, 1.4, -Math.PI / 2, 1, 0xf3eee4);
+  scene.add(M.box(0.2, 0.66, 1.4, wc, 0, 2.53, 0, { shadow: false, sharp: true }));   // wall above the inner doorway
+  // brick above the front and back doors on the outside
+  for (const [x, z, oz] of [[3, 5, 0.12], [-5.6, -5, -0.12]]) scene.add(M.box(1.2, 0.62, 0.04, texMat('brick', 0.75, 0.4), x, 2.51, z + oz, { shadow: false, sharp: true }));
   // brick on the outside of the house
   const facade = (x0, z0, x1, z1, ox, oz) => {
     const w = Math.abs(x1 - x0) || 0.04, d = Math.abs(z1 - z0) || 0.04;
@@ -182,13 +197,18 @@ function buildLevel() {
   const fb = new THREE.Box3().setFromObject(fire);
   spots.pig = new THREE.Vector3(Math.max(fb.min.x + 0.25, -6.5), fb.max.y, -2);
   // hall / kitchen
-  const ctr = add(M.counter(4), 4, 0, -4.55); collideObj(ctr);
-  const fr = add(M.fridge(), 6.45, 0, -4.4); collideObj(fr);
+  const ctr = add(M.counter(4), 4, 0, -4.58); collideObj(ctr);
+  const fr = add(M.fridge(), 6.5, 0, -4.5); collideObj(fr);
+  // wall cupboards, a table to eat at, the bin
+  for (const x of [2.5, 3.5]) { const cab = M.fit('kk:kitchencabinet', { w: 0.98 }); if (cab) { cab.children[0].scale.z *= 0.7; add(cab, x, 1.6, -4.72); } }
+  const ktab = M.fit('kk:kitchentable_A', { w: 1.1 }); if (ktab) { add(ktab, 3.3, 0, -2.2); collideObj(ktab); }
+  for (const [z, ry] of [[-1.45, Math.PI], [-2.95, 0]]) { const ch = M.fit('kk:chair_A', { h: 0.85 }); if (ch) add(ch, 3.3, 0, z, ry); }
+  const bin = M.fit('f:trashcan', { h: 0.6 }); if (bin) { add(bin, 1.25, 0, -4.6); collideObj(bin); }
   add(M.rug(0x3b6ea5), 3, 0, 3.6).scale.set(0.5, 1, 0.35);
   const thing = add(M.theThing(), 4.8, 0, 1.6); collideObj(thing, 0.1);
   spots.thing = thing;
   // kitchen: Mum's change jar and the washing machine
-  const mumJar = hitbox(add(M.jar("MUM'S CHANGE"), 3, 0.96, -4.45), 0.7, 0.9, 0.6, 0.3);
+  const mumJar = hitbox(add(M.jar("MUM'S CHANGE"), 2.6, M.COUNTER_H, -4.55), 0.7, 0.9, 0.6, 0.3);
   interact(mumJar, { range: 2.6, prompt: () => LC.game.jarPrompt(), use: () => LC.game.kitchenJar() });
   const wm = add(M.washingMachine(), 6.55, 0, -2.6, -Math.PI / 2); collideObj(wm);
   spots.washer = wm;
@@ -201,7 +221,7 @@ function buildLevel() {
   interact(hatchHit, { range: 3.2, prompt: () => LC.game.hatchPrompt(), use: () => LC.game.hatch() });
   buildMuseum();
   buildDigSites();
-  const thingLabel = M.textSprite('???', { size: 0.42 }); thingLabel.position.set(4.8, 2.75, 1.6); scene.add(thingLabel);
+  const thingLabel = M.textSprite('???', { size: 0.42 }); thingLabel.position.set(4.8, 2.25, 1.6); scene.add(thingLabel);
   spots.thingLabel = thingLabel;
   interact(thing, { range: 3, prompt: () => LC.game.thingPrompt(), use: () => LC.game.tryBuyThing() });
 
@@ -260,7 +280,7 @@ function buildLevel() {
   const shopSign = M.textSprite('CORNER SHOP · SCRATCHCARDS', { size: 0.55, bg: '#2d6a4f', color: '#fffaf0', border: '#fffaf0' });
   shopSign.position.set(0, 3.9, sz0 - 0.2); scene.add(shopSign);
   for (const s of [-1, 1]) add(M.box(2.6, 1.4, 0.05, M.displayMat('charity'), 0, 0, 0, { shadow: false, sharp: true }), s * 3, 1.6, sz0 - 0.12, Math.PI);
-  const counter = add(M.counter(4), 0, 0, 23.6); collideObj(counter);
+  const counter = add(M.shopCounter(4), 0, 0, 23.6); collideObj(counter);
   const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222, char: 'b', q: 'Casual_Bald', tone: 0x8a5a3a }), 0, 0, 24.6, Math.PI); spots.keeper = keeper;
   agents.push({ obj: keeper, update: (dt, t) => { keeper.rotation.y = Math.PI + Math.sin(t * 0.7) * 0.3; } });
   interact(counter, { range: 3, prompt: () => 'Shop counter<small>Treats for helpers and scratch cards</small>', use: () => LC.game.openScreen('corner') });
@@ -514,7 +534,12 @@ function buildMuseum() {
 function setMuseum(list) {
   for (const sp of museum.items) museum.group.remove(sp);
   museum.items = [];
-  list.forEach((icon, i) => { if (!icon) return; const sp = M.iconSprite(icon, 0.32); sp.position.copy(museum.slots[i].position).setY(museum.slots[i].position.y + 0.02); museum.group.add(sp); museum.items.push(sp); });
+  list.forEach((it, i) => {
+    if (!it) return;
+    const m3 = M.junkModel(it.id);
+    if (m3) { m3.scale.multiplyScalar(1.3); m3.position.copy(museum.slots[i].position).setY(museum.slots[i].position.y - 0.23); m3.rotation.y = 0.4; museum.group.add(m3); museum.items.push(m3); return; }
+    const sp = M.iconSprite(it.icon, 0.32); sp.position.copy(museum.slots[i].position).setY(museum.slots[i].position.y + 0.02); museum.group.add(sp); museum.items.push(sp);
+  });
 }
 function setStallItems(list) {
   for (const sp of stall.items) stall.group.remove(sp);
@@ -524,8 +549,10 @@ function setStallItems(list) {
     if (!hit) return;
     hit.visible = i < (stall.size || 6);
     if (!it) return;
-    const sp = M.iconSprite(it.icon, 0.3);
-    sp.position.copy(hit.position).setY(0.92);
+    // the real thing, sat on the table, turning slowly so you can see it
+    const sp = M.junkModel(it.id) || M.iconSprite(it.icon, 0.3);
+    sp.position.copy(hit.position).setY(sp.isSprite ? 0.92 : 0.75);
+    if (!sp.isSprite) { sp.scale.multiplyScalar(1.25); sp.rotation.y = i * 0.9; }
     const tag = M.textSprite({ cheap: '£', fair: '££', cheeky: '£££' }[it.price], { size: 0.1, bg: TAG_COLORS[it.price], color: '#fff', border: '#2d2118' });
     tag.position.copy(hit.position).add(new THREE.Vector3(0.12, -0.1, 0.12));
     stall.group.add(sp, tag);
@@ -690,7 +717,7 @@ function buildUnderground() {
 const doors = [];
 function swingDoor(hx, hz, w, rotY, dir, color) {
   const g = new THREE.Group(); g.position.set(hx, 0, hz); g.rotation.y = rotY;
-  g.add(M.box(w - 0.06, 2.15, 0.06, color, w / 2, 1.075, 0, { sharp: true }));
+  g.add(M.box(w - 0.06, 2.18, 0.06, color, w / 2, 1.09, 0, { sharp: true }));
   // raised panels on both faces
   const panel = new THREE.Color(color).multiplyScalar(0.85).getHex();
   for (const s of [-1, 1]) for (const z of [0.04, -0.04]) g.add(M.box(w - 0.4, 0.75, 0.02, panel, w / 2, 1.075 + s * 0.5, z, { sharp: true }));
@@ -750,10 +777,14 @@ function skyline() {
 function dressWorld() {
   // living room and kitchen
   qput('qi:Houseplant_1', { h: 0.7 }, 6.4, 0, 4.4);
-  qput('qi:Houseplant_2', { h: 0.35 }, 2.8, 0.92, -4.6);
-  qput('qf:Bread', { w: 0.32 }, 4.6, 0.92, -4.6, 0.4);
-  qput('qf:CookingPot', { w: 0.42 }, 5.4, 0.92, -4.55);
-  qput('qf:Apple', { h: 0.09 }, 3.6, 0.92, -4.5); qput('qf:Banana', { h: 0.12 }, 3.75, 0.92, -4.6, 1);
+  qput('qi:Houseplant_2', { h: 0.35 }, 2.2, M.COUNTER_H, -4.7);
+  qput('qf:Bread', { w: 0.32 }, 3.25, M.COUNTER_H, -4.6, 0.4);
+  qput('f:toaster', { w: 0.3 }, 3.75, M.COUNTER_H, -4.68);
+  qput('qf:CookingPot', { w: 0.38 }, 5.5, M.COUNTER_H + 0.12, -4.58);
+  qput('qf:Apple', { h: 0.09 }, 3.2, 0.78, -2.1); qput('qf:Banana', { h: 0.12 }, 3.42, 0.78, -2.3, 1);
+  // a real fire in the fireplace
+  const logs = qput('qd:Woodfire', { h: 0.38 }, -6.62, 0.02, -2, Math.PI / 2);
+  if (logs) logs.traverse((o) => { if (o.isMesh) o.userData.noAO = true; });
   // the park statue: a horse. The Duke it belonged to was never found
   const horse = qput('qd:Statue_Horse', { h: 4.2 }, 34, 0, 51, Math.PI / 2, true);
   if (horse) interact(horse, { range: 4, prompt: () => 'Read the plaque', use: () => LC.game.say(pick(['"THE DUKE\'S HORSE. 1815." The Duke was never found. The horse looks like it knows something.', '"PLEASE DO NOT CLIMB THE HORSE." Somebody has climbed the horse. There\'s a traffic cone on its head in your memory.', 'A pigeon is sat on the horse. The pigeon looks more important than the horse.'])) });
@@ -1094,11 +1125,11 @@ function buildTown() {
   const busSign = M.signPlane('ACACIA ROAD', 2.4, 0.4, { bg: '#3a5a7a' }); busSign.position.set(-30, 2.25, 8.79); scene.add(busSign);
   for (const [x, z, ry, c] of [[-47, 11, Math.PI / 2, 0xd9534f], [-36, 11, Math.PI / 2, 0x6aa84f], [24, 11, Math.PI / 2, 0x3a3a3a], [48, 11, Math.PI / 2, 0xf2b631], [-38, 15, -Math.PI / 2, 0x3b6ea5], [-2, 15, -Math.PI / 2, 0x9b59b6], [16, 15, -Math.PI / 2, 0xd27a5a], [36, 15, -Math.PI / 2, 0x8f8f8f]]) {
     const car = add(M.car(c), x, 0, z, ry);
-    car.children.filter((k) => k.isGroup).forEach((k) => (k.visible = false)); // parked cars, no car-boot table
+    { const t = car.getObjectByName('bootTable'); if (t) t.visible = false; } // parked cars, no car-boot table
     collideObj(car);
   }
   const bcar = add(M.car(0xb8c0c8), -18, 0, 11, Math.PI / 2);
-  bcar.children.filter((k) => k.isGroup).forEach((k) => (k.visible = false));
+  { const t = bcar.getObjectByName('bootTable'); if (t) t.visible = false; }
   collideObj(bcar);
   const plate = M.signPlane('BR1 AN', 0.7, 0.18, { bg: '#f2d23a', color: '#111' }); plate.position.set(-16.1, 0.55, 11); plate.rotation.y = Math.PI / 2; scene.add(plate);
   interact(bcar, { range: 3, prompt: () => LC.game.brianCarPrompt(), use: () => LC.game.brianCar() });
@@ -1749,7 +1780,7 @@ function burstAt(pos, n = 6, color = null) {
     particles.push({ m, vel: new THREE.Vector3(rand(-2, 2), rand(2.5, 5), rand(-2, 2)), life: rand(0.6, 1), spin: rand(5, 15) });
   }
 }
-// ---------- ending scenes: pay, pull the sheet off, turn round, and someone's there ----------
+// ---------- ending scenes: pay, open the box, turn round, and someone's there ----------
 const cut = { active: false, steps: [], i: 0, wait: 0, props: [], actors: {}, tw: [], done: null, yaw: 0, sub: null };
 const CUT_NAMES = { shopkeeper: 'Shopkeeper', nan: 'Nan', piggy: 'The Thing', goose: 'The Goose', dev: 'The Developer', mum: 'Mum', aussie: 'Bazza', buttonman: 'The Button Baron', brian: 'Brian' };
 const CUT_HEADS = { goose: 2.15, piggy: 2.9, dev: 1.55, buttonman: 2.4 };
@@ -1823,7 +1854,7 @@ function cutStep() {
   if (type === 'reveal') {
     subtitle(''); LC.audio.sfx('open');
     const sheet = spots.thing.children[0];
-    tween(1.4, (k) => { sheet.position.y = 1.15 + k * 2.5; sheet.rotation.z = k * 0.8; sheet.scale.setScalar(1 - k * 0.6); }, () => { spots.thing.visible = false; spots.thingLabel.visible = false; });
+    tween(1.4, (k) => { sheet.position.y = 1.62 + k * 2.5; sheet.rotation.z = k * 1.2; sheet.position.x = k * 0.8; sheet.scale.setScalar(1 - k * 0.6); }, () => { spots.thing.visible = false; spots.thingLabel.visible = false; });
     setTimeout(() => { revealProp(a); LC.audio.sfx('sparkle'); }, 700);
     cut.wait = 2.2; return;
   }
@@ -1910,7 +1941,7 @@ function cutReset() {
   for (const p of cut.props) scene.remove(p);
   cut.props = []; cut.actors = {};
   subtitle(''); talkEnd(true); bubble(false);
-  const sheet = spots.thing.children[0]; sheet.position.y = 1.15; sheet.rotation.set(0, 0, 0); sheet.scale.setScalar(1);
+  const sheet = spots.thing.children[0]; sheet.position.set(0, 1.62, 0); sheet.rotation.set(0, 0, 0); sheet.scale.setScalar(1);
   spots.thing.visible = true; spots.thingLabel.visible = true;
   document.getElementById('fade').classList.remove('show', 'white');
   document.body.classList.remove('cutscene');
@@ -2163,8 +2194,20 @@ function surfaceUnder() {
 }
 function tryMove(dx, dz) {
   const nx = player.pos.x + dx, nz = player.pos.z + dz;
+  // already inside something (spawned in it, or it moved onto you): let you walk out of it
+  if (blocked(player.pos.x, player.pos.z)) { player.pos.x = nx; player.pos.z = nz; return; }
   if (!blocked(nx, player.pos.z)) player.pos.x = nx;
   if (!blocked(player.pos.x, nz)) player.pos.z = nz;
+}
+// if you're stuck inside furniture for a moment, nudge you to the nearest clear floor
+let stuckFor = 0;
+function unstickPlayer(dt) {
+  if (cut.active || area === 'loft' || !blocked(player.pos.x, player.pos.z)) { stuckFor = 0; return; }
+  if ((stuckFor += dt) < 0.6) return;
+  for (let r = 0.3; r < 4; r += 0.3) for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+    const x = player.pos.x + Math.cos(a) * r, z = player.pos.z + Math.sin(a) * r;
+    if (!blocked(x, z)) { player.pos.x = x; player.pos.z = z; stuckFor = 0; return; }
+  }
 }
 function updatePlayer(dt) {
   const frozen = LC.game.isBlocked() || card.active;
@@ -2215,8 +2258,28 @@ function updateFocus() {
     if (h.distance <= def.range) f = def;
     break;
   }
+  // missed by a hair: take the nearest thing roughly in front of you and within reach
+  if (!f) f = nearbyInteract();
   focus = f;
   LC.game.setPrompt(f && !LC.game.isBlocked() && !card.active ? f.prompt() : '');
+}
+const _iv = new THREE.Vector3(), _fwd = new THREE.Vector3();
+function nearbyInteract() {
+  camera.getWorldDirection(_fwd);
+  let best = null, bestScore = Infinity;
+  for (const o of interactables) {
+    if (!o.parent || !o.visible) continue;
+    const def = o.userData.interact; if (!def) continue;
+    o.getWorldPosition(_iv); _iv.y += 0.5;          // aim at the middle of it, not its feet
+    const dx = _iv.x - camera.position.x, dy = _iv.y - camera.position.y, dz = _iv.z - camera.position.z;
+    const flat = Math.hypot(dx, dz), d = Math.hypot(dx, dy, dz);
+    if (flat > Math.min(def.range, 2.4) || d < 0.05) continue;
+    const cos = (dx * _fwd.x + dy * _fwd.y + dz * _fwd.z) / d;
+    if (cos < 0.82) continue;                     // within about 35 degrees of where you're looking
+    const score = d * (2 - cos);
+    if (score < bestScore) { bestScore = score; best = def; }
+  }
+  return best;
 }
 function useFocus(auto) { if (focus && !LC.game.isBlocked()) { view.swing = 1; focus.use(auto); } }
 
@@ -2290,7 +2353,7 @@ function removeActor(o) { scene.remove(o); const i = agents.indexOf(o.userData.a
 
 function goldenBearing() {
   const g = pickups.find((p) => p.kind === 'golden');
-  const target = guideTarget || (g ? g.obj.position : stallWaiter ? stall.pos : null);
+  const target = guideTarget;   // only the tutorial points you somewhere; everything else you find yourself
   if (!target) return null;
   const dx = target.x - player.pos.x, dz = target.z - player.pos.z;
   const ang = Math.atan2(-dx, -dz) - player.yaw;
@@ -2456,14 +2519,15 @@ function setQuality(level) {
   fpsWatch.t = 0; fpsWatch.n = 0;
 }
 // Auto: watch the frame rate while you play, and step down a level if the computer is struggling
-const fpsWatch = { auto: false, t: 0, n: 0, warm: 0 };
+const fpsWatch = { auto: false, t: 0, n: 0, warm: 0, dropped: false };
 function watchFps(dt) {
-  if (!fpsWatch.auto || !locked || quality === 'low') return;
+  if (!fpsWatch.auto || !locked) return;
   if ((fpsWatch.warm += dt) < 3) return;   // let it settle after loading or changing level
   fpsWatch.t += dt; fpsWatch.n++;
   if (fpsWatch.t < 4) return;
   const fps = fpsWatch.n / fpsWatch.t; fpsWatch.t = 0; fpsWatch.n = 0;
-  if (fps < 42) { const next = quality === 'high' ? 'medium' : 'low'; setQuality(next); fpsWatch.warm = 0; if (LC.game.onAutoQuality) LC.game.onAutoQuality(next, Math.round(fps)); }
+  if (fps < 42 && quality !== 'low') { const next = quality === 'high' ? 'medium' : 'low'; fpsWatch.dropped = true; setQuality(next); fpsWatch.warm = 0; if (LC.game.onAutoQuality) LC.game.onAutoQuality(next, Math.round(fps)); }
+  else if (fps > 58 && quality === 'medium' && !fpsWatch.dropped) { setQuality('high'); fpsWatch.warm = 0; }
 }
 function addAO() {
   const ao = new GTAOPass(scene, camera, innerWidth, innerHeight);
@@ -2619,6 +2683,7 @@ function frame(now) {
   last = now; time += dt;
   if (menuCam) { menuT += dt; player.pos.set(-4 + Math.sin(menuT * 0.035) * 5, 0, 17.2); player.yaw = -0.35 + Math.sin(menuT * 0.05) * 0.3; player.pitch = 0.02; }
   updatePlayer(dt);
+  unstickPlayer(dt);
   updateDoors(dt);
   updateFocus();
   updateViewModel(dt, keys.has('KeyW') || keys.has('KeyA') || keys.has('KeyS') || keys.has('KeyD'));
@@ -2671,6 +2736,8 @@ function init() {
   canvas = document.getElementById('view');
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  // laptops can run out of graphics memory: save, drop to Low graphics and reload rather than freezing
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); if (LC.game.onContextLost) LC.game.onContextLost(); });
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -2773,7 +2840,7 @@ LC.world = {
   isCrouching: () => crouching,
   setFlip: (on) => { flipTarget = on ? 1 : 0; },
   setSensitivity: (s) => { sensitivity = s; },
-  setQuality: (level) => { fpsWatch.auto = level === 'auto'; fpsWatch.warm = 0; setQuality(level === 'auto' ? 'high' : level); resize(); },
+  setQuality: (level) => { fpsWatch.auto = level === 'auto'; fpsWatch.warm = 0; fpsWatch.dropped = false; setQuality(level === 'auto' ? 'medium' : level); resize(); },
   quality: () => quality,
   setDepthText: (t) => spots.depthSign && spots.depthSign.userData.setText(t),
   setThingText: (t) => spots.thingLabel && spots.thingLabel.userData.setText(t),
@@ -2805,6 +2872,7 @@ LC.world = {
   // for testing: put the camera somewhere and use whatever is in front of it
   debug: {
     camZ: () => +player.pos.z.toFixed(2),
+    colliders: () => colliders.filter((c) => !c.off).map((c) => [c.x0, c.z0, c.x1, c.z1].map((v) => +v.toFixed(2))),
     evProps: () => (ev.group ? ev.group.children.map((c) => [+c.position.x.toFixed(1), +c.position.z.toFixed(1)]) : []),
     lookAt: (fx, fz, tx, tz, pitch = -0.05) => { player.pos.set(fx, 0, fz); player.yaw = Math.atan2(-(tx - fx), -(tz - fz)); player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); return focus && focus.prompt(); },
     view: (x, z, yaw, pitch = -0.1) => { player.pos.set(x, 0, z); player.yaw = yaw; player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); },
@@ -2813,5 +2881,6 @@ LC.world = {
     scratch: (rows = 3) => { for (let r = 0; r < rows; r++) for (let i = 0; i <= 20; i++) { card.cursor.x = 0.1 + (r % 2 ? 20 - i : i) * 0.04; card.cursor.y = 0.36 + r * 0.09; placeCoin(); if (!card.done) scratchAt(); } },
     hits: () => { camera.updateMatrixWorld(); ray.setFromCamera(center, camera); ray.far = 6; return ray.intersectObjects(interactables, true).map((h) => `${h.distance.toFixed(2)} ${h.object.userData.interact ? h.object.userData.interact.prompt().slice(0, 30) : '-'} vis:${h.object.visible}`); },
   },
+  inFront: (d = 1.8) => { const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw); let x = player.pos.x + fx * d, z = player.pos.z + fz * d; if (blocked(x, z, 0.3)) { x = player.pos.x - fx * d; z = player.pos.z - fz * d; } return [x, z]; },
   teleportHome: () => { player.pos.set(-3.5, 0, 0.6); player.yaw = Math.PI; player.pitch = -0.12; },
 };

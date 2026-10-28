@@ -257,7 +257,7 @@ LC.ENDINGS.push({ id: 'brian', title: 'Brian Got It', icon: '😤', lines: [
   'He is holding a cheque for £1,000,000,000,000.',
   '"Your grandad said whoever pays first gets it," he says.',
   'He wheels The Thing out of your hall.',
-  'He looks under the sheet. His face goes white.',
+  'He peeks inside the box. His face goes white.',
   'He wheels it back in and leaves without a word. You never find out why.' ] });
 LC.RANDOM_ENDINGS = ['mealdeal', 'moon', 'scratch', 'piggy', 'goose', 'dev', 'dream'];
 
@@ -308,7 +308,7 @@ LC.NOTES = [
 `Things it could be:
 - a hovercraft
 - a horse (please)
-- a smaller Thing inside a bigger sheet
+- a smaller box inside a bigger box
 - infinite Haribo
 - a portal
 - Grandad (no)
@@ -423,7 +423,7 @@ LC.TEXTS = [
   { id: 'mum3', from: 'Mum', when: (s) => (s.gens.pigeons || 0) >= 1, msgs: ['Why are there 40 pigeons on the roof', 'They are looking at me', 'One of them has a tiny briefcase'] },
   { id: 'unknown2', from: 'Unknown number', when: (s) => s.lifetime >= 1e6, msgs: ['honk'] },
   { id: 'brian3', from: 'Brian (next door)', when: (s) => s.lifetime >= 1e7, msgs: ["OK how are you doing this", "I've been digging for three days", "I found a sock"] },
-  { id: 'grandad1', from: 'Grandad', when: (s) => s.lifetime >= 1e9, msgs: ["Hello. It's Grandad. Nan showed me how to text.", 'Proud of you. Keep going.', "Don't let Brian peek under the sheet."] },
+  { id: 'grandad1', from: 'Grandad', when: (s) => s.lifetime >= 1e9, msgs: ["Hello. It's Grandad. Nan showed me how to text.", 'Proud of you. Keep going.', "Don't let Brian peek in the box."] },
   { id: 'nan3', from: 'Nan', when: (s) => s.lifetime >= 30, msgs: ['Your grandad never walked past that red phone box without checking the little coin flap.', 'Said it paid for his paper every morning.'] },
   { id: 'mate1', from: 'Jamal (school)', when: (s) => s.lifetime >= 120, msgs: ['yo r u coming to the park', 'someone said u can get money out the fountain??', 'i got 30p and a duck bit me'] },
   { id: 'mum4', from: 'Mum', when: (s) => s.lifetime >= 400, msgs: ["If you're going to the park, take a bag for the litter under the benches.", 'You would not BELIEVE what people drop.'] },
@@ -649,7 +649,7 @@ LC.UNDER_CHAT = {
 LC.LETTERS = [
   { id: 'l1', where: 'loft box', title: 'If you are reading this', body: `If you're reading this, you've found my boxes. Good. Nosy, like me.
 
-I've left you something in the hall. Don't let Brian look under the sheet. He's been trying since 1983.
+I've left you something in the hall. Don't let Brian look in the box. He's been trying since 1983.
 
 Start with the sofa. You'll see why.
 
@@ -715,9 +715,9 @@ Your Nan thinks I'm daft. She's right. Look after her.
 The best things in life are second-hand. Except socks.
 
 - Ken` },
-  { id: 'l12', where: 'The Thing', title: 'Pinned to the sheet', body: `You did it. A trillion pounds. I knew you would.
+  { id: 'l12', where: 'The Thing', title: 'Taped to the box', body: `You did it. A trillion pounds. I knew you would.
 
-Whatever is under this sheet, remember: it was never about the money.
+Whatever is in this box, remember: it was never about the money.
 
 It was about checking down the back of the sofa.
 
@@ -859,7 +859,7 @@ LC.CHALLENGES = [
 // ['narrate', line] a caption at the bottom · ['act', name] a little bit of action · ['wait', secs]
 LC.ENDING_SCENES = {
   mealdeal: [
-    ['pay'], ['reveal', 'mealdeal'], ['narrate', 'Under the sheet: a sandwich, a packet of crisps and a drink.'],
+    ['pay'], ['reveal', 'mealdeal'], ['narrate', 'Inside the box: a sandwich, a packet of crisps and a drink.'],
     ['turn'], ['actor', 'shopkeeper', 'behind'],
     ['say', 'shopkeeper', 'That\'s your meal deal, love. Took me eleven years to count all them coins.'],
     ['say', 'shopkeeper', 'Sandwich, crisps, drink. Lovely.'],
@@ -867,7 +867,7 @@ LC.ENDING_SCENES = {
     ['narrate', 'You check your pockets. You have nothing left.'],
     ['say', 'shopkeeper', 'Carry it in your hands, then.'] ],
   moon: [
-    ['pay'], ['reveal', 'moon'], ['narrate', 'Under the sheet, floating in your hall... is the Moon.'],
+    ['pay'], ['reveal', 'moon'], ['narrate', 'The box falls open. Floating in your hall... is the Moon.'],
     ['turn'], ['actor', 'nan', 'behind'],
     ['say', 'nan', 'Your grandad always said he\'d buy you the Moon one day.'],
     ['say', 'nan', 'Go on then. Have a look.'],
@@ -893,7 +893,7 @@ LC.ENDING_SCENES = {
     ['act', 'piggyLeave'],
     ['narrate', 'It walks out of the front door and off into the sunset. It is not coming back.'] ],
   goose: [
-    ['pay'], ['reveal', 'goose'], ['narrate', 'Under the sheet there is... nothing. Just one white feather.'],
+    ['pay'], ['reveal', 'goose'], ['narrate', 'Inside the box there is... nothing. Just one white feather.'],
     ['act', 'honk'], ['wait', 1], ['turn'], ['actor', 'goose', 'behind'],
     ['say', 'goose', 'HONK.'],
     ['say', 'goose', 'Yes. It was me. It has always been me.'],
@@ -901,14 +901,14 @@ LC.ENDING_SCENES = {
     ['say', 'goose', 'I\'ll be taking that trillion now.'],
     ['say', 'goose', 'HONK.'] ],
   dev: [
-    ['pay'], ['reveal', 'dev'], ['narrate', 'Under the sheet: a tiny room, a computer, and a sofa.'],
+    ['pay'], ['reveal', 'dev'], ['narrate', 'Inside the box: a tiny room, a computer, and a sofa.'],
     ['actor', 'dev', 'thing'],
     ['say', 'dev', 'Oh. Hello. I\'m making a game about sofas.'],
     ['narrate', 'You reach down the back of the sofa.'],
     ['say', 'dev', 'Oi. Get out of my sofa.'],
     ['narrate', 'You found 20p.'] ],
   dream: [
-    ['pay'], ['act', 'blur'], ['narrate', 'You pull off the sheet and the world goes blurry...'],
+    ['pay'], ['act', 'blur'], ['narrate', 'You rip the tape off the box and the world goes blurry...'],
     ['act', 'wakeSofa'], ['actor', 'mum', 'front'],
     ['say', 'mum', 'Wake up, love. You fell asleep on the sofa again.'],
     ['say', 'mum', 'Dreaming about that goose, were you?'],
@@ -932,7 +932,7 @@ LC.ENDING_SCENES = {
     ['say', 'brian', 'Afternoon. I\'ve got a cheque here for one trillion pounds.'],
     ['say', 'brian', 'Your grandad said whoever pays first gets it. So.'],
     ['turn'], ['act', 'brianPeek'],
-    ['narrate', 'Brian lifts the corner of the sheet. His face goes white.'],
+    ['narrate', 'Brian lifts a flap of the box. His face goes white.'],
     ['say', 'brian', '...'],
     ['say', 'brian', 'You know what? You keep it.'],
     ['narrate', 'He leaves without another word. You never find out why.'] ],
@@ -996,8 +996,22 @@ LC.INTRO_SCENE = [
   ['act', 'wakeIntro'], ['actor', 'mum', 'front'],
   ['say', 'mum', 'Morning, sleepyhead! You fell asleep down the back of the sofa again. There\'s a crisp in your ear.'],
   ['say', 'mum', 'I\'m off to work in a minute. Double shift at the supermarket. The self-checkouts have it in for me, love. Personally.'],
-  ['say', 'mum', 'Oh! Grandad\'s solicitor dropped something round this morning. It\'s in the hall. Under a sheet. It\'s massive. He said it\'s for YOU.'],
+  ['say', 'mum', 'Oh! Grandad\'s solicitor dropped something round this morning. It\'s in the hall. In a massive box. Tape everywhere. He said it\'s for YOU.'],
   ['say', 'mum', 'Right, I\'m late. Go and have a look! Tea\'s in the freezer. Don\'t let Brian in. Love you!'],
   ['act', 'mumOff'],
-  ['narrate', 'The front door slams. The house is all yours. Somewhere in the hall, something big is waiting under a sheet.'],
+  ['narrate', 'The front door slams. The house is all yours. In the hall, a massive cardboard box is waiting.'],
+];
+
+// ---- Grandad's Guide: how the game works, in his words (phone app) ----
+LC.GUIDE = [
+  { icon: '📦', title: 'The point of it all', text: 'There\'s a box in the hall. It\'s yours when you\'ve saved up <b>one trillion pounds</b>. Pay at the box. Open it. Find out. That\'s the whole game, kiddo.' },
+  { icon: '😤', title: 'Brian', text: 'Brian next door is saving up too, and he thinks it\'s his. His total is on your phone (Bank). If he gets there first, you lose. He saves on his own, all day, every day, so <b>keep moving</b>. Prank him, sneak round his house, nick from his Thing Fund jar. You\'ll get a warning when he\'s close.' },
+  { icon: '🛋️', title: 'Making your first quid', text: '<b>The sofa</b>: look at it and click (or press E). Click as the ring lines up for a PERFECT (three times the coins).<br><b>Piggy banks</b>: on the mantelpiece. Smash them when they\'re full.<br><b>Mum\'s change jar</b>: in the kitchen. Only when she\'s out. You didn\'t hear it from me.' },
+  { icon: '📌', title: 'Helpers', text: 'Across the road, outside the post office, is the <b>notice board</b>. Hire helpers there: your brother, the cat, the man with the metal detector, and stranger things later. They earn money even when you\'re not looking. That\'s the real trick to a trillion.' },
+  { icon: '🕳️', title: 'Digging', text: 'There\'s a spade in the back garden. <b>Dig the hole</b>: every few metres you hit something (money, junk, oddities). Buy better tools in the shed. The deeper you go, the better it gets. Once it\'s deep enough, the ladder takes you down into tunnels. There\'s more than one way underground. Ask around.' },
+  { icon: '🏷️', title: 'Junk and the stall', text: 'Dig, search bins and junk piles, and you\'ll find junk. Put it on <b>your stall</b> outside the house: it sells on its own while you\'re out. Stand there and you can haggle. Rare bits are worth keeping for the museum shelf in the hall.' },
+  { icon: '🎟️', title: 'The corner shop', text: 'Del sells scratch cards. Scratch them in your hands. Most lose. Some don\'t. Spend enough and Del gets chatty... and he knows things about that shop.' },
+  { icon: '🌙', title: 'Days and bedtime', text: 'Mum works all day and comes home at six. At bedtime you\'ve got a timer to get home. Make it and the day ends nicely. Don\'t, and she comes to get you in her dressing gown, and fines you. Each day brings something new to the town.' },
+  { icon: '🔍', title: 'Secrets', text: 'People round here talk. Chat to them (E). Read your Messages and Notes. Make friends and they\'ll help you out. Nobody will tell you everything. Snoop.' },
+  { icon: '❤️', title: 'P.S.', text: 'It was never really about the money. But a trillion quid wouldn\'t hurt. Love, Grandad.' },
 ];
