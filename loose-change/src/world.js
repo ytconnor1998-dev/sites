@@ -315,7 +315,7 @@ function scatterReal(kind, height, zones, count, spread = 0.35) {
     let k = 0;
     for (let t = 0; t < per * 3 && k < per; t++) {
       const z = zones[Math.floor(Math.random() * zones.length)], x = rand(z.x0, z.x1), zz = rand(z.z0, z.z1);
-      if (blocked(x, zz, 0.15) || Math.hypot(x + 2, zz + 14) < 2.4) continue;
+      if (blocked(x, zz, 0.15) || Math.hypot(x + 2, zz + 14) < 2.4 || (x > 62.5 && x < 73.5 && zz > 29.5 && zz < 42.5)) continue;
       e.set(0, rand(0, 6.3), 0); q.setFromEuler(e); const s2 = rand(1 - spread, 1 + spread); sc.set(s2, s2, s2); p.set(x, 0, zz);
       m.compose(p, q, sc); im.setMatrixAt(k++, m);
     }
@@ -768,7 +768,7 @@ function townEvent(id, on) {
     const bx = brianSpots.doorX + 2.2;
     const grill = put(M.group ? M.group() : new THREE.Group(), bx, 0, 6.6);
     grill.add(M.cyl(0.35, 0.3, 0.3, 0x222222, 0, 0.85, 0), M.cyl(0.03, 0.03, 0.7, 0x333333, 0, 0.35, 0), M.box(0.6, 0.02, 0.6, 0x888888, 0, 1.0, 0));
-    for (let i = 0; i < 4; i++) grill.add(M.cyl(0.035, 0.035, 0.35, 0xb5573b, -0.18 + i * 0.12, 1.03, 0, { rot: [Math.PI / 2, 0, 0] }));
+    for (let i = 0; i < 4; i++) { const sg = M.fit('food:sausage', { w: 0.3, yaw: Math.PI / 2 }); if (sg) { sg.position.set(-0.18 + i * 0.12, 1.01, 0); grill.add(sg); } else grill.add(M.cyl(0.035, 0.035, 0.35, 0xb5573b, -0.18 + i * 0.12, 1.03, 0, { rot: [Math.PI / 2, 0, 0] })); }
     interact(grill, { range: 2.6, prompt: () => 'Pinch a sausage<small>Brian\'s BBQ. Everyone\'s here. Even you, apparently</small>', use: () => LC.game.bbqSausage() });
     crowd(6, [{ x0: bx - 3, x1: bx + 3, z0: 5.8, z1: 8.2 }], 0.6);
   }
@@ -915,6 +915,22 @@ function buildTown() {
   for (const [x, z, ry] of [[34, 36, Math.PI / 2], [44, 50, Math.PI], [36, 46, Math.PI / 2], [52, 34, 0]]) { const b = add(M.bench(), x, 0, z, ry); collideObj(b); interact(b, { range: 2.5, prompt: () => 'Check under the bench', use: () => LC.game.checkBench() }); }
   for (const [x, z, h] of [[33, 22, 5], [59, 21, 4.5], [32, 52, 6], [58, 52, 5], [42, 40, 4], [60, 40, 5.5], [36, 42, 4.5]]) { add(M.tree(h), x, 0, z); collide(x - 0.3, z - 0.3, x + 0.3, z + 0.3); }
   spots.park = [{ x0: 31, x1: 60, z0: 20, z1: 54 }];
+  // a little skate area next to the park, and a rowing boat on the pond
+  if (M.lib['skate:half-pipe']) {
+    floor(63, 30, 73, 42, 0xbcb3a3, 0.02);
+    const pipe = M.fit('skate:half-pipe', { h: 1.5 }); if (pipe) { add(pipe, 68, 0, 40, Math.PI); collideObj(pipe); }
+    const ramp = M.fit('skate:ramp', { w: 2 }); if (ramp) { add(ramp, 65, 0, 33, Math.PI / 2); collideObj(ramp); }
+    const box2 = M.fit('skate:obstacle-box', { w: 2 }); if (box2) { add(box2, 70, 0, 33); collideObj(box2); }
+    const rail = M.fit('skate:rail-low', { h: 0.45 }); if (rail) add(rail, 68, 0, 36);
+    const skater = M.person({ char: 'n', height: 0.8 }); add(skater, 66.5, 0, 36.5); walker(skater, [{ x0: 64, x1: 72, z0: 34, z1: 38 }], 2.6, { pause: 1 });
+    interact(skater, { range: 2.6, prompt: () => 'Talk to the skater', use: () => voice(skater, pick(['"Bruv, I\'ve been tryin\' this kickflip since March. MARCH."', '"Skate park\'s better than the actual park. The actual park has a goose in it."', '"Found a quid under the half-pipe once. Bought a Freddo. Life peaked, innit."']), 'Skater') });
+  }
+  if (M.lib['boat:boat-row-small']) {
+    const boat = M.fit('boat:boat-row-small', { w: 1.2 });
+    if (boat) { add(boat, pondAt.x + 2, 0.05, pondAt.z - 1); agents.push({ obj: boat, update: (dt, t) => { boat.position.y = 0.05 + Math.sin(t * 1.3) * 0.03; boat.rotation.z = Math.sin(t * 0.9) * 0.04; boat.rotation.y = Math.sin(t * 0.1) * 0.6; } });
+      let boatT = -999;
+      interact(boat, { range: 3, prompt: () => 'Look in the rowing boat', use: () => { if (time - boatT < 120) return LC.game.say(pick(['Just a soggy crisp packet now.', 'A duck has moved in. It glares at you.'])); boatT = time; LC.game.tip(40); LC.game.say('Coins rolling about in the bottom of the boat. Finders keepers.'); } }); }
+  }
 
   // ---- townsfolk, wandering about ----
   const pave = [{ x0: -60, x1: 60, z0: 8.5, z1: 9.4 }, { x0: -60, x1: 60, z0: 16.6, z1: 17.4 }];
@@ -1134,6 +1150,8 @@ function randomIn(zone) { const r = pick(zone); return new THREE.Vector3(rand(r.
 function blocked(x, z, r = RADIUS) { return colliders.some((c) => !c.off && x > c.x0 - r && x < c.x1 + r && z > c.z0 - r && z < c.z1 + r); }
 
 function walker(obj, zone, speed, opts = {}) {
+  // never start inside something (a pond, a bench)
+  for (let i = 0; i < 30 && blocked(obj.position.x, obj.position.z, 0.3); i++) obj.position.copy(randomIn(zone));
   const a = { obj, zone, speed, target: randomIn(zone), wait: rand(0, 2), t: Math.random() * 10, ...opts };
   a.update = (dt) => {
     a.t += dt;
@@ -1508,8 +1526,11 @@ function cutActor(kind) {
 function revealProp(name) {
   const g = new THREE.Group(); g.position.copy(THING_AT); scene.add(g); cut.props.push(g);
   if (name === 'mealdeal') {
-    g.add(M.box(0.9, 0.7, 0.6, M.C.wood, 0, 0.35, 0), M.box(0.32, 0.12, 0.2, 0xf3e0b0, -0.22, 0.78, 0, { rot: [0, 0.3, 0] }), M.box(0.2, 0.28, 0.08, 0xd9534f, 0.05, 0.85, 0),
-      M.cyl(0.06, 0.06, 0.26, 0x3b8ad9, 0.28, 0.84, 0));
+    const table = M.fit('f:sideTable', { w: 0.9 }) || M.box(0.9, 0.7, 0.6, M.C.wood, 0, 0.35, 0); g.add(table);
+    table.updateMatrixWorld(true); const top = new THREE.Box3().setFromObject(table).max.y;
+    const sw = M.fit('food:sandwich', { w: 0.3 }), bag = M.fit('food:bag', { h: 0.3 }), can = M.fit('food:soda-can', { h: 0.2 });
+    if (sw && bag && can) { sw.position.set(0, top, 0.15); bag.position.set(0, top, -0.2); bag.rotation.y = 0.4; can.position.set(0.05, top, -0.02); g.add(sw, bag, can); }
+    else g.add(M.box(0.32, 0.12, 0.2, 0xf3e0b0, -0.22, 0.78, 0), M.box(0.2, 0.28, 0.08, 0xd9534f, 0.05, 0.85, 0), M.cyl(0.06, 0.06, 0.26, 0x3b8ad9, 0.28, 0.84, 0));
   }
   if (name === 'moon') { const moon = M.ball(0.7, 0xc8c8c0, 0, 1.4, 0, { seg: 20 }); for (let i = 0; i < 9; i++) { const a = Math.random() * 6, b2 = Math.random() * 3; moon.add(M.ball(0.12 + Math.random() * 0.1, 0xa8a8a0, Math.sin(b2) * Math.cos(a) * 0.66, Math.cos(b2) * 0.66, Math.sin(b2) * Math.sin(a) * 0.66)); } moon.name = 'moon'; g.add(moon); g.userData.spin = moon; }
   if (name === 'scratch') {
@@ -1520,7 +1541,7 @@ function revealProp(name) {
     const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; paint(false);
     const card2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.05), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 })); card2.position.set(-0.6, 1.25, 0); card2.rotation.y = -Math.PI / 2; g.add(card2); g.userData.lose = () => paint(true);
   }
-  if (name === 'piggy') { const pig = M.piggy('normal'); pig.scale.setScalar(4.2); pig.rotation.y = -Math.PI / 2; g.add(pig); cut.actors.piggy = g; }
+  if (name === 'piggy') { const pig = M.piggy('normal'); pig.scale.setScalar(2.8); g.rotation.y = -Math.PI / 2; g.position.x += 0.4; g.add(pig); cut.actors.piggy = g; }
   if (name === 'goose') g.add(M.box(0.05, 0.015, 0.34, 0xffffff, -0.4, 0.02, 0.1, { rot: [0, 0.7, 0], mat: { emissive: 0x444444 } }));
   if (name === 'dev') { const d = M.desk(); d.position.set(0.5, 0, -0.5); d.rotation.y = -Math.PI / 2; g.add(d); const mo = M.monitor('loose-change.js'); mo.rotation.y = -Math.PI / 2; mo.position.set(0.55, 0, -0.5); g.add(mo); const so = M.sofa(0x6a5a8a, 0x4a3a6a, 1.2); so.position.set(-0.3, 0, 0.4); so.rotation.y = -Math.PI / 2; g.add(so); }
   return g;

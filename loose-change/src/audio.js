@@ -81,8 +81,29 @@
     mower: (t) => { tone(t, { freq: 70 + Math.random() * 10, type: 'sawtooth', dur: 0.4, gain: 0.03, filter: 400 }); },
     ribbit: (t) => { for (let i = 0; i < 3; i++) tone(t + i * 0.05, { freq: 180, type: 'square', dur: 0.04, gain: 0.12, slideTo: 320, filter: 1500 }); },
   };
+  // recorded UI sounds (Kenney UI Audio, CC0) replace the synthesised menu clicks once they've loaded
+  const SAMPLES = { click: ['click1', 'click3'], tap: ['click5'], open: ['switch7'], buy: ['switch33'], hover: ['rollover2'] };
+  const buffers = {};
+  function loadSamples() {
+    for (const names of Object.values(SAMPLES)) for (const n of names) {
+      if (buffers[n]) continue;
+      buffers[n] = 'loading';
+      fetch(`assets/sounds/ui/${n}.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b)).then((buf) => { buffers[n] = buf; }).catch(() => { delete buffers[n]; });
+    }
+  }
+  function playSample(name) {
+    const list = SAMPLES[name]; if (!list) return false;
+    const buf = buffers[list[Math.floor(Math.random() * list.length)]];
+    if (!buf || buf === 'loading') return false;
+    const src = ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = 0.95 + Math.random() * 0.1;
+    const g = ctx.createGain(); g.gain.value = 0.6; src.connect(g); g.connect(sfxBus || master); src.start();
+    return true;
+  }
   function sfx(name, arg) {
     if (!ctx || !sfxOn() || ctx.state !== 'running') return;
+    if (!Object.keys(buffers).length) loadSamples();
+    if (name !== 'buy' && playSample(name)) return;
+    if (name === 'buy' && playSample('buy')) { SFX.buy?.(ctx.currentTime + 0.005, arg); return; }
     SFX[name]?.(ctx.currentTime + 0.005, arg);
   }
 
