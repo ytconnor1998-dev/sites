@@ -43,5 +43,351 @@
  "mushroom": [
   "nature/Mushroom_Common.gltf",
   "nature/Mushroom_Laetiporus.gltf"
+ ],
+ "boat:boat-row-large": [
+  "kenney/boats/boat-row-large.glb"
+ ],
+ "boat:boat-row-small": [
+  "kenney/boats/boat-row-small.glb"
+ ],
+ "boat:buoy": [
+  "kenney/boats/buoy.glb"
+ ],
+ "car:ambulance": [
+  "kenney/cars/ambulance.glb"
+ ],
+ "car:delivery": [
+  "kenney/cars/delivery.glb"
+ ],
+ "car:garbage-truck": [
+  "kenney/cars/garbage-truck.glb"
+ ],
+ "car:hatchback-sports": [
+  "kenney/cars/hatchback-sports.glb"
+ ],
+ "car:police": [
+  "kenney/cars/police.glb"
+ ],
+ "car:sedan-sports": [
+  "kenney/cars/sedan-sports.glb"
+ ],
+ "car:sedan": [
+  "kenney/cars/sedan.glb"
+ ],
+ "car:suv": [
+  "kenney/cars/suv.glb"
+ ],
+ "car:taxi": [
+  "kenney/cars/taxi.glb"
+ ],
+ "car:truck": [
+  "kenney/cars/truck.glb"
+ ],
+ "car:van": [
+  "kenney/cars/van.glb"
+ ],
+ "food:bag": [
+  "kenney/food/bag.glb"
+ ],
+ "food:bread": [
+  "kenney/food/bread.glb"
+ ],
+ "food:burger": [
+  "kenney/food/burger.glb"
+ ],
+ "food:cake": [
+  "kenney/food/cake.glb"
+ ],
+ "food:can": [
+  "kenney/food/can.glb"
+ ],
+ "food:candy-bar": [
+  "kenney/food/candy-bar.glb"
+ ],
+ "food:chocolate": [
+  "kenney/food/chocolate.glb"
+ ],
+ "food:cup-tea": [
+  "kenney/food/cup-tea.glb"
+ ],
+ "food:donut": [
+  "kenney/food/donut.glb"
+ ],
+ "food:fries": [
+  "kenney/food/fries.glb"
+ ],
+ "food:hot-dog": [
+  "kenney/food/hot-dog.glb"
+ ],
+ "food:ice-cream-cne": [
+  "kenney/food/ice-cream-cne.glb"
+ ],
+ "food:ice-cream": [
+  "kenney/food/ice-cream.glb"
+ ],
+ "food:loaf": [
+  "kenney/food/loaf.glb"
+ ],
+ "food:mug": [
+  "kenney/food/mug.glb"
+ ],
+ "food:pie": [
+  "kenney/food/pie.glb"
+ ],
+ "food:sandwich": [
+  "kenney/food/sandwich.glb"
+ ],
+ "food:sausage": [
+  "kenney/food/sausage.glb"
+ ],
+ "food:soda-bottle": [
+  "kenney/food/soda-bottle.glb"
+ ],
+ "food:soda-can": [
+  "kenney/food/soda-can.glb"
+ ],
+ "f:bedSingle": [
+  "kenney/furniture/bedSingle.glb"
+ ],
+ "f:bench": [
+  "kenney/furniture/bench.glb"
+ ],
+ "f:bookcaseClosedWide": [
+  "kenney/furniture/bookcaseClosedWide.glb"
+ ],
+ "f:bookcaseOpen": [
+  "kenney/furniture/bookcaseOpen.glb"
+ ],
+ "f:books": [
+  "kenney/furniture/books.glb"
+ ],
+ "f:cabinetTelevision": [
+  "kenney/furniture/cabinetTelevision.glb"
+ ],
+ "f:cardboardBoxClosed": [
+  "kenney/furniture/cardboardBoxClosed.glb"
+ ],
+ "f:cardboardBoxOpen": [
+  "kenney/furniture/cardboardBoxOpen.glb"
+ ],
+ "f:chairDesk": [
+  "kenney/furniture/chairDesk.glb"
+ ],
+ "f:coatRack": [
+  "kenney/furniture/coatRack.glb"
+ ],
+ "f:computerKeyboard": [
+  "kenney/furniture/computerKeyboard.glb"
+ ],
+ "f:computerScreen": [
+  "kenney/furniture/computerScreen.glb"
+ ],
+ "f:desk": [
+  "kenney/furniture/desk.glb"
+ ],
+ "f:kitchenCabinet": [
+  "kenney/furniture/kitchenCabinet.glb"
+ ],
+ "f:kitchenCabinetUpper": [
+  "kenney/furniture/kitchenCabinetUpper.glb"
+ ],
+ "f:kitchenCoffeeMachine": [
+  "kenney/furniture/kitchenCoffeeMachine.glb"
+ ],
+ "f:kitchenFridge": [
+  "kenney/furniture/kitchenFridge.glb"
+ ],
+ "f:kitchenMicrowave": [
+  "kenney/furniture/kitchenMicrowave.glb"
+ ],
+ "f:kitchenSink": [
+  "kenney/furniture/kitchenSink.glb"
+ ],
+ "f:kitchenStove": [
+  "kenney/furniture/kitchenStove.glb"
+ ],
+ "f:lampRoundFloor": [
+  "kenney/furniture/lampRoundFloor.glb"
+ ],
+ "f:lampSquareTable": [
+  "kenney/furniture/lampSquareTable.glb"
+ ],
+ "f:loungeChair": [
+  "kenney/furniture/loungeChair.glb"
+ ],
+ "f:loungeChairRelax": [
+  "kenney/furniture/loungeChairRelax.glb"
+ ],
+ "f:loungeDesignSofa": [
+  "kenney/furniture/loungeDesignSofa.glb"
+ ],
+ "f:loungeSofa": [
+  "kenney/furniture/loungeSofa.glb"
+ ],
+ "f:loungeSofaLong": [
+  "kenney/furniture/loungeSofaLong.glb"
+ ],
+ "f:plantSmall1": [
+  "kenney/furniture/plantSmall1.glb"
+ ],
+ "f:plantSmall2": [
+  "kenney/furniture/plantSmall2.glb"
+ ],
+ "f:pottedPlant": [
+  "kenney/furniture/pottedPlant.glb"
+ ],
+ "f:radio": [
+  "kenney/furniture/radio.glb"
+ ],
+ "f:rugRectangle": [
+  "kenney/furniture/rugRectangle.glb"
+ ],
+ "f:rugRounded": [
+  "kenney/furniture/rugRounded.glb"
+ ],
+ "f:sideTable": [
+  "kenney/furniture/sideTable.glb"
+ ],
+ "f:tableCoffee": [
+  "kenney/furniture/tableCoffee.glb"
+ ],
+ "f:televisionVintage": [
+  "kenney/furniture/televisionVintage.glb"
+ ],
+ "f:toaster": [
+  "kenney/furniture/toaster.glb"
+ ],
+ "f:trashcan": [
+  "kenney/furniture/trashcan.glb"
+ ],
+ "f:washer": [
+  "kenney/furniture/washer.glb"
+ ],
+ "char:a": [
+  "kenney/people/character-a.glb"
+ ],
+ "char:b": [
+  "kenney/people/character-b.glb"
+ ],
+ "char:c": [
+  "kenney/people/character-c.glb"
+ ],
+ "char:d": [
+  "kenney/people/character-d.glb"
+ ],
+ "char:e": [
+  "kenney/people/character-e.glb"
+ ],
+ "char:f": [
+  "kenney/people/character-f.glb"
+ ],
+ "char:i": [
+  "kenney/people/character-i.glb"
+ ],
+ "char:j": [
+  "kenney/people/character-j.glb"
+ ],
+ "char:k": [
+  "kenney/people/character-k.glb"
+ ],
+ "char:m": [
+  "kenney/people/character-m.glb"
+ ],
+ "char:n": [
+  "kenney/people/character-n.glb"
+ ],
+ "char:p": [
+  "kenney/people/character-p.glb"
+ ],
+ "char:q": [
+  "kenney/people/character-q.glb"
+ ],
+ "pet:bunny": [
+  "kenney/pets/animal-bunny.glb"
+ ],
+ "pet:cat": [
+  "kenney/pets/animal-cat.glb"
+ ],
+ "pet:chick": [
+  "kenney/pets/animal-chick.glb"
+ ],
+ "pet:dog": [
+  "kenney/pets/animal-dog.glb"
+ ],
+ "pet:fox": [
+  "kenney/pets/animal-fox.glb"
+ ],
+ "pet:pig": [
+  "kenney/pets/animal-pig.glb"
+ ],
+ "skate:benches": [
+  "kenney/skate/benches.glb"
+ ],
+ "skate:half-pipe": [
+  "kenney/skate/half-pipe.glb"
+ ],
+ "skate:obstacle-box": [
+  "kenney/skate/obstacle-box.glb"
+ ],
+ "skate:rail-low": [
+  "kenney/skate/rail-low.glb"
+ ],
+ "skate:ramp": [
+  "kenney/skate/ramp.glb"
+ ],
+ "skate:skateboard": [
+  "kenney/skate/skateboard.glb"
+ ],
+ "surv:barrel": [
+  "kenney/survival/barrel.glb"
+ ],
+ "surv:box-large": [
+  "kenney/survival/box-large.glb"
+ ],
+ "surv:box-open": [
+  "kenney/survival/box-open.glb"
+ ],
+ "surv:box": [
+  "kenney/survival/box.glb"
+ ],
+ "surv:bucket": [
+  "kenney/survival/bucket.glb"
+ ],
+ "surv:chest": [
+  "kenney/survival/chest.glb"
+ ],
+ "surv:signpost": [
+  "kenney/survival/signpost.glb"
+ ],
+ "surv:tool-hammer": [
+  "kenney/survival/tool-hammer.glb"
+ ],
+ "surv:tool-pickaxe": [
+  "kenney/survival/tool-pickaxe.glb"
+ ],
+ "surv:tool-shovel": [
+  "kenney/survival/tool-shovel.glb"
+ ],
+ "surv:workbench": [
+  "kenney/survival/workbench.glb"
+ ],
+ "person": [
+  "kenney/people/character-a.glb",
+  "kenney/people/character-b.glb",
+  "kenney/people/character-c.glb",
+  "kenney/people/character-e.glb",
+  "kenney/people/character-f.glb",
+  "kenney/people/character-k.glb",
+  "kenney/people/character-m.glb",
+  "kenney/people/character-n.glb",
+  "kenney/people/character-p.glb"
+ ],
+ "car": [
+  "kenney/cars/sedan.glb",
+  "kenney/cars/hatchback-sports.glb",
+  "kenney/cars/suv.glb",
+  "kenney/cars/taxi.glb",
+  "kenney/cars/sedan-sports.glb",
+  "kenney/cars/van.glb"
  ]
 }

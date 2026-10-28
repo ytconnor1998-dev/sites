@@ -55,11 +55,30 @@ const group = (...kids) => { const g = new THREE.Group(); kids.forEach((k) => k 
 // falls back to the shapes built in code below.
 export const lib = {};
 let libPick = 0;
+// animated models (people, pets): one mixer each, updated by the world every frame
+export const mixers = new Set();
+function animate(m, clips) {
+  if (!clips || !clips.length) return;
+  const mixer = new THREE.AnimationMixer(m), actions = {};
+  for (const c of clips) actions[c.name] = mixer.clipAction(c);
+  m.userData.anim = { mixer, actions, cur: null };
+  mixers.add(m);
+  playAnim(m, actions.idle ? 'idle' : clips[0].name);
+}
+export function playAnim(obj, name, fade = 0.25) {
+  const a = obj.userData.anim || (obj.children[0] && obj.children[0].userData.anim);
+  if (!a || a.cur === name || !a.actions[name]) return;
+  const next = a.actions[name];
+  next.reset().fadeIn(fade).play();
+  if (a.cur && a.actions[a.cur]) a.actions[a.cur].fadeOut(fade);
+  a.cur = name;
+}
 export function libModel(kind, height = null, index = null) {
   const list = lib[kind];
   if (!list || !list.length) return null;
   const src = list[index != null ? index % list.length : (libPick++ * 7) % list.length];
   const m = src.clone(true);
+  animate(m, src.userData.anims);
   m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   if (height) {
     const b = new THREE.Box3().setFromObject(m), h = b.max.y - b.min.y;
@@ -68,6 +87,20 @@ export function libModel(kind, height = null, index = null) {
   const g = new THREE.Group(); g.add(m);
   return g;
 }
+// a model fitted to a size: centred on x/z, sitting on the floor, optionally recoloured (fabric etc.)
+export function fit(kind, { w = null, h = null, d = null, tint = null, tintMat = 'carpet', yaw = 0, n = null } = {}) {
+  const g = libModel(kind, null, n); if (!g) return null;
+  const m = g.children[0];
+  m.rotation.y = yaw; m.updateMatrixWorld(true);
+  let b = new THREE.Box3().setFromObject(m); const sz = b.getSize(new THREE.Vector3());
+  const k = w ? w / sz.x : h ? h / sz.y : d ? d / sz.z : 1;
+  m.scale.multiplyScalar(k); m.updateMatrixWorld(true);
+  b = new THREE.Box3().setFromObject(m); const c = b.getCenter(new THREE.Vector3());
+  m.position.x -= c.x; m.position.z -= c.z; m.position.y -= b.min.y;
+  if (tint != null) m.traverse((o) => { if (o.isMesh && o.material && o.material.name === tintMat) { o.material = o.material.clone(); o.material.color.set(tint); } });
+  return g;
+}
+
 
 export const C = {
   sofa: 0x6aa84f, sofaDark: 0x4d8a2c, wood: 0x9b6a3f, woodDark: 0x6e4a2a, pig: 0xf7a8bd, pigDark: 0xe07d9a,
@@ -77,6 +110,7 @@ export const C = {
 
 // ---------- furniture ----------
 export function sofa(color = C.sofa, dark = C.sofaDark, width = 2.3) {
+  const real = fit(width > 1.6 ? 'f:loungeSofaLong' : 'f:loungeSofa', { w: width, tint: color }); if (real) return real;
   const w = width;
   return group(
     box(w, 0.42, 0.95, dark, 0, 0.29, 0),
@@ -89,24 +123,30 @@ export function sofa(color = C.sofa, dark = C.sofaDark, width = 2.3) {
     box(0.45, 0.32, 0.12, 0xf2d16b, -w / 4, 0.82, -0.18, { rot: [0.2, 0.1, 0.12] }),
   );
 }
-export function armchair(color = 0xd27a5a) { return sofa(color, 0xa45a40, 1.15); }
+export function armchair(color = 0xd27a5a) { return fit('f:loungeChair', { w: 1.05, tint: color }) || sofa(color, 0xa45a40, 1.15); }
 export function coffeeTable() {
+  const real = fit('f:tableCoffee', { w: 1.2 }); if (real) return real;
   return group(box(1.2, 0.08, 0.6, C.wood, 0, 0.42, 0), ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => box(0.06, 0.4, 0.06, C.woodDark, a * 0.52, 0.2, b * 0.24)),
     cyl(0.06, 0.05, 0.1, 0xffffff, 0.3, 0.51, 0), box(0.25, 0.03, 0.18, 0xd9534f, -0.25, 0.47, 0.05, { rot: [0, 0.3, 0] }));
 }
 export function tv() {
+  const cab = fit('f:cabinetTelevision', { w: 1.5 }), set = fit('f:televisionVintage', { w: 1.0 });
+  if (cab && set) { cab.updateMatrixWorld(true); const top = new THREE.Box3().setFromObject(cab).max.y; set.position.y = top; cab.add(set); return cab; }
   const screen = box(1.5, 0.85, 0.04, 0x1a2a3a, 0, 1.15, 0.05, { mat: { emissive: 0x4a90d0, emissiveIntensity: 1.4, map: null } });
   screen.name = 'screen';
   return group(box(1.6, 0.5, 0.45, C.woodDark, 0, 0.25, 0), box(1.6, 0.95, 0.06, C.ink, 0, 1.15, 0), screen);
 }
 export function lamp() {
+  const real = fit('f:lampRoundFloor', { h: 1.6 }); if (real) return real;
   const shade = cone(0.28, 0.35, 0xf8b04a, 0, 1.55, 0, { seg: 16, mat: { emissive: 0xffa040, emissiveIntensity: 1.6, map: null } });
   return group(cyl(0.18, 0.2, 0.05, C.ink, 0, 0.03, 0), cyl(0.025, 0.025, 1.4, 0xdddddd, 0, 0.72, 0), shade);
 }
 export function plant() {
+  const real = fit('f:pottedPlant', { h: 1.0 }); if (real) return real;
   return group(cyl(0.2, 0.15, 0.35, 0xc4683f, 0, 0.18, 0), ball(0.32, 0x4f9a3a, 0, 0.6, 0, { seg: 6 }), ball(0.22, 0x5fb046, 0.12, 0.85, 0.05, { seg: 6 }));
 }
 export function bookshelf() {
+  const real = fit('f:bookcaseOpen', { w: 1.6 }); if (real) return real;
   const g = group(box(1.2, 1.9, 0.35, C.wood, 0, 0.95, 0));
   const cols = [0xd9534f, 0x5b8bd9, 0xf2b631, 0x6aa84f, 0x9b59b6];
   for (let s = 0; s < 4; s++) {
@@ -122,9 +162,15 @@ export function fireplace() {
 }
 export function rug(color = 0xc0504d) { return cyl(1.4, 1.4, 0.02, color, 0, 0.011, 0, { seg: 24, shadow: false }); }
 export function counter(len = 3) {
+  if (lib['f:kitchenCabinet']) {
+    const g = new THREE.Group(), n = Math.max(1, Math.round(len / 0.75));
+    for (let i = 0; i < n; i++) { const kind = i === Math.floor(n / 2) && lib['f:kitchenSink'] ? 'f:kitchenSink' : i === n - 1 && lib['f:kitchenStove'] ? 'f:kitchenStove' : 'f:kitchenCabinet'; const c = fit(kind, { w: len / n }); c.position.x = -len / 2 + (i + 0.5) * (len / n); g.add(c); }
+    return g;
+  }
   return group(box(len, 0.9, 0.65, 0xe8e2d4, 0, 0.45, 0), box(len + 0.05, 0.06, 0.7, 0x5c5c66, 0, 0.93, 0));
 }
-export function fridge() { return group(box(0.75, 1.9, 0.7, 0xeeeeee, 0, 0.95, 0), box(0.04, 0.5, 0.04, 0x999999, -0.28, 1.3, 0.36)); }
+export function fridge() { const real = fit('f:kitchenFridge', { h: 1.9 }); if (real) return real; return fridgeOld(); }
+function fridgeOld() { return group(box(0.75, 1.9, 0.7, 0xeeeeee, 0, 0.95, 0), box(0.04, 0.5, 0.04, 0x999999, -0.28, 1.3, 0.36)); }
 export function door(color = 0x3b6ea5) { return group(box(1.0, 2.1, 0.08, color, 0, 1.05, 0), ball(0.04, C.gold, 0.38, 1.0, 0.06)); }
 
 // ---------- piggy banks ----------
@@ -154,6 +200,7 @@ export function piggy(kind = 'normal') {
 
 // ---------- creatures & people ----------
 export function cat(color = C.orange) {
+  const real = fit(color === 0xe0662a && lib['pet:fox'] ? 'pet:fox' : 'pet:cat', { h: 0.45 }); if (real) return real;
   const g = group(
     box(0.22, 0.2, 0.5, color, 0, 0.25, 0),
     ball(0.14, color, 0, 0.42, 0.28),
@@ -183,7 +230,18 @@ export function pigeon() {
   return group(ball(0.09, 0x8d93a3, 0, 0.1, 0, { scale: [0.9, 0.9, 1.3], seg: 7 }), ball(0.055, 0x6a7186, 0, 0.2, 0.08, { seg: 7 }),
     cone(0.015, 0.05, 0xd8a24a, 0, 0.2, 0.15, { rot: [Math.PI / 2, 0, 0] }), box(0.09, 0.02, 0.1, 0x6a7186, 0, 0.1, -0.13));
 }
-export function person({ shirt = 0x5b8bd9, legs = 0x3a3f58, skin = C.skin, hair = 0x5a3a22, height = 1, hat = null, bald = false } = {}) {
+export function person({ shirt = 0x5b8bd9, legs = 0x3a3f58, skin = C.skin, hair = 0x5a3a22, height = 1, hat = null, bald = false, char = null } = {}) {
+  if (lib.person) {
+    // a real character: suits for top hats, otherwise picked from their clothes so they stay the same
+    const key = char ? 'char:' + char : hat === 'top' ? 'char:q' : null;
+    const g = key && lib[key] ? libModel(key) : libModel('person', null, (shirt * 7 + legs * 3 + hair) % 997);
+    const m = g.children[0];
+    m.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(m), hh = b.max.y - b.min.y;
+    m.scale.multiplyScalar((1.72 * height) / hh); m.position.y -= b.min.y * (1.72 * height) / hh;
+    g.userData.person = true;
+    return g;
+  }
   const g = new THREE.Group();
   const s = height;
   const legL = box(0.14, 0.75, 0.16, legs, -0.1, 0.375, 0); legL.name = 'legL';
@@ -289,7 +347,7 @@ export function coinPusher() {
   return g;
 }
 export function car(color = 0x3b6ea5) {
-  const real = libModel('car', 1.45); if (real) return real;
+  const real = fit('car', { d: 3.9, n: Math.abs(color) % 991 }); if (real) return real;
   const g = group(box(1.7, 0.6, 3.6, color, 0, 0.55, 0), box(1.5, 0.55, 1.8, color, 0, 1.12, -0.2), box(1.45, 0.45, 1.7, 0xbfe0f0, 0, 1.13, -0.2),
     ...[[-0.85, 1.1], [0.85, 1.1], [-0.85, -1.1], [0.85, -1.1]].map(([x, z]) => cyl(0.3, 0.3, 0.2, 0x222222, x, 0.3, z, { rot: [0, 0, Math.PI / 2] })));
   g.add(box(1.6, 0.06, 1.0, color, 0, 1.5, -1.9, { rot: [-0.9, 0, 0] }));
@@ -572,8 +630,10 @@ export function fountain() {
   return g;
 }
 export function pond(r = 5) { return group(cyl(r, r, 0.04, 0x3f7aa0, 0, 0.02, 0, { seg: 28, mat: { roughness: 0.08, emissive: 0x0a2236 }, shadow: false }), part(new THREE.TorusGeometry(r, 0.25, 6, 28), 0x8a7a5a, 0, 0.05, 0, { rot: [Math.PI / 2, 0, 0] })); }
-export function duck() { return group(ball(0.16, 0x8a6a4a, 0, 0.12, 0, { scale: [0.9, 0.7, 1.3] }), ball(0.09, 0x2a6a3a, 0, 0.28, 0.14), cone(0.03, 0.08, C.orange, 0, 0.27, 0.25, { rot: [Math.PI / 2, 0, 0] })); }
+export function duck() { const real = fit('pet:chick', { h: 0.3 }); if (real) return real; return duckOld(); }
+function duckOld() { return group(ball(0.16, 0x8a6a4a, 0, 0.12, 0, { scale: [0.9, 0.7, 1.3] }), ball(0.09, 0x2a6a3a, 0, 0.28, 0.14), cone(0.03, 0.08, C.orange, 0, 0.27, 0.25, { rot: [Math.PI / 2, 0, 0] })); }
 export function dog(color = 0xb07a4a) {
+  const real = fit('pet:dog', { h: 0.55 }); if (real) return real;
   const g = group(box(0.25, 0.22, 0.55, color, 0, 0.32, 0), ball(0.14, color, 0, 0.48, 0.3), box(0.08, 0.06, 0.12, 0x222222, 0, 0.45, 0.44),
     box(0.06, 0.12, 0.04, color, -0.09, 0.6, 0.27), box(0.06, 0.12, 0.04, color, 0.09, 0.6, 0.27));
   const legs = [[-0.08, 0.18], [0.08, 0.18], [-0.08, -0.18], [0.08, -0.18]].map(([x, z]) => box(0.07, 0.22, 0.07, color, x, 0.11, z));
@@ -592,7 +652,8 @@ export function jar(label = 'THING FUND') {
   const l = signPlane(label, 0.36, 0.12, { bg: '#f3eee4', color: '#2d2118' }); l.position.set(0, 0.3, 0.225); g.add(l);
   return g;
 }
-export function desk() { return group(box(1.4, 0.06, 0.7, C.wood, 0, 0.75, 0), box(0.06, 0.75, 0.66, C.woodDark, -0.65, 0.37, 0), box(0.06, 0.75, 0.66, C.woodDark, 0.65, 0.37, 0)); }
+export function desk() { const real = fit('f:desk', { w: 1.4 }); if (real) return real; return deskOld(); }
+function deskOld() { return group(box(1.4, 0.06, 0.7, C.wood, 0, 0.75, 0), box(0.06, 0.75, 0.66, C.woodDark, -0.65, 0.37, 0), box(0.06, 0.75, 0.66, C.woodDark, 0.65, 0.37, 0)); }
 export function monitor(text) { const g = group(box(0.7, 0.45, 0.05, 0x222222, 0, 1.08, 0), box(0.08, 0.3, 0.08, 0x333333, 0, 0.85, -0.02)); const sc = signPlane(text, 0.64, 0.38, { bg: '#1f4a2f', color: '#9be38a', glow: true }); sc.position.set(0, 1.08, 0.03); g.add(sc); return g; }
 
 // an emoji icon as a little standing picture (uses the bundled Twemoji SVGs)
@@ -657,6 +718,7 @@ export function water(w, d) { return part(new THREE.BoxGeometry(w, 0.05, d), 0x3
 
 // ---------- kitchen & loft ----------
 export function washingMachine() {
+  const real = fit('f:washer', { h: 0.9 }); if (real) return real;
   const g = group(box(0.7, 0.85, 0.65, 0xf3f3f3, 0, 0.43, 0), box(0.7, 0.1, 0.65, 0xdddddd, 0, 0.9, 0), part(new THREE.TorusGeometry(0.2, 0.04, 8, 20), 0x999999, 0, 0.45, 0.33), cyl(0.18, 0.18, 0.02, 0x7ab0d8, 0, 0.45, 0.33, { rot: [Math.PI / 2, 0, 0], mat: { roughness: 0.1, map: null } }), box(0.15, 0.06, 0.02, 0x333333, 0.2, 0.8, 0.33));
   const drum = cyl(0.15, 0.15, 0.03, 0xffffff, 0, 0.45, 0.31, { rot: [Math.PI / 2, 0, 0] }); drum.name = 'drum'; g.add(drum);
   return g;

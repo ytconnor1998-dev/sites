@@ -1154,6 +1154,7 @@ function walker(obj, zone, speed, opts = {}) {
   return a;
 }
 function limbs(obj, s) {
+  if (obj.userData.person || (obj.children[0] && obj.children[0].userData.anim)) { M.playAnim(obj, s !== 0 ? 'walk' : 'idle'); return; }
   const l = obj.getObjectByName('legL'), r = obj.getObjectByName('legR');
   if (l) { l.rotation.x = s * 0.6; r.rotation.x = -s * 0.6; }
   const al = obj.getObjectByName('armL'), ar = obj.getObjectByName('armR');
@@ -2268,6 +2269,7 @@ function frame(now) {
   updateEvent(dt);
   updateCut();
   updateSpeech();
+  for (const m of M.mixers) if (m.parent && m.parent.parent) m.userData.anim.mixer.update(dt);
   if (pig) {
     pigWobble = Math.max(0, pigWobble - dt * 4);
     pig.rotation.z = Math.sin(time * 40) * 0.15 * pigWobble;
@@ -2345,9 +2347,12 @@ LC.worldReady = (async () => {
   try {
     const res = await fetch('assets/models/manifest.json');
     if (!res.ok) return;
-    const manifest = await res.json(), loader = new GLTFLoader();
+    const manifest = await res.json(), loader = new GLTFLoader(), seen = {};
+    THREE.Cache.enabled = true;
+    // each file loads once, even if several groups list it
+    const load = (f) => (seen[f] = seen[f] || loader.loadAsync('assets/models/' + f).then((g) => { g.scene.userData.anims = g.animations; return g.scene; }));
     await Promise.all(Object.entries(manifest).flatMap(([kind, files]) => files.map(async (f) => {
-      try { const g = await loader.loadAsync('assets/models/' + f); (M.lib[kind] = M.lib[kind] || []).push(g.scene); } catch (e) { console.warn('model failed', f, e.message); }
+      try { const sc = await load(f); (M.lib[kind] = M.lib[kind] || []).push(sc); } catch (e) { console.warn('model failed', f, e.message); }
     })));
   } catch (e) { /* no models: everything is built in code */ }
 })();
