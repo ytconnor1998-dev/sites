@@ -488,3 +488,16 @@ body.cutscene .hud, body.cutscene .news { opacity: 0; transition: opacity .6s; p
 .pause-btns { display: flex; gap: 8px; justify-content: center; margin: 10px 0 14px; flex-wrap: wrap; }
 .modal-choices .btn small { opacity: .7; }
 .set select { font: inherit; padding: 4px 8px; border-radius: 10px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); margin-left: 8px; }
+
+/* title menu: the town drifts by behind it */
+.menu { position: fixed; inset: 0; z-index: 45; display: none; align-items: center; padding: 0 max(24px, 6vw); background: linear-gradient(90deg, rgba(45, 33, 24, .72) 0%, rgba(45, 33, 24, .35) 45%, rgba(45, 33, 24, 0) 75%); }
+.menu.show { display: flex; }
+.menu-card { display: flex; flex-direction: column; gap: 14px; max-width: 420px; color: #fff8ec; }
+.menu .logo.big { font-size: clamp(40px, 6vw, 72px); line-height: 1; text-shadow: 4px 4px 0 var(--ink); }
+.menu .logo.big .ic { width: 1em; height: 1em; vertical-align: -0.12em; }
+.menu-save { margin: 0; font-size: 16px; opacity: .92; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+.menu-btns { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.menu-btns .btn { min-width: 220px; font-size: 20px; text-align: left; }
+.menu-btns .btn.ghost { background: var(--card); color: var(--ink); }
+.menu .muted { color: #fff8ec; opacity: .7; }
+body.in-menu .hud, body.in-menu .news { visibility: hidden; }

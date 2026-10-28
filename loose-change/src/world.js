@@ -1837,6 +1837,15 @@ function cutStep() {
     if (a === 'scratchLose') { const c = cut.props.find((g) => g.userData.lose); let n = 0; const iv = setInterval(() => { LC.audio.sfx('scratch'); if (++n > 8) { clearInterval(iv); c.userData.lose(); LC.audio.sfx('nope'); } }, 180); cut.wait = 2.2; }
     if (a === 'piggyLeave') { talkEnd(true); const pg = cut.actors.piggy; const p0 = pg.position.clone(); LC.audio.sfx('oink'); tween(3, (k) => { pg.position.set(p0.x + (3 - p0.x) * Math.min(1, k * 2), 0, p0.z + (9 - p0.z) * k); pg.rotation.y = Math.atan2(3 - pg.position.x, 9 - pg.position.z + 0.01); }); cut.wait = 3; }
     if (a === 'blur') { const f = document.getElementById('fade'); f.classList.add('white', 'show'); cut.wait = 1.6; }
+    if (a === 'wakeIntro') {
+      // asleep on the sofa: eyes open, blink, sit up
+      const f = document.getElementById('fade'); f.classList.add('show');
+      player.pos.set(-3.5, 0, 3.55); cut.yaw = 0; player.yaw = 0; player.pitch = 1.1;
+      setTimeout(() => f.classList.remove('show'), 700); setTimeout(() => f.classList.add('show'), 1500); setTimeout(() => f.classList.remove('show'), 1750);
+      setTimeout(() => { const p0 = player.pitch; tween(1.6, (k) => { player.pitch = p0 + (-0.05 - p0) * (1 - Math.pow(1 - k, 3)); }); }, 2100);
+      cut.wait = 3.9;
+    }
+    if (a === 'mumOff') { const m = cut.actors.mum; if (m) { const p0 = m.position.clone(); LC.audio.sfx('step'); M.playAnim(m, 'walk'); m.rotation.y = Math.atan2(2.6 - p0.x, 5 - p0.z); tween(2.4, (k) => { m.position.set(p0.x + (2.6 - p0.x) * k, 0, p0.z + (5 - p0.z) * k); }, () => { m.visible = false; LC.audio.sfx('knock'); }); } cut.wait = 2.6; }
     if (a === 'wakeSofa') { player.pos.set(-3.5, 0, 3.55); cut.yaw = 0; player.yaw = 0; player.pitch = -0.05; setTimeout(() => document.getElementById('fade').classList.remove('show'), 300); setTimeout(() => document.getElementById('fade').classList.remove('white'), 900); cut.wait = 1.4; }
     if (a === 'australia') { const f = document.getElementById('fade'); f.classList.add('show'); setTimeout(() => { player.pos.set(-2, 0, -10.5); cut.yaw = Math.PI; player.yaw = Math.PI; flipTarget = 1; f.classList.remove('show'); }, 500); cut.wait = 2; }
     if (a === 'knock') { let n = 0; const iv = setInterval(() => { LC.audio.sfx('tap'); if (++n >= 3) clearInterval(iv); }, 350); subtitle('Knock knock knock.'); cut.wait = 1.8; }
@@ -2561,10 +2570,13 @@ function buildSky() {
 
 // ---------- main loop ----------
 let last = performance.now(), time = 0;
+// the title screen: a slow look up and down Acacia Road
+let menuCam = false, menuT = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now; time += dt;
+  if (menuCam) { menuT += dt; player.pos.set(-4 + Math.sin(menuT * 0.035) * 5, 0, 17.2); player.yaw = -0.35 + Math.sin(menuT * 0.05) * 0.3; player.pitch = 0.02; }
   updatePlayer(dt);
   updateFocus();
   updateViewModel(dt, keys.has('KeyW') || keys.has('KeyA') || keys.has('KeyS') || keys.has('KeyD'));
@@ -2733,7 +2745,8 @@ LC.world = {
   },
   piglets: (n = 3) => { for (let i = 0; i < n; i++) { const p = randomWalkable(3, 7); if (p) { p.y = 0; spawnPickup('piglet', p, { life: 20 }); } } },
   shake: (s = 0.3) => { shake = s; },
-  playScene, cutActive: () => cut.active, cutIndex: () => cut.i,
+  playScene, cutActive: () => cut.active, cutIndex: () => cut.i, endScene: () => cutReset(),
+  menuCam: (on) => { menuCam = on; if (!on) { player.pos.set(-3.5, 0, 3.0); player.yaw = Math.PI; player.pitch = -0.1; } },
   reset: () => {
     cutReset();
     for (const list of Object.values(helpers)) for (const o of list) { if (o.parent) o.parent.remove(o); const i = interactables.indexOf(o); if (i >= 0) interactables.splice(i, 1); }

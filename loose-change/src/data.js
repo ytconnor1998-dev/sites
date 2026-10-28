@@ -988,3 +988,12 @@ LC.BULLY_ROUNDS = [
 ];
 LC.BULLY_WIN = ['...', 'That\'s actually quite good.', 'Whatever. Come on, lads. We\'ve got... a thing.', 'Bit harsh, but fair.'];
 LC.BULLY_LOSE = ['HAHAHA. Tax time. Pockets.', 'Is that it? Pay up, Sofa Boy.', 'Weak. Hand it over.'];
+
+// ---- the opening: you wake up on the sofa and Mum tells you about Grandad's Thing ----
+LC.INTRO_SCENE = [
+  ['act', 'wakeIntro'], ['actor', 'mum', 'front'],
+  ['say', 'mum', 'Morning, sleepyhead! You fell asleep down the back of the sofa again. There\'s a crisp in your ear.'],
+  ['say', 'mum', 'I\'m off to work in a minute. Double shift at the supermarket. The self-checkouts have it in for me, love. Personally.'],
+  ['say', 'mum', 'Oh! Grandad\'s solicitor dropped something round this morning. It\'s in the hall. Under a sheet. It\'s massive. He said it\'s for YOU.'],
+  ['say', 'mum', 'Go on then, have a look! I\'ll put the kettle on. I always put the kettle on.'],
+];

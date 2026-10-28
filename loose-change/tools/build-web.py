@@ -9,8 +9,12 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src, out = os.path.join(root, 'src'), os.path.join(root, 'dist', 'web')
 shutil.rmtree(out, ignore_errors=True)
 shutil.copytree(src, out)
+# leave out models the manifest doesn't load (old versions kept in the repo for reference)
+used = {os.path.normpath(os.path.join(out, 'assets', 'models', f)) for v in json.load(open(os.path.join(out, 'assets', 'models', 'manifest.json'))).values() for f in v}
 for d, _, files in os.walk(out):
     for f in files:
+        if f.endswith('.glb') and os.path.normpath(os.path.join(d, f)) not in used:
+            os.remove(os.path.join(d, f)); continue
         if f.endswith('.glb'):
             p = os.path.join(d, f)
             with open(p, 'rb') as fh: data = fh.read()

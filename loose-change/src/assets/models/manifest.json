@@ -274,45 +274,6 @@
  "f:washer": [
   "kenney/furniture/washer.glb"
  ],
- "char:a": [
-  "kenney/people/character-a.glb"
- ],
- "char:b": [
-  "kenney/people/character-b.glb"
- ],
- "char:c": [
-  "kenney/people/character-c.glb"
- ],
- "char:d": [
-  "kenney/people/character-d.glb"
- ],
- "char:e": [
-  "kenney/people/character-e.glb"
- ],
- "char:f": [
-  "kenney/people/character-f.glb"
- ],
- "char:i": [
-  "kenney/people/character-i.glb"
- ],
- "char:j": [
-  "kenney/people/character-j.glb"
- ],
- "char:k": [
-  "kenney/people/character-k.glb"
- ],
- "char:m": [
-  "kenney/people/character-m.glb"
- ],
- "char:n": [
-  "kenney/people/character-n.glb"
- ],
- "char:p": [
-  "kenney/people/character-p.glb"
- ],
- "char:q": [
-  "kenney/people/character-q.glb"
- ],
  "pet:bunny": [
   "kenney/pets/animal-bunny.glb"
  ],
@@ -381,16 +342,6 @@
  ],
  "surv:workbench": [
   "kenney/survival/workbench.glb"
- ],
- "person": [
-  "kenney/people/character-a.glb",
-  "kenney/people/character-b.glb",
-  "kenney/people/character-c.glb",
-  "kenney/people/character-d.glb",
-  "kenney/people/character-f.glb",
-  "kenney/people/character-i.glb",
-  "kenney/people/character-j.glb",
-  "kenney/people/character-m.glb"
  ],
  "car": [
   "kenney/cars/sedan.glb",
@@ -521,9 +472,6 @@
   "kenney/houses/building-sample-house-a.glb",
   "kenney/houses/building-sample-house-b.glb",
   "kenney/houses/building-sample-house-c.glb"
- ],
- "char:nan": [
-  "kenney/people/character-nan.glb"
  ],
  "qanim": [
   "quaternius/people/Anims.glb"

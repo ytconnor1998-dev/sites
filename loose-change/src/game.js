@@ -1294,7 +1294,7 @@
   }
 
   // ---------- the day: 07:00 to 22:00 in about 16 minutes, then Mum calls you in ----------
-  const DAY_SECS = 16 * 60;
+  const DAY_SECS = 28 * 60; // one day (07:00 to 22:00) lasts 28 real minutes
   const evening = () => S.tod >= 0.7;
   const NIGHT_END = 1.3; // 07:00 at 0, 22:00 at 1, 02:30 at 1.3
   const night = () => S.tod >= 1;
@@ -1416,7 +1416,7 @@
   const mumSay = (line) => { LC.world.speak(mum, line, 'Mum', Math.max(4, line.length * 0.06)); LC.audio.sfx('babbleHigh'); };
   const TUTORIAL = [
     { goal: 'Go and look at the big thing under the sheet in the hall', hint: 'WASD to walk, mouse to look', guide: 'thing',
-      start: () => mumSay('Morning, love! Grandad\'s left you something in the hall. Big. Sheet over it. Very mysterious. Very Grandad.'),
+      start: () => mumSay('Go on! It\'s in the hall. Big thing, sheet over it. Very mysterious. Very Grandad.'),
       done: () => LC.world.near('thing', 2.6) },
     { goal: 'Read Grandad\'s note', hint: 'It\'s pinned to the sheet',
       start: () => modal({ icon: '✉️', title: 'A note pinned to the sheet', text: `<i>"It's yours when you can pay for it. <b>${fmt(LC.THING_COST)}</b>. No peeking. Love, Grandad.<br><br>P.S. Don't let Brian have it."</i>`, choices: [{ label: 'A TRILLION?!' }] }),
@@ -1458,7 +1458,7 @@
     if (S.flags.tutorialDone || S.runs > 0) return;
     S.mumAt = 'tutorial';
     tut = { i: -1 };
-    mum = LC.world.spawnActor('mum', -1.6, 1.2);
+    mum = LC.world.spawnActor('mum', -3.5, 1.25);
     tutorialNext();
   }
   function tutorialNext() {
@@ -1955,7 +1955,41 @@
     hideTip();
     $('#screen').classList.remove('show');
     LC.audio.sfx('click');
+    if (inMenu) { $('#menu').classList.add('show'); return; }
     LC.world.lock();
+  }
+
+  // ---------- the title menu ----------
+  let inMenu = true;
+  function showMenu(hasSave) {
+    inMenu = true; LC.world.menuCam(true); LC.world.unlock(); document.body.classList.add('in-menu');
+    const m = $('#menu'); m.classList.add('show');
+    const fresh = !hasSave || (!S.flags.tutorialDone && S.runs === 0 && S.lifetime < 1);
+    $('#menu-save').innerHTML = fresh ? 'A game about loose change, a trillion quid, and the bloke next door.' : `Run ${S.runs + 1} · ${fmt(S.money)} saved · day ${S.day || 1} · ${fmtTime(S.playSecs || 0)} played`;
+    const btns = [];
+    if (!fresh) btns.push(['Continue', '', () => startGame(false)]);
+    btns.push(['New game', fresh ? '' : 'ghost', () => {
+      if (fresh) return startGame(true);
+      $('#menu').classList.remove('show');
+      modal({ icon: '🔥', title: 'Start a new game?', text: 'This replaces your current game. Anything in your save slots stays safe.', choices: [
+        { label: 'Start again', cls: 'danger', fn: () => { leaving = true; try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } location.reload(); } },
+        { label: 'Keep my game', cls: 'ghost', fn: () => { $('#menu').classList.add('show'); } },
+      ] });
+    }]);
+    btns.push(['Load game', 'ghost', () => { $('#menu').classList.remove('show'); loadMenu(); const back = () => { if (!modalOpen) { if (inMenu) $('#menu').classList.add('show'); } else setTimeout(back, 300); }; setTimeout(back, 300); }]);
+    btns.push(['Settings', 'ghost', () => { $('#menu').classList.remove('show'); openScreen('phone', 'settings'); }]);
+    const row = $('#menu-btns'); row.innerHTML = '';
+    btns.forEach(([label, cls, fn], i) => { const b = el('button', 'btn ' + cls, label); b.onclick = () => { LC.audio.unlock(); LC.audio.sfx('click'); fn(); }; row.appendChild(b); if (i === 0) setTimeout(() => b.focus(), 50); });
+  }
+  function startGame(isNew) {
+    inMenu = false; lastTick = Date.now(); document.body.classList.remove('in-menu');
+    $('#menu').classList.remove('show');
+    LC.world.menuCam(false);
+    LC.audio.unlock(); LC.audio.music(S.settings.music);
+    LC.world.lock();
+    if (isNew || (!S.flags.tutorialDone && S.runs === 0)) {
+      LC.world.playScene(LC.INTRO_SCENE, () => { LC.world.endScene(); tutorialStart(); });
+    }
   }
   let shopOpen = null;
   function setTab(id) {
@@ -2368,7 +2402,7 @@
     const now = Date.now();
     const dt = Math.min(1, (now - lastTick) / 1000);
     lastTick = now;
-    if (!endingPlaying) {
+    if (!endingPlaying && !inMenu) {
       gain(income() * dt);
       addDepth(digRate() * dt);
       S.playSecs += dt;
@@ -2472,6 +2506,7 @@
   // ---------- boot ----------
   function onLockChange(locked) {
     if (locked) { $('#pause').classList.remove('show'); return; }
+    if (inMenu) return;
     if (!screenOpen && !endingPlaying) { save(); renderSaveLine(); $('#pause').classList.add('show'); }
   }
 
@@ -2485,8 +2520,8 @@
     LC.world.setLoftPigs(Object.keys(S.loftPigs).filter((k) => S.loftPigs[k] === 'done').map(Number));
     if (washing() || S.washUntil) LC.world.washerShake(washing());
     renderCard();
-    if (!loaded || (!S.flags.tutorialDone && S.runs === 0)) setTimeout(tutorialStart, 800);
 
+    $('#pause-menubtn').onclick = (e) => { e.stopPropagation(); save(); $('#pause').classList.remove('show'); showMenu(true); };
     $('#pause-savebtn').onclick = (e) => { e.stopPropagation(); saveMenu(); };
     $('#pause-loadbtn').onclick = (e) => { e.stopPropagation(); loadMenu(); };
     $('#pause').onclick = () => { LC.audio.unlock(); LC.audio.music(S.settings.music); LC.world.lock(); };
@@ -2510,7 +2545,7 @@
     $('#news-text').addEventListener('animationend', nextNews);
     LC.audio.volume(S.settings.volume);
     LC.audio.setSfxEnabled(() => S.settings.sfx);
-    $('#pause').classList.add('show');
+    showMenu(loaded);
 
     nextNews();
     tick();
