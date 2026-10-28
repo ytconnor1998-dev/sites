@@ -1727,6 +1727,7 @@ function cutStep() {
   }
   if (type === 'turn') {
     const y0 = player.yaw; cut.yaw += Math.PI; const y1 = cut.yaw; LC.audio.sfx('step');
+    if (player.pos.x > 2.2) { const x0 = player.pos.x; tween(1.1, (k) => { player.pos.x = x0 + (2.1 - x0) * k; }); }
     tween(1.1, (k) => { const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; player.yaw = y0 + (y1 - y0) * e; });
     cut.wait = 1.3; return;
   }
@@ -1734,11 +1735,13 @@ function cutStep() {
     let o = a === 'piggy' ? cut.actors.piggy : cutActor(a);
     if (a !== 'piggy') {
       const fwd = new THREE.Vector3(-Math.sin(cut.yaw), 0, -Math.cos(cut.yaw));
-      const at = b === 'thing' ? THING_AT.clone().add(new THREE.Vector3(-0.5, 0, 0)) : b === 'front' ? player.pos.clone().addScaledVector(fwd, 1.7) : new THREE.Vector3(0.3, 0, 1.6);
+      const at = b === 'thing' ? THING_AT.clone().add(new THREE.Vector3(-0.5, 0, 0)) : b === 'front' ? player.pos.clone().addScaledVector(fwd, 2.3) : new THREE.Vector3(0.3, 0, 1.6);
       o.position.copy(at); o.rotation.y = Math.atan2(player.pos.x - at.x, player.pos.z - at.z); scene.add(o); cut.props.push(o);
       if (a === 'dev') { o.position.set(THING_AT.x - 0.5, 0.15, THING_AT.z + 0.4); o.rotation.y = -Math.PI / 2; }
       cut.actors[a] = o;
       LC.audio.sfx(a === 'goose' ? 'honk' : 'step');
+      // take a step back from people behind you, so they aren't right in your face
+      if (!b || b === 'behind') { const x0 = player.pos.x; tween(0.6, (k) => { player.pos.x = x0 + (2.7 - x0) * k; }); }
     }
     lookAtHead(o, CUT_HEADS[a] || 2.0);
     cut.wait = 0.9; return;
