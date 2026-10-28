@@ -1284,6 +1284,102 @@ function hitPig() {
   }
 }
 
+// ---------- scratch cards, held in your hands ----------
+const card = { group: null, mesh: null, base: null, silver: null, out: null, tex: null, cursor: { x: 0.5, y: 0.55 }, coin: null, active: false, done: false, scratching: false, moves: 0 };
+const CW = 512, CH = 768, GRID = { x: 46, y: 250, w: 420, h: 420 };
+const iconImgs = {};
+function iconImg(emoji) {
+  if (!iconImgs[emoji]) {
+    const cps = [...emoji].map((c) => c.codePointAt(0));
+    const list = cps.includes(0x200d) ? cps : cps.filter((c) => c !== 0xfe0f);
+    const img = new Image(); img.src = `assets/icons/${list.map((c) => c.toString(16)).join('-')}.svg`;
+    iconImgs[emoji] = img;
+  }
+  return iconImgs[emoji];
+}
+function drawCardBase(def, cells) {
+  const g = card.base.getContext('2d');
+  const gold = def.id === 'gold';
+  const bg = g.createLinearGradient(0, 0, CW, CH);
+  bg.addColorStop(0, gold ? '#ffd34d' : '#6ad04f'); bg.addColorStop(1, gold ? '#e08a12' : '#2d8a4f');
+  g.fillStyle = bg; g.fillRect(0, 0, CW, CH);
+  g.fillStyle = 'rgba(255,255,255,.12)';
+  for (let i = -CH; i < CW; i += 40) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + CH, CH); g.lineTo(i + CH + 18, CH); g.lineTo(i + 18, 0); g.fill(); }
+  g.strokeStyle = '#fff'; g.lineWidth = 10; g.strokeRect(14, 14, CW - 28, CH - 28);
+  g.textAlign = 'center'; g.fillStyle = '#fff'; g.strokeStyle = '#2d2118'; g.lineWidth = 10;
+  let px = 74; g.font = `700 ${px}px Fredoka, sans-serif`;
+  while (g.measureText(def.name.toUpperCase()).width > CW - 70) { px -= 4; g.font = `700 ${px}px Fredoka, sans-serif`; }
+  g.strokeText(def.name.toUpperCase(), CW / 2, 110); g.fillText(def.name.toUpperCase(), CW / 2, 110);
+  g.font = '700 30px Fredoka, sans-serif'; g.lineWidth = 6;
+  g.strokeText('MATCH 3 TO WIN!', CW / 2, 160); g.fillText('MATCH 3 TO WIN!', CW / 2, 160);
+  g.font = '600 22px Fredoka, sans-serif'; g.fillStyle = '#2d2118';
+  g.fillText('JACKPOT x50 · GEESE · SOCKS · FROGS', CW / 2, 205);
+  g.fillStyle = '#fffaf0'; g.fillRect(GRID.x - 10, GRID.y - 10, GRID.w + 20, GRID.h + 20);
+  const cw = GRID.w / 3;
+  cells.forEach((c, i) => {
+    const x = GRID.x + (i % 3) * cw, y = GRID.y + Math.floor(i / 3) * cw;
+    g.strokeStyle = '#d8c8a8'; g.lineWidth = 3; g.setLineDash([8, 6]); g.strokeRect(x + 6, y + 6, cw - 12, cw - 12); g.setLineDash([]);
+    const img = iconImg(c.icon);
+    const draw = () => { g.drawImage(img, x + cw / 2 - 42, y + 18, 84, 84); g.fillStyle = '#2d2118'; g.font = '700 18px Fredoka, sans-serif'; g.fillText(c.label, x + cw / 2, y + cw - 18); composeCard(); };
+    if (img.complete && img.naturalWidth) draw(); else img.addEventListener('load', draw, { once: true });
+  });
+  g.font = '500 16px Fredoka, sans-serif'; g.fillStyle = '#fff';
+  g.fillText('Play responsibly. Do not scratch the goose.', CW / 2, CH - 40);
+}
+function drawSilver() {
+  const g = card.silver.getContext('2d');
+  g.globalCompositeOperation = 'source-over';
+  const gr = g.createLinearGradient(0, GRID.y, CW, GRID.y + GRID.h);
+  gr.addColorStop(0, '#b8b8b8'); gr.addColorStop(0.5, '#f0f0f0'); gr.addColorStop(1, '#a8a8a8');
+  g.fillStyle = gr; g.fillRect(GRID.x - 10, GRID.y - 10, GRID.w + 20, GRID.h + 20);
+  g.fillStyle = 'rgba(0,0,0,.12)'; for (let i = 0; i < 600; i++) g.fillRect(GRID.x + Math.random() * GRID.w, GRID.y + Math.random() * GRID.h, 3, 3);
+  g.fillStyle = '#8a8a8a'; g.font = '700 30px Fredoka, sans-serif'; g.textAlign = 'center';
+  for (let r = 0; r < 3; r++) g.fillText('SCRATCH', CW / 2, GRID.y + 80 + r * 140);
+}
+function composeCard() {
+  const g = card.out.getContext('2d');
+  g.clearRect(0, 0, CW, CH); g.drawImage(card.base, 0, 0); g.drawImage(card.silver, 0, 0);
+  card.tex.needsUpdate = true;
+}
+function buildCard() {
+  card.base = document.createElement('canvas'); card.base.width = CW; card.base.height = CH;
+  card.silver = document.createElement('canvas'); card.silver.width = CW; card.silver.height = CH;
+  card.out = document.createElement('canvas'); card.out.width = CW; card.out.height = CH;
+  card.tex = new THREE.CanvasTexture(card.out); card.tex.colorSpace = THREE.SRGBColorSpace; card.tex.anisotropy = 8;
+  card.mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.3), new THREE.MeshBasicMaterial({ map: card.tex, toneMapped: false }));
+  card.coin = M.coin(0.011, false); card.coin.rotation.x = Math.PI / 2; card.coin.position.z = 0.01;
+  card.group = new THREE.Group(); card.group.add(card.mesh, card.coin);
+  card.group.position.set(0, -0.015, -0.33); card.group.rotation.x = -0.12;
+  card.group.visible = false; camera.add(card.group);
+  for (const sym of Object.values(LC.SCRATCH_SYMBOLS)) iconImg(sym.icon);
+}
+function startCard(def, cells) {
+  drawCardBase(def, cells); drawSilver(); composeCard();
+  card.cursor = { x: 0.5, y: 0.6 }; card.done = false; card.moves = 0; card.active = true; card.group.visible = true;
+  placeCoin();
+}
+function placeCoin() { card.coin.position.set((card.cursor.x - 0.5) * 0.2, (0.5 - card.cursor.y) * 0.3, 0.008); }
+function scratchAt() {
+  const g = card.silver.getContext('2d');
+  g.globalCompositeOperation = 'destination-out';
+  g.beginPath(); g.arc(card.cursor.x * CW, card.cursor.y * CH, 30, 0, Math.PI * 2); g.fill();
+  composeCard();
+  if (++card.moves % 8 === 0) {
+    LC.audio.sfx('scratch');
+    const d = g.getImageData(GRID.x, GRID.y, GRID.w, GRID.h).data;
+    let clear = 0, n = 0;
+    for (let i = 3; i < d.length; i += 4 * 53) { n++; if (d[i] === 0) clear++; }
+    if (clear / n > 0.62) finishCard();
+  }
+}
+function finishCard() {
+  if (card.done) return;
+  card.done = true;
+  card.silver.getContext('2d').clearRect(0, 0, CW, CH); composeCard();
+  LC.game.resolveCard();
+}
+function endCard() { card.active = false; card.group.visible = false; card.scratching = false; }
+
 // ---------- what you're holding (first-person view model) ----------
 const view = { group: null, meshes: {}, current: null, swing: 0, sway: 0 };
 function buildViewModel() {
@@ -1308,6 +1404,7 @@ function viewMesh(kind, tier) {
 }
 let heldSprite = null, heldIcon = null;
 function updateViewModel(dt, moving) {
+  view.group.visible = !card.active;
   const kind = focus && focus.tool ? focus.tool : 'hand';
   // holding something from your pockets while looking at the stall
   const want = focus && focus.slot != null ? LC.game.heldIcon() : null;
@@ -1348,7 +1445,7 @@ function tryMove(dx, dz) {
   if (!blocked(player.pos.x, nz)) player.pos.z = nz;
 }
 function updatePlayer(dt) {
-  const frozen = LC.game.isBlocked();
+  const frozen = LC.game.isBlocked() || card.active;
   let fx = 0, fz = 0;
   if (!frozen && locked) {
     if (keys.has('KeyW') || keys.has('ArrowUp')) fz -= 1;
@@ -1395,7 +1492,7 @@ function updateFocus() {
     break;
   }
   focus = f;
-  LC.game.setPrompt(f && !LC.game.isBlocked() ? f.prompt() : '');
+  LC.game.setPrompt(f && !LC.game.isBlocked() && !card.active ? f.prompt() : '');
 }
 function useFocus(auto) { if (focus && !LC.game.isBlocked()) { view.swing = 1; focus.use(auto); } }
 
@@ -1425,18 +1522,29 @@ function setupInput() {
     if (!locked) { keys.clear(); holding = false; }
   });
   document.addEventListener('mousemove', (e) => {
+    if (locked && card.active) {
+      card.cursor.x = Math.max(0.06, Math.min(0.94, card.cursor.x + e.movementX * 0.0012));
+      card.cursor.y = Math.max(0.06, Math.min(0.94, card.cursor.y + e.movementY * 0.0012));
+      placeCoin();
+      if (card.scratching && !card.done) scratchAt();
+      return;
+    }
     if (!locked || LC.game.isBlocked()) return;
     const k = 0.0022 * sensitivity * (flipTarget ? -1 : 1);
     player.yaw -= e.movementX * k;
     player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch - e.movementY * k));
   });
-  document.addEventListener('mousedown', (e) => { if (locked && e.button === 0) { holding = true; holdTimer = 0.25; useFocus(); } });
-  document.addEventListener('mouseup', (e) => { if (e.button === 0) holding = false; });
+  document.addEventListener('mousedown', (e) => {
+    if (locked && card.active && e.button === 0) { if (card.done) { endCard(); return; } card.scratching = true; scratchAt(); return; }
+    if (locked && e.button === 0) { holding = true; holdTimer = 0.25; useFocus(); }
+  });
+  document.addEventListener('mouseup', (e) => { if (e.button === 0) { holding = false; card.scratching = false; } });
   document.addEventListener('wheel', (e) => { if (locked && !LC.game.isBlocked()) LC.game.cycleHeld(e.deltaY > 0 ? 1 : -1); }, { passive: true });
   addEventListener('keydown', (e) => {
     if (e.code === 'Tab') { e.preventDefault(); LC.game.togglePhone(); return; }
     if (!locked) return;
     keys.add(e.code);
+    if (e.code === 'KeyE' && !e.repeat && card.active) { if (card.done) endCard(); else { finishCard(); } return; }
     if (e.code === 'KeyE' && !e.repeat) { holding = true; holdTimer = 0.25; useFocus(); }
     if (e.code === 'Space' && player.pos.y === 0 && !LC.game.isBlocked() && !crouching) player.vy = 6;
     if ((e.code === 'KeyC' || e.code === 'ControlLeft') && !e.repeat) crouching = !crouching;
@@ -1593,6 +1701,7 @@ function init() {
   buildUnderground();
   buildLoft();
   buildViewModel();
+  buildCard();
   setQuality(true);
   resize();
   setupInput();
@@ -1608,6 +1717,7 @@ LC.world = {
   setPig,
   setGoose,
   talkStart, talkSay, talkEnd, evolve,
+  startCard, cardActive: () => card.active,
   isUnderground: () => area === 'under',
   area: () => area,
   goLoft: () => goArea('loft', [LX - 3.4, 0], -Math.PI / 2),
@@ -1657,6 +1767,7 @@ LC.world = {
     view: (x, z, yaw, pitch = -0.1) => { player.pos.set(x, 0, z); player.yaw = yaw; player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); },
     use: () => { camera.updateMatrixWorld(); updateFocus(); useFocus(); },
     focus: () => { camera.updateMatrixWorld(); updateFocus(); return focus && focus.prompt(); },
+    scratch: (rows = 3) => { for (let r = 0; r < rows; r++) for (let i = 0; i <= 20; i++) { card.cursor.x = 0.1 + (r % 2 ? 20 - i : i) * 0.04; card.cursor.y = 0.36 + r * 0.09; placeCoin(); if (!card.done) scratchAt(); } },
     hits: () => { camera.updateMatrixWorld(); ray.setFromCamera(center, camera); ray.far = 6; return ray.intersectObjects(interactables, true).map((h) => `${h.distance.toFixed(2)} ${h.object.userData.interact ? h.object.userData.interact.prompt().slice(0, 30) : '-'} vis:${h.object.visible}`); },
   },
   teleportHome: () => { player.pos.set(-3.5, 0, 0.6); player.yaw = Math.PI; player.pitch = -0.12; },

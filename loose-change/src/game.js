@@ -471,6 +471,7 @@
   function buyCard(c) {
     LC.audio.unlock();
     if (card && !card.done) return;
+    if (LC.world.cardActive()) return;
     if (S.cardStock < 1) { toast(`${ic('🏪')}<div>The corner shop has sold out. Back soon.</div>`); return; }
     const cost = cardCost(c);
     if (!spend(cost)) { LC.audio.sfx('nope'); return; }
@@ -479,7 +480,11 @@
     const odds = Object.entries(c.odds).map(([k, w]) => [k, k === 'lose' ? Math.max(5, w - 6 * luck()) : w]);
     const outcome = weighted(odds);
     card = { def: c, cost, outcome, grid: layoutCard(outcome), done: false };
-    renderCard();
+    // hand it over: the card appears in your hands back in the shop
+    closeScreen();
+    const SHORT = { coin: 'x2', pig: 'x4', clover: 'x10', gem: 'JACKPOT', goose: 'GOOSE', button: 'BUTTONS', sock: 'SOCK', frog: 'FROG' };
+    LC.world.startCard(c, card.grid.map((k) => ({ icon: LC.SCRATCH_SYMBOLS[k].icon, label: SHORT[k] })));
+    say('Hold the mouse button and move to scratch. <kbd>E</kbd> to scratch it all.');
   }
   function layoutCard(outcome) {
     const keys = Object.keys(LC.SCRATCH_SYMBOLS);
@@ -499,7 +504,6 @@
     card.done = true;
     S.stats.cards++;
     const sym = LC.SCRATCH_SYMBOLS[card.outcome];
-    const res = $('#card-result');
     let msg;
     if (card.outcome === 'lose') { msg = pick(['No match. The frog on the back is laughing at you.', 'Nothing. So close. (Not close.)', 'No win. The corner shop owner buys another boat.']); LC.audio.sfx('nope'); }
     else if (sym.mult) {
@@ -514,63 +518,12 @@
     } else if (sym.special === 'buttons') { S.buttons += 25; msg = `A "lifetime supply" of buttons! It's 25 buttons. ${ic('🔘')}`; LC.audio.sfx('win'); }
     else if (sym.special === 'sock') { S.socks++; msg = `You won one sock. It's warm. It feels lucky. (All income +1%)`; LC.audio.sfx('win'); }
     else { S.frogs++; findSecret('colin'); msg = `You won... a frog. It's not a prize, it just got on the card. It's yours now. (Frogs: ${S.frogs})`; LC.audio.sfx('ribbit'); }
-    res.innerHTML = msg;
-    res.classList.add('show');
-    $('#card-canvas').classList.add('cleared');
+    say(msg + ' <small>(click or E to put the card away)</small>');
   }
   function renderCard() {
-    const wrap = $('#card-area');
-    if (!card) { wrap.innerHTML = `<div class="card-empty">${ic('🎟️', 'huge')}<p>Buy a card from the corner shop, then scratch it with your mouse.</p></div>`; return; }
-    wrap.innerHTML = `
-      <div class="scratch-card" style="--cc:${card.def.colour}">
-        <div class="card-head">${card.def.name}<span>${fmt(card.cost)}</span></div>
-        <div class="card-grid">${card.grid.map((k) => `<div class="cell">${ic(LC.SCRATCH_SYMBOLS[k].icon)}<small>${LC.SCRATCH_SYMBOLS[k].label}</small></div>`).join('')}</div>
-        <canvas id="card-canvas"></canvas>
-        <div class="card-foot">MATCH 3 TO WIN</div>
-      </div>
-      <div class="card-actions"><button class="btn ghost small" id="scratch-all">${ic('🪙')} Scratch it all</button></div>
-      <div id="card-result" class="card-result"></div>`;
-    $('#scratch-all').onclick = () => { $('#card-canvas').classList.add('cleared'); resolveCard(); };
-    setupScratch();
+    $('#card-area').innerHTML = `<div class="card-empty">${ic('🎟️', 'huge')}<p>Buy a card and the shopkeeper hands it to you.<br>Scratch it right here in the shop with a 2p.</p></div>`;
   }
-  function setupScratch() {
-    const cv = $('#card-canvas');
-    const grid = cv.parentElement.querySelector('.card-grid');
-    const w = grid.offsetWidth, h = grid.offsetHeight;
-    const dpr = window.devicePixelRatio || 1;
-    cv.width = w * dpr; cv.height = h * dpr;
-    cv.style.width = w + 'px'; cv.style.height = h + 'px';
-    cv.style.top = grid.offsetTop + 'px'; cv.style.left = grid.offsetLeft + 'px';
-    const ctx = cv.getContext('2d');
-    ctx.scale(dpr, dpr);
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, '#c9c9c9'); grad.addColorStop(0.5, '#efefef'); grad.addColorStop(1, '#b5b5b5');
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(0,0,0,.18)';
-    for (let i = 0; i < 260; i++) ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
-    ctx.fillStyle = '#8a8a8a'; ctx.font = '700 15px Fredoka, sans-serif'; ctx.textAlign = 'center';
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) ctx.fillText('SCRATCH', (c + 0.5) * w / 3, (r + 0.5) * h / 3 + 5);
-    ctx.globalCompositeOperation = 'destination-out';
-    let down = false, last = null, moves = 0;
-    const pos = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-    const scrape = (e) => {
-      if (!down || card.done) return;
-      const [x, y] = pos(e);
-      ctx.lineWidth = 34; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(...(last || [x, y])); ctx.lineTo(x, y); ctx.stroke();
-      last = [x, y];
-      if (++moves % 6 === 0) { LC.audio.sfx('scratch'); if (clearedFraction(ctx, cv) > 0.6) resolveCard(); }
-    };
-    cv.onpointerdown = (e) => { LC.audio.unlock(); down = true; last = null; cv.setPointerCapture(e.pointerId); scrape(e); };
-    cv.onpointermove = scrape;
-    cv.onpointerup = cv.onpointercancel = () => { down = false; last = null; };
-  }
-  function clearedFraction(ctx, cv) {
-    const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
-    let clear = 0, n = 0;
-    for (let i = 3; i < d.length; i += 4 * 37) { n++; if (d[i] === 0) clear++; }
-    return clear / n;
-  }
+
 
   // ---------- tasks (the to-do list, top-left) ----------
   function giveReward(r) {
@@ -1943,6 +1896,7 @@
       onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,
       pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
+      resolveCard,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),
       gnomePrompt, gnome, brianEvent, brianDoorPrompt, brianDoor, brianSofaPrompt, raidBrianSofa, fundPrompt, raidFund,
