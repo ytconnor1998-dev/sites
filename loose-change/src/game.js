@@ -59,7 +59,7 @@
       pockets: [], stall: [], stallPrice: 'fair', stallUps: [],
       tools: { sofa: 0, pig: 0, dig: 0 }, toolDur: {}, request: null, nextRequestAt: 0, boosts: {}, crafted: [],
       letters: [], loftPigs: {}, boxes: [], washUntil: 0,
-      buffs: [], flags: {},
+      buffs: [], flags: {}, playSecs: 0, town: null,
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0, floor: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
       // carried across runs
@@ -127,7 +127,7 @@
     if (S.goose.friend) m += 0.1;
     return m * karmaMult();
   }
-  function genIncome(g) { return (S.gens[g.id] || 0) * g.income * genMult(g); }
+  function genIncome(g) { return g.id === 'pigeons' && S.flags.pigeonStrike ? 0 : (S.gens[g.id] || 0) * g.income * genMult(g); }
   function baseIncome() { return LC.GENERATORS.reduce((t, g) => t + genIncome(g), 0) * globalMult(); }
   function income() { return baseIncome() * buffMult('income'); }
   function clickValue() {
@@ -645,7 +645,7 @@
   function stallTick(dt) {
     if (!stallItems().length) return;
     if (S.stallUps.includes('lemonade') && LC.world.nearStall(8)) gain(baseIncome() * 0.1 * dt);
-    let rate = 1;
+    let rate = townStallRate();
     if (S.stallUps.includes('sign')) rate *= 1.4;
     if (S.stallUps.includes('parasol')) rate *= 1.3;
     if (S.stallUps.includes('bell')) rate *= 2;
@@ -1187,6 +1187,149 @@
       ev.run();
     }
     if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
+  }
+
+  // ---------- town events: a random mix each run, something big every 9-13 minutes ----------
+  function townSetup() {
+    if (S.town) return;
+    const ids = LC.TOWN_EVENTS.map((e) => e.id).sort(() => Math.random() - 0.5);
+    S.town = { queue: ids.slice(0, 10), next: rand(540, 720), on: null, until: 0, seen: [], used: {} };
+  }
+  const townOn = (id) => S.town && S.town.on === id;
+  const townDef = (id) => LC.TOWN_EVENTS.find((e) => e.id === id);
+  function townTick(dt) {
+    townSetup();
+    const T = S.town;
+    if (T.on) {
+      T.until -= dt;
+      if (T.on === 'storm' && chance(dt / 7)) LC.world.coinRain(8);
+      if (T.on === 'treasure' && !T.used.clue2 && T.until < townDef('treasure').secs - 70) { T.used.clue2 = true; radio(LC.TREASURE_CLUES[T.used.spot][1]); }
+      if (T.until <= 0) townEnd();
+      return;
+    }
+    T.next -= dt;
+    // only start when you're in town and free, so you actually see it
+    if (T.next <= 0 && !modalOpen && !endingPlaying && LC.world.area() === 'town' && T.queue.length) townStart(T.queue.shift());
+  }
+  function townStart(id) {
+    const T = S.town, e = townDef(id);
+    T.on = id; T.until = e.secs; T.used = {}; if (!T.seen.includes(id)) T.seen.push(id);
+    S.stats.townEvents = (S.stats.townEvents || 0) + 1;
+    LC.world.townEvent(id, true);
+    LC.audio.sfx('event');
+    toast(`${ic(e.icon)}<div><b>${e.name}!</b><br><small>${e.news}</small><br><small><b>${e.tip}</b></small></div>`, 'gold');
+    if (id === 'party') addBuff({ id: 'town', icon: e.icon, label: 'Street party: income +25%', income: 1.25, secs: e.secs });
+    if (id === 'snow') addBuff({ id: 'town', icon: e.icon, label: 'Snow day: income +50%', income: 1.5, secs: e.secs });
+    if (id === 'powercut') addBuff({ id: 'town', icon: e.icon, label: 'Power cut: rummaging ×3', click: 3, secs: e.secs });
+    if (id === 'pigeons' && (S.gens.pigeons || 0) > 0) { S.flags.pigeonStrike = true; say('Your pigeons have stopped working. They\'re holding little signs.'); }
+    if (id === 'treasure') { T.used.spot = LC.world.treasureSpot(); setTimeout(() => radio(LC.TREASURE_CLUES[T.used.spot][0]), 4000); }
+    if (id === 'bbq') { say('Brian\'s in his front garden, burning sausages. His back door is wide open.'); }
+    if (id === 'geese') T.used.bites = 0;
+  }
+  function townEnd() {
+    const T = S.town, e = townDef(T.on);
+    LC.world.townEvent(T.on, false);
+    if (T.on === 'pigeons') S.flags.pigeonStrike = false;
+    if (T.on === 'geese' && T.used.bites < 3) { const n = lump(300, 5); gain(n); toast(`${ic('🛡️')}<div><b>You survived the goose invasion!</b><br><small>Only ${T.used.bites} bites. The council gives you ${fmt(n)} for bravery.</small></div>`, 'gold'); }
+    else toast(`${ic(e.icon)}<div>${e.end}</div>`);
+    S.buffs = S.buffs.filter((b) => b.id !== 'town'); renderBuffs();
+    T.on = null; T.until = 0; T.next = rand(540, 780);
+  }
+  function radio(line) { LC.audio.sfx('text'); toast(`${ic('📻')}<div><b>Radio Acacia FM:</b> "${line}"</div>`, 'msg'); }
+  const once = (key) => { if (S.town.used[key]) return false; S.town.used[key] = true; return true; };
+  // how busy the stall is during an event (0 = shut)
+  function townStallRate() {
+    if (!S.town || !S.town.on) return 1;
+    return { party: 3, heatwave: 2, marathon: 2, storm: 0, geese: 0.3, mayor: 1.5, funfair: 1.3 }[S.town.on] ?? 1;
+  }
+  const randJunk = (maxR = 2) => pick(Object.keys(LC.JUNK).filter((k) => LC.JUNK[k].rarity <= maxR && !LC.JUNK[k].noDrop));
+  function hookADuck() {
+    const cost = lump(20, 0.5);
+    if (!spend(cost)) { say(`It's ${fmt(cost)} a go. You can't afford a duck.`); LC.audio.sfx('nope'); return; }
+    LC.audio.sfx('ding');
+    const r = Math.random();
+    if (r < 0.1) { giveJunk(randJunk(3)); say('You hooked the GOLDEN duck! Top shelf prize!'); }
+    else if (r < 0.55) { giveJunk(randJunk(1)); say(pick(['Every duck wins a prize. This prize is... something.', 'A prize! Technically.'])); }
+    else { const n = lump(45, 1); gain(n); floatAt(null, n); say('The man gives you change from the wrong pocket. Result.'); }
+  }
+  function binPrompt(key) { return S.town.used['bin' + key] ? 'Already searched this bin' : 'Search the wheelie bin<small>Bin day. One person\'s rubbish...</small>'; }
+  function bin(key) {
+    if (!once('bin' + key)) return say(pick(['Already been through that one. It still smells.', 'Nothing left in there but regret.']));
+    LC.audio.sfx('tap');
+    const r = Math.random();
+    if (r < 0.4) giveJunk(randJunk(r < 0.06 ? 3 : 2));
+    else if (r < 0.85) { const n = lump(35, 0.5); gain(n); floatAt(null, n); say(pick(['Coins at the bottom of the bin. Gross. Worth it.', 'A crisp packet full of change. Someone\'s secret stash.'])); }
+    else say(pick(['Just a banana skin. And now it\'s on you.', 'A very angry cat. You close the lid.', 'Mrs Patel\'s bin is spotless. She\'s cleaned her rubbish.']));
+  }
+  function cheer() {
+    if (!ready('cheer', 2.5)) return;
+    LC.audio.sfx(pick(['tap', 'click']));
+    S.town.used.cheers = (S.town.used.cheers || 0) + 1;
+    if (chance(0.3)) { const n = lump(15, 0.3); gain(n); floatAt(null, n); say(pick(['A runner high-fives you and drops some coins!', '"THANKS KID!" They throw you their spare change.'])); }
+    else say(pick(['GO ON!!', 'YOU CAN DO IT!', 'Nice legs, mate!', 'Only 25 miles to go!']));
+    if (S.town.used.cheers === 15) { const n = lump(240, 5); gain(n); say(`The race organiser loves you. Best cheerer ever. ${fmt(n)} prize!`); LC.audio.sfx('fanfare'); }
+  }
+  function filmExtra(npc) {
+    const T = S.town;
+    if (T.used.filmed) return say('"That\'s a wrap on you, kid. Lovely work."');
+    if (!T.used.briefed) {
+      T.used.briefed = true;
+      return modal({ speaker: 'director', npc, icon: '🎬', title: 'The film director', text: 'You! Kid! We need an extra. Stand on the red X and look like you\'ve lost something. Then talk to me.', choices: [{ label: 'I was BORN for this' }, { label: 'What\'s the film?', fn: () => ({ text: 'It\'s called "Loose Change". Gritty drama about a kid saving up for something. Nobody will watch it.' }) }] });
+    }
+    if (!LC.world.onFilmMark()) return say('"No no no. On the X! The RED X!"');
+    T.used.filmed = true;
+    const n = lump(600, 10); gain(n); floatAt(null, n); LC.audio.sfx('fanfare');
+    S.flags.filmStar = true;
+    modal({ speaker: 'director', npc, icon: '🎬', title: 'ACTION!', text: `You look at the floor sadly. The director cries. "GENIUS." He pays you ${fmt(n)}. You'll be in the credits as "Kid Who Looks Sad".` });
+  }
+  function iceCream() {
+    const cost = lump(30, 1);
+    if (!spend(cost)) { LC.audio.sfx('nope'); return say(`A 99 is ${fmt(cost)}. Daylight robbery.`); }
+    LC.audio.sfx('ding');
+    addBuff({ id: 'icecream', icon: '🍦', label: 'Brain freeze: rummaging ×2', click: 2, secs: 60 });
+    say(pick(['BRAIN FREEZE. You can see through time. Rummaging ×2.', 'A 99 with a flake. You are unstoppable.', 'It drips on your shoe. Still worth it.']));
+  }
+  function snowman() {
+    if (!once('snowman')) return say('The snowman has nothing left to give. Just a carrot.');
+    const n = lump(400, 8); gain(n); floatAt(null, n); LC.audio.sfx('coin');
+    say(`Inside the snowman: a frozen bag of coins! ${fmt(n)}! Whose snowman IS this?`);
+  }
+  function mayor(npc) {
+    if (!once('mayor')) return say('The Mayor has already shaken your hand. Twice would be weird.');
+    const n = lump(300, 5); gain(n);
+    modal({ speaker: 'mayor', npc, icon: '🎩', title: 'The Mayor', text: `Ah! A young entrepreneur! I've heard about your little stall. Have ${fmt(n)} from the town's Small Business Fund. Don't tell Brian. He applied eleven times.`,
+      choices: [{ label: 'Thank you, Mayor!' }, { label: 'Can I have your chain?', fn: () => ({ text: 'No. But he laughs, and gives you a commemorative pen. It is worth nothing.' }) }] });
+  }
+  function treasureDig() {
+    if (!once('treasure')) return say('Already dug. Just a hole now.');
+    LC.audio.sfx('fanfare'); LC.world.coinRain(12);
+    const n = lump(900, 15); gain(n); floatAt(null, n);
+    if (chance(0.5)) giveJunk(randJunk(3), true);
+    S.flags.treasureHunter = true;
+    radio(`WE HAVE A WINNER! A kid from Acacia Road found the prize! ${fmt(n)}!`);
+  }
+  function pigeonStrike(npc) {
+    if (!S.flags.pigeonStrike) return say('Don Coo-leone nods at you. Respect.');
+    const cost = lump(120, 2);
+    modal({ speaker: 'pigeon', npc, icon: '🐦', title: 'Don Coo-leone', text: 'Coo. You come to me, on the day of the strike, asking me to work. Coo. My birds want better bread. Seeded. None of that white stuff.',
+      choices: [
+        { label: `Pay for seeded bread (${fmt(cost)})`, fn: () => { if (!spend(cost)) return { text: 'You can\'t afford it. The Don looks disappointed in you.' }; S.flags.pigeonStrike = false; S.boosts.pigeons = Date.now() + 120000; return { text: 'The strike is over! The pigeons are so happy they work at triple speed for 2 minutes.' }; } },
+        { label: 'Make him an offer he can\'t refuse', fn: () => chance(0.4) ? (S.flags.pigeonStrike = false, { text: 'You offer him a whole sausage roll. His eyes water. The strike is over.' }) : { text: '"Coo." He refuses. You hear a lot of cooing behind you. You leave.' } },
+        { label: 'Leave it', cls: 'ghost' },
+      ] });
+  }
+  function saleSofa() {
+    if (!ready('salesofa', 0.35)) return null;
+    const v = clickValue() * 4; gain(v); LC.audio.sfx('coin', 1.2);
+    S.stats.clicks++;
+    if (chance(0.04)) giveJunk(randJunk(2));
+    return { value: v };
+  }
+  function bbqSausage() {
+    if (!ready('sausage', 20)) return say('Brian is looking this way. Wait a bit.');
+    addBuff({ id: 'sausage', icon: '🌭', label: 'Pinched sausage: income +20%', income: 1.2, secs: 60 });
+    LC.audio.sfx('ding');
+    say(pick(['You pinch a sausage. Brian thinks it was the dog.', 'Burnt on the outside, raw in the middle. Classic Brian.', 'You grab a burger. It\'s mostly charcoal. Delicious.']));
   }
 
   // ---------- The Thing & endings ----------
@@ -1739,6 +1882,7 @@
     if (S.depth > 100) items.push(`Hole in local garden now ${fmtDepth(S.depth)} deep. Brian "furious".`);
     if (S.frogs) items.push(`Person wins ${S.frogs} frog${S.frogs > 1 ? 's' : ''} on scratch cards. "We don't know how either," says shop.`);
     if (S.flags.derekGone) items.push('Man still thinking about Derek.');
+    if (S.town && S.town.on && chance(0.6)) items.splice(0, items.length, 'BREAKING: ' + townDef(S.town.on).news);
     const t = $('#news-text');
     t.classList.remove('roll'); void t.offsetWidth;
     t.textContent = items[(newsIdx++ * 7 + Math.floor(Math.random() * 3)) % items.length];
@@ -1754,7 +1898,9 @@
     if (!endingPlaying) {
       gain(income() * dt);
       addDepth(digRate() * dt);
+      S.playSecs += dt;
       brianTick(dt);
+      townTick(dt);
       stallTick(dt);
       if (S.pig && !S.pig.smashed && !pigType().real) S.pig.stored = Math.min(pigCap(), S.pig.stored + pigFill() * dt);
       if (S.cardRestockAt && now >= S.cardRestockAt) {
@@ -1793,8 +1939,9 @@
     if (S.buffs.length || before) renderBuffs();
     eventTick(now);
   }
-  function gooseBite() {
-    const n = S.money * 0.03;
+  function gooseBite(frac = 0.03) {
+    if (townOn('geese')) S.town.used.bites = (S.town.used.bites || 0) + 1;
+    const n = S.money * frac;
     S.money -= n;
     floatAt(null, '-' + fmt(n), 'bad');
     say(pick(['HONK. The goose bit you and took ' + fmt(n) + '.', 'The goose got you. ' + fmt(n) + ' gone.', 'You have been goosed. -' + fmt(n)]));
@@ -1897,6 +2044,7 @@
       pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
       resolveCard,
+      hookADuck, binPrompt, bin, cheer, filmExtra, iceCream, snowman, mayor, treasureDig, pigeonStrike, saleSofa, bbqSausage, townOn,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),
       gnomePrompt, gnome, brianEvent, brianDoorPrompt, brianDoor, brianSofaPrompt, raidBrianSofa, fundPrompt, raidFund,
@@ -1910,7 +2058,7 @@
       canLock: () => !screenOpen && !endingPlaying,
     };
     // Handy for testing: LC.debug.gain(1e9)
-    LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden() };
+    LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden(), town: (id) => { townSetup(); if (S.town.on) townEnd(); if (id) townStart(id); }, townEnd: () => S.town && S.town.on && townEnd() };
   }
   // the world module needs LC.game before its first frame, so set a stub early
   LC.game = { setPulse: () => {}, setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };

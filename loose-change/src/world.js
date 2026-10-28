@@ -523,6 +523,149 @@ function buildLoft() {
 }
 function setLoftPigs(smashed) { loftPigs.forEach((p, i) => (p.visible = !smashed.includes(i))); }
 
+// ---------- town events: things that turn up in town for a few minutes ----------
+const ev = { group: null, id: null, rain: null, snow: null, geese: [] };
+function townEvent(id, on) {
+  if (ev.group) {
+    for (let i = interactables.length - 1; i >= 0; i--) { let o = interactables[i]; while (o && o !== ev.group) o = o.parent; if (o) interactables.splice(i, 1); }
+    scene.remove(ev.group); ev.group = null;
+  }
+  if (brian.bbq && id === 'bbq' && !on) brianBBQ(false);
+  for (const gz of ev.geese) { scene.remove(gz.obj); agents.splice(agents.indexOf(gz), 1); }
+  ev.geese = [];
+  if (ev.rain) { scene.remove(ev.rain); ev.rain = null; }
+  ev.id = on ? id : null;
+  setSkyMood(on && (id === 'storm' || id === 'powercut' || id === 'snow') ? id : null);
+  if (!on) return;
+  const g = new THREE.Group(); ev.group = g; scene.add(g);
+  const put = (o, x, y, z, ry = 0) => { o.position.set(x, y, z); o.rotation.y = ry; g.add(o); return o; };
+  const crowd = (n, zone, speed = 1.2) => { for (let i = 0; i < n; i++) { const p = M.person({ shirt: pick([0xd9534f, 0xf2b631, 0x5b8bd9, 0x6aa84f, 0x9b59b6, 0xf7a8bd]), legs: pick([0x3a3f58, 0x222222, 0x5a4a3a]), hat: pick([null, 'cap', 'beanie', null]) }); const pos = randomIn(zone); put(p, pos.x, 0, pos.z); ev.geese.push(walker(p, zone, speed, { pause: 2 })); } };
+  if (id === 'party') {
+    for (let x = -50; x <= 50; x += 10) put(M.bunting(10), x + 5, 4.2, 13, 0);
+    crowd(10, [{ x0: -40, x1: 40, z0: 10.5, z1: 15.5 }], 1.0);
+  }
+  if (id === 'funfair') {
+    const fw = put(M.ferrisWheel(), 45, 0, 50, 0);
+    const wheel = fw.getObjectByName('wheel');
+    g.userData.spin = (dt) => { wheel.rotation.z += dt * 0.25; wheel.children.forEach((c) => { if (c.name === 'car') c.rotation.z = -wheel.rotation.z; }); };
+    const duck = put(M.stallTable(), 38, 0, 38, Math.PI);
+    const dsign = M.signPlane('HOOK-A-DUCK', 2.0, 0.42, { bg: '#f2b631', color: '#2d2118' }); dsign.position.set(0, 0.47, 0.44); duck.add(dsign);
+    for (let i = 0; i < 5; i++) duck.add(M.ball(0.09, 0xffd23a, -0.7 + i * 0.35, 1.02, 0, { mat: { emissive: 0x403000 } }));
+    interact(duck, { range: 3, prompt: () => 'Hook-a-duck<small>Every duck wins a prize!</small>', use: () => LC.game.hookADuck() });
+    crowd(8, spots.park, 1.0);
+  }
+  if (id === 'bins') {
+    for (let x = -50; x <= 50; x += 8) { if (Math.abs(x - 3) < 3) continue; const b = put(M.wheelieBin(pick([0x3f8a3f, 0x6a6a6a, 0x3b6ab8, 0x8a5a2a])), x + rand(-1, 1), 0, 9.8, Math.PI); const key = 'bin' + x; interact(b, { range: 2.5, prompt: () => LC.game.binPrompt(key), use: () => LC.game.bin(key) }); }
+  }
+  if (id === 'marathon') {
+    for (let i = 0; i < 9; i++) {
+      const r = M.person({ shirt: pick([0xf2b631, 0xd9534f, 0x5bb0e0]), legs: 0x222222, hat: i % 3 ? null : 'cap' });
+      const ry = rand(10.8, 15.2), sp = rand(3.2, 4.5), x0 = rand(-60, 60);
+      put(r, x0, 0, ry, Math.PI / 2);
+      const num = M.textSprite(String(100 + i * 7), { size: 0.18 }); num.position.set(0, 1.05, 0.2); r.add(num);
+      const a = { obj: r, update: (dt, t) => { r.position.x += sp * dt; if (r.position.x > 62) r.position.x = -62; limbs(r, Math.sin(t * 16 + i)); } };
+      agents.push(a); ev.geese.push(a);
+      interact(r, { range: 3, prompt: () => 'Cheer for the runner!', use: () => LC.game.cheer() });
+    }
+  }
+  if (id === 'film') {
+    put(M.filmCamera(), -1, 0, 11.5, Math.PI);
+    put(M.filmCamera(), 6, 0, 12, Math.PI * 1.2);
+    const dir = put(M.person({ shirt: 0x222222, legs: 0x222222, hat: 'beanie' }), 1.5, 0, 12.5, Math.PI);
+    interact(dir, { range: 3, prompt: () => 'Talk to the film director', use: () => LC.game.filmExtra(dir) });
+    const x = put(M.xMark(), 2.8, 0.02, 10.6);
+    g.userData.xmark = x.position;
+  }
+  if (id === 'heatwave') {
+    const van = put(M.iceCreamVan(), -10, 0, 11.6, Math.PI / 2);
+    interact(van, { range: 3.5, prompt: () => 'Buy an ice cream<small>Brain freeze gives you powers</small>', use: () => LC.game.iceCream() });
+  }
+  if (id === 'storm') makeRain(0x9ab8d0, 0.05, 30);
+  if (id === 'snow') {
+    makeRain(0xffffff, 0.08, 4);
+    const sm = put(M.snowman(), 9, 0, 12.5);
+    interact(sm, { range: 2.6, prompt: () => 'Look inside the snowman', use: () => LC.game.snowman() });
+  }
+  if (id === 'mayor') {
+    put(M.redCarpet(40), -30, 0.12, 17.2);
+    const mayor = put(M.person({ shirt: 0x1a1a3a, legs: 0x1a1a3a, hat: 'top', height: 1.08 }), -40, 0, 17.2, Math.PI / 2);
+    mayor.add(M.part(new THREE.TorusGeometry(0.25, 0.04, 6, 16), 0xf2b631, 0, 1.3, 0.1, { rot: [0.3, 0, 0] }));
+    const a = { obj: mayor, update: (dt, t) => { if (talker && talker.obj === mayor) return; mayor.position.x = -30 + Math.sin(t * 0.15) * 18; mayor.rotation.y = Math.cos(t * 0.15) > 0 ? Math.PI / 2 : -Math.PI / 2; limbs(mayor, Math.sin(t * 6)); } };
+    agents.push(a); ev.geese.push(a);
+    interact(mayor, { range: 3, prompt: () => 'Shake hands with the Mayor', use: () => LC.game.mayor(mayor) });
+  }
+  if (id === 'treasure') {
+    ev.spot = Math.floor(Math.random() * 5);
+    const spot = [[1.6, 9.3], [-30, 10.2], [41.2, 40], [-38, 7.6], [19.5, 15.8]][ev.spot];
+    const x = put(M.xMark(), spot[0], 0.02, spot[1]); x.visible = false; g.userData.treasureX = x;
+    interact(x, { range: 2.8, prompt: () => 'Dig here!', use: () => LC.game.treasureDig() });
+  }
+  if (id === 'geese') {
+    for (let i = 0; i < 10; i++) {
+      const gz = M.goose(); const p = randomIn([{ x0: Math.max(-55, player.pos.x - 18), x1: Math.min(55, player.pos.x + 18), z0: 9.5, z1: 16 }]);
+      put(gz, p.x, 0, p.z);
+      let cd = rand(0, 3);
+      const a = { obj: gz, update: (dt, t) => {
+        cd -= dt;
+        const to = new THREE.Vector3(player.pos.x - gz.position.x, 0, player.pos.z - gz.position.z); const d = to.length();
+        if (d < 14 && cd <= 0 && !LC.game.isBlocked()) { to.normalize(); const nx = gz.position.x + to.x * 3.6 * dt, nz = gz.position.z + to.z * 3.6 * dt; if (!blocked(nx, nz, 0.2)) { gz.position.x = nx; gz.position.z = nz; } gz.rotation.y = Math.atan2(to.x, to.z); }
+        if (d < 0.8 && cd <= 0) { cd = 4; LC.audio.sfx('honk'); shake = 0.25; LC.game.gooseBite(0.01); }
+      } };
+      agents.push(a); ev.geese.push(a);
+    }
+  }
+  if (id === 'pigeons') {
+    const don = M.pigeon(); don.scale.setScalar(4); put(don, 1.0, 1.35, 9.3, Math.PI);
+    don.add(M.box(0.1, 0.06, 0.02, 0x222222, 0, 0.12, 0.1));
+    interact(don, { range: 3, prompt: () => 'Negotiate with Don Coo-leone', use: () => LC.game.pigeonStrike(don) });
+  }
+  if (id === 'sofasale') {
+    for (let i = 0; i < 5; i++) {
+      const so = put(M.sofa(pick([0xd9534f, 0x5b8bd9, 0x9b59b6, 0xf2b631, 0x6aa84f]), 0x6a5a5a, 2.0), -40 + i * 16, 0, 16.9, Math.PI);
+      interact(so, { range: 3, hold: true, tool: 'sofa', prompt: () => 'Rummage down a sale sofa<small>Sofa sale! Full of other people\'s change</small>', use: () => { const r = LC.game.saleSofa(); if (r) { burstAt(so.position.clone().setY(0.8), 4); LC.game.floatAt(project(so.position.clone().setY(0.9)), r.value); } } });
+    }
+  }
+  if (id === 'bbq') {
+    brianBBQ(true);
+    const bx = brianSpots.doorX + 2.2;
+    const grill = put(M.group ? M.group() : new THREE.Group(), bx, 0, 6.6);
+    grill.add(M.cyl(0.35, 0.3, 0.3, 0x222222, 0, 0.85, 0), M.cyl(0.03, 0.03, 0.7, 0x333333, 0, 0.35, 0), M.box(0.6, 0.02, 0.6, 0x888888, 0, 1.0, 0));
+    for (let i = 0; i < 4; i++) grill.add(M.cyl(0.035, 0.035, 0.35, 0xb5573b, -0.18 + i * 0.12, 1.03, 0, { rot: [Math.PI / 2, 0, 0] }));
+    interact(grill, { range: 2.6, prompt: () => 'Pinch a sausage<small>Brian\'s BBQ. Everyone\'s here. Even you, apparently</small>', use: () => LC.game.bbqSausage() });
+    crowd(6, [{ x0: bx - 3, x1: bx + 3, z0: 5.8, z1: 8.2 }], 0.6);
+  }
+}
+function makeRain(color, size, speed) {
+  const n = 1500, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { pos[i * 3] = rand(-25, 25); pos[i * 3 + 1] = rand(0, 18); pos[i * 3 + 2] = rand(-25, 25); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  ev.rain = new THREE.Points(geo, new THREE.PointsMaterial({ color, size, transparent: true, opacity: 0.8 }));
+  ev.rain.userData.speed = speed; scene.add(ev.rain);
+}
+function updateEvent(dt) {
+  if (ev.rain) {
+    const a = ev.rain.geometry.attributes.position, sp = ev.rain.userData.speed;
+    for (let i = 0; i < a.count; i++) { let y = a.getY(i) - sp * dt; if (y < 0) y += 18; a.setY(i, y); if (sp < 10) a.setX(i, a.getX(i) + Math.sin(time + i) * dt * 0.3); }
+    a.needsUpdate = true; ev.rain.position.set(player.pos.x, 0, player.pos.z);
+  }
+  if (ev.group && ev.group.userData.spin) ev.group.userData.spin(dt);
+}
+// the sky changes for storms, power cuts and snow
+function setSkyMood(mood) {
+  if (area !== 'town') return;
+  const sky = scene.userData.sky.material.uniforms;
+  if (mood === 'storm') { sky.top.value.set(0x3a4250); sky.bottom.value.set(0x7a8290); sun.intensity = 1.2; hemi.intensity = 0.7; scene.fog.color.set(0x6a7280); scene.fog.far = 70; }
+  else if (mood === 'powercut') { sky.top.value.set(0x0a0f24); sky.bottom.value.set(0x1a2040); sun.intensity = 0.15; hemi.intensity = 0.25; scene.fog.color.set(0x10142a); scene.fog.far = 60; scene.traverse((o) => { if (o.isPointLight && !o.userData.area) o.visible = false; }); }
+  else if (mood === 'snow') { sky.top.value.set(0x9aa8c0); sky.bottom.value.set(0xe8eef6); sun.intensity = 2.2; hemi.intensity = 1.1; scene.fog.color.set(0xd8e0ea); }
+  else { sky.top.value.set(0x36588f); sky.bottom.value.set(0xf6b98a); sun.intensity = 3.4; hemi.intensity = 0.9; scene.fog.color.set(0xd89c78); scene.fog.far = 120; scene.traverse((o) => { if (o.isPointLight && !o.userData.area) o.visible = true; }); }
+}
+function brianBBQ(on) {
+  brian.bbq = on;
+  if (on) { brian.obj.position.set(brianSpots.doorX + 2.2, 0, 7.4); brian.path = []; brian.sitting = false; }
+  else setBrianState('home');
+}
+function treasureReveal() { if (ev.group && ev.group.userData.treasureX) ev.group.userData.treasureX.visible = true; }
+
 // ---------- the town: Acacia Road, the high street and the park ----------
 function buildTown() {
   const brick = (shade = 1) => texMat('brick', 4, 3, new THREE.Color(shade, shade, shade).getHex());
@@ -755,6 +898,7 @@ const BRIAN_TIMES = { home: 150, garden: 60, shops: 110 };
 function brianUpdate(dt, t) {
   const o = brian.obj;
   if (talker && talker.obj === o) return; // talking to you
+  if (brian.bbq) { o.rotation.y = Math.sin(t) * 0.5; limbs(o, 0); LC.game.setSuspicion(0, false); return; }
   brian.t += dt;
   // follow the current path
   if (brian.path.length) {
@@ -1028,7 +1172,7 @@ function gooseUpdate(dt, t) {
 
 // ---------- visitors for random events ----------
 // Characters that come and talk to you: they walk (or fly) up, chat in a speech bubble, then leave.
-const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow' };
+const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk' };
 function makeVisitor(kind) {
   if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92 });
   if (kind === 'badger') { const o = M.badger(); o.scale.setScalar(1.4); const tie = M.box(0.06, 0.18, 0.02, 0xc8231f, 0, 0.28, 0.62); o.add(tie); return o; }
@@ -1637,6 +1781,7 @@ function frame(now) {
   for (const a of [...agents]) a.update(dt, time);
   updatePickups(dt);
   updateParticles(dt);
+  updateEvent(dt);
   if (pig) {
     pigWobble = Math.max(0, pigWobble - dt * 4);
     pig.rotation.z = Math.sin(time * 40) * 0.15 * pigWobble;
@@ -1717,6 +1862,7 @@ LC.world = {
   setPig,
   setGoose,
   talkStart, talkSay, talkEnd, evolve,
+  townEvent, treasureReveal, treasureSpot: () => ev.spot, eventId: () => ev.id, onFilmMark: () => !!(ev.group && ev.group.userData.xmark && player.pos.distanceTo(ev.group.userData.xmark) < 1.2),
   startCard, cardActive: () => card.active,
   isUnderground: () => area === 'under',
   area: () => area,
@@ -1727,7 +1873,8 @@ LC.world = {
   setStallItems, setStallUps, nearStall, spawnCustomer,
   stallScreenPos: () => project(stall.pos.clone().setY(1.2)),
   stallWaiting: () => !!stallWaiter,
-  brianState: () => brian.state,
+  brianState: () => (brian.bbq ? 'bbq' : brian.state),
+  brianBBQ,
   brianSitting: () => brian.sitting,
   brianNoise, setDoorOpen, throwOut,
   brianNear: (r = 4) => brian.obj && brian.obj.position.distanceTo(player.pos) < r,
@@ -1764,6 +1911,8 @@ LC.world = {
   },
   // for testing: put the camera somewhere and use whatever is in front of it
   debug: {
+    evProps: () => (ev.group ? ev.group.children.map((c) => [+c.position.x.toFixed(1), +c.position.z.toFixed(1)]) : []),
+    lookAt: (fx, fz, tx, tz, pitch = -0.05) => { player.pos.set(fx, 0, fz); player.yaw = Math.atan2(-(tx - fx), -(tz - fz)); player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); return focus && focus.prompt(); },
     view: (x, z, yaw, pitch = -0.1) => { player.pos.set(x, 0, z); player.yaw = yaw; player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); },
     use: () => { camera.updateMatrixWorld(); updateFocus(); useFocus(); },
     focus: () => { camera.updateMatrixWorld(); updateFocus(); return focus && focus.prompt(); },

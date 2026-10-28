@@ -709,3 +709,30 @@ Love you. Go on then. Have a look.
 
 - Grandad` },
 ];
+
+// ---------- town events: each run gets a random mix ----------
+// secs = how long it lasts. The world builds the props; game.js does the money.
+LC.TOWN_EVENTS = [
+  { id: 'party', icon: '🎉', name: 'Street party', secs: 200, news: 'Acacia Road street party! Bunting! Sausage rolls! Customers everywhere!', end: 'The street party is winding down. Someone is still doing the conga.', tip: 'Stall customers ×3 and income +25%' },
+  { id: 'funfair', icon: '🎡', name: 'The funfair', secs: 220, news: 'The funfair has rolled into the park! Hook-a-duck: every duck wins a prize.', end: 'The funfair has packed up and left. The Ferris wheel is gone. Was it ever there?', tip: 'Hook-a-duck in the park' },
+  { id: 'bins', icon: '🗑️', name: 'Bin day', secs: 180, news: 'BIN DAY. Everyone\'s bins are out on the pavement. Full of other people\'s stuff.', end: 'The bin lorry has been. All the bins are gone.', tip: 'Search the bins along the street' },
+  { id: 'marathon', icon: '🏃', name: 'The Fun Run', secs: 160, news: 'The Acacia Fun Run is coming down your road! Cheer the runners on!', end: 'The last runner has finished. He was dressed as a rhino.', tip: 'Cheer the runners. Thirsty runners buy from your stall' },
+  { id: 'film', icon: '🎬', name: 'Film crew', secs: 200, news: 'A film crew is shooting outside your house! They need an extra!', end: 'The film crew have wrapped. It\'s going straight to DVD.', tip: 'Talk to the director' },
+  { id: 'heatwave', icon: '🥵', name: 'Heatwave', secs: 200, news: 'HEATWAVE. 34 degrees. The ice cream van is out. Lemonade sells like mad.', end: 'The heatwave is over. Back to normal British drizzle.', tip: 'Ice cream van on the street. Stall customers ×2' },
+  { id: 'storm', icon: '⛈️', name: 'Thunderstorm', secs: 150, news: 'Thunderstorm! Everyone\'s run inside. Coins are washing down the gutters.', end: 'The storm has passed. The gutters are empty. Mostly.', tip: 'Coins wash down the street. No stall customers' },
+  { id: 'powercut', icon: '🔦', name: 'Power cut', secs: 150, news: 'POWER CUT. The whole town is dark. Nobody can see you rummaging...', end: 'The power is back on. Everyone\'s fridge beeps at once.', tip: 'Sofa rummaging ×3. Brian can\'t see you' },
+  { id: 'mayor', icon: '🎩', name: 'The Mayor\'s visit', secs: 180, news: 'The Mayor is visiting the high street! Red carpet and everything!', end: 'The Mayor has left in a very shiny car.', tip: 'Shake hands with the Mayor on the high street' },
+  { id: 'treasure', icon: '📻', name: 'Radio treasure hunt', secs: 240, news: 'Radio Acacia FM has buried a prize somewhere in town! Listen for clues!', end: 'Radio Acacia FM: the treasure hunt is over! Back to the music.', tip: 'Listen for the clue and find the spot' },
+  { id: 'bbq', icon: '🍖', name: 'Brian\'s BBQ', secs: 200, news: 'Brian is having a BBQ. You were not invited. His house is EMPTY.', end: 'Brian\'s BBQ is over. He\'s back inside, smelling of charcoal.', tip: 'Brian is busy. Raid his house!' },
+  { id: 'geese', icon: '🪿', name: 'Goose invasion', secs: 120, news: 'GOOSE INVASION. Ten geese have taken the high street. Stay indoors.', end: 'The geese have gone. Nobody knows where. Nobody wants to know.', tip: 'Survive. Geese steal coins' },
+  { id: 'snow', icon: '☃️', name: 'Snow in August', secs: 160, news: 'It\'s snowing. In August. Scientists are baffled. Kids are thrilled.', end: 'The snow has melted. It\'s 25 degrees again. Weird.', tip: 'Something is inside the snowman. Income +50%' },
+  { id: 'pigeons', icon: '🐦', name: 'Pigeon strike', secs: 180, news: 'PIGEON STRIKE. The pigeons have downed tools. Their boss wants a word.', end: 'The pigeon strike is over. Business as usual.', tip: 'Negotiate with Don Coo-leone' },
+  { id: 'sofasale', icon: '🛋️', name: 'Sofa sale', secs: 200, news: 'MASSIVE SOFA SALE on the high street! Sofas out on the pavement! Down the back of them: other people\'s change!', end: 'The sofa sale has ended. The sofas have all gone. Hopefully to good homes.', tip: 'Rummage the sale sofas on the high street' },
+];
+LC.TREASURE_CLUES = [
+  ['Near a little red flag... and wooden letters.', 'Look by your own front gate!'],
+  ['Where the buses don\'t come on time...', 'Try the bus stop!'],
+  ['Where the ducks keep their secrets...', 'By the pond in the park!'],
+  ['Where the road runs out of houses, out west...', 'The far west end of Acacia Road!'],
+  ['Where notes are pinned and cats go missing...', 'The notice board!'],
+];

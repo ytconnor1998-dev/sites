@@ -602,3 +602,31 @@ export function washingMachine() {
 export function basket() { return group(cyl(0.3, 0.25, 0.45, 0xd8b878, 0, 0.23, 0, { seg: 12 }), ball(0.25, 0x5b8bd9, 0.05, 0.45, 0, { scale: [1, 0.4, 1] }), ball(0.18, 0xd9534f, -0.1, 0.5, 0.05, { scale: [1, 0.4, 1] })); }
 export function rockingHorse() { return group(box(1.0, 0.06, 0.3, C.woodDark, 0, 0.1, 0, { rot: [0, 0, 0] }), box(0.7, 0.3, 0.25, 0xf3eee4, 0, 0.6, 0), box(0.25, 0.35, 0.2, 0xf3eee4, 0.4, 0.85, 0), box(0.06, 0.45, 0.06, C.woodDark, -0.25, 0.3, 0), box(0.06, 0.45, 0.06, C.woodDark, 0.25, 0.3, 0), box(0.25, 0.08, 0.26, 0xd9534f, 0, 0.78, 0)); }
 export function cardboardBox(label) { const g = group(box(0.7, 0.5, 0.5, 0xc8a070, 0, 0.25, 0), box(0.72, 0.04, 0.2, 0xb08a5a, 0, 0.5, -0.12)); if (label) { const l = signPlane(label, 0.5, 0.16, { bg: '#f3eee4', color: '#2d2118' }); l.position.set(0, 0.3, 0.26); g.add(l); } return g; }
+
+// ---------- town event props ----------
+export function bunting(len) {
+  const g = new THREE.Group();
+  const cols = [0xd9534f, 0xf2b631, 0x5b8bd9, 0x6aa84f, 0xffffff];
+  g.add(cyl(0.01, 0.01, len, 0x333333, 0, 0, 0, { rot: [0, 0, Math.PI / 2] }));
+  for (let x = -len / 2 + 0.3; x < len / 2; x += 0.5) g.add(cone(0.12, 0.3, cols[Math.floor(Math.random() * 5)], x, -0.15 - Math.sin((x / len + 0.5) * Math.PI) * 0.4, 0, { seg: 3, rot: [Math.PI, 0, 0] }));
+  return g;
+}
+export function ferrisWheel() {
+  const g = new THREE.Group();
+  g.add(box(0.3, 9, 0.3, 0xdddddd, -1.5, 4.5, 0, { rot: [0, 0, 0.2] }), box(0.3, 9, 0.3, 0xdddddd, 1.5, 4.5, 0, { rot: [0, 0, -0.2] }));
+  const wheel = new THREE.Group(); wheel.name = 'wheel'; wheel.position.y = 8.5;
+  wheel.add(part(new THREE.TorusGeometry(5, 0.15, 6, 32), 0xd9534f, 0, 0, 0));
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; wheel.add(box(0.08, 5, 0.08, 0xdddddd, Math.cos(a) * 2.5, Math.sin(a) * 2.5, 0, { rot: [0, 0, a + Math.PI / 2] })); const car = box(0.8, 0.6, 0.6, [0xf2b631, 0x5b8bd9, 0x6aa84f][i % 3], Math.cos(a) * 5, Math.sin(a) * 5 - 0.5, 0); car.name = 'car'; wheel.add(car); }
+  g.add(wheel);
+  return g;
+}
+export function iceCreamVan() {
+  const g = group(box(2.0, 1.9, 4.2, 0xf3f3f3, 0, 1.25, 0), box(1.9, 1.0, 1.2, 0xf7a8bd, 0, 1.0, 2.6), box(1.8, 0.6, 1.1, 0xbfe0f0, 0, 1.75, 2.6), box(0.05, 0.9, 1.6, 0x333333, 1.01, 1.5, -0.3));
+  for (const [x, z] of [[-0.95, 2.4], [0.95, 2.4], [-0.95, -1.4], [0.95, -1.4]]) g.add(cyl(0.35, 0.35, 0.25, 0x222222, x, 0.35, z, { rot: [0, 0, Math.PI / 2] }));
+  const cone1 = group(cone(0.25, 0.6, 0xe8b060, 0, 2.5, 0, { rot: [Math.PI, 0, 0] }), ball(0.28, 0xfff6e6, 0, 2.95, 0)); g.add(cone1);
+  return g;
+}
+export function filmCamera() { return group(box(0.06, 1.3, 0.06, 0x333333, 0, 0.65, 0), box(0.5, 0.35, 0.7, 0x222222, 0, 1.45, 0), cyl(0.12, 0.14, 0.4, 0x111111, 0, 1.45, 0.5, { rot: [Math.PI / 2, 0, 0] }), cyl(0.2, 0.2, 0.1, 0x333333, 0, 1.75, 0.1, { rot: [0, 0, Math.PI / 2] })); }
+export function snowman() { return group(ball(0.5, 0xffffff, 0, 0.45, 0), ball(0.35, 0xffffff, 0, 1.1, 0), ball(0.24, 0xffffff, 0, 1.55, 0), cone(0.05, 0.25, 0xf08a24, 0, 1.55, 0.3, { rot: [Math.PI / 2, 0, 0] }), cyl(0.18, 0.2, 0.3, 0x222222, 0, 1.85, 0)); }
+export function redCarpet(len) { return box(len, 0.02, 1.6, 0xb81d1d, 0, 0.02, 0, { sharp: true }); }
+export function xMark() { const g = group(box(1.1, 0.03, 0.22, 0xc8231f, 0, 0.03, 0, { rot: [0, 0.78, 0], mat: { emissive: 0x801010 } }), box(1.1, 0.03, 0.22, 0xc8231f, 0, 0.03, 0, { rot: [0, -0.78, 0], mat: { emissive: 0x801010 } })); return g; }
