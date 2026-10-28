@@ -1597,6 +1597,8 @@
   function playEnding(id) {
     const e = LC.ENDINGS.find((x) => x.id === id);
     endingPlaying = true;
+    if (tut) { tut = null; S.flags.tutorialDone = true; LC.world.guide(null); }
+    if (mum) { LC.world.removeActor(mum); mum = null; }
     closeModal();
     closeScreen();
     LC.world.unlock();

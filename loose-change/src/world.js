@@ -1526,11 +1526,13 @@ function revealProp(name) {
 }
 function lookAtHead(o, headY) {
   const d = Math.hypot(o.position.x - player.pos.x, o.position.z - player.pos.z);
-  const targetPitch = Math.max(-0.6, Math.min(0.6, Math.atan2(headY * 0.85 - eye, Math.max(0.6, d))));
+  const targetPitch = Math.max(-0.6, Math.min(0.6, Math.atan2(headY - 0.35 - eye, Math.max(0.6, d))));
   const p0 = player.pitch; tween(0.5, (k) => { player.pitch = p0 + (targetPitch - p0) * k; });
 }
 function playScene(steps, done) {
   talkEnd(true); bubble(false);
+  for (const s2 of speech) s2.el.remove();
+  speech.length = 0;
   cut.active = true; cut.steps = steps; cut.i = 0; cut.wait = 0.6; cut.done = done; cut.tw = [];
   if (area !== 'town') { area = 'town'; scene.traverse((o) => { if (o.isPointLight) o.visible = !o.userData.area; }); }
   player.pos.set(2.1, 0, 1.6); player.yaw = -Math.PI / 2; player.pitch = 0.1; cut.yaw = -Math.PI / 2; crouching = false;
@@ -1566,7 +1568,7 @@ function cutStep() {
     let o = a === 'piggy' ? cut.actors.piggy : cutActor(a);
     if (a !== 'piggy') {
       const fwd = new THREE.Vector3(-Math.sin(cut.yaw), 0, -Math.cos(cut.yaw));
-      const at = b === 'thing' ? THING_AT.clone().add(new THREE.Vector3(-0.5, 0, 0)) : b === 'front' ? player.pos.clone().addScaledVector(fwd, 1.7) : new THREE.Vector3(0.55, 0, 1.6);
+      const at = b === 'thing' ? THING_AT.clone().add(new THREE.Vector3(-0.5, 0, 0)) : b === 'front' ? player.pos.clone().addScaledVector(fwd, 1.7) : new THREE.Vector3(0.3, 0, 1.6);
       o.position.copy(at); o.rotation.y = Math.atan2(player.pos.x - at.x, player.pos.z - at.z); scene.add(o); cut.props.push(o);
       if (a === 'dev') { o.position.set(THING_AT.x - 0.5, 0.15, THING_AT.z + 0.4); o.rotation.y = -Math.PI / 2; }
       cut.actors[a] = o;
@@ -1928,7 +1930,7 @@ function speak(obj, text, name = '', secs = 0) {
   let s2 = speech.find((x) => x.obj === obj);
   if (!s2) { const el = document.createElement('div'); el.className = 'bubble3d mini'; el.innerHTML = '<b class="who"></b><span class="line"></span>'; document.body.appendChild(el); s2 = { obj, el }; speech.push(s2); }
   s2.el.querySelector('.who').textContent = name; s2.el.querySelector('.line').innerHTML = text;
-  s2.until = time + (secs || Math.max(2.8, 1.4 + text.length * 0.05));
+  s2.until = performance.now() / 1000 + (secs || Math.max(2.8, 1.4 + text.length * 0.05));
 }
 // a line from someone: "quoted" speech goes in a bubble over them, anything else is a caption
 function voice(obj, text, name = '') {
@@ -1940,7 +1942,7 @@ function voice(obj, text, name = '') {
 function updateSpeech() {
   for (let i = speech.length - 1; i >= 0; i--) {
     const s2 = speech[i];
-    if (time > s2.until || !s2.obj.parent) { s2.el.remove(); speech.splice(i, 1); continue; }
+    if (performance.now() / 1000 > s2.until || !s2.obj.parent) { s2.el.remove(); speech.splice(i, 1); continue; }
     s2.obj.getWorldPosition(_hp); _hp.y += headOf(s2.obj);
     // only readable when you're close to them and looking their way
     const dist = _hp.distanceTo(camera.position), p = dist > SPEECH_RANGE ? null : project(_hp);
