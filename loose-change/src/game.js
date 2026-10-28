@@ -32,13 +32,12 @@
   function fmt(n) {
     if (!isFinite(n)) return '£∞';
     if (n < 0) return '-' + fmt(-n);
-    if (n < 1) return Math.floor(n * 100) + 'p';
-    if (n < 1000) return '£' + (n < 100 ? n.toFixed(2) : Math.floor(n).toString());
+    if (n < 1000) return '£' + (n < 100 ? (Math.floor(n * 100) / 100).toFixed(2) : Math.floor(n).toString());
     const tier = Math.min(SUFFIX.length - 1, Math.floor(Math.log10(n) / 3));
     const v = n / Math.pow(1000, tier);
     return '£' + (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : Math.floor(v)) + SUFFIX[tier];
   }
-  const fmtRate = (n) => (n < 1 && n > 0 ? (n * 100).toFixed(n < 0.1 ? 2 : 1) + 'p' : fmt(n)) + '/s';
+  const fmtRate = (n) => (n > 0 && n < 0.01 ? '£' + n.toFixed(3) : fmt(n)) + '/s';
   function fmtDepth(m) {
     if (m < 1000) return m.toFixed(m < 10 ? 2 : 1) + ' m';
     return (m / 1000).toLocaleString('en-GB', { maximumFractionDigits: m < 1e5 ? 2 : 0 }) + ' km';
@@ -1413,28 +1412,32 @@
   // ---------- tutorial: Mum walks you through the first few minutes ----------
   // each step: what to do (shown top-left), what people say when it starts, and when it's done
   let tut = null, mum = null;
-  const mumSay = (line) => { LC.world.speak(mum, line, 'Mum', Math.max(4, line.length * 0.06)); LC.audio.sfx('babbleHigh'); };
+  // Mum's at work: if she's not in the room her tips come as texts
+  const mumSay = (line) => {
+    if (mum) { LC.world.speak(mum, line, 'Mum', Math.max(4, line.length * 0.06)); LC.audio.sfx('babbleHigh'); return; }
+    toast(`${ic('📱')}<div><b>Mum</b><br><small>${line}</small></div>`, 'msg'); LC.audio.sfx('tap');
+  };
   const TUTORIAL = [
     { goal: 'Go and look at the big thing under the sheet in the hall', hint: 'WASD to walk, mouse to look', guide: 'thing',
-      start: () => mumSay('Go on! It\'s in the hall. Big thing, sheet over it. Very mysterious. Very Grandad.'),
+      start: () => {},
       done: () => LC.world.near('thing', 2.6) },
     { goal: 'Read Grandad\'s note', hint: 'It\'s pinned to the sheet',
       start: () => modal({ icon: '✉️', title: 'A note pinned to the sheet', text: `<i>"It's yours when you can pay for it. <b>${fmt(LC.THING_COST)}</b>. No peeking. Love, Grandad.<br><br>P.S. Don't let Brian have it."</i>`, choices: [{ label: 'A TRILLION?!' }] }),
       done: () => !modalOpen },
     { goal: 'Rummage down the back of the sofa 3 times', hint: 'Look at the sofa and click (or press E)', guide: 'sofa',
-      start: () => mumSay('A trillion?! You\'ve got 0p. Well... start with the sofa. Your dad\'s lost about forty quid down there since 2009.'),
+      start: () => mumSay('Did you look?? A TRILLION. You\'ve got £0.00. Start with the sofa, love. Your dad\'s lost about forty quid down there since 2009.'),
       done: () => S.stats.clicks >= 3 },
     { goal: 'Get a PERFECT rummage', hint: 'Click just as the ring lines up with the circle',
-      start: () => mumSay('Little tip: wait for the ring to line up, then go for it. Three times the coins. Your grandad called it "the rhythm of the cushions". He was a strange man.'),
+      start: () => mumSay('Tip from your mother: wait for the ring to line up, then go for it. Three times the coins. Your grandad called it "the rhythm of the cushions". He was a strange man.'),
       done: () => (S.stats.perfect || 0) >= 1 },
     { goal: 'Open your phone', hint: 'Press Tab', guide: null,
-      start: () => mumSay('Brilliant! Now, your phone\'s been buzzing all morning. Probably your mates. Or the bank, laughing.'),
+      start: () => mumSay('Brilliant! Check your phone, love. Press Tab. It\'s been buzzing all morning. Probably your mates. Or the bank, laughing.'),
       done: () => screenOpen === 'phone' },
     { goal: 'Put your phone away', hint: 'Press Tab or Esc',
       start: () => toast(`${ic('📱')}<div><b>Your phone</b><br><small>Messages and notes are full of hints, and people tell you secrets. Nobody will tell you everything. Snoop.</small></div>`, 'msg'),
       done: () => !screenOpen },
     { goal: 'Answer the front door', hint: 'Someone\'s knocking', guide: 'door',
-      start: () => { LC.audio.sfx('tap'); setTimeout(() => LC.audio.sfx('tap'), 300); setTimeout(() => LC.audio.sfx('tap'), 600); mumSay('Ooh, someone at the door. If it\'s Brian, I\'m not in. I\'m never in.'); tut.brian = LC.world.spawnActor('brian', 3.0, 6.2); },
+      start: () => { LC.audio.sfx('tap'); setTimeout(() => LC.audio.sfx('tap'), 300); setTimeout(() => LC.audio.sfx('tap'), 600); mumSay('Someone\'s knocking, I can see it on the doorbell camera. If it\'s Brian, I\'m not in. I\'m never in. I\'m not even your mum.'); tut.brian = LC.world.spawnActor('brian', 3.0, 6.2); },
       done: () => LC.world.near('door', 1.8) },
     { goal: 'Listen to Brian', hint: 'Your rival from next door',
       start: () => {
@@ -1446,19 +1449,19 @@
     { goal: 'Beat Brian to The Thing', hint: 'If he pays first, he wins',
       start: () => {
         LC.world.walkActor(tut.brian, [[3, 8.8], [-12, 8.8]], () => LC.world.removeActor(tut.brian));
-        mumSay('Ignore him, love. But if he gets it first we\'ll never hear the end of it. Prank him. Sneak round his. I didn\'t say that.');
+        mumSay('Saw that on the camera. Ignore him, love. But if he gets it first we\'ll never hear the end of it. Prank him. Sneak round his. I didn\'t say that.');
         tut.until = Date.now() + 6000;
       },
       done: () => Date.now() > tut.until },
     { goal: 'Hire a helper at the notice board', hint: 'Outside the post office, across the road', guide: 'board',
-      start: () => mumSay('Right, I\'m off to work. Tasks are on your list. Little brother\'s looking for work, apparently, he\'s on the notice board. Don\'t dig up the garden. ...You\'re going to dig up the garden, aren\'t you.'),
+      start: () => mumSay('On my break. Tasks are on your list. Little brother\'s looking for work, apparently, he\'s on the notice board. Don\'t dig up the garden. ...You\'re going to dig up the garden, aren\'t you.'),
       done: () => Object.values(S.gens).some((n) => n > 0) || S.lifetime > 30 },
   ];
   function tutorialStart() {
     if (S.flags.tutorialDone || S.runs > 0) return;
-    S.mumAt = 'tutorial';
+    S.mumAt = 'work';
     tut = { i: -1 };
-    mum = LC.world.spawnActor('mum', -3.5, 1.25);
+    mum = null;
     tutorialNext();
   }
   function tutorialNext() {
@@ -1988,7 +1991,7 @@
     LC.audio.unlock(); LC.audio.music(S.settings.music);
     LC.world.lock();
     if (isNew || (!S.flags.tutorialDone && S.runs === 0)) {
-      LC.world.playScene(LC.INTRO_SCENE, () => { LC.world.endScene(); tutorialStart(); });
+      LC.world.playScene(LC.INTRO_SCENE, () => { LC.world.endScene(); LC.world.debug.view(-2.2, 1.4, -1.2, -0.05); tutorialStart(); });
     }
   }
   let shopOpen = null;
@@ -2521,6 +2524,10 @@
     if (washing() || S.washUntil) LC.world.washerShake(washing());
     renderCard();
 
+    // stuck in the furniture (or a hole): back to the middle of the living room
+    const unstick = () => { LC.world.sendHome(true); setTimeout(() => { $('#fade').classList.remove('show'); toast(`${ic('🏠')}<div><b>Back home</b><br><small>Mum would say "how did you even get in there".</small></div>`); }, 650); };
+    $('#pause-stuck').onclick = (e) => { e.stopPropagation(); unstick(); };
+    $('#set-unstuck').onclick = () => { closeScreen(); unstick(); };
     $('#pause-menubtn').onclick = (e) => { e.stopPropagation(); save(); $('#pause').classList.remove('show'); showMenu(true); };
     $('#pause-savebtn').onclick = (e) => { e.stopPropagation(); saveMenu(); };
     $('#pause-loadbtn').onclick = (e) => { e.stopPropagation(); loadMenu(); };

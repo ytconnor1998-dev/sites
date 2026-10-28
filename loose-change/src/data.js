@@ -997,5 +997,7 @@ LC.INTRO_SCENE = [
   ['say', 'mum', 'Morning, sleepyhead! You fell asleep down the back of the sofa again. There\'s a crisp in your ear.'],
   ['say', 'mum', 'I\'m off to work in a minute. Double shift at the supermarket. The self-checkouts have it in for me, love. Personally.'],
   ['say', 'mum', 'Oh! Grandad\'s solicitor dropped something round this morning. It\'s in the hall. Under a sheet. It\'s massive. He said it\'s for YOU.'],
-  ['say', 'mum', 'Go on then, have a look! I\'ll put the kettle on. I always put the kettle on.'],
+  ['say', 'mum', 'Right, I\'m late. Go and have a look! Tea\'s in the freezer. Don\'t let Brian in. Love you!'],
+  ['act', 'mumOff'],
+  ['narrate', 'The front door slams. The house is all yours. Somewhere in the hall, something big is waiting under a sheet.'],
 ];

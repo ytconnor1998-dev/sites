@@ -114,6 +114,10 @@ function buildLevel() {
   wall(-7, 5, 0, 5, wc); wall(0, 5, 2.4, 5, wc2); wall(3.6, 5, 7, 5, wc2);         // front wall, front door gap at x 2.4..3.6
   wall(-7, -5, -7, 5, wc); wall(7, -5, 7, 5, wc2);
   wall(0, -5, 0, -0.7, wc); wall(0, 0.7, 0, 5, wc);                                 // inside wall with a doorway
+  // real doors that swing open as you walk up to them (front, back, and between the living room and hall)
+  swingDoor(2.4, 5, 1.2, 0, 1, 0x2d5a3a);
+  swingDoor(-6.2, -5, 1.2, 0, -1, 0x8a5a3a);
+  swingDoor(0, -0.7, 1.4, -Math.PI / 2, 1, 0xf3eee4);
   // brick on the outside of the house
   const facade = (x0, z0, x1, z1, ox, oz) => {
     const w = Math.abs(x1 - x0) || 0.04, d = Math.abs(z1 - z0) || 0.04;
@@ -168,14 +172,15 @@ function buildLevel() {
   const tv = add(M.tv(), -3.5, 0, -4.65); collideObj(tv);
   add(M.lamp(), -0.6, 0, 4.4);
   // family photos on the walls
-  for (const [k, x, y, z, ry, h] of [['kf:pictureframe_large_A', -1.6, 1.7, -4.9, 0, 0.7], ['kf:pictureframe_medium', -5.4, 1.6, -4.9, 0, 0.5], ['kf:pictureframe_small_A', -6.88, 1.5, 0.2, Math.PI / 2, 0.35], ['kf:pictureframe_medium', 5.0, 1.6, 4.88, Math.PI, 0.5]]) {
+  for (const [k, x, y, z, ry, h] of [['kf:pictureframe_large_A', -1.6, 1.7, -4.9, 0, 0.7], ['kf:pictureframe_medium', -4.2, 1.6, -4.9, 0, 0.5], ['kf:pictureframe_small_A', -6.88, 1.5, 0.2, Math.PI / 2, 0.35], ['kf:pictureframe_medium', 5.0, 1.6, 4.88, Math.PI, 0.5]]) {
     const f = M.fit(k, { h }); if (f) add(f, x, y, z, ry);
   }
   const shelfB = M.fit('kf:shelf_B_large_decorated', { w: 1.4 }); if (shelfB) add(shelfB, -3.5, 1.9, -4.85);
   add(M.plant(), -6.4, 0, 4.4);
   const shelf = add(M.bookshelf(), -0.35, 0, -3, -Math.PI / 2); collideObj(shelf);
   const fire = add(M.fireplace(), -6.72, 0, -2, Math.PI / 2); collideObj(fire);
-  spots.pig = new THREE.Vector3(-6.45, 1.2, -2);
+  const fb = new THREE.Box3().setFromObject(fire);
+  spots.pig = new THREE.Vector3(Math.max(fb.min.x + 0.25, -6.5), fb.max.y, -2);
   // hall / kitchen
   const ctr = add(M.counter(4), 4, 0, -4.55); collideObj(ctr);
   const fr = add(M.fridge(), 6.45, 0, -4.4); collideObj(fr);
@@ -680,6 +685,28 @@ function buildUnderground() {
   }
   light(UX + 115, 14, 0x9a7aff, 8, 14); light(UX + 132, -14, 0x7ad0ff, 8, 14);
   for (const [x, z] of [[UX + 115, -19.6], [UX + 128, 19.6], [UX + 142, -19.6]]) torchAt(x, z, z > 0 ? Math.PI : 0);
+}
+// a door hinged at (hx, hz), w wide, facing rotY; dir picks which way it swings
+const doors = [];
+function swingDoor(hx, hz, w, rotY, dir, color) {
+  const g = new THREE.Group(); g.position.set(hx, 0, hz); g.rotation.y = rotY;
+  g.add(M.box(w - 0.06, 2.15, 0.06, color, w / 2, 1.075, 0, { sharp: true }));
+  // raised panels on both faces
+  const panel = new THREE.Color(color).multiplyScalar(0.85).getHex();
+  for (const s of [-1, 1]) for (const z of [0.04, -0.04]) g.add(M.box(w - 0.4, 0.75, 0.02, panel, w / 2, 1.075 + s * 0.5, z, { sharp: true }));
+  for (const z of [0.06, -0.06]) g.add(M.ball(0.045, 0xf2b631, w - 0.14, 1.0, z));
+  scene.add(g);
+  const c = new THREE.Vector3(hx + Math.cos(rotY) * w / 2, 0, hz - Math.sin(rotY) * w / 2);
+  doors.push({ g, base: rotY, dir, c, a: 0 });
+}
+function updateDoors(dt) {
+  for (const d of doors) {
+    let open = area === 'town' && Math.hypot(player.pos.x - d.c.x, player.pos.z - d.c.z) < 2.1;
+    if (!open) for (const a of agents) { const o = a.obj; if (o && o.userData.person && o.visible && o.parent && Math.hypot(o.position.x - d.c.x, o.position.z - d.c.z) < 1.8) { open = true; break; } }
+    if (!open && cut.active) for (const o of Object.values(cut.actors)) if (o && o.visible && Math.hypot(o.position.x - d.c.x, o.position.z - d.c.z) < 1.8) { open = true; break; }
+    const target = open ? 1.5 : 0;
+    if (Math.abs(d.a - target) > 0.001) { d.a += (target - d.a) * Math.min(1, dt * 6); d.g.rotation.y = d.base + d.a * d.dir; }
+  }
 }
 // the Quaternius props that dress the town, the house and the underground
 const QM_SCALE = 0.0273, QT_SCALE = 0.021;
@@ -1845,7 +1872,21 @@ function cutStep() {
       setTimeout(() => { const p0 = player.pitch; tween(1.6, (k) => { player.pitch = p0 + (-0.05 - p0) * (1 - Math.pow(1 - k, 3)); }); }, 2100);
       cut.wait = 3.9;
     }
-    if (a === 'mumOff') { const m = cut.actors.mum; if (m) { const p0 = m.position.clone(); LC.audio.sfx('step'); M.playAnim(m, 'walk'); m.rotation.y = Math.atan2(2.6 - p0.x, 5 - p0.z); tween(2.4, (k) => { m.position.set(p0.x + (2.6 - p0.x) * k, 0, p0.z + (5 - p0.z) * k); }, () => { m.visible = false; LC.audio.sfx('knock'); }); } cut.wait = 2.6; }
+    if (a === 'mumOff') {
+      // out through the living-room doorway, across the hall and out the front door
+      const m = cut.actors.mum;
+      if (m) {
+        const pts = [m.position.clone(), new THREE.Vector3(-0.8, 0, 0), new THREE.Vector3(1.4, 0, 0), new THREE.Vector3(3, 0, 4.4), new THREE.Vector3(3, 0, 6.5)];
+        let i = 0; M.playAnim(m, 'walk'); LC.audio.sfx('step');
+        const leg = () => {
+          const p0 = pts[i], p1 = pts[i + 1]; if (!p1) { m.visible = false; LC.audio.sfx('knock'); return; }
+          m.rotation.y = Math.atan2(p1.x - p0.x, p1.z - p0.z);
+          tween(p0.distanceTo(p1) / 1.8, (k) => m.position.lerpVectors(p0, p1, k), () => { i++; leg(); });
+        };
+        leg();
+      }
+      cut.wait = 2.2;
+    }
     if (a === 'wakeSofa') { player.pos.set(-3.5, 0, 3.55); cut.yaw = 0; player.yaw = 0; player.pitch = -0.05; setTimeout(() => document.getElementById('fade').classList.remove('show'), 300); setTimeout(() => document.getElementById('fade').classList.remove('white'), 900); cut.wait = 1.4; }
     if (a === 'australia') { const f = document.getElementById('fade'); f.classList.add('show'); setTimeout(() => { player.pos.set(-2, 0, -10.5); cut.yaw = Math.PI; player.yaw = Math.PI; flipTarget = 1; f.classList.remove('show'); }, 500); cut.wait = 2; }
     if (a === 'knock') { let n = 0; const iv = setInterval(() => { LC.audio.sfx('tap'); if (++n >= 3) clearInterval(iv); }, 350); subtitle('Knock knock knock.'); cut.wait = 1.8; }
@@ -2578,6 +2619,7 @@ function frame(now) {
   last = now; time += dt;
   if (menuCam) { menuT += dt; player.pos.set(-4 + Math.sin(menuT * 0.035) * 5, 0, 17.2); player.yaw = -0.35 + Math.sin(menuT * 0.05) * 0.3; player.pitch = 0.02; }
   updatePlayer(dt);
+  updateDoors(dt);
   updateFocus();
   updateViewModel(dt, keys.has('KeyW') || keys.has('KeyA') || keys.has('KeyS') || keys.has('KeyD'));
   if (holding && focus && focus.hold) { holdTimer -= dt; if (holdTimer <= 0) { holdTimer = 0.2; useFocus(true); } }

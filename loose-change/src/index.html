@@ -13,9 +13,9 @@
   <!-- HUD -->
   <div class="hud">
     <div class="wallet">
-      <div id="money" class="money">0p</div>
+      <div id="money" class="money">£0.00</div>
       <div id="clock" class="clock"></div>
-      <div class="rate"><span id="rate">0p/s</span> · <img class="ic tiny" src="assets/icons/1f518.svg" alt="buttons"> <span id="buttons-count">0</span></div>
+      <div class="rate"><span id="rate">£0.00/s</span> · <img class="ic tiny" src="assets/icons/1f518.svg" alt="buttons"> <span id="buttons-count">0</span></div>
     </div>
     <div id="thing" class="thing">
       <div class="thing-label">Saving up for: <b>???</b> <span id="thing-pct">0%</span></div>
@@ -51,7 +51,7 @@
       <div class="logo"><img class="ic" src="assets/icons/1fa99.svg" alt=""> Loose <span>Change</span></div>
       <p class="click">Click to play</p>
       <p id="pause-save" class="pause-save"></p>
-      <div class="pause-btns"><button id="pause-savebtn" class="btn small"><img class="ic" src="assets/icons/1f4be.svg" alt=""> Save game</button><button id="pause-loadbtn" class="btn small ghost"><img class="ic" src="assets/icons/1f4c2.svg" alt=""> Load game</button><button id="pause-menubtn" class="btn small ghost">Main menu</button></div>
+      <div class="pause-btns"><button id="pause-savebtn" class="btn small"><img class="ic" src="assets/icons/1f4be.svg" alt=""> Save game</button><button id="pause-loadbtn" class="btn small ghost"><img class="ic" src="assets/icons/1f4c2.svg" alt=""> Load game</button><button id="pause-stuck" class="btn small ghost">I'm stuck!</button><button id="pause-menubtn" class="btn small ghost">Main menu</button></div>
       <div class="controls">
         <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk</div>
         <div><kbd>Mouse</kbd> Look</div>
@@ -155,6 +155,7 @@
         <label class="set"><input type="checkbox" id="set-timer"> Speedrun timer</label>
         <label class="set">Mouse sensitivity <input type="range" id="set-sens" min="0.2" max="3" step="0.1"></label>
         <label class="set">Graphics <select id="set-gfx"><option value="auto">Auto (drops if it's laggy)</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low (laptops)</option></select></label>
+        <button id="set-unstuck" class="btn small ghost">I'm stuck! Take me home</button>
         <div class="sub-title">Save</div>
         <p class="muted small">The game saves by itself every 10 seconds and when you close it. Save slots are on the pause screen (Esc). A save code moves your game to another computer or browser.</p>
         <textarea id="save-code" rows="3" placeholder="Paste a save code here to load it"></textarea>
