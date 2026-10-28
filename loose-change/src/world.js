@@ -18,7 +18,7 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const EYE = 1.25, CROUCH_EYE = 0.72, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
 const BOUNDS = { x0: -62, x1: 62, z0: -26, z1: 56 };
 
-let renderer, scene, camera, sun, hemi, canvas, composer = null, clouds = null, grainPass = null;
+let renderer, scene, camera, sun, hemi, canvas, composer = null, clouds = null, grainPass = null, paintPass = null;
 const colliders = [];
 const interactables = [];
 const agents = [];
@@ -96,7 +96,12 @@ function buildDust() {
 const spots = {};
 function buildLevel() {
   // ground, sky bits
-  const ground = M.box(160, 0.1, 160, texMat('grass', 160 / 5, 160 / 5), 0, -0.05, 0, { shadow: false, sharp: true });
+  // the ground, with a round hole cut out for the hole in the back garden
+  const gshape = new THREE.Shape([new THREE.Vector2(-80, -80), new THREE.Vector2(80, -80), new THREE.Vector2(80, 80), new THREE.Vector2(-80, 80)]);
+  const cut = new THREE.Path(); cut.absarc(-2, 14, 1.7, 0, Math.PI * 2, true); gshape.holes.push(cut);
+  const ggeo = new THREE.ShapeGeometry(gshape, 48); ggeo.rotateX(-Math.PI / 2);
+  const gtex = tex('grass'); gtex.repeat.set(1 / 5, 1 / 5);
+  const ground = new THREE.Mesh(ggeo, new THREE.MeshStandardMaterial({ map: gtex, roughness: 0.95 })); ground.position.y = 0;
   ground.receiveShadow = true; scene.add(ground);
 
   // ---- house ----
@@ -184,14 +189,14 @@ function buildLevel() {
   interact(thing, { range: 3, prompt: () => LC.game.thingPrompt(), use: () => LC.game.tryBuyThing() });
 
   // ---- back garden (north) ----
-  floor(-12, -26, 12, -5, 0x86c964, 0.005);
+  // (the back garden is the ground itself, so the hole can go down through it)
   for (const [x0, z0, x1, z1] of [[-12, -5, -12, -26], [12, -5, 12, -26], [-12, -26, 12, -26], [-12, -5, -7, -5], [7, -5, 12, -5]]) {
     const len = Math.hypot(x1 - x0, z1 - z0);
     const f = M.fence(len); f.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); f.rotation.y = x0 === x1 ? Math.PI / 2 : 0; scene.add(f);
     collide(x0 - 0.1, z0 - 0.1, x1 + 0.1, z1 + 0.1);
   }
   floor(-6.4, -8, -4.8, -5, 0xbcb3a3, 0.015); // patio step
-  const holeG = add(M.hole(), -2, 0, -14);
+  const holeG = add(M.hole(tex('soil', 1.2, 1.2)), -2, 0, -14);
   spots.hole = holeG;
   collide(-3, -15, -1, -13);
   // a bigger invisible target so the hole is easy to aim at
@@ -296,7 +301,7 @@ function buildFoliage() {
   const flower = new THREE.SphereGeometry(0.04, 6, 4); flower.scale(1, 0.6, 1); flower.translate(0, 0.2, 0);
   const flowers = new THREE.InstancedMesh(flower, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 }), 900);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), p = new THREE.Vector3(), e = new THREE.Euler(), col = new THREE.Color();
-  const greens = [0x5aa83a, 0x6fbf45, 0x82cf52, 0x4c9a30], petals = [0xffffff, 0xffe04a, 0xff8ab0, 0xb08aff, 0xff6a4a];
+  const greens = [0x8fb33a, 0xa6c247, 0x7d9e2e, 0xb9cf5a, 0x6e8f2a], petals = [0xffffff, 0xffe04a, 0xff8ab0, 0xb08aff, 0xff6a4a];
   let ti = 0, fi = 0;
   for (const z of zones) {
     for (let k = 0; k < z.n; k++) {
@@ -2069,6 +2074,7 @@ function resize() {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   if (composer) composer.setSize(innerWidth, innerHeight);
+  if (paintPass) paintPass.uniforms.res.value.set(innerWidth, innerHeight);
 }
 // high quality adds ambient occlusion (soft contact shadows); low skips it for slower PCs
 function setQuality(high) {
@@ -2086,6 +2092,33 @@ function setQuality(high) {
     });
   };
   composer.addPass(ao);
+  // painted look: a Kuwahara filter turns smooth shading into soft brush strokes
+  paintPass = new ShaderPass({
+    uniforms: { tDiffuse: { value: null }, res: { value: new THREE.Vector2(innerWidth, innerHeight) }, radius: { value: 3.0 } },
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 res; uniform float radius; varying vec2 vUv;
+      void main() {
+        vec2 px = 1.0 / res;
+        vec3 m[4]; vec3 s[4];
+        for (int k = 0; k < 4; k++) { m[k] = vec3(0.0); s[k] = vec3(0.0); }
+        const int R = 3;
+        for (int j = -R; j <= 0; j++) for (int i = -R; i <= 0; i++) {
+          vec3 c0 = texture2D(tDiffuse, vUv + vec2(float(i), float(j)) * px * radius / 3.0).rgb; m[0] += c0; s[0] += c0 * c0;
+          vec3 c1 = texture2D(tDiffuse, vUv + vec2(float(-i), float(j)) * px * radius / 3.0).rgb; m[1] += c1; s[1] += c1 * c1;
+          vec3 c2 = texture2D(tDiffuse, vUv + vec2(float(i), float(-j)) * px * radius / 3.0).rgb; m[2] += c2; s[2] += c2 * c2;
+          vec3 c3 = texture2D(tDiffuse, vUv + vec2(float(-i), float(-j)) * px * radius / 3.0).rgb; m[3] += c3; s[3] += c3 * c3;
+        }
+        float n = float((R + 1) * (R + 1));
+        float best = 1e9; vec3 col = vec3(0.0);
+        for (int k = 0; k < 4; k++) {
+          vec3 mean = m[k] / n; vec3 v = abs(s[k] / n - mean * mean);
+          float sig = v.r + v.g + v.b;
+          if (sig < best) { best = sig; col = mean; }
+        }
+        gl_FragColor = vec4(col, 1.0);
+      }`,
+  });
+  composer.addPass(paintPass);
   composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.5, 1.0));
   composer.addPass(new OutputPass());
   // vignette and film grain, after tone mapping
@@ -2110,9 +2143,9 @@ function setQuality(high) {
 // ---------- time of day: bright summer day, golden evening, dusk, then Mum calls you in ----------
 // keyframes: t, sun power, sun colour, sun height, hemi power, hemi sky, hemi ground, sky top, sky bottom, fog, cloud, cloud glow, exposure, vignette, grain, saturation, street lamps
 const SKY_KEYS = [
-  [0.00, 2.8, 0xffe6c8, 0.35, 1.15, 0xcfe0ff, 0xb0a080, 0x5f9ee8, 0xf5dcc0, 0xe8dccc, 0xffffff, 0x705a50, 1.0, 0.3, 0.025, 1.12, 0],
-  [0.10, 3.8, 0xfff4e2, 0.85, 1.4, 0xd4e8ff, 0xb4a484, 0x2f86ec, 0xbfe0ff, 0xcfe4f6, 0xffffff, 0x808a9a, 1.02, 0.25, 0.02, 1.18, 0],
-  [0.55, 3.8, 0xfff0d8, 0.75, 1.35, 0xd4e8ff, 0xb4a484, 0x3a8cec, 0xc6e2ff, 0xd2e4f2, 0xffffff, 0x808a9a, 1.02, 0.25, 0.02, 1.16, 0],
+  [0.00, 3.0, 0xffdcb0, 0.35, 1.0, 0xd8dce4, 0x9a7a52, 0x6a9ad0, 0xf2d8b8, 0xe8d6bc, 0xffffff, 0x705a50, 1.0, 0.35, 0.025, 1.18, 0],
+  [0.10, 4.2, 0xffe6c0, 0.6, 1.1, 0xd8e0e8, 0x9a7a52, 0x5a9ad8, 0xe8e0c8, 0xe0d8c4, 0xffffff, 0x8a8a90, 1.0, 0.32, 0.02, 1.24, 0],
+  [0.55, 4.0, 0xffdcb0, 0.5, 1.05, 0xd8e0e8, 0x9a7a52, 0x5a94d0, 0xeedcc0, 0xe2d6c0, 0xffffff, 0x8a8a90, 1.0, 0.32, 0.02, 1.22, 0],
   [0.72, 3.4, 0xffc890, 0.3, 1.0, 0xb8c6e0, 0x5a4a3a, 0x3d64a0, 0xf6c49a, 0xe0b08a, 0xffe6cc, 0xa0705a, 0.97, 0.45, 0.035, 1.05, 0.4],
   [0.84, 3.0, 0xffaa70, 0.16, 0.9, 0xa8bce0, 0x4a3a2e, 0x36588f, 0xf6b98a, 0xd89c78, 0xffe2c8, 0xb0705a, 0.95, 0.55, 0.045, 1.0, 1],
   [1.00, 1.0, 0xff7a50, 0.05, 0.5, 0x5a6a9a, 0x2a2430, 0x141e48, 0xc0706a, 0x5a4a6a, 0x9a7a9a, 0x402a40, 0.9, 0.6, 0.05, 0.95, 1],
@@ -2200,9 +2233,7 @@ function frame(now) {
     spots.ladder.visible = d >= 2;
     updateGates(d);
     const k = Math.min(1, Math.log10(1 + d) / 7);
-    hole.getObjectByName('pit').scale.set(0.35 + k * 0.75, 1, 0.35 + k * 0.75);
-    hole.getObjectByName('ring').scale.set(0.35 + k * 0.75, 0.35 + k * 0.75, 1);
-    hole.getObjectByName('pile').scale.setScalar(0.2 + k * 1.6);
+    if (hole.userData.shown !== Math.round(k * 200)) { hole.userData.shown = Math.round(k * 200); M.setHoleDepth(hole, d); }
   }
   if (spots.washer && spots.washer.userData.shake) { spots.washer.position.x = 6.55 + Math.sin(time * 40) * 0.015; const dr = spots.washer.getObjectByName('drum'); if (dr) dr.rotation.y += dt * 12; }
   LC.game.setCompass(goldenBearing());

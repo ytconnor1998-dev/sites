@@ -66,10 +66,26 @@ const make = {
     g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 2;
     for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * s, 0); g.lineTo(i * s, h); g.stroke(); g.beginPath(); g.moveTo(0, i * s); g.lineTo(w, i * s); g.stroke(); }
   }); },
+  // painted grass: warm yellow-greens laid down in short dabs, like a painting
   grass: () => { seed = 11; return canvas(512, 512, (g, w, h) => {
-    g.fillStyle = '#79bd55'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 70; i++) { const r = 30 + rnd() * 80; const gr = g.createRadialGradient(rnd() * w, rnd() * h, 0, rnd() * w, rnd() * h, r); void gr; g.fillStyle = `rgba(${rnd() < 0.5 ? '95,160,60' : '140,200,95'},.18)`; g.beginPath(); g.arc(rnd() * w, rnd() * h, r, 0, 7); g.fill(); }
-    for (let i = 0; i < 9000; i++) { const x = rnd() * w, y = rnd() * h; g.strokeStyle = rnd() < 0.5 ? 'rgba(70,130,45,.5)' : 'rgba(160,215,110,.5)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - 0.5) * 3, y - 3 - rnd() * 4); g.stroke(); }
+    g.fillStyle = '#8fae3c'; g.fillRect(0, 0, w, h);
+    const blot = ['rgba(120,150,40,.35)', 'rgba(170,190,70,.35)', 'rgba(100,130,35,.3)', 'rgba(190,200,90,.25)'];
+    for (let i = 0; i < 90; i++) { g.fillStyle = blot[i % 4]; g.beginPath(); g.ellipse(rnd() * w, rnd() * h, 30 + rnd() * 70, 20 + rnd() * 50, rnd() * 3, 0, 7); g.fill(); }
+    const dabs = ['#a9c64a', '#7f9e30', '#bcd25c', '#6e8f2a', '#98b83f', '#c8d872'];
+    for (let i = 0; i < 6000; i++) {
+      const x = rnd() * w, y = rnd() * h, a = -1.2 - rnd() * 0.7, len = 5 + rnd() * 9;
+      g.strokeStyle = dabs[Math.floor(rnd() * dabs.length)]; g.globalAlpha = 0.55 + rnd() * 0.4; g.lineWidth = 2 + rnd() * 2.5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); g.stroke();
+    }
+    g.globalAlpha = 1;
+  }); },
+  // painted soil for the hole
+  soil: () => { seed = 29; return canvas(512, 512, (g, w, h) => {
+    g.fillStyle = '#9a6238'; g.fillRect(0, 0, w, h);
+    const cols = ['#b07444', '#844f2c', '#c08452', '#6e4024', '#a86c3e'];
+    for (let i = 0; i < 160; i++) { g.fillStyle = cols[i % 5]; g.globalAlpha = 0.35; g.beginPath(); g.ellipse(rnd() * w, rnd() * h, 14 + rnd() * 50, 8 + rnd() * 26, rnd() * 3, 0, 7); g.fill(); }
+    for (let i = 0; i < 3000; i++) { g.strokeStyle = cols[Math.floor(rnd() * 5)]; g.globalAlpha = 0.5; g.lineWidth = 2 + rnd() * 3; g.lineCap = 'round'; const x = rnd() * w, y = rnd() * h, a = rnd() * 6; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 7, y + Math.sin(a) * 7); g.stroke(); }
+    g.globalAlpha = 1;
   }); },
   tarmac: () => { seed = 13; return canvas(256, 256, (g, w, h) => {
     g.fillStyle = '#4b4d55'; g.fillRect(0, 0, w, h);
@@ -85,7 +101,11 @@ const make = {
   brick: () => { seed = 19; return canvas(256, 256, (g, w, h) => {
     g.fillStyle = '#d9cfc0'; g.fillRect(0, 0, w, h);
     const bh = 32, bw = 64;
-    for (let r = 0; r < h / bh; r++) for (let x = (r % 2) * -bw / 2; x < w; x += bw) { g.fillStyle = shade('#b5573b', (rnd() - 0.5) * 0.14); g.fillRect(x + 2, r * bh + 2, bw - 4, bh - 4); }
+    for (let r = 0; r < h / bh; r++) for (let x = (r % 2) * -bw / 2; x < w; x += bw) {
+      g.fillStyle = shade('#c0603a', (rnd() - 0.5) * 0.16); g.fillRect(x + 2, r * bh + 2, bw - 4, bh - 4);
+      // a few painted dabs on each brick
+      for (let k = 0; k < 6; k++) { g.fillStyle = rnd() < 0.5 ? 'rgba(230,140,90,.35)' : 'rgba(120,50,30,.25)'; g.beginPath(); g.ellipse(x + 6 + rnd() * (bw - 12), r * bh + 6 + rnd() * (bh - 12), 4 + rnd() * 8, 2 + rnd() * 4, 0, 0, 7); g.fill(); }
+    }
   }); },
   render: () => { seed = 23; return canvas(256, 256, (g, w, h) => {
     g.fillStyle = '#efe6d6'; g.fillRect(0, 0, w, h);

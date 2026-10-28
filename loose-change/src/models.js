@@ -5,17 +5,23 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 
 // a faint grain on every surface gives the painted look
 let grainTex = null;
+// soft painted dabs on every surface give the hand-painted look
 function grain() {
   if (grainTex) return grainTex;
-  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const c = document.createElement('canvas'); c.width = c.height = 256;
   const g = c.getContext('2d');
-  const img = g.createImageData(128, 128);
-  for (let i = 0; i < img.data.length; i += 4) { const v = 222 + Math.random() * 33; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
-  g.putImageData(img, 0, 0);
+  g.fillStyle = 'rgb(236,236,236)'; g.fillRect(0, 0, 256, 256);
+  let sd = 7; const r = () => { sd = (sd * 16807) % 2147483647; return (sd - 1) / 2147483646; };
+  for (let i = 0; i < 900; i++) {
+    const v = 205 + Math.floor(r() * 50);
+    g.fillStyle = `rgba(${v},${v},${v},0.5)`;
+    const x = r() * 256, y = r() * 256, a = r() * Math.PI;
+    for (const [dx, dy] of [[0, 0], [256, 0], [-256, 0], [0, 256], [0, -256]]) { g.beginPath(); g.ellipse(x + dx, y + dy, 6 + r() * 14, 2.5 + r() * 5, a, 0, 7); g.fill(); }
+  }
   grainTex = new THREE.CanvasTexture(c);
   grainTex.colorSpace = THREE.SRGBColorSpace;
   grainTex.wrapS = grainTex.wrapT = THREE.RepeatWrapping;
-  grainTex.repeat.set(3, 3);
+  grainTex.repeat.set(2, 2);
   return grainTex;
 }
 const matCache = new Map();
@@ -296,16 +302,47 @@ export function portal(color = 0xa070ff) {
 export function lampPost() {
   return group(cyl(0.07, 0.09, 4, 0x333333, 0, 2, 0), box(0.6, 0.08, 0.08, 0x333333, 0.25, 4, 0), box(0.3, 0.15, 0.3, 0xfff2b0, 0.5, 3.92, 0, { mat: { emissive: 0xffc070, emissiveIntensity: 3, map: null } }));
 }
-export function hole() {
+// the garden hole: a sculpted crater that gets deeper and wider as you dig (see setHoleDepth)
+const HOLE_R = 1.7;
+export function hole(soilMap) {
   const g = new THREE.Group();
-  const pit = part(new THREE.CylinderGeometry(1, 1, 0.02, 20), 0x140c06, 0, 0.012, 0, { shadow: false, mat: { flatShading: false } });
-  pit.name = 'pit';
-  const ring = part(new THREE.TorusGeometry(1.02, 0.12, 6, 20), C.soil, 0, 0.02, 0, { rot: [Math.PI / 2, 0, 0] });
-  ring.name = 'ring';
-  const pile = cone(0.9, 0.6, 0x8b5a33, 1.9, 0.3, 0.6, { seg: 9 });
-  pile.name = 'pile';
-  g.add(pit, ring, pile);
+  const geo = new THREE.CircleGeometry(HOLE_R, 48, 0, Math.PI * 2);
+  // more rings so the crater can bend smoothly
+  const ringGeo = new THREE.RingGeometry(0.001, HOLE_R, 48, 14);
+  ringGeo.rotateX(-Math.PI / 2);
+  void geo;
+  const colors = new Float32Array(ringGeo.attributes.position.count * 3);
+  ringGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const pit = new THREE.Mesh(ringGeo, new THREE.MeshStandardMaterial({ map: soilMap || null, color: 0xffffff, vertexColors: true, roughness: 0.95 }));
+  pit.name = 'pit'; pit.receiveShadow = true; pit.castShadow = false;
+  pit.userData.base = Float32Array.from(ringGeo.attributes.position.array);
+  g.add(pit);
+  // lumpy dirt rim
+  const rim = new THREE.Group(); rim.name = 'ring';
+  for (let i = 0; i < 22; i++) { const a = (i / 22) * Math.PI * 2; const r = HOLE_R + 0.05 + Math.random() * 0.15; const lump = ball(0.22 + Math.random() * 0.18, [0x9a6238, 0x8a5530, 0xa86c3e][i % 3], Math.cos(a) * r, 0.02, Math.sin(a) * r, { seg: 7, scale: [1.4, 0.45, 1], mat: { flatShading: true } }); rim.add(lump); }
+  for (let i = 0; i < 9; i++) { const a = Math.random() * Math.PI * 2, r = HOLE_R + 0.25 + Math.random() * 0.8; const rock = part(new THREE.DodecahedronGeometry(0.08 + Math.random() * 0.12, 0), [0xb8b0a4, 0xd8cfc0, 0xc8784a][i % 3], Math.cos(a) * r, 0.05, Math.sin(a) * r, { rot: [Math.random() * 3, Math.random() * 3, 0], mat: { flatShading: true } }); rim.add(rock); }
+  g.add(rim);
+  const pile = group(ball(0.75, 0x9a6238, 0, 0.1, 0, { seg: 9, scale: [1.2, 0.55, 1], mat: { flatShading: true } }), ball(0.5, 0xa86c3e, 0.45, 0.25, 0.25, { seg: 8, scale: [1, 0.6, 1], mat: { flatShading: true } }), ball(0.42, 0x8a5530, -0.4, 0.2, -0.3, { seg: 8, scale: [1, 0.6, 1], mat: { flatShading: true } }));
+  pile.position.set(2.7, 0, 0.8); pile.name = 'pile';
+  g.add(pile);
   return g;
+}
+// depth in metres -> how the crater looks: deeper and darker in the middle
+export function setHoleDepth(g, depth) {
+  const pit = g.getObjectByName('pit');
+  const pos = pit.geometry.attributes.position, base = pit.userData.base, col = pit.geometry.attributes.color;
+  const k = Math.min(1, Math.log10(1 + depth) / 6);
+  const deep = 0.15 + k * 2.4, open = 0.45 + k * 0.55;
+  for (let i = 0; i < pos.count; i++) {
+    const x = base[i * 3], z = base[i * 3 + 2], r = Math.hypot(x, z) / HOLE_R;
+    const f = Math.max(0, 1 - r / open);
+    const wobble = Math.sin(x * 5.1 + z * 3.3) * 0.04 + Math.sin(z * 7.7 - x * 2.1) * 0.03;
+    pos.setY(i, -deep * Math.pow(f, 1.3) + (r < 0.98 ? wobble * f : 0));
+    const shade2 = 1 - Math.pow(f, 0.8) * (0.55 + k * 0.4);
+    col.setXYZ(i, shade2, shade2 * 0.95, shade2 * 0.9);
+  }
+  pos.needsUpdate = true; col.needsUpdate = true; pit.geometry.computeVertexNormals();
+  g.getObjectByName('pile').scale.setScalar(0.4 + k * 0.7);
 }
 
 // ---------- coins & the thing ----------
