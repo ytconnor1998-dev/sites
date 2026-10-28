@@ -755,47 +755,5 @@
  ],
  "qfu:OfficeChair": [
   "quaternius/furniture/OfficeChair.glb"
- ],
- "qm:1Story_GableRoof_Base": [
-  "quaternius/modular/1Story_GableRoof_Base.glb"
- ],
- "qm:2Story_Base": [
-  "quaternius/modular/2Story_Base.glb"
- ],
- "qm:2Story_Center_Base": [
-  "quaternius/modular/2Story_Center_Base.glb"
- ],
- "qm:2Story_Columns_Base": [
-  "quaternius/modular/2Story_Columns_Base.glb"
- ],
- "qm:2Story_GableRoof_Base": [
-  "quaternius/modular/2Story_GableRoof_Base.glb"
- ],
- "qm:2Story_Sidehouse_Base": [
-  "quaternius/modular/2Story_Sidehouse_Base.glb"
- ],
- "qm:2Story_Slim_Base": [
-  "quaternius/modular/2Story_Slim_Base.glb"
- ],
- "qm:2Story_Wide_Base": [
-  "quaternius/modular/2Story_Wide_Base.glb"
- ],
- "qm:3Story_Base": [
-  "quaternius/modular/3Story_Base.glb"
- ],
- "qm:3Story_Slim_Base": [
-  "quaternius/modular/3Story_Slim_Base.glb"
- ],
- "qm:all": [
-  "quaternius/modular/1Story_GableRoof_Base.glb",
-  "quaternius/modular/2Story_Base.glb",
-  "quaternius/modular/2Story_Center_Base.glb",
-  "quaternius/modular/2Story_Columns_Base.glb",
-  "quaternius/modular/2Story_GableRoof_Base.glb",
-  "quaternius/modular/2Story_Sidehouse_Base.glb",
-  "quaternius/modular/2Story_Slim_Base.glb",
-  "quaternius/modular/2Story_Wide_Base.glb",
-  "quaternius/modular/3Story_Base.glb",
-  "quaternius/modular/3Story_Slim_Base.glb"
  ]
 }

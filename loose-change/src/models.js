@@ -386,7 +386,41 @@ export function badger() {
     box(0.1, 0.12, 0.04, 0xd9534f, 0, 0.2, 0.6));
 }
 export function mole() { return group(ball(0.16, 0x3a2f2a, 0, 0.12, 0, { scale: [1, 0.8, 1.4] }), ball(0.04, 0xf7a8bd, 0, 0.12, 0.22)); }
-export function gnome() { return person({ shirt: 0x3a7bd5, legs: 0x5a3a22, hat: 'gnome', bald: true, height: 0.45 }); }
+export function gnome() {
+  // a proper garden gnome: boots, belly, white beard, red pointy hat
+  const g = group(
+    box(0.08, 0.05, 0.12, 0x3a2a1a, -0.05, 0.025, 0.02), box(0.08, 0.05, 0.12, 0x3a2a1a, 0.05, 0.025, 0.02),
+    cyl(0.07, 0.08, 0.1, 0x6a4a2a, 0, 0.1, 0),
+    ball(0.11, 0x3a7bd5, 0, 0.21, 0, { scale: [1, 1.05, 0.95] }),
+    box(0.2, 0.025, 0.2, 0x2d2118, 0, 0.17, 0),
+    ball(0.075, 0xf1c39b, 0, 0.33, 0.01),
+    ball(0.085, 0xffffff, 0, 0.28, 0.05, { scale: [1, 1.2, 0.7] }),
+    ball(0.022, 0xe08a7a, 0, 0.335, 0.08),
+    ball(0.01, 0x2d2118, -0.028, 0.355, 0.07), ball(0.01, 0x2d2118, 0.028, 0.355, 0.07),
+    cone(0.085, 0.22, 0xd9534f, 0, 0.47, -0.01, { seg: 10, rot: [-0.15, 0, 0] }),
+    ball(0.035, 0xf1c39b, -0.11, 0.21, 0.04), ball(0.035, 0xf1c39b, 0.11, 0.21, 0.04));
+  return g;
+}
+export function ladder(h = 3.4) {
+  const g = group(box(0.07, h, 0.07, C.wood, -0.24, h / 2, 0), box(0.07, h, 0.07, C.wood, 0.24, h / 2, 0));
+  for (let y = 0.25; y < h - 0.1; y += 0.3) g.add(box(0.48, 0.05, 0.06, C.woodDark, 0, y, 0));
+  return g;
+}
+export function worm() {
+  // Gary: a proper worm, segmented, curling up out of the soil, with a little face
+  const g = new THREE.Group(), segs = 9;
+  for (let i = 0; i < segs; i++) {
+    const t = i / (segs - 1);
+    const s = ball(0.055 - t * 0.012, i % 2 ? 0xe28a96 : 0xd87a88, Math.sin(t * 2.4) * 0.07, 0.04 + t * 0.42, -Math.cos(t * 2.4) * 0.05, { seg: 10 });
+    s.name = 'seg' + i; g.add(s);
+  }
+  g.add(cyl(0.065, 0.06, 0.03, 0xe8a0a8, 0.04, 0.27, -0.01, { rot: [0.3, 0, 0] }));      // the band round his middle
+  const head = g.getObjectByName('seg' + (segs - 1));
+  head.add(ball(0.018, 0xffffff, -0.022, 0.012, 0.036), ball(0.018, 0xffffff, 0.022, 0.012, 0.036), ball(0.009, 0x2d2118, -0.022, 0.012, 0.05), ball(0.009, 0x2d2118, 0.022, 0.012, 0.05));
+  head.add(part(new THREE.TorusGeometry(0.014, 0.004, 6, 10, Math.PI), 0x8a2a3a, 0, -0.012, 0.044, { rot: [0, 0, Math.PI] }));
+  g.add(cyl(0.12, 0.14, 0.04, 0x5a3e28, 0, 0.02, 0, { seg: 10 }));                         // his little mound
+  return g;
+}
 
 // ---------- garden & street ----------
 // chunky, bright summer trees: a few overlapping blobs of leaves
@@ -404,9 +438,32 @@ export function fence(len, color = 0xb08050) {
   return g;
 }
 export function shed() {
-  const g = group(box(3, 2.2, 2.4, 0x7a9a5a, 0, 1.1, 0), box(3.4, 0.12, 2.9, C.roof, 0, 2.45, 0, { rot: [0.12, 0, 0] }), door(0x5a4a3a));
-  g.children[2].position.set(0, 0, 1.22);
-  g.add(box(0.6, 0.5, 0.04, 0xbfe0f0, 0.95, 1.35, 1.21));
+  // a proper garden shed: overlapping painted boards, an apex felt roof, a door with a latch and a little window
+  const paint = 0x5f8a6a, board = 0x547c5e, trim = 0xe8e0cc, felt = 0x3a3a40;
+  const W = 2.8, D = 2.2, H = 1.9;
+  const g = group(box(W + 0.1, 0.12, D + 0.1, 0x6e5a44, 0, 0.06, 0, { sharp: true }));        // base
+  for (const [w, d, x, z, ry] of [[W, 0.06, 0, D / 2, 0], [W, 0.06, 0, -D / 2, 0], [D, 0.06, W / 2, 0, Math.PI / 2], [D, 0.06, -W / 2, 0, Math.PI / 2]]) {
+    const wall = group(box(w, H, d, paint, 0, H / 2 + 0.1, 0, { sharp: true }));
+    for (let y = 0.25; y < H; y += 0.16) wall.add(box(w + 0.01, 0.025, d + 0.03, board, 0, y + 0.1, 0, { sharp: true }));   // shiplap lines
+    wall.position.set(x, 0, z); wall.rotation.y = ry; g.add(wall);
+  }
+  // gable ends and roof
+  const tri = new THREE.Shape([new THREE.Vector2(-D / 2 - 0.05, 0), new THREE.Vector2(D / 2 + 0.05, 0), new THREE.Vector2(0, 0.75)]);
+  const gab = new THREE.ExtrudeGeometry(tri, { depth: 0.06, bevelEnabled: false });
+  for (const s of [-1, 1]) { const m = part(gab, paint, s * W / 2 - (s > 0 ? 0.06 : 0), H + 0.1, 0, { rot: [0, Math.PI / 2, 0] }); g.add(m); }
+  const slope = Math.atan2(0.75, D / 2), len = Math.hypot(0.75, D / 2) + 0.25;
+  for (const s of [-1, 1]) g.add(box(W + 0.35, 0.07, len, felt, 0, H + 0.1 + 0.37, s * (D / 4 + 0.03), { rot: [s * slope, 0, 0], sharp: true }));
+  g.add(box(W + 0.4, 0.09, 0.09, trim, 0, H + 0.88, 0), box(0.08, 0.6, 0.04, trim, W / 2 + 0.18, H + 0.45, D / 2 + 0.04, { rot: [0, 0, -0.6] }));
+  // door, latch, hinges
+  g.add(box(0.85, 1.65, 0.04, 0x6a4a32, -0.6, 0.93, D / 2 + 0.04, { sharp: true }), box(0.07, 0.07, 0.05, 0x2a2a2a, -0.25, 1.0, D / 2 + 0.08));
+  for (const y of [0.4, 1.5]) g.add(box(0.3, 0.04, 0.02, 0x2a2a2a, -0.92, y, D / 2 + 0.07));
+  for (const y of [0.35, 0.93, 1.5]) g.add(box(0.85, 0.08, 0.02, 0x5a3e2a, -0.6, y, D / 2 + 0.065));
+  // window with a frame and a cross
+  g.add(box(0.8, 0.6, 0.03, 0xbfe0f0, 0.75, 1.3, D / 2 + 0.04, { mat: { roughness: 0.1, emissive: 0x2a3a4a } }), box(0.9, 0.07, 0.05, trim, 0.75, 1.63, D / 2 + 0.05), box(0.9, 0.07, 0.05, trim, 0.75, 0.97, D / 2 + 0.05), box(0.07, 0.66, 0.05, trim, 0.33, 1.3, D / 2 + 0.05), box(0.07, 0.66, 0.05, trim, 1.17, 1.3, D / 2 + 0.05), box(0.8, 0.03, 0.05, trim, 0.75, 1.3, D / 2 + 0.06), box(0.03, 0.6, 0.05, trim, 0.75, 1.3, D / 2 + 0.06));
+  // flower box and a water butt
+  g.add(box(0.85, 0.15, 0.18, 0x7a5232, 0.75, 0.88, D / 2 + 0.12));
+  for (let i = 0; i < 4; i++) g.add(ball(0.06, [0xd9534f, 0xf2b631, 0xf7a8bd, 0xffffff][i], 0.47 + i * 0.19, 1.0, D / 2 + 0.12));
+  g.add(cyl(0.3, 0.3, 0.85, 0x2d4a3a, W / 2 + 0.38, 0.43, D / 2 - 0.2, { seg: 14 }), cyl(0.31, 0.31, 0.04, 0x1a2a20, W / 2 + 0.38, 0.86, D / 2 - 0.2, { seg: 14 }));
   return g;
 }
 export function well() {
@@ -685,6 +742,23 @@ export function shopFront({ w = 10, d = 8, name = 'SHOP', bg = '#2d6a4f', wallTe
   return g;
 }
 export function phoneBox() {
+  const red = 0xc8231f, r = { sharp: true };
+  const k6 = group(box(1.05, 0.15, 1.05, red, 0, 0.075, 0, r), box(1.0, 2.35, 1.0, red, 0, 1.3, 0, r));
+  for (const [x, z] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) k6.add(box(0.12, 2.5, 0.12, red, x, 1.3, z, r));
+  for (const ry of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    const face = new THREE.Group(); face.rotation.y = ry;
+    // three columns of eight little panes, the K6 way
+    for (let c = 0; c < 3; c++) for (let rr = 0; rr < 8; rr++) face.add(box(0.22, 0.17, 0.02, 0xd8ecf2, -0.25 + c * 0.25, 0.55 + rr * 0.2, 0.505, { mat: { roughness: 0.08, emissive: 0x4a4030, map: null } }));
+    const sgn = signPlane('TELEPHONE', 0.8, 0.16, { bg: '#f3eee4', color: '#1a1a1a', glow: true }); sgn.position.set(0, 2.33, 0.52); face.add(sgn);
+    face.add(box(0.12, 0.12, 0.03, 0xf2b631, 0, 2.58, 0.52));                                         // the crown
+    k6.add(face);
+  }
+  // domed roof
+  k6.add(box(1.16, 0.1, 1.16, red, 0, 2.6, 0, r));
+  k6.add(part(new THREE.SphereGeometry(0.62, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), red, 0, 2.62, 0, { scale: [1, 0.35, 1] }));
+  return k6;
+}
+export function phoneBoxOld() {
   const red = 0xc8231f;
   const g = group(box(1.1, 2.6, 1.1, red, 0, 1.3, 0), box(1.25, 0.25, 1.25, red, 0, 2.7, 0), part(new THREE.CylinderGeometry(0.62, 0.62, 0.3, 4, 1, false, Math.PI / 4), red, 0, 2.9, 0));
   for (const r of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
@@ -717,6 +791,23 @@ export function slide() {
     ...[0.4, 0.9, 1.4].map((y) => box(0.7, 0.05, 0.12, 0x999999, 0, y, -1.35)));
 }
 export function fountain() {
+  const stone = 0xcfc6b4, dark = 0xa89f8e;
+  const prof = [[0, 0], [2.3, 0], [2.5, 0.08], [2.55, 0.55], [2.4, 0.62], [2.25, 0.55], [2.2, 0.15], [0, 0.15]].map(([x, y]) => new THREE.Vector2(x, y));
+  const g = group(part(new THREE.LatheGeometry(prof, 32), stone, 0, 0, 0));
+  g.add(part(new THREE.CircleGeometry(2.22, 32), 0x4a8ac0, 0, 0.45, 0, { rot: [-Math.PI / 2, 0, 0], mat: { roughness: 0.08, metalness: 0.1, emissive: 0x0a2a4a, transparent: true, opacity: 0.9 } }));
+  // pedestal, lower bowl, upper bowl, finial
+  g.add(cyl(0.28, 0.4, 1.1, dark, 0, 0.55, 0, { seg: 12 }));
+  const bowl = (r, y) => part(new THREE.LatheGeometry([[0.15, 0], [r, 0.18], [r + 0.06, 0.28], [r - 0.05, 0.3], [0.1, 0.12]].map(([x, yy]) => new THREE.Vector2(x, yy)), 24), stone, 0, y, 0);
+  g.add(bowl(1.0, 1.05), cyl(0.95, 0.95, 0.02, 0x6ab0d8, 0, 1.31, 0, { seg: 24, mat: { roughness: 0.05, emissive: 0x0a3a5a } }));
+  g.add(cyl(0.14, 0.2, 0.6, dark, 0, 1.6, 0, { seg: 10 }), bowl(0.5, 1.88), cyl(0.46, 0.46, 0.02, 0x6ab0d8, 0, 2.15, 0, { seg: 20, mat: { roughness: 0.05, emissive: 0x0a3a5a } }));
+  g.add(ball(0.12, stone, 0, 2.3, 0), cone(0.06, 0.25, stone, 0, 2.5, 0));
+  // water falling off each bowl in thin sheets
+  const sheet = (r, y0, h) => { const m = part(new THREE.CylinderGeometry(r + 0.04, r + 0.12, h, 24, 1, true), 0xbfe6f5, 0, y0 - h / 2, 0, { mat: { transparent: true, opacity: 0.35, roughness: 0.05, side: THREE.DoubleSide, map: null, emissive: 0x2a5a7a } }); m.userData.noAO = true; return m; };
+  g.add(sheet(1.02, 1.33, 0.88), sheet(0.52, 2.17, 0.3));
+  for (let i = 0; i < 18; i++) g.add(coin(0.07, false).translateX(Math.random() * 3 - 1.5).translateY(0.46).translateZ(Math.random() * 3 - 1.5));
+  return g;
+}
+export function fountainOld() {
   const g = group(cyl(2.4, 2.5, 0.6, C.stone, 0, 0.3, 0, { seg: 24 }), cyl(2.1, 2.1, 0.05, 0x4a8ac0, 0, 0.55, 0, { seg: 24, mat: { roughness: 0.1, emissive: 0x0a2a4a } }),
     cyl(0.3, 0.4, 1.4, C.stone, 0, 1.0, 0, { seg: 12 }), cyl(0.9, 0.5, 0.25, C.stone, 0, 1.75, 0, { seg: 16 }), ball(0.25, 0x9fd8f0, 0, 2.05, 0, { mat: { transparent: true, opacity: 0.6, emissive: 0x2a5a7a } }));
   for (let i = 0; i < 18; i++) g.add(coin(0.07, false).translateX(Math.random() * 3 - 1.5).translateY(0.57).translateZ(Math.random() * 3 - 1.5));

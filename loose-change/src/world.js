@@ -19,7 +19,7 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const EYE = 1.25, CROUCH_EYE = 0.72, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
 const BOUNDS = { x0: -62, x1: 62, z0: -26, z1: 56 };
 
-let mixTick = 0; const _mp = new THREE.Vector3();
+let debugFly = 0, mixTick = 0; const _mp = new THREE.Vector3();
 let renderer, scene, camera, sun, hemi, canvas, composer = null, clouds = null, grainPass = null, paintPass = null;
 const colliders = [];
 const interactables = [];
@@ -245,8 +245,7 @@ function buildLevel() {
   spots.depthSign = sign;
   // a ladder appears once the hole is deep enough to climb into
   const ladder = new THREE.Group();
-  ladder.add(M.box(0.06, 1.6, 0.06, M.C.wood, -0.25, 0.4, 0), M.box(0.06, 1.6, 0.06, M.C.wood, 0.25, 0.4, 0));
-  for (let i = 0; i < 4; i++) ladder.add(M.box(0.5, 0.05, 0.05, M.C.wood, 0, -0.1 + i * 0.35, 0));
+  const lad = M.ladder(2.0); lad.position.y = -0.6; ladder.add(lad);
   const ladderHit = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.8, 0.6), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
   ladderHit.position.y = 0.4; ladderHit.userData.noAO = true; ladder.add(ladderHit);
   ladder.position.set(-3.3, 0, -14); ladder.rotation.set(0, Math.PI / 2, 0.25); ladder.visible = false; scene.add(ladder);
@@ -473,7 +472,7 @@ function buildCoast() {
   add(spot, DOCK.x1 - 2.6, 0.12, 14);
   interact(spot, { range: 2.6, prompt: () => LC.game.fishPrompt(), use: () => LC.game.fish() });
   // the far end of the road is shut: this is an island, after all
-  for (const z of [10.5, 13, 15.5]) { const b = M.fit('road:construction-barrier', { w: 2.4 }); if (b) add(b, -63, 0, z, Math.PI / 2); }
+  for (const z of [10.5, 13, 15.5]) { const b = M.fit('road:construction-barrier', { h: 1.0 }); if (b) add(b, -63, 0, z, Math.PI / 2); }
   const shut = M.signPlane('ROAD CLOSED · ISLAND ENDS HERE · SORRY', 4, 0.5, { bg: '#d9534f', color: '#fffaf0' }); shut.position.set(-62.8, 2.2, 13); shut.rotation.y = Math.PI / 2; shut.material.side = THREE.DoubleSide; scene.add(shut);
   collide(-64, 8, -63, 18);
   collide(SEA_X + 18, -30, SEA_X + 19, 70); collide(60, -30, SEA_X + 19, -27); collide(62, 61, SEA_X + 19, 62);
@@ -643,7 +642,7 @@ function buildUnderground() {
   ground(UX - 6, -6, UX + 40, 6, 0x4a3420); roof(UX - 6, -6, UX + 40, 6);
   dirt(UX - 6, -6, UX - 6, 6); dirt(UX - 6, -6, UX + 40, -6); dirt(UX - 6, 6, UX + 40, 6);
   for (const [x, z] of [[UX + 8, -4.5], [UX + 16, 4.5], [UX + 26, -4.6], [UX + 33, 4.4]]) scene.add(M.box(2.5, 3.4, 1.8, 0x5a3e28, x, 1.7, z, { sharp: true, mat: { flatShading: true } })), collide(x - 1.3, z - 0.9, x + 1.3, z + 0.9);
-  const rope = add(M.cyl(0.04, 0.04, 3.4, 0xc8a070, 0, 1.7, 0), UX - 3, 0, 0);
+  const rope = add(M.ladder(3.4), UX - 3, 0, 0, Math.PI / 2);
   interact(rope, { range: 2.6, prompt: () => 'Climb back up the ladder', use: () => goUnderground(false) });
   add(M.box(0.5, 0.3, 0.5, 0xffe9b0, 0, 0, 0, { mat: { emissive: 0xffe9b0, emissiveIntensity: 2, map: null } }), UX - 3, 3.3, 0);
   light(UX - 3, 0, 0xfff0c0, 14, 12);
@@ -651,9 +650,9 @@ function buildUnderground() {
   light(UX + 10, -2); light(UX + 25, 2); light(UX + 37, 0);
   const piles = [[UX + 12, -3.5], [UX + 22, 3.6], [UX + 36, -3.4], [UX + 52, 3.2], [UX + 82, -4.5], [UX + 110, 12], [UX + 135, -12]];
   piles.forEach(([x, z], i) => { const p = add(M.junkPile(), x, 0, z); interact(p, { range: 2.8, prompt: () => LC.game.pilePrompt(i), use: () => LC.game.searchPile(i, x > UX + 100 ? 3 : x > UX + 70 ? 2 : x > UX + 40 ? 1 : 0) }); });
-  const gary = add(M.cyl(0.07, 0.08, 0.5, 0xd88a9a, 0, 0.25, 0), UX + 17, 0, -2.4);
-  gary.add(M.ball(0.03, 0x2d2118, -0.03, 0.42, 0.06), M.ball(0.03, 0x2d2118, 0.03, 0.42, 0.06));
-  agents.push({ obj: gary, update: (dt, t) => { gary.rotation.z = Math.sin(t * 2) * 0.3; } });
+  const gary = add(M.worm(), UX + 17, 0, -2.4); gary.scale.setScalar(1.6);
+  // Gary sways and wriggles while he talks
+  agents.push({ obj: gary, update: (dt, t) => { gary.rotation.y = Math.atan2(player.pos.x - gary.position.x, player.pos.z - gary.position.z); for (let i = 1; i < 9; i++) { const s = gary.getObjectByName('seg' + i); if (s) s.position.x = Math.sin(i / 8 * 2.4) * 0.07 + Math.sin(t * 3 + i * 0.7) * 0.012 * i; } } });
   interact(gary, { range: 2.4, prompt: () => 'Talk to Gary the worm', use: () => LC.game.chatUnder('gary', gary) });
   // gate 1 -> the sewer
   gate(UX + 40);
@@ -736,7 +735,7 @@ function updateDoors(dt) {
   }
 }
 // the Quaternius props that dress the town, the house and the underground
-const QM_SCALE = 0.0273, QT_SCALE = 0.021;
+const QM_SCALE = 0.0273, QT_SCALE = 0.0155;
 function qput(kind, opts, x, y, z, ry = 0, solid = false) { const o = M.fit(kind, opts); if (!o) return null; add(o, x, y, z, ry); if (solid) collideObj(o); return o; }
 function nativeH(kind) { const src = M.lib[kind] && M.lib[kind][0]; if (!src) return 1; return new THREE.Box3().setFromObject(src).getSize(new THREE.Vector3()).y; }
 // terraces and flats behind our back fence
@@ -808,6 +807,56 @@ function dressWorld() {
   for (const [x, z] of [[U + 112, -19.6], [U + 124, 19.6], [U + 138, -19.6]]) qput('qd:Banner_wall', { h: 2.6 }, x, 0.3, z, z > 0 ? Math.PI : 0);
   const fire = qput('qd:Woodfire', { h: 0.7 }, U + 118, 0, 0, 0, true);
   if (fire) { const l = new THREE.PointLight(0xff8a30, 18, 12, 1.6); l.position.set(U + 118, 1.2, 0); l.userData.area = 'under'; l.visible = false; scene.add(l); }
+}
+// ---------- the rest of the town: streets you can see but not reach, so the island feels lived in ----------
+function buildOutskirts() {
+  const walls = [0xd9c2a8, 0xe8dcc8, 0xc8b8a0, 0xb5573b, 0xe58a6b, 0xd8d0c0];
+  const doors = [0x3b6ea5, 0x2d5a3a, 0xc8231f, 0x1a1a1a, 0xf2b631];
+  const carCols = [0xc8231f, 0x3b6ea5, 0xd8d8d8, 0x2a2a2e, 0x6aa84f, 0xf2b631];
+  let k = 0;
+  const street = (z0, z1, x0 = -78, x1 = 78) => {
+    floor(x0, z0, x1, z1, 0x4a4a52, 0.02);
+    floor(x0, z0 - 2, x1, z0, 0xcfcac0, 0.025); floor(x0, z1, x1, z1 + 2, 0xcfcac0, 0.025);
+    for (let x = x0 + 2; x < x1; x += 5) scene.add(M.box(2.2, 0.02, 0.15, 0xf3eee4, x, 0.035, (z0 + z1) / 2, { shadow: false }));   // centre line
+    for (let x = x0 + 6; x < x1; x += 16) { add(M.lampPost(), x, 0, z0 - 1.6, Math.PI / 2); add(M.lampPost(), x + 8, 0, z1 + 1.6, -Math.PI / 2); }
+    for (let x = x0 + 9; x < x1; x += 13) if ((k++ % 3) !== 0) add(M.car(carCols[k % carCols.length]), x, 0, z0 + 1.1, Math.PI / 2);
+  };
+  const terrace = (z, ry, x0, x1, skip = () => false) => {
+    for (let x = x0; x <= x1; x += 10.5) { if (skip(x)) continue; add(M.townHouse({ w: 10, d: 8, wallColor: walls[k++ % walls.length], door: doors[k % doors.length], lit: false }), x, 0, z, ry); }
+  };
+  const treeLine = (z, x0, x1, step = 9) => { for (let x = x0; x <= x1; x += step) { const t = add(M.tree(3 + (x * 13 % 7) / 7), x + ((x * 7) % 3), 0, z); t.rotation.y = x; } };
+  // north: a road behind the back gardens and another terrace beyond it
+  street(-46, -40);
+  terrace(-54, 0, -70, 70, (x) => x < -42 && x > -72);
+  treeLine(-60, -70, 70, 7);
+  // allotments in the north-west corner
+  for (let i = 0; i < 6; i++) {
+    const x = -66 + (i % 3) * 7, z = -56 + Math.floor(i / 3) * 6;
+    floor(x - 2.6, z - 2, x + 2.6, z + 2, 0x7a5232, 0.03);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) scene.add(M.ball(0.22, [0x5a8a3a, 0x6aa84f, 0x8ab84a][r % 3], x - 2 + c * 0.8, 0.15, z - 1.4 + r * 0.9, { scale: [1, 0.7, 1] }));
+    if (i % 2) add(M.shed(), x + 1.6, 0, z + 1.2, Math.PI).scale.setScalar(0.55);
+  }
+  // south: a road behind the high street, more houses, the church and the school
+  street(60, 66);
+  terrace(74, Math.PI, -70, 70, (x) => (x > -46 && x < -24) || (x > 12 && x < 44));
+  treeLine(84, -70, 70, 7);
+  // the church: the spire already stands at (-35, 70); this is its nave and its graveyard
+  const stone = 0xbab3a6;
+  add(new THREE.Group().add(M.box(9, 7, 16, stone, 0, 3.5, 0, { sharp: true })), -35, 0, 80);
+  const roofTri = new THREE.Shape([new THREE.Vector2(-5, 0), new THREE.Vector2(5, 0), new THREE.Vector2(0, 4.2)]);
+  const roofG = new THREE.ExtrudeGeometry(roofTri, { depth: 16.4, bevelEnabled: false });
+  const nave = M.part(roofG, 0x5a5a62, -35, 7, 71.8, { rot: [0, 0, 0] }); scene.add(nave);
+  for (let i = 0; i < 4; i++) { const w = M.box(1.2, 3.2, 0.05, 0x5a7ab0, 0, 0, 0, { mat: { emissive: 0x2a3a6a } }); w.position.set(-39.53, 3.6, 75 + i * 3.4); w.rotation.y = Math.PI / 2; scene.add(w); }
+  for (let i = 0; i < 12; i++) scene.add(M.box(0.5, 0.7 + (i % 3) * 0.15, 0.12, 0x9a948a, -46 + (i % 4) * 2, 0.4, 72 + Math.floor(i / 4) * 3, { sharp: true }));
+  const csign = M.signPlane("ST GRANDAD'S CHURCH", 3.4, 0.5, { bg: '#2d2118', color: '#f3eee4' }); csign.position.set(-35, 2.2, 67.9); csign.rotation.y = Math.PI; scene.add(csign);
+  // the school, with its playground
+  add(new THREE.Group().add(M.box(26, 6, 10, 0xc8a07a, 0, 3, 0, { sharp: true }), M.box(26.6, 0.4, 10.6, 0x5a5a62, 0, 6.2, 0, { sharp: true })), 28, 0, 78);
+  for (let i = 0; i < 8; i++) { const w = M.box(2, 1.4, 0.05, 0xbfe0f0, 0, 0, 0, { mat: { emissive: 0x2a3a4a } }); w.position.set(17 + i * 3, 3.6, 72.97); scene.add(w); }
+  const ssign = M.signPlane('ACACIA PRIMARY SCHOOL', 7, 0.9, { bg: '#2a5a8a', color: '#ffffff' }); ssign.position.set(28, 5, 72.9); ssign.rotation.y = Math.PI; scene.add(ssign);
+  floor(16, 68.5, 40, 72.8, 0x4a4a52, 0.03);
+  for (const [x, z] of [[20, 70.5], [26, 70.5], [32, 70.5]]) for (let i = 0; i < 8; i++) scene.add(M.box(0.6, 0.02, 0.6, [0xf2b631, 0xd9534f, 0x5b8bd9, 0x6aa84f][i % 4], x + (i % 4) * 0.7, 0.045, z + Math.floor(i / 4) * 0.7, { shadow: false }));   // hopscotch
+  // a bus stop and a post box on our road
+  add(M.busStop(), 34, 0, 7.6);
 }
 // solid rock between the parts of the underground: each part has its own way in from the surface
 function gate(x) {
@@ -1155,7 +1204,7 @@ function buildTown() {
   }
   collide(-62, 26, 28, 56); collide(-62, 18, -60, 26); collide(-5.5, 18, -5, 26); collide(5, 18, 6, 26);
   // houses peeking over the back fences, and a church spire on the skyline
-  if (M.lib['qm:all']) backRow(); else for (let x = -40; x <= 40; x += 11) add(M.townHouse({ w: 10, d: 8, wallColor: pick([0xd9c2a8, 0xe8dcc8, 0xc8b8a0]), lit: false }), x, 0, -32, Math.PI);
+  for (let x = -40; x <= 40; x += 11) add(M.townHouse({ w: 10, d: 8, wallColor: pick([0xd9c2a8, 0xe8dcc8, 0xc8b8a0]), lit: false }), x, 0, -32, Math.PI);
   if (M.lib['qt:all']) skyline();
   const spire = add(new THREE.Group(), -35, 0, 70);
   spire.add(M.box(5, 12, 5, 0xbab3a6, 0, 6, 0, { sharp: true }), M.cone(3.2, 9, 0x6a6a72, 0, 16.5, 0, { seg: 8 }), M.ball(0.3, 0xf2b631, 0, 21.2, 0));
@@ -2239,6 +2288,7 @@ function updatePlayer(dt) {
     player.pos.x + (shake ? rand(-shake, shake) * 0.3 : 0),
     player.pos.y + eye - (inSea(player.pos.x, player.pos.z) ? Math.min(0.75, (player.pos.x - SEA_X) * 0.25) : 0) + (moving ? Math.sin(player.bob) * 0.04 : 0) + (shake ? rand(-shake, shake) * 0.3 : 0),
     player.pos.z);
+  if (debugFly) camera.position.y += debugFly;
   camera.rotation.set(player.pitch, player.yaw, flip * Math.PI, 'YXZ');
   sun.position.set(player.pos.x + sunDir.x * 40, sunDir.y * 40, player.pos.z + sunDir.z * 40);
   sun.target.position.set(player.pos.x, 0, player.pos.z);
@@ -2773,6 +2823,7 @@ function init() {
   buildFoliage();
   buildUnderground();
   dressWorld();
+  buildOutskirts();
   buildLoft();
   buildViewModel();
   buildCard();
@@ -2872,6 +2923,7 @@ LC.world = {
   // for testing: put the camera somewhere and use whatever is in front of it
   debug: {
     camZ: () => +player.pos.z.toFixed(2),
+    fly: (h) => { debugFly = h; camera.far = 600; camera.updateProjectionMatrix(); scene.fog.far = 600; },
     colliders: () => colliders.filter((c) => !c.off).map((c) => [c.x0, c.z0, c.x1, c.z1].map((v) => +v.toFixed(2))),
     evProps: () => (ev.group ? ev.group.children.map((c) => [+c.position.x.toFixed(1), +c.position.z.toFixed(1)]) : []),
     lookAt: (fx, fz, tx, tz, pitch = -0.05) => { player.pos.set(fx, 0, fz); player.yaw = Math.atan2(-(tx - fx), -(tz - fz)); player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); return focus && focus.prompt(); },
