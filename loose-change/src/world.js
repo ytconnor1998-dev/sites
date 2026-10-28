@@ -393,6 +393,7 @@ function buildCoast() {
   hut.add(M.box(3, 2.4, 2.2, 0x5b9bd5, 0, 1.2, 0), M.box(3.3, 0.2, 2.6, 0xffffff, 0, 2.5, 0), M.box(2.2, 0.8, 0.1, 0x2d2118, 0, 1.3, 1.11));
   const sign = M.signPlane('COD ALMIGHTY · FISH & CHIPS', 2.9, 0.4, { bg: '#fffaf0', color: '#1d4a7a' }); sign.position.set(0, 2.85, 0.9); hut.add(sign);
   collide(76.4, 7.4, 79.6, 9.8);
+  for (const [k, x, z] of [['kk:crate_potatoes', 76.2, 10.1], ['kk:crate', 76.3, 11], ['kk:crate_potatoes', 79.8, 10.2]]) { const c = M.fit(k, { w: 0.6 }); if (c) add(c, x, 0, z, Math.random()); }
   const chippy = M.person({ shirt: 0xffffff, legs: 0x333333, char: 'e' }); add(chippy, 78, 0, 10.2, 0);
   interact(chippy, { range: 3, prompt: () => 'Buy chips<small>Salt and vinegar, obviously</small>', use: () => LC.game.chips(chippy) });
   // Captain Pete, fishing off the end of the dock

@@ -164,6 +164,16 @@ export function fireplace() {
 }
 export function rug(color = 0xc0504d) { if (typeof color === 'object') { const r = fit('kf:rug_oval_A', { w: 2.8 }); if (r) return r; } return cyl(1.4, 1.4, 0.02, color, 0, 0.011, 0, { seg: 24, shadow: false }); }
 export function counter(len = 3) {
+  if (lib['kk:kitchencounter_straight_A_backsplash']) {
+    // a run of cosy KayKit units: counter, sink in the middle, hob at the end
+    const g = new THREE.Group(), n = Math.max(2, Math.round(len / 1.0));
+    for (let i = 0; i < n; i++) {
+      const kind = i === Math.floor(n / 2) ? 'kk:kitchencounter_sink_backsplash' : i === n - 1 ? 'kk:stove_multi_countertop' : i % 2 ? 'kk:kitchencounter_straight_A_decorated' : 'kk:kitchencounter_straight_A_backsplash';
+      const c = fit(kind, { w: len / n }) || fit('kk:kitchencounter_straight_A_backsplash', { w: len / n });
+      c.position.x = -len / 2 + (i + 0.5) * (len / n); g.add(c);
+    }
+    return g;
+  }
   if (lib['f:kitchenCabinet']) {
     const g = new THREE.Group(), n = Math.max(1, Math.round(len / 0.75));
     for (let i = 0; i < n; i++) { const kind = i === Math.floor(n / 2) && lib['f:kitchenSink'] ? 'f:kitchenSink' : i === n - 1 && lib['f:kitchenStove'] ? 'f:kitchenStove' : 'f:kitchenCabinet'; const c = fit(kind, { w: len / n }); c.position.x = -len / 2 + (i + 0.5) * (len / n); g.add(c); }
@@ -171,7 +181,7 @@ export function counter(len = 3) {
   }
   return group(box(len, 0.9, 0.65, 0xe8e2d4, 0, 0.45, 0), box(len + 0.05, 0.06, 0.7, 0x5c5c66, 0, 0.93, 0));
 }
-export function fridge() { const real = fit('f:kitchenFridge', { h: 1.9 }); if (real) return real; return fridgeOld(); }
+export function fridge() { const real = fit('kk:fridge_A_decorated', { h: 1.9 }) || fit('f:kitchenFridge', { h: 1.9 }); if (real) return real; return fridgeOld(); }
 function fridgeOld() { return group(box(0.75, 1.9, 0.7, 0xeeeeee, 0, 0.95, 0), box(0.04, 0.5, 0.04, 0x999999, -0.28, 1.3, 0.36)); }
 export function door(color = 0x3b6ea5) { return group(box(1.0, 2.1, 0.08, color, 0, 1.05, 0), ball(0.04, C.gold, 0.38, 1.0, 0.06)); }
 

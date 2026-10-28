@@ -472,5 +472,50 @@
  ],
  "kf:lamp_table": [
   "kaykit/furniture/lamp_table.gltf"
+ ],
+ "kk:kitchencounter_straight_A_backsplash": [
+  "kaykit/kitchen/kitchencounter_straight_A_backsplash.gltf"
+ ],
+ "kk:kitchencounter_straight_A_decorated": [
+  "kaykit/kitchen/kitchencounter_straight_A_decorated.gltf"
+ ],
+ "kk:kitchencounter_sink_backsplash": [
+  "kaykit/kitchen/kitchencounter_sink_backsplash.gltf"
+ ],
+ "kk:stove_multi_countertop": [
+  "kaykit/kitchen/stove_multi_countertop.gltf"
+ ],
+ "kk:fridge_A_decorated": [
+  "kaykit/kitchen/fridge_A_decorated.gltf"
+ ],
+ "kk:kitchentable_A": [
+  "kaykit/kitchen/kitchentable_A.gltf"
+ ],
+ "kk:chair_A": [
+  "kaykit/kitchen/chair_A.gltf"
+ ],
+ "kk:jar_A_large": [
+  "kaykit/kitchen/jar_A_large.gltf"
+ ],
+ "kk:jar_B_medium": [
+  "kaykit/kitchen/jar_B_medium.gltf"
+ ],
+ "kk:jar_C_small": [
+  "kaykit/kitchen/jar_C_small.gltf"
+ ],
+ "kk:crate_potatoes": [
+  "kaykit/kitchen/crate_potatoes.gltf"
+ ],
+ "kk:crate": [
+  "kaykit/kitchen/crate.gltf"
+ ],
+ "kk:kitchencabinet": [
+  "kaykit/kitchen/kitchencabinet.gltf"
+ ],
+ "kk:shelf_papertowel_decorated": [
+  "kaykit/kitchen/shelf_papertowel_decorated.gltf"
+ ],
+ "kk:table_round_A_small_decorated": [
+  "kaykit/kitchen/table_round_A_small_decorated.gltf"
  ]
 }
