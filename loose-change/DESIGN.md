@@ -87,4 +87,4 @@ About 75: five tiers per helper (each doubles it), plus sofa, piggy bank, scratc
 1. **Look and feel:** glow, grain, tools in hand, kid camera height, new HUD. Jobs list, locked areas, tool tiers and durability. Kitchen, loft, stand and junk.
 2. **Story and rival:** Brian and pranks, Grandad's letters, The Thing reacting, voices.
 3. **Extra places:** the arcade and the Moon.
-4. **Ship:** balance to 2 to 2.5 hours with `tools/sim.js`, Electron desktop build, Steam achievements and cloud saves.
+4. **Ship:** balance to 2 to 2.5 hours with `tools/balance.js` (fast-forwards real runs with a bot player), Electron desktop build, Steam achievements and cloud saves.

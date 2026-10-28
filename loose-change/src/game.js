@@ -750,14 +750,14 @@
     if (!quiet) toast(`${ic(ITEMS[id][0])}<div><b>${ITEMS[id][1]}</b> in your pocket.<br><small>Brian won't like this.</small></div>`);
   }
   const useItem = (id) => { if (!S.items[id]) return false; S.items[id]--; return true; };
-  const BRIAN_SECS = 2.7 * 3600; // unhindered, Brian gets there in about 2h40m
+  const BRIAN_SECS = 3.6 * 3600; // unhindered and racing a player who is ahead, Brian gets there in about 2h45m
   const brianActive = () => S.lifetime >= 20 && !endingPlaying;
   const brianMoney = () => Math.pow(10, 12 * Math.max(0, S.brian.p)) - 1;
   function brianTick(dt) {
     if (!brianActive()) return;
     const mine = Math.log10(1 + S.money) / 12;
     let mult = 1;
-    if (mine > S.brian.p + 0.08) mult = 1.6;      // you're ahead: he tries harder
+    if (mine > S.brian.p + 0.08) mult = 1.3;      // you're ahead: he tries harder
     if (mine < S.brian.p - 0.1) mult = 0.6;       // you're behind: he gets complacent
     if (Date.now() < S.brian.slowUntil) mult *= 0.15;
     if (hasPerk('nemesis')) mult *= 0.85;
@@ -2237,8 +2237,51 @@
       isBlocked: () => modalOpen || !!screenOpen || endingPlaying,
       canLock: () => !screenOpen && !endingPlaying,
     };
+    // Balance bot: fast-forwards a run with the real economy, playing like a busy but not perfect player.
+    // active = share of time spent rummaging, rhythm = average rummage multiplier from timing.
+    function simRun({ secs = 5 * 3600, active = 0.45, rhythm = 1.7, log = 600, incomes = null, payback = null } = {}) {
+      if (incomes) LC.GENERATORS.forEach((g) => { if (incomes[g.id]) g.income = incomes[g.id]; });
+      if (payback) LC.GENERATORS.forEach((g, i) => { g.income = g.cost / (payback[0] * Math.pow(payback[1], i)); });
+      const marks = [], realNow = Date.now; let fake = realNow();
+      Date.now = () => fake;
+      const bestBuy = () => {
+        const inc0 = income();
+        let best = null;
+        // classic idle-game strategy: pick what pays back soonest counting the wait to afford it, and save up for it
+        const consider = (cost, gainPer, fn, label) => { if (gainPer <= 0) return; const pb = Math.max(0, cost - S.money) / Math.max(inc0, 1e-9) + cost / gainPer; if (!best || pb < best.pb) best = { pb, fn, label, cost }; };
+        for (const g of LC.GENERATORS) { const c = genCost(g, 1); S.gens[g.id] = (S.gens[g.id] || 0) + 1; const d = income() - inc0; S.gens[g.id]--; consider(c, d, () => { spend(c); S.gens[g.id] = (S.gens[g.id] || 0) + 1; }, g.id); }
+        for (const u of ALL_UPS) { if (has(u.id) || (u.gen && (S.gens[u.gen] || 0) < u.at) || u.shop === undefined && !u.gen && S.lifetime < u.cost * 0.4) continue; const c = upCost(u); S.upgrades.push(u.id); const d = income() - inc0; S.upgrades.pop(); consider(c, d, () => { spend(c); S.upgrades.push(u.id); }, u.id); }
+        for (const k of ['sofa', 'dig']) { const t = (S.tools[k] || 0) + 1, def = LC.TOOLS[k][t]; if (def && S.money > def.cost * costMult() * 1.5) { spend(def.cost * costMult()); S.tools[k] = t; S.toolDur[k] = def.dur; return 'tool-' + k + t; } }
+        for (const k of ['sofa', 'dig']) { const t = S.tools[k]; if (t && S.toolDur[k] <= 0 && S.money > LC.TOOLS[k][t].cost * 0.15) { spend(LC.TOOLS[k][t].cost * 0.15); S.toolDur[k] = LC.TOOLS[k][t].dur; } }
+        for (const t of LC.DIG_TOOLS) if (digToolCost(t) < S.money * 0.01) buyDigTool(t);
+        if (best && best.cost > S.money) return null;
+        if (best) { best.fn(); bought[best.label] = (bought[best.label] || 0) + 1; return best.label; }
+        return null;
+      };
+      let t = 0, clickAcc = 0; const bought = {};
+      for (; t < secs; t++) {
+        if (S.money >= LC.THING_COST) break;
+        fake += 1000; S.playSecs += 1;
+        gain(income()); addDepth(digRate()); brianTick(1);
+        S.tod += 1 / DAY_SECS; if (S.tod >= 1) { S.tod = 0; S.day++; gain(lump(90, 1)); }
+        clickAcc += active / 0.85;
+        while (clickAcc >= 1) { clickAcc--; gain(clickValue() * rhythm); S.stats.clicks++; wear('sofa'); }
+        if (t % 20 === 0) { for (let i = 0; i < 6; i++) dig(); }
+        if (t % 15 === 0 && S.pig) { for (let i = 0; i < 8 && S.pig && !S.pig.smashed; i++) hitPig(); if (!S.pig || S.pig.smashed) nextPig(); }
+        if (t % 30 === 0 && S.pockets.length) { const it = S.pockets.shift(); gain(it.value); S.stats.sold = (S.stats.sold || 0) + 1; }
+        if (t % 20 === 0) { S.stats.floor = (S.stats.floor || 0) + 1; gain(lump(5, 0.05)); }
+        if (t % 5 === 0 && S.money < LC.THING_COST) { for (let i = 0; i < 12 && bestBuy(); i++); }
+        if (t % 2 === 0) checkTasks();
+        if (log && t % log === 0) { marks.push(JSON.stringify(Object.entries(bought).sort((a, b) => b[1] - a[1]).slice(0, 6))); for (const k in bought) delete bought[k]; }
+        if (log && t % log === 0) marks.push(`${(t / 60).toFixed(0)}m  £${fmt(S.money)}  ${fmtRate(income())}  click ${fmt(clickValue())}  depth ${S.depth.toFixed(0)}m  brian ${(S.brian.p * 100).toFixed(0)}%  tasks ${S.tasksDone.length}`);
+        if (S.money >= LC.THING_COST) break;
+        if (S.brian.p >= 1) { marks.push('BRIAN WINS at ' + (t / 60).toFixed(0) + 'm'); break; }
+      }
+      Date.now = realNow;
+      return { minutes: +(t / 60).toFixed(1), brian: +(S.brian.p * 100).toFixed(1), marks, incomes: LC.GENERATORS.map((g) => g.id + ':' + g.income.toPrecision(3)).join(' '), gens: JSON.stringify(S.gens) };
+    }
     // Handy for testing: LC.debug.gain(1e9)
-    LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden(), tod: (t) => { S.tod = t; }, town: (id) => { townSetup(); if (S.town.on) townEnd(); if (id) townStart(id); }, townEnd: () => S.town && S.town.on && townEnd() };
+    LC.debug = { simRun, quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden(), tod: (t) => { S.tod = t; }, town: (id) => { townSetup(); if (S.town.on) townEnd(); if (id) townStart(id); }, townEnd: () => S.town && S.town.on && townEnd() };
   }
   // the world module needs LC.game before its first frame, so set a stub early
   LC.game = { setPulse: () => {}, setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {}, speedMult: () => 1, timeOfDay: () => 0.3 };
