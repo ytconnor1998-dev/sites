@@ -175,6 +175,7 @@ function buildLevel() {
   const hatchHit = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
   hatchHit.position.set(2.5, 2.4, -2.6); hatchHit.userData.noAO = true; scene.add(hatchHit);
   interact(hatchHit, { range: 3.2, prompt: () => LC.game.hatchPrompt(), use: () => LC.game.hatch() });
+  buildMuseum();
   const thingLabel = M.textSprite('???', { size: 0.42 }); thingLabel.position.set(4.8, 2.75, 1.6); scene.add(thingLabel);
   spots.thingLabel = thingLabel;
   interact(thing, { range: 3, prompt: () => LC.game.thingPrompt(), use: () => LC.game.tryBuyThing() });
@@ -282,6 +283,27 @@ function buildStall() {
   const bell = M.cone(0.08, 0.12, 0xf2b631, -0.85, 0.82, 0.2, { seg: 12 }); bell.visible = false; t.add(bell); stall.ups.bell = [bell];
 }
 const TAG_COLORS = { cheap: '#6aa84f', fair: '#f2b631', cheeky: '#d9534f' };
+// ---------- the museum shelf in the hall: rare finds on display for good ----------
+const museum = { group: null, slots: [], items: [] };
+function buildMuseum() {
+  const g = new THREE.Group(); g.position.set(6.62, 0, 3.4); g.rotation.y = -Math.PI / 2; scene.add(g); museum.group = g;
+  const wood = 0x7a5232;
+  g.add(M.box(1.9, 0.08, 0.42, wood, 0, 0.9, 0), M.box(1.9, 0.08, 0.42, wood, 0, 1.45, 0), M.box(1.9, 0.08, 0.42, wood, 0, 2.0, 0));
+  g.add(M.box(0.08, 1.2, 0.42, wood, -0.95, 1.45, 0), M.box(0.08, 1.2, 0.42, wood, 0.95, 1.45, 0), M.box(1.9, 1.2, 0.04, 0x5a3a22, 0, 1.45, -0.2));
+  const plaque = M.signPlane('MUSEUM OF FINDS', 1.4, 0.24, { bg: '#2d2118', color: '#f2b631' }); plaque.position.set(0, 2.25, 0.05); g.add(plaque);
+  for (let i = 0; i < 6; i++) {
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.45, 0.4), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    hit.position.set(-0.6 + (i % 3) * 0.6, i < 3 ? 1.17 : 1.72, 0.02); hit.userData.noAO = true; g.add(hit);
+    museum.slots.push(hit);
+    interact(hit, { range: 2.8, slot: true, prompt: () => LC.game.museumPrompt(i), use: () => LC.game.museumUse(i) });
+  }
+  collide(6.4, 2.4, 7, 4.4);
+}
+function setMuseum(list) {
+  for (const sp of museum.items) museum.group.remove(sp);
+  museum.items = [];
+  list.forEach((icon, i) => { if (!icon) return; const sp = M.iconSprite(icon, 0.32); sp.position.copy(museum.slots[i].position).setY(museum.slots[i].position.y + 0.02); museum.group.add(sp); museum.items.push(sp); });
+}
 function setStallItems(list) {
   for (const sp of stall.items) stall.group.remove(sp);
   stall.items = [];
@@ -796,7 +818,7 @@ function buildTown() {
     o.position.copy(randomIn(f.zone));
     if (f.pram) { const pr = M.pram(); pr.position.set(0, 0, 0.8); o.add(pr); }
     walker(o, f.zone, f.speed, { pause: 4 });
-    interact(o, { range: 2.5, prompt: () => 'Say hello', use: () => LC.game.chat(f.lines) });
+    interact(o, { range: 2.6, slot: true, prompt: () => LC.game.friendPrompt(f.lines), use: () => LC.game.chat(f.lines, o), alt: () => LC.game.gift(f.lines, o) });
     if (f.dog) {
       const dg = add(M.dog(), o.position.x + 1, 0, o.position.z);
       agents.push({ obj: dg, update: (dt, t) => {
@@ -1002,6 +1024,7 @@ function walker(obj, zone, speed, opts = {}) {
   const a = { obj, zone, speed, target: randomIn(zone), wait: rand(0, 2), t: Math.random() * 10, ...opts };
   a.update = (dt) => {
     a.t += dt;
+    if (talker && talker.obj === obj) { limbs(obj, 0); return; }
     if (a.custom && a.custom(a, dt)) return;
     if (a.wait > 0) { a.wait -= dt; limbs(obj, 0); return; }
     const d = new THREE.Vector3().subVectors(a.target, obj.position); d.y = 0;
@@ -1600,7 +1623,7 @@ function updatePlayer(dt) {
   const moving = fx || fz;
   if (moving) {
     const len = Math.hypot(fx, fz); fx /= len; fz /= len;
-    const sp = (crouching ? WALK * 0.45 : keys.has('ShiftLeft') || keys.has('ShiftRight') ? RUN : WALK) * dt;
+    const sp = (crouching ? WALK * 0.45 : keys.has('ShiftLeft') || keys.has('ShiftRight') ? RUN : WALK) * LC.game.speedMult() * dt;
     const s = Math.sin(player.yaw), c = Math.cos(player.yaw);
     tryMove((fx * c + fz * s) * sp, (-fx * s + fz * c) * sp);
     player.bob += dt * (sp / dt) * 2.2;
@@ -1870,7 +1893,7 @@ LC.world = {
   setLoftPigs,
   washerShake: (on) => { if (spots.washer) spots.washer.userData.shake = on; },
   hideRing: () => { if (spots.ring) spots.ring.visible = false; },
-  setStallItems, setStallUps, nearStall, spawnCustomer,
+  setStallItems, setStallUps, nearStall, spawnCustomer, setMuseum,
   stallScreenPos: () => project(stall.pos.clone().setY(1.2)),
   stallWaiting: () => !!stallWaiter,
   brianState: () => (brian.bbq ? 'bbq' : brian.state),

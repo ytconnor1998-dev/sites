@@ -736,3 +736,65 @@ LC.TREASURE_CLUES = [
   ['Where the road runs out of houses, out west...', 'The far west end of Acacia Road!'],
   ['Where notes are pinned and cats go missing...', 'The notice board!'],
 ];
+
+// ---------- friends: chat to people (once a minute) and give them junk they like ----------
+// 3 points a heart, 5 hearts. A heart-up plays the line for that heart. Perks at 3 and 5 hearts.
+LC.FRIENDS = {
+  jogger: { name: 'Speedy Steve', icon: '🏃', likes: ['sock', 'bottle', 'medal'], likeText: 'Likes: anything to do with running. And socks.',
+    hearts: [
+      'You again! You\'re alright, you. Most people just tell me to slow down.',
+      'Can I tell you something? I don\'t know where I\'m running TO. I just started in 2015 and never stopped.',
+      'Here\'s a tip: lean forward, swing your arms. You\'ll get everywhere faster. (You now walk 15% faster.)',
+      'I ran past your grandad every morning for nine years. He always waved with a biscuit in his hand.',
+      'I find coins on every run. From now on, I\'ll drop them off for you. Partners! (Steve brings you coins now and then.)',
+    ], perks: { 3: 'Walk 15% faster', 5: 'Steve drops off coins from his runs' } },
+  oldman: { name: 'Old Reg', icon: '👴', likes: ['pipe', 'roman', 'horseshoe', 'foreign'], likeText: 'Likes: old things. "Like me," he says.',
+    hearts: [
+      'Ken\'s grandchild! You\'ve got his nose. And his habit of looking under things.',
+      'Biscuit likes you. Biscuit doesn\'t like anyone. Biscuit bit the vicar.',
+      'Secret: under the park benches, look right at the back where the bolts are. (Benches pay three times as much.)',
+      'Your grandad and I found a Roman coin once. He swapped it for a pint and a pickled egg. Best day of his life.',
+      'Here. Ken\'s old digging gloves. He\'d want you to have them. (Digging is 50% stronger.)',
+    ], perks: { 3: 'Park benches pay ×3', 5: 'Digging 50% stronger' } },
+  postman: { name: 'Dave the Postie', icon: '📮', likes: ['ticket', 'key', 'phone'], likeText: 'Likes: things that are lost. "Returning things is my whole job."',
+    hearts: [
+      'Alright! Nothing for you today. Nothing for anyone. The bag\'s just for show on Mondays.',
+      'Between you and me, I read the postcards. Mrs Higgins\' sister is on a cruise. It\'s not going well.',
+      'Parcels nobody claims... I\'ll pop them through your door. Don\'t tell the depot. (Dave delivers you junk.)',
+      'Brian gets a parcel from SPADES R US every single week. What is he DIGGING?',
+      'I\'ve been "losing" Brian\'s parcels for a week. He\'s furious. (Brian is set back.)',
+    ], perks: { 3: 'Dave delivers unclaimed parcels', 5: 'Dave loses Brian\'s parcels' } },
+  mum: { name: 'Kelly (and baby Tyson)', icon: '👶', likes: ['remote', 'marble', 'toycar', 'lego'], likeText: 'Likes: toys for Tyson. He eats them.',
+    hearts: [
+      'Hiya! Say hello, Tyson. He won\'t. He\'s a baby.',
+      'Tyson swallowed a 2p last week. We got it back. You can have it. Don\'t ask how.',
+      'Little trick: put your washing on the quick cycle. Same coins, half the time. (Washing machine twice as fast.)',
+      'I went to school with Brian. He was exactly the same. Even his moustache, I think.',
+      'Fancy babysitting? Tyson just sleeps. Mostly. (Kelly pays you to babysit.)',
+    ], perks: { 3: 'Washing machine twice as fast', 5: 'A big babysitting payday' } },
+  kid: { name: 'Little Alfie', icon: '🧒', likes: ['soldier', 'toycar', 'lego', 'tamagotchi'], likeText: 'Likes: toys. ALL toys. Especially soldiers.',
+    hearts: [
+      'You\'re the kid with the stall! That\'s SO cool. I\'ve got 4p. I\'m saving up too.',
+      'I\'ve got 6p now. I found 2p on the slide. Do you think I\'ll be rich?',
+      'I told EVERYONE at school about your stall. (Stall customers come 25% more often.)',
+      'Brian shouted at me for touching his gnome. I touched it again when he wasn\'t looking.',
+      'Can I work on your stall? I\'ll guard it! Nobody nicks stuff when I\'m there. (No more thieves.)',
+    ], perks: { 3: 'Stall customers +25%', 5: 'Alfie guards your stall: no thieves' } },
+  lady: { name: 'Mrs Higgins', icon: '👵', likes: ['spoon', 'ring', 'bottlecap', 'fossil'], likeText: 'Likes: shiny things and spoons. She collects spoons.',
+    hearts: [
+      'Ooh, Ken\'s grandchild! Come here, let me look at you. You need feeding.',
+      'I put 20p in that phone box in 1994. It never gave it back. I think about it every day.',
+      'I knitted you a little coin purse. Coins seem to stick to it. (All income +5%.)',
+      'Your grandad asked me to the dance in 1962. I said no. Biggest mistake of my life. Then I married Gerald.',
+      'Here, take Gerald\'s old button tin. He collected buttons. I never knew why. (+20 buttons, income +10%.)',
+    ], perks: { 3: 'Income +5%', 5: '+20 buttons, income +10%' } },
+};
+
+// ---------- Grandad's sticker album: a sticker for everything you find. Fill a page for a bonus ----------
+LC.ALBUM_PAGES = [
+  { id: 'junk', name: 'Bits and bobs', icon: '🧦', bonus: 0.05 },
+  { id: 'finds', name: 'Down the hole', icon: '⛏️', bonus: 0.05 },
+  { id: 'friends', name: 'Friends', icon: '🤝', bonus: 0.05 },
+  { id: 'town', name: 'Things that happened', icon: '🎡', bonus: 0.05 },
+  { id: 'letters', name: 'Letters from Grandad', icon: '✉️', bonus: 0.1 },
+];

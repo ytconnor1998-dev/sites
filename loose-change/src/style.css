@@ -424,3 +424,22 @@ button.junk:hover { transform: translateY(-2px); }
 
 .fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .35s; z-index: 95; }
 .fade.show { opacity: 1; }
+
+/* ---------- friends & sticker album ---------- */
+.hearts { color: #e8436a; font-size: 0.95em; letter-spacing: 1px; }
+.hearts i { color: rgba(45, 33, 24, 0.2); font-style: normal; }
+.prompt .hearts i { color: rgba(255, 255, 255, 0.35); }
+.friend { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; margin: 8px 0; background: #fffaf0; border: 3px solid var(--ink, #2d2118); border-radius: 14px; }
+.friend .ic { width: 36px; height: 36px; flex: none; }
+.friend small { display: block; margin-top: 3px; }
+.friend.unmet { opacity: 0.6; }
+.friend .perks span { display: inline-block; margin: 4px 6px 0 0; padding: 2px 8px; border-radius: 999px; background: rgba(45, 33, 24, 0.08); }
+.friend .perks span.on { background: #ffe08a; font-weight: 600; }
+.album-page { margin: 10px 0 16px; padding: 10px; border-radius: 14px; background: #fff6df; border: 3px dashed rgba(45, 33, 24, 0.25); }
+.album-page.done { border-style: solid; border-color: var(--gold, #f2b631); }
+.stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.sticker { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border-radius: 12px; background: rgba(45, 33, 24, 0.07); color: rgba(45, 33, 24, 0.35); font-weight: 700; font-size: 22px; text-align: center; }
+.sticker small { font-size: 10px; font-weight: 600; line-height: 1.1; }
+.sticker .ic { width: 32px; height: 32px; }
+.sticker.got { background: #fff; color: var(--ink, #2d2118); box-shadow: 0 2px 0 rgba(45, 33, 24, 0.2); transform: rotate(-2deg); }
+.sticker.got:nth-child(even) { transform: rotate(2deg); }

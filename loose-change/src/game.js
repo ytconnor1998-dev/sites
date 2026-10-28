@@ -59,11 +59,12 @@
       pockets: [], stall: [], stallPrice: 'fair', stallUps: [],
       tools: { sofa: 0, pig: 0, dig: 0 }, toolDur: {}, request: null, nextRequestAt: 0, boosts: {}, crafted: [],
       letters: [], loftPigs: {}, boxes: [], washUntil: 0,
-      buffs: [], flags: {}, playSecs: 0, town: null,
+      buffs: [], flags: {}, playSecs: 0, town: null, friends: {}, museum: [null, null, null, null, null, null],
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0, floor: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
       // carried across runs
       endings: keep.endings || [], achievements: keep.achievements || [], runs: keep.runs || 0, secrets: keep.secrets || [],
+      album: keep.album || { junk: [], finds: [], friends: [], town: [], letters: [] },
       allTime: keep.allTime || 0, settings: keep.settings || { sfx: true, music: true, volume: 0.6 },
     };
   }
@@ -125,6 +126,9 @@
     if (S.flags.nanJumper) m += 0.1;
     if (S.flags.derek) m += 0.05;
     if (S.goose.friend) m += 0.1;
+    m += museumBonus() + albumBonus();
+    if (perk('lady', 3)) m += 0.05;
+    if (perk('lady', 5)) m += 0.1;
     return m * karmaMult();
   }
   function genIncome(g) { return g.id === 'pigeons' && S.flags.pigeonStrike ? 0 : (S.gens[g.id] || 0) * g.income * genMult(g); }
@@ -168,7 +172,7 @@
     return m * buffMult('dig');
   }
   const digRate = () => LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.rate, 0) * digMult();
-  const digClick = () => ((0.05 + LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.click, 0)) * (eff('dig').mult || 1) + digRate() * 0.05) * digMult();
+  const digClick = () => (perk('oldman', 5) ? 1.5 : 1) * ((0.05 + LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.click, 0)) * (eff('dig').mult || 1) + digRate() * 0.05) * digMult();
 
   const pigCap = () => Math.max(1, baseIncome() * 180) * upgradesOf('piggyCap').reduce((m, u) => m * u.value, 1);
   const pigFill = () => (0.02 + baseIncome() * 0.3) * upgradesOf('piggyFill').reduce((m, u) => m * u.value, 1);
@@ -388,7 +392,7 @@
       if (S.depth >= f.at && !S.finds.includes(f.name)) {
         const r = f.reward;
         if (r.ending) { australiaReady(); continue; }
-        S.finds.push(f.name);
+        S.finds.push(f.name); albumAdd('finds', f.name);
         let what = '';
         if (r.cash) { const n = lump(r.cash, 0.5); gain(n); what = `+${fmt(n)}`; }
         if (r.mult) what = `All income +${Math.round(r.mult * 100)}%`;
@@ -573,6 +577,7 @@
     if (S.pockets.length >= pocketSize()) { if (!quiet) toast(`${ic('🎒')}<div><b>Your pockets are full!</b><br><small>Put things out on your stall to sell them.</small></div>`); return false; }
     const value = Math.max(j.min, baseIncome() * j.value) * (0.85 + Math.random() * 0.3);
     S.pockets.push({ id, value });
+    albumAdd('junk', id);
     setTimeout(renderHotbar, 0);
     if (!quiet) toast(`${ic(j.icon)}<div>Found: <b>${j.name}</b><br><small>Worth about ${fmt(value)} at your stall</small></div>`, j.rarity >= 3 ? 'gold' : 'find');
     return true;
@@ -645,7 +650,7 @@
   function stallTick(dt) {
     if (!stallItems().length) return;
     if (S.stallUps.includes('lemonade') && LC.world.nearStall(8)) gain(baseIncome() * 0.1 * dt);
-    let rate = townStallRate();
+    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1);
     if (S.stallUps.includes('sign')) rate *= 1.4;
     if (S.stallUps.includes('parasol')) rate *= 1.3;
     if (S.stallUps.includes('bell')) rate *= 2;
@@ -668,7 +673,7 @@
   function customerGaveUp(kind) {
     waiting = Math.max(0, waiting - 1);
     const live = stallSlots().map((x, i) => (x && i < stallSize() ? i : -1)).filter((i) => i >= 0);
-    if (!live.length || chance(0.45)) return { say: pick(['Nobody here? Fine.', 'I waited AGES.', "I'll come back. (They won't.)"]) };
+    if (!live.length || chance(0.45) || perk('kid', 5)) return { say: perk('kid', 5) && live.length ? 'Alfie was guarding the stall. I didn\'t dare.' : pick(['Nobody here? Fine.', 'I waited AGES.', "I'll come back. (They won't.)"]) };
     const idx = kind === 'collector' ? (live.find((i) => LC.JUNK[stallSlots()[i].id].rarity >= 3) ?? pick(live)) : pick(live);
     const it = stallSlots()[idx];
     stallSlots()[idx] = null;
@@ -891,7 +896,7 @@
     if (!ready('bench', 45)) { say(pick(["You've already checked. There's only a crisp packet.", 'A pigeon got here first.'])); return; }
     findSecret('bench');
     const r = Math.random();
-    if (r < 0.65) { const n = lump(25, 0.2); gain(n); floatAt(null, n); LC.audio.sfx('coin'); say(pick(['Loose change under the bench!', 'A pound coin, stuck to some chewing gum. Worth it.', 'Coins. And a sock. You take the coins.'])); }
+    if (r < 0.65) { const n = lump(25, 0.2) * (perk('oldman', 3) ? 3 : 1); gain(n); floatAt(null, n); LC.audio.sfx('coin'); say(pick(['Loose change under the bench!', 'A pound coin, stuck to some chewing gum. Worth it.', 'Coins. And a sock. You take the coins.'])); }
     else if (r < 0.75) { S.buttons++; LC.audio.sfx('coin'); say('A button. Of course.'); }
     else if (r < 0.87) { giveItem('glitter'); say("A tube of glitter. Someone's craft project. It's yours now. You know what to do with it."); }
     else say(pick(['Nothing. Just a very old sandwich.', 'A note that says "TOLD YOU - KEN". Grandad was here.', 'An old man is sitting on this bench. He says "no".']));
@@ -920,7 +925,47 @@
     say(pick(['The gnome is watching you.', 'The gnome has a tiny notebook. Your name is in it.', 'The gnome says nothing. Loudly.', 'You stare at the gnome. The gnome stares back.']));
   }
   const chatIdx = {};
-  function chat(who) {
+  // ---------- friends ----------
+  const hearts = (id) => Math.min(5, Math.floor((S.friends[id] || 0) / 3));
+  function perk(id, n) { return hearts(id) >= n; }
+  function friendPrompt(id) {
+    const f = LC.FRIENDS[id], h = hearts(id);
+    const held = S.pockets[held];
+    return `Talk to ${f.name} <span class="hearts">${'♥'.repeat(h)}<i>${'♥'.repeat(5 - h)}</i></span><small>${held ? `Press R to give them your ${LC.JUNK[held.id].name.toLowerCase()}` : 'Hold some junk and press R to give it as a present'}</small>`;
+  }
+  function befriend(id, pts, npc) {
+    const before = hearts(id);
+    S.friends[id] = Math.min(15, (S.friends[id] || 0) + pts);
+    const h = hearts(id);
+    if (h <= before) return false;
+    const f = LC.FRIENDS[id];
+    LC.audio.sfx('fanfare');
+    if (h === 5) albumAdd('friends', id);
+    if (id === 'postman' && h === 5) S.brian.p = Math.max(0, S.brian.p - 0.05);
+    if (id === 'mum' && h === 5) gain(lump(1500, 30));
+    if (id === 'lady' && h === 5) S.buttons += 20;
+    modal({ speaker: id === 'oldman' || id === 'postman' ? 'man' : id === 'lady' ? 'nan' : 'man', npc, icon: f.icon, title: `${f.name} ${'♥'.repeat(h)}`, text: f.hearts[h - 1], choices: [{ label: h === 5 ? 'Best friends!' : 'Aw.' }] });
+    return true;
+  }
+  function gift(id, npc) {
+    const it = S.pockets[held];
+    if (!it) { LC.audio.sfx('nope'); return say('You\'re not holding anything to give. Scroll to pick some junk.'); }
+    if (!ready('gift_' + id, 30)) return say(`${LC.FRIENDS[id].name} says you've already given them something. "Don\'t spoil me."`);
+    S.pockets.splice(held, 1); renderHotbar();
+    const loved = LC.FRIENDS[id].likes.includes(it.id);
+    LC.audio.sfx(loved ? 'win' : 'ding');
+    if (!befriend(id, loved ? 4 : 1, npc)) say(loved ? `"A ${LC.JUNK[it.id].name.toLowerCase()}! I LOVE these!" ♥♥` : `"Oh... a ${LC.JUNK[it.id].name.toLowerCase()}. Thanks." ♥`);
+  }
+  // little gifts from friends while you play
+  let friendTimer = 0;
+  function friendTick(dt) {
+    if ((friendTimer += dt) < 1) return;
+    friendTimer = 0;
+    if (perk('jogger', 5) && ready('steve', 200)) { const n = lump(90, 2); gain(n); LC.audio.sfx('coin'); toast(`${ic('🏃')}<div><b>Speedy Steve</b> jogged past and dropped off ${fmt(n)}!</div>`); }
+    if (perk('postman', 3) && ready('dave', 240)) { if (giveJunk(randJunk(2), true)) toast(`${ic('📮')}<div><b>Dave the Postie</b> put an unclaimed parcel through your door. Check your pockets!</div>`); }
+  }
+  function chat(who, npc) {
+    if (LC.FRIENDS[who] && ready('chat_' + who, 60)) { S.stats.chats = (S.stats.chats || 0) + 1; if (befriend(who, 1, npc)) return; }
     const lines = LC.CHAT[who] || ['"Hello."'];
     const i = chatIdx[who] = ((chatIdx[who] ?? -1) + 1) % lines.length;
     LC.audio.sfx('babble');
@@ -933,7 +978,7 @@
   function giveLetter(id) {
     if (S.letters.includes(id)) return;
     const l = LC.LETTERS.find((x) => x.id === id);
-    S.letters.push(id);
+    S.letters.push(id); albumAdd('letters', id);
     LC.audio.sfx('ding');
     toast(`${ic('✉️')}<div><b>Grandad's letter (${S.letters.length}/12)</b><br><small>"${l.title}" · read it in your Notes app</small></div>`, 'gold');
   }
@@ -964,7 +1009,7 @@
       else say(pick(['Clean coins! Money laundering, but legal.', 'Coins, and one of Dad\'s socks is now pink.', 'A load of warm, clean change.']));
       return;
     }
-    S.washUntil = Date.now() + 45000; LC.world.washerShake(true); LC.audio.sfx('click');
+    S.washUntil = Date.now() + (perk('mum', 3) ? 22500 : 45000); LC.world.washerShake(true); LC.audio.sfx('click');
     say('Washing on. 45 seconds. Go and do something else.');
   }
   // ---------- the loft ----------
@@ -1189,6 +1234,61 @@
     if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
   }
 
+  // ---------- the museum shelf: rare things on display give a permanent bonus this run ----------
+  const MUSEUM_BONUS = [0, 0.01, 0.03, 0.06, 0.12];
+  function museumBonus() { return S.museum.reduce((t, id) => t + (id ? MUSEUM_BONUS[LC.JUNK[id].rarity] : 0), 0); }
+  function museumPrompt(i) {
+    const id = S.museum[i];
+    if (id) return `${LC.JUNK[id].name}<small>On display. Income +${Math.round(MUSEUM_BONUS[LC.JUNK[id].rarity] * 100)}%</small>`;
+    const h = S.pockets[held];
+    return h ? `Put the ${LC.JUNK[h.id].name.toLowerCase()} on display<small>For good. Income +${Math.round(MUSEUM_BONUS[LC.JUNK[h.id].rarity] * 100)}%</small>` : 'An empty museum spot<small>Hold something rare and put it on display for a bonus</small>';
+  }
+  function museumUse(i) {
+    if (S.museum[i]) return say(pick(['It looks magnificent.', 'A visitor would be impressed. If you had visitors.', 'You dust it. Lovely.']));
+    const h = S.pockets[held];
+    if (!h) { LC.audio.sfx('nope'); return; }
+    S.museum[i] = h.id; S.pockets.splice(held, 1); renderHotbar(); syncMuseum();
+    LC.audio.sfx('win');
+    say(`The ${LC.JUNK[h.id].name.toLowerCase()} is now in the Museum of Finds. Income +${Math.round(MUSEUM_BONUS[LC.JUNK[h.id].rarity] * 100)}%`);
+  }
+  function syncMuseum() { LC.world.setMuseum(S.museum.map((id) => (id ? LC.JUNK[id].icon : null))); }
+
+  // ---------- Grandad's sticker album (kept between runs) ----------
+  const ALBUM_SIZE = { junk: () => Object.keys(LC.JUNK).length, finds: () => LC.DIG_FINDS.length, friends: () => Object.keys(LC.FRIENDS).length, town: () => LC.TOWN_EVENTS.length, letters: () => LC.LETTERS.length };
+  function albumAdd(page, id) {
+    const list = S.album[page];
+    if (!list || list.includes(id)) return;
+    list.push(id);
+    const def = LC.ALBUM_PAGES.find((p) => p.id === page);
+    if (list.length === ALBUM_SIZE[page]()) { LC.audio.sfx('fanfare'); toast(`${ic('📒')}<div><b>Sticker album page complete: ${def.name}!</b><br><small>Income +${def.bonus * 100}% for good</small></div>`, 'gold'); }
+    else setTimeout(() => toast(`${ic('⭐')}<div>New sticker for Grandad's album! <small>(${def.name} ${list.length}/${ALBUM_SIZE[page]()})</small></div>`), 1500);
+  }
+  function albumBonus() { return LC.ALBUM_PAGES.reduce((t, p) => t + ((S.album[p.id] || []).length >= ALBUM_SIZE[p.id]() ? p.bonus : 0), 0); }
+  function renderAlbum() {
+    const pages = LC.ALBUM_PAGES.map((p) => {
+      const got = S.album[p.id] || [];
+      let items = [];
+      if (p.id === 'junk') items = Object.entries(LC.JUNK).map(([k, j]) => [got.includes(k), j.icon, j.name]);
+      if (p.id === 'finds') items = LC.DIG_FINDS.map((f) => [got.includes(f.name), f.icon, f.name]);
+      if (p.id === 'friends') items = Object.entries(LC.FRIENDS).map(([k, f]) => [got.includes(k), f.icon, f.name]);
+      if (p.id === 'town') items = LC.TOWN_EVENTS.map((e) => [got.includes(e.id), e.icon, e.name]);
+      if (p.id === 'letters') items = LC.LETTERS.map((l) => [got.includes(l.id), '✉️', l.title]);
+      const done = got.length >= items.length;
+      return `<div class="album-page ${done ? 'done' : ''}"><div class="sub-title">${ic(p.icon)} ${p.name} <span class="muted">${got.length}/${items.length}${done ? ' · complete! +' + p.bonus * 100 + '%' : ' · fill it for +' + p.bonus * 100 + '%'}</span></div>
+        <div class="stickers">${items.map(([has, icon, name]) => `<div class="sticker ${has ? 'got' : ''}" title="${has ? name : '???'}">${has ? ic(icon) : '?'}<small>${has ? name : '???'}</small></div>`).join('')}</div></div>`;
+    }).join('');
+    $('#album-view').innerHTML = `<p class="muted small">Grandad's old sticker album. You get a sticker the first time you find anything. The album stays with you, even after an ending.</p>${pages}`;
+  }
+  function renderFriends() {
+    $('#friends-view').innerHTML = `<p class="muted small">Chat to people around town (once a minute each) and give them presents. Hold some junk, look at them and press <kbd>R</kbd>.</p>` +
+      Object.entries(LC.FRIENDS).map(([k, f]) => {
+        const h = hearts(k), met = (S.friends[k] || 0) > 0;
+        return `<div class="friend ${met ? '' : 'unmet'}">${ic(f.icon)}<div><b>${met ? f.name : 'Someone in town'}</b> <span class="hearts">${'♥'.repeat(h)}<i>${'♥'.repeat(5 - h)}</i></span>
+          <small>${met ? f.likeText : 'Go and say hello.'}</small>
+          <small class="perks">${[3, 5].map((n) => `<span class="${h >= n ? 'on' : ''}">${n}♥ ${h >= n || met ? f.perks[n] : '???'}</span>`).join('')}</small></div></div>`;
+      }).join('');
+  }
+
   // ---------- town events: 5 or 6 random ones each run, roughly every 20 minutes ----------
   function townSetup() {
     if (S.town) return;
@@ -1214,6 +1314,7 @@
   function townStart(id) {
     const T = S.town, e = townDef(id);
     T.on = id; T.until = e.secs; T.used = {}; if (!T.seen.includes(id)) T.seen.push(id);
+    albumAdd('town', id);
     S.stats.townEvents = (S.stats.townEvents || 0) + 1;
     LC.world.townEvent(id, true);
     LC.audio.sfx('event');
@@ -1373,7 +1474,7 @@
     }, 900 + e.lines.length * 2200 + 600);
   }
   function newRun() {
-    S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings, secrets: S.secrets });
+    S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings, secrets: S.secrets, album: S.album });
     newPig(); card = null; renderCard();
     renderShop(true); gardenDirty = true; buildGarden();
     LC.world.reset();
@@ -1425,6 +1526,8 @@
     { id: 'bank', icon: '🏦', label: 'Bank', color: '#3b6ea5' },
     { id: 'weather', icon: '⛅', label: 'Weather', color: '#8fd0e8' },
     { id: 'secrets', icon: '🔍', label: 'Secrets', color: '#e58a6b' },
+    { id: 'friends', icon: '🤝', label: 'Friends', color: '#e86a8a' },
+    { id: 'album', icon: '📒', label: 'Sticker album', color: '#5bb0e0' },
     { id: 'notebook', icon: '📊', label: 'Stats', color: '#9b59b6' },
     { id: 'endings', icon: '🏁', label: 'Endings', color: '#2d2118' },
     { id: 'settings', icon: '⚙️', label: 'Settings', color: '#8f8f8f' },
@@ -1638,6 +1741,8 @@
     if (id === 'bank') renderBank();
     if (id === 'weather') renderWeather();
     if (id === 'secrets') renderSecrets();
+    if (id === 'friends') renderFriends();
+    if (id === 'album') renderAlbum();
   }
   function renderSecrets() {
     const found = LC.SECRETS.filter((x) => S.secrets.includes(x.id)).length;
@@ -1901,6 +2006,7 @@
       S.playSecs += dt;
       brianTick(dt);
       townTick(dt);
+      friendTick(dt);
       stallTick(dt);
       if (S.pig && !S.pig.smashed && !pigType().real) S.pig.stored = Math.min(pigCap(), S.pig.stored + pigFill() * dt);
       if (S.cardRestockAt && now >= S.cardRestockAt) {
@@ -1998,7 +2104,7 @@
     const loaded = load();
     buildShop(); buildGarden(); buildSettings();
     if (!S.pig || S.pig.smashed) newPig(); else showPig();
-    syncStall(); LC.world.setStallUps(S.stallUps); renderHotbar();
+    syncStall(); syncMuseum(); LC.world.setStallUps(S.stallUps); renderHotbar();
     if (crafted('robocat')) LC.world.evolve('cat');
     LC.world.setLoftPigs(Object.keys(S.loftPigs).filter((k) => S.loftPigs[k] === 'done').map(Number));
     if (washing() || S.washUntil) LC.world.washerShake(washing());
@@ -2043,7 +2149,7 @@
       onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,
       pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
-      resolveCard,
+      resolveCard, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
       hookADuck, binPrompt, bin, cheer, filmExtra, iceCream, snowman, mayor, treasureDig, pigeonStrike, saleSofa, bbqSausage, townOn,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),
@@ -2061,6 +2167,6 @@
     LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden(), town: (id) => { townSetup(); if (S.town.on) townEnd(); if (id) townStart(id); }, townEnd: () => S.town && S.town.on && townEnd() };
   }
   // the world module needs LC.game before its first frame, so set a stub early
-  LC.game = { setPulse: () => {}, setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };
+  LC.game = { setPulse: () => {}, setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {}, speedMult: () => 1 };
   addEventListener('load', boot);
 })();
