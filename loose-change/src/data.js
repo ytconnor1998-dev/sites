@@ -920,3 +920,12 @@ LC.SITE_LINES = {
   drainNo: ['It won\'t budge. You need something to lever it up. Something crow-shaped. And bar-ish.', 'You pull with all your might. The drain wins.', 'You can hear dripping down there. And coins. Definitely coins.'],
   molehill: ['A mole pops out, looks at you, and goes back in. Rude.', 'You dig. Somewhere below, a tiny voice shouts "KNOCK FIRST!"', 'Dirt. More dirt. A mole-sized "KEEP OUT" sign.', 'The molehill is fighting back. You are winning. Just.'],
 };
+
+// ---------- warnings as Brian gets close to buying The Thing ----------
+LC.BRIAN_WARNINGS = [
+  { at: 0.5, icon: '💬', from: 'Mum', text: 'Brian\'s telling everyone at the shop he\'s "halfway there". He\'s bought a new calculator to celebrate. A big one.' },
+  { at: 0.7, icon: '👵', from: 'Nan', text: 'Brian\'s saved a LOT, love. He keeps it in a biscuit tin on his sofa. I\'m not saying pinch it. I\'m saying it\'s a biscuit tin. On his sofa.' },
+  { at: 0.85, icon: '🧒', from: 'Little Alfie', text: 'BRIAN IS NEARLY THERE!!! he was doing a little dance in his garden. prank him!!! a whoopee cushion or something!!! hurry!!!' },
+  { at: 0.93, icon: '😤', from: 'Brian', text: 'Just measuring my hallway for The Thing. Thanks for keeping it warm. Don\'t take it personally. (Take it personally.)' },
+  { at: 0.98, icon: '🚨', from: 'Mum', text: 'BRIAN HAS GOT HIS CHEQUEBOOK OUT. Whatever you\'re going to do, DO IT NOW.' },
+];

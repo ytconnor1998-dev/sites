@@ -777,6 +777,13 @@
     if (chal('brianfast')) mult *= 1.25;
     S.brian.p = Math.min(1, S.brian.p + dt / BRIAN_SECS * mult);
     if (S.brian.p >= 1) { S.brian.p = 1; playEnding('brian'); }
+    // texts as he gets close, each with a hint about how to slow him down
+    const w = LC.BRIAN_WARNINGS[S.brian.warned || 0];
+    if (w && S.brian.p >= w.at) {
+      S.brian.warned = (S.brian.warned || 0) + 1;
+      LC.audio.sfx(w.at >= 0.9 ? 'event' : 'text');
+      toast(`${ic(w.icon)}<div><b>${w.from}</b><br><small>${w.text}</small></div>`, w.at >= 0.9 ? 'gold' : 'msg');
+    }
   }
   function prank(kind, secs, knock, line) {
     S.brian.slowUntil = Math.max(Date.now(), S.brian.slowUntil) + secs * 1000;
@@ -2367,7 +2374,7 @@
     };
     // Balance bot: fast-forwards a run with the real economy, playing like a busy but not perfect player.
     // active = share of time spent rummaging, rhythm = average rummage multiplier from timing.
-    function simRun({ secs = 5 * 3600, active = 0.45, rhythm = 1.7, log = 600, incomes = null, payback = null, bonus = 1 } = {}) {
+    function simRun({ secs = 5 * 3600, active = 0.45, rhythm = 1.7, log = 600, incomes = null, payback = null, bonus = 1, shopEvery = 5 } = {}) {
       if (incomes) LC.GENERATORS.forEach((g) => { if (incomes[g.id]) g.income = incomes[g.id]; });
       if (payback) LC.GENERATORS.forEach((g, i) => { g.income = g.cost / (payback[0] * Math.pow(payback[1], i)); });
       const marks = [], realNow = Date.now; let fake = realNow();
@@ -2398,7 +2405,7 @@
         if (t % 15 === 0 && S.pig) { for (let i = 0; i < 8 && S.pig && !S.pig.smashed; i++) hitPig(); if (!S.pig || S.pig.smashed) nextPig(); }
         if (t % 30 === 0 && S.pockets.length) { const it = S.pockets.shift(); gain(it.value); S.stats.sold = (S.stats.sold || 0) + 1; }
         if (t % 20 === 0) { S.stats.floor = (S.stats.floor || 0) + 1; gain(lump(5, 0.05)); }
-        if (t % 5 === 0 && S.money < LC.THING_COST) { for (let i = 0; i < 12 && bestBuy(); i++); }
+        if (t % shopEvery === 0 && S.money < LC.THING_COST) { for (let i = 0; i < 12 && bestBuy(); i++); }
         if (t % 2 === 0) checkTasks();
         if (log && t % log === 0) { marks.push(JSON.stringify(Object.entries(bought).sort((a, b) => b[1] - a[1]).slice(0, 6))); for (const k in bought) delete bought[k]; }
         if (log && t % log === 0) marks.push(`${(t / 60).toFixed(0)}m  £${fmt(S.money)}  ${fmtRate(income())}  click ${fmt(clickValue())}  depth ${S.depth.toFixed(0)}m  brian ${(S.brian.p * 100).toFixed(0)}%  tasks ${S.tasksDone.length}`);
