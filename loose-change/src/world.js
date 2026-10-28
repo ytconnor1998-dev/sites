@@ -1,6 +1,7 @@
 // Loose Change — the 3D world: your house, the back garden, the street and the corner shop.
 // First-person: WASD to walk, mouse to look, E / click to use things, Tab for your phone.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
@@ -63,6 +64,7 @@ function interact(obj, def) { obj.traverse((o) => { o.userData.interact = def; }
 
 // fake volumetric light: a soft additive cone under a lamp
 let coneTex = null;
+const streetGlow = [];
 function lightCone(x, y, z, h, r, color = 0xffd9a0, strength = 0.045) {
   if (!coneTex) {
     const c = document.createElement('canvas'); c.width = 4; c.height = 128;
@@ -283,6 +285,31 @@ function buildStall() {
   const bell = M.cone(0.08, 0.12, 0xf2b631, -0.85, 0.82, 0.2, { seg: 12 }); bell.visible = false; t.add(bell); stall.ups.bell = [bell];
 }
 const TAG_COLORS = { cheap: '#6aa84f', fair: '#f2b631', cheeky: '#d9534f' };
+// ---------- lush bits: thousands of grass tufts and flowers, drawn in one go ----------
+function buildFoliage() {
+  const zones = [{ x0: -11.5, x1: 11.5, z0: -25.5, z1: -6, n: 2200 }, { x0: 31, x1: 61, z0: 20, z1: 55, n: 3000 }, { x0: -70, x1: 70, z0: -40, z1: -27, n: 1600 }, { x0: 62, x1: 75, z0: 18, z1: 60, n: 500 }];
+  // a tuft = three thin blades leaning out
+  const blade = (a) => { const g = new THREE.ConeGeometry(0.025, 0.24, 3); g.translate(0, 0.12, 0); g.rotateZ(0.35); g.rotateY(a); return g; };
+  const tuft = mergeGeometries([blade(0), blade(2.1), blade(4.2)]);
+  const tufts = new THREE.InstancedMesh(tuft, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }), 7300);
+  const flower = new THREE.SphereGeometry(0.04, 6, 4); flower.scale(1, 0.6, 1); flower.translate(0, 0.2, 0);
+  const flowers = new THREE.InstancedMesh(flower, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 }), 900);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), p = new THREE.Vector3(), e = new THREE.Euler(), col = new THREE.Color();
+  const greens = [0x5aa83a, 0x6fbf45, 0x82cf52, 0x4c9a30], petals = [0xffffff, 0xffe04a, 0xff8ab0, 0xb08aff, 0xff6a4a];
+  let ti = 0, fi = 0;
+  for (const z of zones) {
+    for (let k = 0; k < z.n; k++) {
+      const x = rand(z.x0, z.x1), zz = rand(z.z0, z.z1);
+      if (blocked(x, zz, 0.15) || Math.hypot(x + 2, zz + 14) < 2.2) continue;
+      if (ti < tufts.count) { e.set(rand(-0.25, 0.25), rand(0, 6), rand(-0.25, 0.25)); q.setFromEuler(e); const s2 = rand(0.6, 1.2); sc.set(s2, s2 * rand(0.8, 1.3), s2); p.set(x, 0, zz); m.compose(p, q, sc); tufts.setMatrixAt(ti, m); tufts.setColorAt(ti++, col.setHex(pick(greens))); }
+      if (fi < flowers.count && Math.random() < 0.1) { q.identity(); const s2 = rand(0.8, 1.3); sc.set(s2, s2, s2); p.set(x + 0.1, 0, zz + 0.1); m.compose(p, q, sc); flowers.setMatrixAt(fi, m); flowers.setColorAt(fi++, col.setHex(pick(petals))); }
+    }
+  }
+  tufts.count = ti; flowers.count = fi;
+  tufts.receiveShadow = true; tufts.userData.noAO = true; flowers.userData.noAO = true;
+  scene.add(tufts, flowers);
+}
+
 // ---------- the museum shelf in the hall: rare finds on display for good ----------
 const museum = { group: null, slots: [], items: [] };
 function buildMuseum() {
@@ -672,14 +699,11 @@ function updateEvent(dt) {
   }
   if (ev.group && ev.group.userData.spin) ev.group.userData.spin(dt);
 }
-// the sky changes for storms, power cuts and snow
+// storms, power cuts and snow tint the day cycle (see updateSky)
+let skyMood = null;
 function setSkyMood(mood) {
-  if (area !== 'town') return;
-  const sky = scene.userData.sky.material.uniforms;
-  if (mood === 'storm') { sky.top.value.set(0x3a4250); sky.bottom.value.set(0x7a8290); sun.intensity = 1.2; hemi.intensity = 0.7; scene.fog.color.set(0x6a7280); scene.fog.far = 70; }
-  else if (mood === 'powercut') { sky.top.value.set(0x0a0f24); sky.bottom.value.set(0x1a2040); sun.intensity = 0.15; hemi.intensity = 0.25; scene.fog.color.set(0x10142a); scene.fog.far = 60; scene.traverse((o) => { if (o.isPointLight && !o.userData.area) o.visible = false; }); }
-  else if (mood === 'snow') { sky.top.value.set(0x9aa8c0); sky.bottom.value.set(0xe8eef6); sun.intensity = 2.2; hemi.intensity = 1.1; scene.fog.color.set(0xd8e0ea); }
-  else { sky.top.value.set(0x36588f); sky.bottom.value.set(0xf6b98a); sun.intensity = 3.4; hemi.intensity = 0.9; scene.fog.color.set(0xd89c78); scene.fog.far = 120; scene.traverse((o) => { if (o.isPointLight && !o.userData.area) o.visible = true; }); }
+  skyMood = mood;
+  scene.traverse((o) => { if (o.isPointLight && !o.userData.area && !streetGlow.includes(o)) o.visible = mood !== 'powercut'; });
 }
 function brianBBQ(on) {
   brian.bbq = on;
@@ -729,8 +753,8 @@ function buildTown() {
   collide(-62, -26, -24.1, 5); collide(-24.1, -26, -11.9, -5.1); collide(12, -26, 62, 5);
   // street furniture
   for (let x = -54; x <= 54; x += 12) {
-    add(M.lampPost(), x, 0, 9.6, Math.PI / 2); collide(x - 0.15, 9.45, x + 0.15, 9.75); lightCone(x, 3.85, 9.1, 3.2, 1.3, 0xffd9a0, 0.035);
-    add(M.lampPost(), x + 6, 0, 16.4, -Math.PI / 2); collide(x + 5.85, 16.25, x + 6.15, 16.55); lightCone(x + 6, 3.85, 16.9, 3.2, 1.3, 0xffd9a0, 0.035);
+    add(M.lampPost(), x, 0, 9.6, Math.PI / 2); collide(x - 0.15, 9.45, x + 0.15, 9.75); streetGlow.push(lightCone(x, 3.85, 9.1, 3.2, 1.3, 0xffd9a0, 0.035));
+    add(M.lampPost(), x + 6, 0, 16.4, -Math.PI / 2); collide(x + 5.85, 16.25, x + 6.15, 16.55); streetGlow.push(lightCone(x + 6, 3.85, 16.9, 3.2, 1.3, 0xffd9a0, 0.035));
   }
   add(M.postbox(), 1.0, 0, 9.3); collide(0.7, 9.0, 1.3, 9.6);
   const board = new THREE.Group();
@@ -1640,7 +1664,7 @@ function updatePlayer(dt) {
     player.pos.y + eye + (moving ? Math.sin(player.bob) * 0.04 : 0) + (shake ? rand(-shake, shake) * 0.3 : 0),
     player.pos.z);
   camera.rotation.set(player.pitch, player.yaw, flip * Math.PI, 'YXZ');
-  sun.position.set(player.pos.x - 30, 15, player.pos.z + 20);
+  sun.position.set(player.pos.x + sunDir.x * 40, sunDir.y * 40, player.pos.z + sunDir.z * 40);
   sun.target.position.set(player.pos.x, 0, player.pos.z);
 }
 
@@ -1751,21 +1775,62 @@ function setQuality(high) {
   composer.addPass(new OutputPass());
   // vignette and film grain, after tone mapping
   grainPass = new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, time: { value: 0 } },
+    uniforms: { tDiffuse: { value: null }, time: { value: 0 }, vig: { value: 0.55 }, grain: { value: 0.045 }, sat: { value: 1.0 } },
     vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv;
+    fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform float vig; uniform float grain; uniform float sat; varying vec2 vUv;
       float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + time) * 43758.5453); }
       void main() {
         vec4 c = texture2D(tDiffuse, vUv);
         vec2 d = vUv - 0.5;
-        c.rgb *= 1.0 - smoothstep(0.35, 0.95, length(d * vec2(1.15, 1.0))) * 0.55;
-        c.rgb += (hash(vUv * 1000.0) - 0.5) * 0.045;
+        float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+        c.rgb = mix(vec3(l), c.rgb, sat);
+        c.rgb *= 1.0 - smoothstep(0.35, 0.95, length(d * vec2(1.15, 1.0))) * vig;
+        c.rgb += (hash(vUv * 1000.0) - 0.5) * grain;
         gl_FragColor = c;
       }`,
   });
   composer.addPass(grainPass);
   composer.setSize(innerWidth, innerHeight);
 }
+// ---------- time of day: bright summer day, golden evening, dusk, then Mum calls you in ----------
+// keyframes: t, sun power, sun colour, sun height, hemi power, hemi sky, hemi ground, sky top, sky bottom, fog, cloud, cloud glow, exposure, vignette, grain, saturation, street lamps
+const SKY_KEYS = [
+  [0.00, 2.8, 0xffe6c8, 0.35, 1.15, 0xcfe0ff, 0x8aa06a, 0x5f9ee8, 0xf5dcc0, 0xe8dccc, 0xffffff, 0x705a50, 1.0, 0.3, 0.025, 1.12, 0],
+  [0.10, 3.8, 0xfff4e2, 0.85, 1.4, 0xd4e8ff, 0x8fb070, 0x2f86ec, 0xbfe0ff, 0xcfe4f6, 0xffffff, 0x808a9a, 1.02, 0.25, 0.02, 1.18, 0],
+  [0.55, 3.8, 0xfff0d8, 0.75, 1.35, 0xd4e8ff, 0x8fb070, 0x3a8cec, 0xc6e2ff, 0xd2e4f2, 0xffffff, 0x808a9a, 1.02, 0.25, 0.02, 1.16, 0],
+  [0.72, 3.4, 0xffc890, 0.3, 1.0, 0xb8c6e0, 0x5a4a3a, 0x3d64a0, 0xf6c49a, 0xe0b08a, 0xffe6cc, 0xa0705a, 0.97, 0.45, 0.035, 1.05, 0.4],
+  [0.84, 3.0, 0xffaa70, 0.16, 0.9, 0xa8bce0, 0x4a3a2e, 0x36588f, 0xf6b98a, 0xd89c78, 0xffe2c8, 0xb0705a, 0.95, 0.55, 0.045, 1.0, 1],
+  [1.00, 1.0, 0xff7a50, 0.05, 0.5, 0x5a6a9a, 0x2a2430, 0x141e48, 0xc0706a, 0x5a4a6a, 0x9a7a9a, 0x402a40, 0.9, 0.6, 0.05, 0.95, 1],
+];
+const MOODS = {
+  storm: { sun: 0.35, hemi: 0.75, top: 0x3a4250, bottom: 0x7a8290, fog: 0x6a7280, cloud: 0x8a8f9a, sat: 0.8, lamps: 1 },
+  powercut: { sun: 0.05, hemi: 0.3, top: 0x0a0f24, bottom: 0x1a2040, fog: 0x10142a, cloud: 0x2a2a3a, sat: 0.85, lamps: 0 },
+  snow: { sun: 0.65, hemi: 1.1, top: 0x9aa8c0, bottom: 0xe8eef6, fog: 0xd8e0ea, cloud: 0xf4f6fa, sat: 0.9, lamps: 0.3 },
+};
+const sunDir = new THREE.Vector3(-0.75, 0.37, 0.5);
+const _c1 = new THREE.Color(), _c2 = new THREE.Color();
+const lerpHex = (target, a, b, f) => target.set(_c1.setHex(a).lerp(_c2.setHex(b), f));
+function updateSky(tod) {
+  if (area !== 'town') return;
+  let i = 0; while (i < SKY_KEYS.length - 2 && tod > SKY_KEYS[i + 1][0]) i++;
+  const A = SKY_KEYS[i], B = SKY_KEYS[i + 1], f = Math.min(1, Math.max(0, (tod - A[0]) / (B[0] - A[0])));
+  const n = (k) => A[k] + (B[k] - A[k]) * f;
+  const sky = scene.userData.sky.material.uniforms, mood = skyMood && MOODS[skyMood];
+  sun.intensity = n(1) * (mood ? mood.sun : 1); lerpHex(sun.color, A[2], B[2], f);
+  const el = n(3), az = -2.2 + tod * 2.6;
+  sunDir.set(Math.cos(az) * Math.cos(el * 1.4), Math.sin(el * 1.4) + 0.08, Math.sin(az) * Math.cos(el * 1.4)).normalize();
+  hemi.intensity = n(4) * (mood ? mood.hemi : 1); lerpHex(hemi.color, A[5], B[5], f); lerpHex(hemi.groundColor, A[6], B[6], f);
+  if (mood) { sky.top.value.setHex(mood.top); sky.bottom.value.setHex(mood.bottom); scene.fog.color.setHex(mood.fog); }
+  else { lerpHex(sky.top.value, A[7], B[7], f); lerpHex(sky.bottom.value, A[8], B[8], f); lerpHex(scene.fog.color, A[9], B[9], f); }
+  scene.fog.near = 30; scene.fog.far = mood ? 70 : 160;
+  scene.background.copy(scene.fog.color);
+  const cm = scene.userData.cloudMat; lerpHex(cm.color, A[10], B[10], f); lerpHex(cm.emissive, A[11], B[11], f); if (mood) cm.color.setHex(mood.cloud);
+  renderer.toneMappingExposure = n(12);
+  if (grainPass) { grainPass.uniforms.vig.value = n(13); grainPass.uniforms.grain.value = n(14); grainPass.uniforms.sat.value = mood ? mood.sat : n(15); }
+  const lamps = mood ? mood.lamps : n(16);
+  for (const g of streetGlow) { if (g.isPointLight) { g.visible = lamps > 0.05; g.intensity = 4 * lamps; } else g.material.opacity = 0.035 * lamps; }
+}
+
 // a soft gradient sky dome with a few slow clouds
 function buildSky() {
   const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), new THREE.ShaderMaterial({
@@ -1779,6 +1844,7 @@ function buildSky() {
   scene.userData.sky = sky;
   clouds = new THREE.Group();
   const cm = new THREE.MeshLambertMaterial({ color: 0xffe2c8, emissive: 0xb0705a, fog: false });
+  scene.userData.cloudMat = cm;
   for (let i = 0; i < 14; i++) {
     const c = new THREE.Group();
     for (let k = 0; k < 5; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(rand(4, 7), 10, 8), cm); b.position.set(k * 5 - 10, rand(-1, 1.5), rand(-2, 2)); b.scale.y = 0.55; c.add(b); }
@@ -1824,6 +1890,7 @@ function frame(now) {
   LC.game.setCompass(goldenBearing());
   if (clouds) clouds.rotation.y += dt * 0.004;
   if (grainPass) grainPass.uniforms.time.value = time % 10;
+  updateSky(LC.game.timeOfDay());
   if (dust) { dust.rotation.y += dt * 0.01; dust.position.y = Math.sin(time * 0.2) * 0.05; }
   scene.userData.sky.position.copy(camera.position);
   if (composer) composer.render(dt); else renderer.render(scene, camera);
@@ -1863,9 +1930,10 @@ function init() {
   lamp(0x6ab0ff, 3, 4, -3.5, 1.2, -4.0);         // TV glow
   lamp(0xfff0d0, 14, 12, 0, 3, 22);              // corner shop
   lightCone(0, 3.4, 22, 2.8, 1.8, 0xfff0d0, 0.04);
-  for (let x = -20; x <= 20; x += 10) lamp(0xffc27a, 4, 7, x + 0.5, 3.7, 9.6);
+  for (let x = -20; x <= 20; x += 10) streetGlow.push(lamp(0xffc27a, 4, 7, x + 0.5, 3.7, 9.6));
   buildDust();
   buildLevel();
+  buildFoliage();
   buildUnderground();
   buildLoft();
   buildViewModel();

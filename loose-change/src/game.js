@@ -59,7 +59,7 @@
       pockets: [], stall: [], stallPrice: 'fair', stallUps: [],
       tools: { sofa: 0, pig: 0, dig: 0 }, toolDur: {}, request: null, nextRequestAt: 0, boosts: {}, crafted: [],
       letters: [], loftPigs: {}, boxes: [], washUntil: 0,
-      buffs: [], flags: {}, playSecs: 0, town: null, friends: {}, museum: [null, null, null, null, null, null],
+      buffs: [], flags: {}, playSecs: 0, town: null, tod: 0.05, day: 1, friends: {}, museum: [null, null, null, null, null, null],
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0, floor: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
       // carried across runs
@@ -137,7 +137,7 @@
   function clickValue() {
     const mult = (eff('sofa').mult || 1) * karmaMult();
     const pct = eff('sofa').pct || 0;
-    return ((0.01 + Math.random() * 0.04) * mult + baseIncome() * pct) * buffMult('click');
+    return ((0.01 + Math.random() * 0.04) * mult + baseIncome() * pct) * buffMult('click') * (evening() ? 1.5 : 1);
   }
   const costMult = () => buffMult('cost');
   function genCost(g, n = 1) {
@@ -650,7 +650,7 @@
   function stallTick(dt) {
     if (!stallItems().length) return;
     if (S.stallUps.includes('lemonade') && LC.world.nearStall(8)) gain(baseIncome() * 0.1 * dt);
-    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1);
+    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1) * (S.tod < 0.7 ? 1.2 : S.tod < 0.84 ? 0.9 : 0.5);
     if (S.stallUps.includes('sign')) rate *= 1.4;
     if (S.stallUps.includes('parasol')) rate *= 1.3;
     if (S.stallUps.includes('bell')) rate *= 2;
@@ -1234,6 +1234,27 @@
     if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
   }
 
+  // ---------- the day: 07:00 to 22:00 in about 16 minutes, then Mum calls you in ----------
+  const DAY_SECS = 16 * 60;
+  const evening = () => S.tod >= 0.7;
+  function clockText() { const mins = 7 * 60 + Math.floor(S.tod * 15 * 60); return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`; }
+  function dayTick(dt) {
+    const before = S.tod;
+    S.tod += dt / DAY_SECS;
+    if (before < 0.7 && S.tod >= 0.7) toast(`${ic('🌇')}<div><b>It's getting late.</b><br><small>Everyone's indoors watching telly. Sofa rummaging ×1.5, fewer stall customers.</small></div>`);
+    if (before < 0.95 && S.tod >= 0.95) { LC.audio.sfx('text'); toast(`${ic('💬')}<div><b>Mum</b><br><small>Bedtime in 5 minutes. I mean it this time.</small></div>`, 'msg'); }
+    if (S.tod >= 1 && !modalOpen && !screenOpen && !endingPlaying) newDay();
+  }
+  function newDay() {
+    S.tod = 0; S.day++;
+    const f = $('#fade'); f.classList.add('show');
+    setTimeout(() => f.classList.remove('show'), 1400);
+    const n = lump(90, 1); gain(n);
+    LC.audio.sfx('ding');
+    const dream = pick(['You dreamt about a sofa made of money.', 'You dreamt Brian was a goose. He was still Brian.', 'You dreamt you finally saw The Thing. It was a sandwich.', 'You dreamt about Grandad. He winked.', 'You dreamt you were a 2p coin. It was quite relaxing.']);
+    setTimeout(() => toast(`${ic('🌅')}<div><b>Day ${S.day} of the summer holidays</b><br><small>${dream} Under your pillow: ${fmt(n)}.</small></div>`, 'gold'), 900);
+    S.cooldowns = {};
+  }
   // ---------- the museum shelf: rare things on display give a permanent bonus this run ----------
   const MUSEUM_BONUS = [0, 0.01, 0.03, 0.06, 0.12];
   function museumBonus() { return S.museum.reduce((t, id) => t + (id ? MUSEUM_BONUS[LC.JUNK[id].rarity] : 0), 0); }
@@ -1488,6 +1509,7 @@
   function renderTop() {
     $('#money').textContent = fmt(S.money);
     $('#rate').textContent = fmtRate(income());
+    $('#clock').textContent = `${evening() ? '🌙' : '☀️'} ${clockText()} · Day ${S.day}`;
     const p = Math.min(1, S.money / LC.THING_COST);
     $('#thing-bar').style.width = (p * 100).toFixed(3) + '%';
     $('#thing-pct').textContent = (p * 100).toFixed(p < 0.01 ? 4 : 2) + '%';
@@ -1722,8 +1744,9 @@
   }
   function renderHome() {
     const now = new Date();
-    $('#phone-clock').textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    $('#phone-date').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · Summer holidays';
+    void now;
+    $('#phone-clock').textContent = clockText();
+    $('#phone-date').textContent = `Day ${S.day} of the summer holidays`;
     const grid = $('#app-grid');
     if (!grid.children.length) {
       grid.innerHTML = APPS.map((a) => `<button class="app" data-app="${a.id}"><span class="app-icon" style="--app:${a.color}">${ic(a.icon)}<i class="badge" hidden></i></span><span class="app-label">${a.label}</span></button>`).join('');
@@ -2005,6 +2028,7 @@
       addDepth(digRate() * dt);
       S.playSecs += dt;
       brianTick(dt);
+      dayTick(dt);
       townTick(dt);
       friendTick(dt);
       stallTick(dt);
@@ -2034,7 +2058,7 @@
       requestTick(Date.now());
       if (panelVisible('shop')) renderShopPanel();
       if (panelVisible('roster')) renderRoster();
-      $('#phone-time').textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      $('#phone-time').textContent = clockText();
       document.title = `${fmt(S.money)} · Loose Change`;
       LC.world.syncHelpers(S.gens);
       LC.world.setDepthText(fmtDepth(S.depth));
@@ -2149,7 +2173,7 @@
       onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,
       pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
-      resolveCard, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
+      resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
       hookADuck, binPrompt, bin, cheer, filmExtra, iceCream, snowman, mayor, treasureDig, pigeonStrike, saleSofa, bbqSausage, townOn,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),
@@ -2164,9 +2188,9 @@
       canLock: () => !screenOpen && !endingPlaying,
     };
     // Handy for testing: LC.debug.gain(1e9)
-    LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden(), town: (id) => { townSetup(); if (S.town.on) townEnd(); if (id) townStart(id); }, townEnd: () => S.town && S.town.on && townEnd() };
+    LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden(), tod: (t) => { S.tod = t; }, town: (id) => { townSetup(); if (S.town.on) townEnd(); if (id) townStart(id); }, townEnd: () => S.town && S.town.on && townEnd() };
   }
   // the world module needs LC.game before its first frame, so set a stub early
-  LC.game = { setPulse: () => {}, setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {}, speedMult: () => 1 };
+  LC.game = { setPulse: () => {}, setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {}, speedMult: () => 1, timeOfDay: () => 0.3 };
   addEventListener('load', boot);
 })();

@@ -230,10 +230,14 @@ export function mole() { return group(ball(0.16, 0x3a2f2a, 0, 0.12, 0, { scale: 
 export function gnome() { return person({ shirt: 0x3a7bd5, legs: 0x5a3a22, hat: 'gnome', bald: true, height: 0.45 }); }
 
 // ---------- garden & street ----------
+// chunky, bright summer trees: a few overlapping blobs of leaves
 export function tree(h = 3) {
-  return group(cyl(0.15, 0.22, h * 0.5, C.woodDark, 0, h * 0.25, 0, { seg: 7 }), ball(h * 0.32, 0x4f9a3a, 0, h * 0.65, 0, { seg: 7, mat: { flatShading: true } }), ball(h * 0.22, 0x5fb046, h * 0.15, h * 0.85, 0.1, { seg: 6, mat: { flatShading: true } }));
+  const leaf = { seg: 8, mat: { flatShading: true } };
+  return group(cyl(0.15, 0.24, h * 0.55, 0x7a5434, 0, h * 0.27, 0, { seg: 7 }),
+    ball(h * 0.34, 0x4fae32, 0, h * 0.66, 0, leaf), ball(h * 0.24, 0x66c23e, h * 0.2, h * 0.86, 0.12, leaf),
+    ball(h * 0.22, 0x5ab838, -h * 0.2, h * 0.78, -0.1, leaf), ball(h * 0.18, 0x7ad44a, 0.05, h * 0.98, -0.05, leaf));
 }
-export function bush() { return group(ball(0.5, 0x4f9a3a, 0, 0.35, 0, { seg: 6, scale: [1.3, 0.8, 1], mat: { flatShading: true } }), ball(0.35, 0x5fb046, 0.35, 0.45, 0.1, { seg: 6, mat: { flatShading: true } })); }
+export function bush() { return group(ball(0.5, 0x4fae32, 0, 0.35, 0, { seg: 7, scale: [1.3, 0.8, 1], mat: { flatShading: true } }), ball(0.35, 0x6ac840, 0.35, 0.45, 0.1, { seg: 7, mat: { flatShading: true } })); }
 export function fence(len, color = 0xb08050) {
   const g = group(box(len, 0.1, 0.06, color, 0, 0.9, 0), box(len, 0.1, 0.06, color, 0, 0.4, 0));
   for (let x = -len / 2; x <= len / 2 + 0.01; x += 0.5) g.add(box(0.12, 1.2, 0.05, color, x, 0.6, 0.04));

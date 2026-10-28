@@ -443,3 +443,4 @@ button.junk:hover { transform: translateY(-2px); }
 .sticker .ic { width: 32px; height: 32px; }
 .sticker.got { background: #fff; color: var(--ink, #2d2118); box-shadow: 0 2px 0 rgba(45, 33, 24, 0.2); transform: rotate(-2deg); }
 .sticker.got:nth-child(even) { transform: rotate(2deg); }
+.clock { font-size: 13px; font-weight: 600; opacity: 0.85; margin-bottom: 2px; color: #fffaf0; text-shadow: 0 2px 0 rgba(0,0,0,.35); text-align: center; }
