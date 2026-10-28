@@ -64,6 +64,7 @@
       startedAt: Date.now(), lastSave: Date.now(),
       // carried across runs
       endings: keep.endings || [], achievements: keep.achievements || [], runs: keep.runs || 0, secrets: keep.secrets || [],
+      karma: keep.karma || 0, perks: keep.perks || [], best: keep.best || {}, challenge: keep.challenge || null,
       album: keep.album || { junk: [], finds: [], friends: [], town: [], letters: [] },
       allTime: keep.allTime || 0, settings: keep.settings || { sfx: true, music: true, volume: 0.6 },
     };
@@ -114,7 +115,8 @@
   function wear(k) {
     const t = S.tools[k] || 0;
     if (!t || S.toolDur[k] <= 0) return;
-    S.toolDur[k] = (S.toolDur[k] ?? LC.TOOLS[k][t].dur) - 1;
+    S.toolDur[k] = (S.toolDur[k] ?? LC.TOOLS[k][t].dur) - (chal('butter') ? 2 : 1);
+    if (S.toolDur[k] < 0) S.toolDur[k] = 0;
     if (S.toolDur[k] === 0) { LC.audio.sfx('nope'); toast(`${ic('🔧')}<div><b>Your ${LC.TOOLS[k][t].name.toLowerCase()} broke!</b><br><small>Repair it at the workbench in the shed.</small></div>`); }
   }
   function karmaMult() { return 1 + 0.25 * S.endings.length + 0.05 * S.runs; }
@@ -131,15 +133,17 @@
     if (perk('lady', 5)) m += 0.1;
     return m * karmaMult();
   }
-  function genIncome(g) { return g.id === 'pigeons' && S.flags.pigeonStrike ? 0 : (S.gens[g.id] || 0) * g.income * genMult(g); }
+  function genIncome(g) { return g.id === 'pigeons' && S.flags.pigeonStrike ? 0 : (S.gens[g.id] || 0) * g.income * genMult(g) * (chal('diy') ? 0.5 : 1); }
   function baseIncome() { return LC.GENERATORS.reduce((t, g) => t + genIncome(g), 0) * globalMult(); }
   function income() { return baseIncome() * buffMult('income'); }
   function clickValue() {
     const mult = (eff('sofa').mult || 1) * karmaMult();
     const pct = eff('sofa').pct || 0;
-    return ((0.01 + Math.random() * 0.04) * mult + baseIncome() * pct) * buffMult('click') * (evening() ? 1.5 : 1);
+    return ((0.01 + Math.random() * 0.04) * mult + baseIncome() * pct) * buffMult('click') * (evening() ? (chal('nightowl') ? 3 : 1.5) : 1) * (chal('diy') ? 3 : 1);
   }
-  const costMult = () => buffMult('cost');
+  const costMult = () => buffMult('cost') * (hasPerk('haggler') ? 0.9 : 1);
+  const hasPerk = (id) => S.perks.includes(id);
+  const chal = (id) => S.challenge === id;
   function genCost(g, n = 1) {
     const r = LC.COST_GROWTH, owned = S.gens[g.id] || 0;
     return g.cost * Math.pow(r, owned) * (Math.pow(r, n) - 1) / (r - 1) * costMult();
@@ -307,8 +311,9 @@
     const now = performance.now();
     if (!auto) {
       const ph = pulsePhase(), off = Math.min(ph, 1 - ph); // 0 = ring exactly on target
-      if (off < 0.07) { mult = 3; grade = 'PERFECT!'; }
-      else if (off < 0.16) { mult = 1.5; grade = 'Nice'; }
+      const wide = hasPerk('rhythm') ? 1.45 : 1;
+      if (off < 0.07 * wide) { mult = 3; grade = 'PERFECT!'; }
+      else if (off < 0.16 * wide) { mult = 1.5; grade = 'Nice'; }
       if (grade && now - lastHit < PULSE * 1000 * 1.9) combo++;
       else if (!grade) combo = 0;
       else combo = Math.max(1, combo);
@@ -382,7 +387,7 @@
     wear('dig');
     LC.audio.sfx('dig');
     if (chance(0.03)) { const n = lump(20, 0.2); gain(n); toast(`${ic('🪙')}<div>Your spade hit a coin. <b>+${fmt(n)}</b></div>`); }
-    else if (chance(crafted('detector') ? 0.12 : 0.06)) { const tier = LC.DIG_JUNK.find((t) => S.depth <= t.upTo); giveJunk(pick(tier.ids)); }
+    else if (chance((crafted('detector') ? 0.12 : 0.06) * (chal('butter') ? 2 : 1))) { const tier = LC.DIG_JUNK.find((t) => S.depth <= t.upTo); giveJunk(pick(tier.ids)); }
     return { text: '+' + fmtDepth(m) };
   }
   function addDepth(m) {
@@ -570,7 +575,7 @@
   }
 
   // ---------- junk, pockets and your stall ----------
-  const pocketSize = () => (S.stallUps.includes('wheelbarrow') ? 48 : S.stallUps.includes('rucksack') ? 24 : 12);
+  const pocketSize = () => (S.stallUps.includes('wheelbarrow') ? 48 : S.stallUps.includes('rucksack') ? 24 : 12) + (hasPerk('pockets') ? 6 : 0);
   const stallSize = () => (S.stallUps.includes('table') ? 10 : 6);
   function giveJunk(id, quiet) {
     const j = LC.JUNK[id];
@@ -588,7 +593,7 @@
   function stallSlots() { while (S.stall.length < 10) S.stall.push(null); return S.stall; }
   const stallItems = () => stallSlots().slice(0, stallSize()).filter(Boolean);
   function syncStall() { LC.world.setStallItems(stallSlots().map((x, i) => (x && i < stallSize() ? { icon: LC.JUNK[x.id].icon, price: x.price || 'fair' } : null))); }
-  const itemPrice = (x) => x.value * LC.STALL_PRICES[x.price || 'fair'].mult;
+  const itemPrice = (x) => x.value * LC.STALL_PRICES[x.price || 'fair'].mult * (chal('skinflint') ? 0.7 : 1);
   function slotPrompt(i) {
     const x = stallSlots()[i];
     if (x) return `Take back the ${LC.JUNK[x.id].name.toLowerCase()}<small>Price tag: ${LC.STALL_PRICES[x.price || 'fair'].label} (${fmt(itemPrice(x))}) · press R to change</small>`;
@@ -650,7 +655,7 @@
   function stallTick(dt) {
     if (!stallItems().length) return;
     if (S.stallUps.includes('lemonade') && LC.world.nearStall(8)) gain(baseIncome() * 0.1 * dt);
-    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1) * (S.tod < 0.7 ? 1.2 : S.tod < 0.84 ? 0.9 : 0.5);
+    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1) * (chal('skinflint') ? 2 : 1) * (S.tod < 0.7 ? 1.2 : S.tod < 0.84 ? 0.9 : 0.5);
     if (S.stallUps.includes('sign')) rate *= 1.4;
     if (S.stallUps.includes('parasol')) rate *= 1.3;
     if (S.stallUps.includes('bell')) rate *= 2;
@@ -755,6 +760,8 @@
     if (mine > S.brian.p + 0.08) mult = 1.6;      // you're ahead: he tries harder
     if (mine < S.brian.p - 0.1) mult = 0.6;       // you're behind: he gets complacent
     if (Date.now() < S.brian.slowUntil) mult *= 0.15;
+    if (hasPerk('nemesis')) mult *= 0.85;
+    if (chal('brianfast')) mult *= 1.25;
     S.brian.p = Math.min(1, S.brian.p + dt / BRIAN_SECS * mult);
     if (S.brian.p >= 1) { S.brian.p = 1; playEnding('brian'); }
   }
@@ -935,7 +942,7 @@
   }
   function befriend(id, pts, npc) {
     const before = hearts(id);
-    S.friends[id] = Math.min(15, (S.friends[id] || 0) + pts);
+    S.friends[id] = Math.min(15, (S.friends[id] || 0) + pts * (hasPerk('friendly') ? 2 : 1));
     const h = hearts(id);
     if (h <= before) return false;
     const f = LC.FRIENDS[id];
@@ -1231,7 +1238,7 @@
       LC.audio.sfx('event');
       ev.run();
     }
-    if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
+    if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000) * (hasPerk('golden') ? 0.5 : 1); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
   }
 
   // ---------- the day: 07:00 to 22:00 in about 16 minutes, then Mum calls you in ----------
@@ -1240,7 +1247,7 @@
   function clockText() { const mins = 7 * 60 + Math.floor(S.tod * 15 * 60); return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`; }
   function dayTick(dt) {
     const before = S.tod;
-    S.tod += dt / DAY_SECS;
+    S.tod += dt / DAY_SECS * (chal('nightowl') ? 2 : 1);
     if (before < 0.7 && S.tod >= 0.7) toast(`${ic('🌇')}<div><b>It's getting late.</b><br><small>Everyone's indoors watching telly. Sofa rummaging ×1.5, fewer stall customers.</small></div>`);
     if (before < 0.95 && S.tod >= 0.95) { LC.audio.sfx('text'); toast(`${ic('💬')}<div><b>Mum</b><br><small>Bedtime in 5 minutes. I mean it this time.</small></div>`, 'msg'); }
     if (S.tod >= 1 && !modalOpen && !screenOpen && !endingPlaying) newDay();
@@ -1314,7 +1321,7 @@
   function townSetup() {
     if (S.town) return;
     const ids = LC.TOWN_EVENTS.map((e) => e.id).sort(() => Math.random() - 0.5);
-    S.town = { queue: ids.slice(0, chance(0.5) ? 5 : 6), next: rand(600, 780), on: null, until: 0, seen: [], used: {} };
+    S.town = { queue: chal('chaos') ? ids : ids.slice(0, chance(0.5) ? 5 : 6), next: chal('chaos') ? rand(300, 420) : rand(600, 780), on: null, until: 0, seen: [], used: {} };
   }
   const townOn = (id) => S.town && S.town.on === id;
   const townDef = (id) => LC.TOWN_EVENTS.find((e) => e.id === id);
@@ -1355,7 +1362,7 @@
     if (T.on === 'geese' && T.used.bites < 3) { const n = lump(300, 5); gain(n); toast(`${ic('🛡️')}<div><b>You survived the goose invasion!</b><br><small>Only ${T.used.bites} bites. The council gives you ${fmt(n)} for bravery.</small></div>`, 'gold'); }
     else toast(`${ic(e.icon)}<div>${e.end}</div>`);
     S.buffs = S.buffs.filter((b) => b.id !== 'town'); renderBuffs();
-    T.on = null; T.until = 0; T.next = rand(1080, 1440);
+    T.on = null; T.until = 0; T.next = chal('chaos') ? rand(400, 440) : rand(1080, 1440);
   }
   function radio(line) { LC.audio.sfx('text'); toast(`${ic('📻')}<div><b>Radio Acacia FM:</b> "${line}"</div>`, 'msg'); }
   const once = (key) => { if (S.town.used[key]) return false; S.town.used[key] = true; return true; };
@@ -1470,6 +1477,12 @@
     LC.audio.music(false);
     const isNew = !S.endings.includes(id);
     if (isNew) S.endings.push(id);
+    const ch = S.challenge && LC.CHALLENGES.find((c) => c.id === S.challenge);
+    const karmaGot = 1 + (isNew ? 2 : 0) + (ch ? ch.karma : 0);
+    S.karma += karmaGot;
+    const runTime = S.playSecs, prevBest = S.best[id];
+    if (!prevBest || runTime < prevBest) S.best[id] = runTime;
+    S.best.any = Math.min(S.best.any || Infinity, runTime);
     checkAchievements();
     save();
     const scr = $('#ending');
@@ -1487,20 +1500,54 @@
         <div class="ending-icon">${ic(e.icon)}</div>
         <h2>THE END${e.secret ? ' (secret)' : ''}: ${e.title}</h2>
         <p>${isNew ? 'New ending found!' : 'You have seen this one before.'} Endings found: <b>${found} / ${total}</b></p>
-        <p class="small">Starting again keeps your endings and achievements. Each ending found gives +25% to everything, forever.</p>`);
-      const again = el('button', 'btn big', 'Check down the sofa again');
-      again.onclick = () => { scr.classList.remove('show', 'upside'); endingPlaying = false; newRun(); LC.world.lock(); };
+        <p>Time: <b>${fmtTime(runTime)}</b>${prevBest ? ` · best for this ending ${fmtTime(Math.min(prevBest, runTime))}` : ''}</p>
+        <p>Sofa Karma: <b>+${karmaGot}</b>${ch ? ` (including +${ch.karma} for "${ch.name}")` : ''}</p>
+        <p class="small">Starting again keeps your endings, achievements, sticker album and perks. Each ending found gives +25% to everything, forever.</p>`);
+      const again = el('button', 'btn big', 'Spend karma and start again');
+      again.onclick = () => { box.remove(); showPerks(); };
       box.appendChild(again);
       scr.querySelector('.ending-inner').appendChild(box);
     }, 900 + e.lines.length * 2200 + 600);
   }
+  // between runs: spend karma on perks, then pick one of Grandad's challenges
+  let nextChallenge = null;
+  function showPerks() {
+    const inner = $('#ending .ending-inner');
+    inner.querySelector('.ending-lines')?.remove();
+    const draw = () => {
+      inner.innerHTML = `<div class="ending-card perk-card"><h2>${ic('🛋️')} Sofa Karma: ${S.karma}</h2><p class="small">Spend karma on perks that last forever. Some need others first.</p>
+        <div class="perk-tree">${LC.PERKS.map((p) => {
+          const owned = hasPerk(p.id), locked = (p.needs || []).some((n) => !hasPerk(n)), can = !owned && !locked && S.karma >= p.cost;
+          return `<button class="perk ${owned ? 'owned' : ''} ${locked ? 'locked' : ''}" data-perk="${p.id}" ${can ? '' : 'disabled'}>${ic(p.icon)}<b>${p.name}</b><small>${p.desc}</small><span>${owned ? 'Owned' : locked ? 'Needs ' + p.needs.map((n) => LC.PERKS.find((x) => x.id === n).name).join(' + ') : p.cost + ' karma'}</span></button>`;
+        }).join('')}</div><button class="btn big" id="perks-done">Next: Grandad's challenge</button></div>`;
+      inner.querySelectorAll('.perk[data-perk]').forEach((b) => (b.onclick = () => { const p = LC.PERKS.find((x) => x.id === b.dataset.perk); if (S.karma < p.cost) return; S.karma -= p.cost; S.perks.push(p.id); LC.audio.sfx('buy'); save(); draw(); }));
+      inner.querySelector('#perks-done').onclick = () => { LC.audio.sfx('click'); showChallenges(); };
+    };
+    draw();
+  }
+  function showChallenges() {
+    const inner = $('#ending .ending-inner');
+    const offer = [...LC.CHALLENGES].sort(() => Math.random() - 0.5).slice(0, 3);
+    inner.innerHTML = `<div class="ending-card perk-card"><h2>${ic('✉️')} A note from Grandad</h2><p>"Fancy making it harder? Pick one. Or don't. I'm not your boss. I'm your grandad."</p>
+      <div class="perk-tree">${offer.map((c) => `<button class="perk" data-ch="${c.id}">${ic(c.icon)}<b>${c.name}</b><small>${c.desc}</small><span>+${c.karma} karma at the end</span></button>`).join('')}
+      <button class="perk" data-ch="">${ic('🛋️')}<b>No thanks</b><small>A normal summer.</small><span>&nbsp;</span></button></div></div>`;
+    inner.querySelectorAll('.perk[data-ch]').forEach((b) => (b.onclick = () => {
+      nextChallenge = b.dataset.ch || null;
+      $('#ending').classList.remove('show', 'upside'); endingPlaying = false; newRun(); LC.world.lock();
+    }));
+  }
+  const fmtTime = (secs) => { secs = Math.floor(secs); const h = Math.floor(secs / 3600), m = Math.floor(secs / 60) % 60, s2 = secs % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s2).padStart(2, '0'); };
   function newRun() {
-    S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings, secrets: S.secrets, album: S.album });
+    S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings, secrets: S.secrets, album: S.album, karma: S.karma, perks: S.perks, best: S.best, challenge: nextChallenge });
     newPig(); card = null; renderCard();
     renderShop(true); gardenDirty = true; buildGarden();
     LC.world.reset();
     LC.world.setLoftPigs([]);
     gooseShown = '';
+    if (hasPerk('headstart')) S.money = 50;
+    if (hasPerk('grandad')) { S.tools.sofa = Math.max(S.tools.sofa, 1); S.tools.dig = Math.max(S.tools.dig, 1); S.toolDur.sofa = LC.TOOLS.sofa[1].dur; S.toolDur.dig = LC.TOOLS.dig[1].dur; }
+    nextChallenge = null;
+    if (S.challenge) { const c = LC.CHALLENGES.find((x) => x.id === S.challenge); setTimeout(() => toast(`${ic(c.icon)}<div><b>Grandad's challenge: ${c.name}</b><br><small>${c.desc}</small></div>`, 'gold'), 2500); }
     save();
     LC.audio.music(S.settings.music);
   }
@@ -1509,6 +1556,7 @@
   function renderTop() {
     $('#money').textContent = fmt(S.money);
     $('#rate').textContent = fmtRate(income());
+    const tm = $('#timer'); tm.hidden = !S.settings.timer; if (S.settings.timer) tm.textContent = '⏱ ' + fmtTime(S.playSecs) + (S.best.any ? ` · PB ${fmtTime(S.best.any)}` : '');
     $('#clock').textContent = `${evening() ? '🌙' : '☀️'} ${clockText()} · Day ${S.day}`;
     const p = Math.min(1, S.money / LC.THING_COST);
     $('#thing-bar').style.width = (p * 100).toFixed(3) + '%';
@@ -2088,6 +2136,8 @@
     LC.world.setSensitivity(s.sens);
     $('#set-music').onchange = (e) => { s.music = e.target.checked; LC.audio.unlock(); LC.audio.music(s.music); save(); };
     $('#set-sfx').onchange = (e) => { s.sfx = e.target.checked; save(); };
+    $('#set-timer').checked = !!s.timer;
+    $('#set-timer').onchange = (e) => { s.timer = e.target.checked; save(); };
     $('#set-volume').oninput = (e) => { s.volume = +e.target.value; LC.audio.volume(s.volume); };
     $('#set-volume').onchange = save;
     $('#set-sens').oninput = (e) => { s.sens = +e.target.value; LC.world.setSensitivity(s.sens); };

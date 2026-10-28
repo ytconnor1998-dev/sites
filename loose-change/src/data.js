@@ -798,3 +798,25 @@ LC.ALBUM_PAGES = [
   { id: 'town', name: 'Things that happened', icon: '🎡', bonus: 0.05 },
   { id: 'letters', name: 'Letters from Grandad', icon: '✉️', bonus: 0.1 },
 ];
+
+// ---------- Sofa Karma perk tree (bought between runs with karma from endings) ----------
+LC.PERKS = [
+  { id: 'headstart', icon: '💷', name: 'Head start', desc: 'Start every run with £50 under the cushion.', cost: 2 },
+  { id: 'pockets', icon: '🎒', name: 'Deep pockets', desc: 'Carry 6 more bits of junk.', cost: 2 },
+  { id: 'rhythm', icon: '🥁', name: 'Rhythm', desc: 'The PERFECT rummage window is bigger.', cost: 3, needs: ['headstart'] },
+  { id: 'haggler', icon: '🤝', name: 'Haggler', desc: 'Everything in every shop is 10% cheaper.', cost: 3, needs: ['pockets'] },
+  { id: 'friendly', icon: '😊', name: 'Friendly face', desc: 'People in town make friends twice as fast.', cost: 4, needs: ['pockets'] },
+  { id: 'nemesis', icon: '😈', name: 'Brian\'s nemesis', desc: 'Brian saves 15% slower. He can feel it.', cost: 4, needs: ['rhythm'] },
+  { id: 'golden', icon: '✨', name: 'Golden touch', desc: 'Golden coins turn up twice as often.', cost: 4, needs: ['haggler'] },
+  { id: 'grandad', icon: '👴', name: 'Grandad\'s favourite', desc: 'Start every run with Grandad\'s grabber and a trowel.', cost: 6, needs: ['nemesis', 'golden'] },
+];
+
+// ---------- Grandad's challenges: pick one at the start of a run for extra karma ----------
+LC.CHALLENGES = [
+  { id: 'brianfast', icon: '🏎️', name: 'Brian\'s on a mission', desc: 'Brian saves 25% faster.', karma: 3 },
+  { id: 'diy', icon: '🛠️', name: 'Do it yourself', desc: 'Helpers earn half. Your own rummaging is ×3.', karma: 2 },
+  { id: 'chaos', icon: '🎪', name: 'Chaos summer', desc: 'All 15 town events, one every 7 minutes.', karma: 2 },
+  { id: 'butter', icon: '🧈', name: 'Butterfingers', desc: 'Tools wear out twice as fast. You dig up twice as much junk.', karma: 2 },
+  { id: 'nightowl', icon: '🦉', name: 'Night owl', desc: 'Days go twice as fast. Evenings pay double.', karma: 2 },
+  { id: 'skinflint', icon: '🪙', name: 'Skinflint street', desc: 'Stall prices are 30% lower, but customers come twice as often.', karma: 2 },
+];

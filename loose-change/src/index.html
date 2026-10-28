@@ -21,6 +21,7 @@
       <div class="thing-label">Saving up for: <b>???</b> <span id="thing-pct">0%</span></div>
       <div class="thing-track"><div id="thing-bar"></div></div>
     </div>
+    <div id="timer" class="speedrun" hidden></div>
     <div id="sus" class="sus"><span>👁️ Brian</span><i></i></div>
     <div id="tasks" class="tasks"></div>
     <div id="buffs" class="buffs"></div>
@@ -49,6 +50,7 @@
         <div><kbd>Tab</kbd> Your phone (shopping, stats, settings)</div>
         <div><kbd>Scroll</kbd> / <kbd>1</kbd>–<kbd>9</kbd> Pick what you're holding · <kbd>R</kbd> Change price tag</div>
         <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Answer when something happens</div>
+        <div><kbd>P</kbd> Photo mode · Controllers work too</div>
       </div>
     </div>
   </div>
@@ -139,6 +141,7 @@
         <label class="set"><input type="checkbox" id="set-music"> Music</label>
         <label class="set"><input type="checkbox" id="set-sfx"> Sound effects</label>
         <label class="set">Volume <input type="range" id="set-volume" min="0" max="1" step="0.05"></label>
+        <label class="set"><input type="checkbox" id="set-timer"> Speedrun timer</label>
         <label class="set">Mouse sensitivity <input type="range" id="set-sens" min="0.2" max="3" step="0.1"></label>
         <div class="sub-title">Save</div>
         <p class="muted small">The game saves by itself every 10 seconds.</p>

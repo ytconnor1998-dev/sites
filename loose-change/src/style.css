@@ -191,7 +191,7 @@ textarea { width: 100%; font: 13px monospace; border: var(--line); border-radius
 .ending { position: fixed; inset: 0; z-index: 100; background: #1d1611; color: var(--paper); display: none; place-items: center; padding: 20px; overflow-y: auto; }
 .ending.show { display: grid; }
 .ending.upside .ending-inner { transform: rotate(180deg); }
-.ending-inner { max-width: 640px; text-align: center; transition: transform 1s; }
+.ending-inner { max-width: 640px; margin: auto 0; text-align: center; transition: transform 1s; }
 .eline { font-size: 26px; line-height: 1.4; margin: 0 0 16px; animation: fadeup 1s; }
 .eline:last-child { color: var(--gold); font-weight: 700; }
 @keyframes fadeup { from { opacity: 0; transform: translateY(14px); } }
@@ -444,3 +444,22 @@ button.junk:hover { transform: translateY(-2px); }
 .sticker.got { background: #fff; color: var(--ink, #2d2118); box-shadow: 0 2px 0 rgba(45, 33, 24, 0.2); transform: rotate(-2deg); }
 .sticker.got:nth-child(even) { transform: rotate(2deg); }
 .clock { font-size: 13px; font-weight: 600; opacity: 0.85; margin-bottom: 2px; color: #fffaf0; text-shadow: 0 2px 0 rgba(0,0,0,.35); text-align: center; }
+
+/* speedrun timer, perk tree, photo mode */
+.speedrun { position: absolute; top: 92px; right: 24px; font: 600 18px/1 'Fredoka', sans-serif; color: #fffaf0; background: rgba(45, 33, 24, 0.75); padding: 6px 12px; border-radius: 10px; font-variant-numeric: tabular-nums; }
+.ending-inner:has(.perk-card) { max-width: 900px; width: 100%; }
+.perk-card { margin-top: 0; }
+.perk-tree { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin: 14px 0; }
+.perk { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 10px; border-radius: 14px; border: 3px solid #2d2118; background: #fffaf0; cursor: pointer; font: inherit; color: #2d2118; text-align: center; }
+.perk .ic { width: 34px; height: 34px; }
+.perk small { font-size: 12px; opacity: 0.8; }
+.perk span { margin-top: auto; font-weight: 700; font-size: 13px; color: #b07a10; }
+.perk:not([disabled]):hover { background: #ffe8a0; transform: translateY(-2px); }
+.perk.owned { background: #ffe08a; }
+.perk.owned span { color: #2d6a2d; }
+.perk.locked { opacity: 0.45; }
+.perk[disabled] { cursor: default; }
+body.photo .hud, body.photo .news, body.photo #toasts, body.photo #say { display: none !important; }
+.photo-hint { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); color: #fff; font: 600 14px 'Fredoka', sans-serif; background: rgba(0, 0, 0, 0.45); padding: 6px 14px; border-radius: 999px; display: none; z-index: 50; }
+body.photo .photo-hint { display: block; }
+button:focus-visible, .app:focus-visible, input:focus-visible { outline: 4px solid #f2b631; outline-offset: 2px; }

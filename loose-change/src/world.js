@@ -1637,7 +1637,9 @@ function tryMove(dx, dz) {
 }
 function updatePlayer(dt) {
   const frozen = LC.game.isBlocked() || card.active;
-  let fx = 0, fz = 0;
+  let fx = 0, fz = 0, padRun = false;
+  const pad = pollPad(dt);
+  if (pad && !frozen) { fx = pad.x; fz = pad.z; padRun = pad.run; }
   if (!frozen && locked) {
     if (keys.has('KeyW') || keys.has('ArrowUp')) fz -= 1;
     if (keys.has('KeyS') || keys.has('ArrowDown')) fz += 1;
@@ -1646,8 +1648,8 @@ function updatePlayer(dt) {
   }
   const moving = fx || fz;
   if (moving) {
-    const len = Math.hypot(fx, fz); fx /= len; fz /= len;
-    const sp = (crouching ? WALK * 0.45 : keys.has('ShiftLeft') || keys.has('ShiftRight') ? RUN : WALK) * LC.game.speedMult() * dt;
+    const len = Math.hypot(fx, fz), amt = Math.min(1, len); fx /= len; fz /= len;
+    const sp = (crouching ? WALK * 0.45 : keys.has('ShiftLeft') || keys.has('ShiftRight') || padRun ? RUN : WALK) * LC.game.speedMult() * amt * dt;
     const s = Math.sin(player.yaw), c = Math.cos(player.yaw);
     tryMove((fx * c + fz * s) * sp, (-fx * s + fz * c) * sp);
     player.bob += dt * (sp / dt) * 2.2;
@@ -1709,7 +1711,7 @@ function setupInput() {
   canvas.addEventListener('click', () => { if (!locked && LC.game.canLock()) requestLock(); });
   document.addEventListener('pointerlockchange', () => {
     locked = document.pointerLockElement === canvas;
-    LC.game.onLockChange(locked);
+    LC.game.onLockChange(locked || padActive);
     if (!locked) { keys.clear(); holding = false; }
   });
   document.addEventListener('mousemove', (e) => {
@@ -1733,6 +1735,8 @@ function setupInput() {
   document.addEventListener('wheel', (e) => { if (locked && !LC.game.isBlocked()) LC.game.cycleHeld(e.deltaY > 0 ? 1 : -1); }, { passive: true });
   addEventListener('keydown', (e) => {
     if (e.code === 'Tab') { e.preventDefault(); LC.game.togglePhone(); return; }
+    if (e.code === 'KeyP' && !e.repeat && (locked || padActive) && !LC.game.isBlocked() && !card.active) { togglePhoto(); return; }
+    if (e.code === 'Enter' && photo) { wantShot = true; return; }
     if (!locked) return;
     keys.add(e.code);
     if (e.code === 'KeyE' && !e.repeat && card.active) { if (card.done) endCard(); else { finishCard(); } return; }
@@ -1746,6 +1750,85 @@ function setupInput() {
   addEventListener('blur', () => { keys.clear(); holding = false; });
   addEventListener('resize', resize);
 }
+// ---------- photo mode: hide everything and take a picture ----------
+let photo = false, wantShot = false;
+function togglePhoto() {
+  photo = !photo;
+  document.body.classList.toggle('photo', photo);
+  view.group.visible = !photo;
+  let hint = document.querySelector('.photo-hint');
+  if (!hint) { hint = document.createElement('div'); hint.className = 'photo-hint'; hint.innerHTML = 'Photo mode · <kbd>Enter</kbd> save picture · <kbd>P</kbd> back'; document.body.appendChild(hint); }
+  LC.audio.sfx('click');
+}
+function savePhoto() {
+  const a = document.createElement('a');
+  a.download = `loose-change-${Date.now()}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  LC.audio.sfx('sparkle');
+  if (globalThis.steam && globalThis.steam.screenshot) globalThis.steam.screenshot();
+}
+
+// ---------- controllers (standard gamepad layout) ----------
+let padActive = false, padPrev = [];
+const PAD_KEYS = { 0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT', 8: 'Back', 9: 'Start', 10: 'LS', 12: 'Up', 13: 'Down', 14: 'Left', 15: 'Right' };
+const fakeKey = (code, type = 'keydown') => dispatchEvent(new KeyboardEvent(type, { code, key: code === 'Escape' ? 'Escape' : code, bubbles: true }));
+// move between the buttons on whatever menu is open
+function padMenu(dir) {
+  const box = document.querySelector('#ending.show, #dialog.show, #overlay.show, #screen.show, #pause.show');
+  if (!box) return;
+  const btns = [...box.querySelectorAll('button:not([disabled]), input, .app')].filter((b) => b.offsetParent);
+  if (!btns.length) return;
+  let i = btns.indexOf(document.activeElement);
+  i = i < 0 ? 0 : (i + dir + btns.length) % btns.length;
+  btns[i].focus(); btns[i].scrollIntoView({ block: 'nearest' });
+}
+function pollPad(dt) {
+  const gp = navigator.getGamepads ? [...navigator.getGamepads()].find((p) => p && p.connected) : null;
+  if (!gp) return null;
+  const dz = (v) => (Math.abs(v) < 0.18 ? 0 : v);
+  const ax = gp.axes.map(dz);
+  const now = gp.buttons.map((b) => b.pressed || b.value > 0.5);
+  const down = (i) => now[i] && !padPrev[i], up = (i) => !now[i] && padPrev[i];
+  padPrev = now;
+  if (now.some(Boolean) || ax.some(Boolean)) { if (!padActive) { padActive = true; LC.game.onLockChange(true); } }
+  if (!padActive) return null;
+  const blocked = LC.game.isBlocked() || document.querySelector('#pause.show');
+  if (blocked) {
+    if (down(12) || down(14)) padMenu(-1);
+    if (down(13) || down(15)) padMenu(1);
+    if (down(0)) { const a = document.activeElement; if (a && a !== document.body && a.click) a.click(); else fakeKey('Digit1'); }
+    if (down(1)) fakeKey('Escape');
+    if (down(2)) fakeKey('Digit2');
+    if (down(3)) { if (document.querySelector('#screen.show')) LC.game.togglePhone(); else fakeKey('Digit3'); }
+    if (down(9) && document.querySelector('#pause.show')) LC.game.onLockChange(true);
+    return null;
+  }
+  if (card.active) {
+    card.cursor.x = Math.max(0.06, Math.min(0.94, card.cursor.x + (ax[0] + ax[2]) * dt * 0.9));
+    card.cursor.y = Math.max(0.06, Math.min(0.94, card.cursor.y + (ax[1] + ax[3]) * dt * 0.9));
+    placeCoin();
+    card.scratching = now[0] || now[7];
+    if (card.scratching && !card.done) scratchAt();
+    if (down(1) || (card.done && down(0))) { if (card.done) endCard(); else finishCard(); }
+    return null;
+  }
+  const k = 2.6 * sensitivity * dt * (flipTarget ? -1 : 1);
+  player.yaw -= ax[2] * k;
+  player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch - ax[3] * k));
+  if (down(0) || down(7)) { holding = true; holdTimer = 0.25; useFocus(); }
+  if (up(0) || up(7)) holding = false;
+  if (down(2) && focus && focus.alt) focus.alt();
+  if (down(3)) LC.game.togglePhone();
+  if (down(4)) LC.game.cycleHeld(-1);
+  if (down(5)) LC.game.cycleHeld(1);
+  if (down(6)) crouching = !crouching;
+  if (down(1) && player.pos.y === 0 && !crouching) player.vy = 6;
+  if (down(8)) togglePhoto();
+  if (down(9)) { padActive = false; LC.game.onLockChange(false); }
+  return { x: ax[0], z: ax[1], run: now[10] || Math.hypot(ax[0], ax[1]) > 0.95 };
+}
+
 function requestLock() {
   try { const p = canvas.requestPointerLock({ unadjustedMovement: true }); if (p && p.catch) p.catch(() => canvas.requestPointerLock()); } catch (e) { canvas.requestPointerLock(); }
 }
@@ -1894,6 +1977,7 @@ function frame(now) {
   if (dust) { dust.rotation.y += dt * 0.01; dust.position.y = Math.sin(time * 0.2) * 0.05; }
   scene.userData.sky.position.copy(camera.position);
   if (composer) composer.render(dt); else renderer.render(scene, camera);
+  if (wantShot) { wantShot = false; savePhoto(); }
 }
 
 // ---------- public API ----------
@@ -2002,6 +2086,7 @@ LC.world = {
   },
   // for testing: put the camera somewhere and use whatever is in front of it
   debug: {
+    camZ: () => +player.pos.z.toFixed(2),
     evProps: () => (ev.group ? ev.group.children.map((c) => [+c.position.x.toFixed(1), +c.position.z.toFixed(1)]) : []),
     lookAt: (fx, fz, tx, tz, pitch = -0.05) => { player.pos.set(fx, 0, fz); player.yaw = Math.atan2(-(tx - fx), -(tz - fz)); player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); return focus && focus.prompt(); },
     view: (x, z, yaw, pitch = -0.1) => { player.pos.set(x, 0, z); player.yaw = yaw; player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); },
