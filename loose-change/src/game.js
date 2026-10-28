@@ -1189,11 +1189,11 @@
     if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
   }
 
-  // ---------- town events: a random mix each run, something big every 9-13 minutes ----------
+  // ---------- town events: 5 or 6 random ones each run, roughly every 20 minutes ----------
   function townSetup() {
     if (S.town) return;
     const ids = LC.TOWN_EVENTS.map((e) => e.id).sort(() => Math.random() - 0.5);
-    S.town = { queue: ids.slice(0, 10), next: rand(540, 720), on: null, until: 0, seen: [], used: {} };
+    S.town = { queue: ids.slice(0, chance(0.5) ? 5 : 6), next: rand(600, 780), on: null, until: 0, seen: [], used: {} };
   }
   const townOn = (id) => S.town && S.town.on === id;
   const townDef = (id) => LC.TOWN_EVENTS.find((e) => e.id === id);
@@ -1233,7 +1233,7 @@
     if (T.on === 'geese' && T.used.bites < 3) { const n = lump(300, 5); gain(n); toast(`${ic('🛡️')}<div><b>You survived the goose invasion!</b><br><small>Only ${T.used.bites} bites. The council gives you ${fmt(n)} for bravery.</small></div>`, 'gold'); }
     else toast(`${ic(e.icon)}<div>${e.end}</div>`);
     S.buffs = S.buffs.filter((b) => b.id !== 'town'); renderBuffs();
-    T.on = null; T.until = 0; T.next = rand(540, 780);
+    T.on = null; T.until = 0; T.next = rand(1080, 1440);
   }
   function radio(line) { LC.audio.sfx('text'); toast(`${ic('📻')}<div><b>Radio Acacia FM:</b> "${line}"</div>`, 'msg'); }
   const once = (key) => { if (S.town.used[key]) return false; S.town.used[key] = true; return true; };

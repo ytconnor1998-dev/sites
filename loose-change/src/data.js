@@ -710,7 +710,7 @@ Love you. Go on then. Have a look.
 - Grandad` },
 ];
 
-// ---------- town events: each run gets a random mix ----------
+// ---------- town events: each run gets 5 or 6 of these at random ----------
 // secs = how long it lasts. The world builds the props; game.js does the money.
 LC.TOWN_EVENTS = [
   { id: 'party', icon: '🎉', name: 'Street party', secs: 200, news: 'Acacia Road street party! Bunting! Sausage rolls! Customers everywhere!', end: 'The street party is winding down. Someone is still doing the conga.', tip: 'Stall customers ×3 and income +25%' },
