@@ -25,7 +25,7 @@ function siteShell(acc, body, isSite, accNav) {
     '<button class="ws-only-m" data-act="c-go" data-v="track">Track a delivery</button>' + (acc ? '<button class="ws-only-m" data-act="c-go" data-v="home">My DART</button>' : '<button class="ws-only-m" data-act="c-auth-open" data-v="login">Log in</button>') + "</nav>" +
     '<div class="ws-right">' + langSwitch("on-dark") + '<button class="ws-link ws-hide-m" data-act="c-go" data-v="track">Track</button>' +
     (acc ? '<button class="ws-link ws-hide-m" data-act="c-go" data-v="home"><span class="avatar sm">' + esc(initials(acc.name)) + "</span> My DART</button>" : '<button class="ws-link ws-hide-m" data-act="c-auth-open" data-v="login">Log in</button>') +
-    '<button class="ws-cta" data-act="w-book">Book a delivery</button><button class="ws-burger" data-act="w-nav" aria-label="Menu" aria-expanded="' + !!open + '"><i></i><i></i><i></i></button></div></div>' +
+    '<button class="ws-cta" data-act="w-book"><span class="cta-l">Book a delivery</span><span class="cta-s">Book</span></button><button class="ws-burger" data-act="w-nav" aria-label="Menu" aria-expanded="' + !!open + '"><i></i><i></i><i></i></button></div></div>' +
     (acc && !isSite ? '<div class="ws-sub"><div class="ws-wrap">' + accNav + "</div></div>" : "") + "</header>";
   h += isSite ? "<main>" + body + "</main>" : '<main class="w-wrap w-main">' + body + "</main>";
   return h + siteFooter() + "</div>";

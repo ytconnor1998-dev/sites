@@ -436,7 +436,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .offer-item { display: grid; gap: 4px; background: var(--paper-2); border-radius: 10px; padding: 12px 14px; }
 .offer-act { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr); gap: 8px; }
 .offer .offer-act { position: sticky; bottom: 0; background: var(--card); padding-top: 4px; }
-.offer-act .btn { min-height: 52px; font-size: 15px; padding-inline: 6px; white-space: nowrap; }
+.offer-act .btn { min-height: 52px; font-size: 15px; padding-inline: 6px; line-height: 1.15; text-wrap: balance; }
 .wait-card { display: flex; gap: 14px; align-items: center; background: var(--paper-2); border-radius: 10px; padding: 14px; }
 .wait-card > div { display: grid; gap: 2px; }
 .wait-card span:not(.pulse) { color: var(--muted); font-size: 14px; }
@@ -573,6 +573,8 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
   .ws-nav button { text-align: left; padding: 12px; font-size: 17px; }
   .ws-only-m { display: block; }
 }
+.ws-cta .cta-s { display: none; }
+@media (max-width: 400px) { .ws-cta .cta-l { display: none; } .ws-cta .cta-s { display: inline; } }
 @media (max-width: 420px) { .ws-cta { padding: 10px 12px; font-size: 14px; } .ws-bar { gap: 8px; } .ws-right { gap: 4px; } .ws-link { padding: 8px 6px; } }
 .ws-kicker { font-size: 14px; font-weight: 700; color: var(--lilac); margin-bottom: 10px; }
 .ws-page-h .ws-kicker { color: var(--purple); }
@@ -586,7 +588,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .ws-hero-facts { color: #E4D8FF; font-size: 16px; margin-top: 22px; }
 .ws-hero-facts b { color: #fff; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.ws-say { display: grid; gap: 22px; max-width: 980px; }
+.ws-say { display: grid; gap: 22px; max-width: 980px; min-width: 0; }
 .ws-say-line { font-size: clamp(26px, 3.6vw, 44px); font-weight: 800; letter-spacing: -.025em; line-height: 1.45; margin: 0; }
 .ws-say-sel { position: relative; display: inline-block; }
 .ws-say-w { display: inline-block; border-bottom: 3px solid var(--lilac); padding: 0 26px 0 2px; line-height: 1.15; white-space: nowrap;
@@ -711,7 +713,7 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .panel-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); font-weight: 800; }
 .panel .map { border-radius: 0; }
 .panel .list .item { border-radius: 10px; }
-.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 12px; }
 .bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(36px, 1fr); gap: 6px; align-items: end; height: 200px; padding: 26px 14px 10px; overflow-x: auto; }
 .bar-c { display: grid; grid-template-rows: auto 1fr auto; height: 100%; align-items: end; justify-items: center; gap: 4px; min-width: 0; }
 .bar-c i { width: 100%; max-width: 44px; background: var(--purple); border-radius: 6px 6px 2px 2px; min-height: 2px; align-self: end; }
@@ -734,6 +736,14 @@ button.mh-chip:not(.icon) { font-style: normal; font-weight: 800; font-size: 14p
 .modal-h h3 { font-size: 19px; font-weight: 800; }
 .modal-b { padding: 16px 18px; overflow-y: auto; display: grid; gap: 12px; }
 .modal-f { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; background: var(--card); }
+/* Very small phones: rows with a price or a status chip wrap instead of running out of their card,
+   and the website's sentence-form blanks may wrap */
+@media (max-width: 340px) {
+  .row.between:has(> .price-big), .row.between:has(> .chip) { flex-wrap: wrap; }
+  .ws-say-line, .ws-read .ws-say-line { font-size: 22px; }
+  .ws-say-sel { max-width: 100%; }
+  .ws-say-w { white-space: normal; }
+}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">

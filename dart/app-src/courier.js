@@ -290,7 +290,7 @@ function offerSheet(c, o) {
   var timer = '<div class="offer-timer" aria-hidden="true"><i style="animation-duration:' + total + "s;animation-delay:-" + (total - left) + 's"></i></div>';
   var top = '<div class="offer-top"><div><span class="muted sm">You earn</span><b class="offer-pay" id="offer-pay">' + eur(payOf(o)) + '</b></div><span class="offer-left"><b>' + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + "</b></span></div>" +
     '<p class="offer-route"><b>' + esc(o.pickup.area) + "</b> → <b>" + esc(o.dropoff.area) + "</b></p>" +
-    '<p class="offer-meta">' + o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min" + (away != null ? " · " + away.toFixed(1) + " km to pickup" : "") + "</p>" +
+    '<p class="offer-meta">' + tr(o.price.km.toFixed(1) + " km trip · about " + o.price.mins + " min") + (away != null ? " · " + tr(away.toFixed(1) + " km to pickup") : "") + "</p>" +
     (o.deliverBy ? '<p class="offer-by"><b>Deliver ' + byLabel(o.deliverBy).replace(/^Today by /, "by ").replace(/^Tomorrow by /, "tomorrow by ") + "</b>" + (o.asap ? " · ASAP" : "") + "</p>" : "") +
     (chk && chk.batch ? '<p class="offer-batch">Adds to your route: ' + chk.stops + " stops in total, about +" + chk.mins + " min. Your other deliveries stay on time.</p>" : "");
   var acts = '<div class="offer-act"><button class="btn ghost" data-act="d-decline" data-v="' + esc(o.id) + '">Decline</button><button class="btn ghost" data-act="d-offer-more" data-v="' + esc(o.id) + '">' + (more ? "Show less" : "Show more") + '</button><button class="btn" data-act="d-accept" data-v="' + esc(o.id) + '"' + (busy ? " disabled" : "") + ">Accept</button></div>";
