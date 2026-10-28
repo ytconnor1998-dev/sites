@@ -328,7 +328,7 @@ function scatterReal(kind, height, zones, count, spread = 0.35) {
 // ---------- lush bits: thousands of grass tufts and flowers, drawn in one go ----------
 function buildFoliage() {
   if (M.lib.grass) {
-    const zones = [{ x0: -11.5, x1: 11.5, z0: -25.5, z1: -6 }, { x0: 31, x1: 61, z0: 20, z1: 55 }, { x0: -70, x1: 70, z0: -40, z1: -27 }, { x0: 62, x1: 75, z0: 18, z1: 60 }];
+    const zones = [{ x0: -11.5, x1: 11.5, z0: -25.5, z1: -6 }, { x0: 31, x1: 61, z0: 20, z1: 55 }, { x0: -70, x1: 70, z0: -40, z1: -27 }, { x0: 62, x1: 73, z0: 18, z1: 60 }];
     scatterReal('grass', 0.38, zones, 3600);
     scatterReal('flower', 0.28, zones, 700);
     // ferns and plants along the garden fences and in the park
@@ -359,6 +359,84 @@ function buildFoliage() {
   tufts.count = ti; flowers.count = fi;
   tufts.receiveShadow = true; tufts.userData.noAO = true; flowers.userData.noAO = true;
   scene.add(tufts, flowers);
+}
+
+// ---------- the coast: beach, sea, the dock, Captain Pete, and pirates ----------
+const SEA_X = 88, DOCK = { x0: 80, x1: 104, z0: 11.6, z1: 14.4 };
+let sea = null;
+function onDock(x, z) { return x >= DOCK.x0 - 0.3 && x <= DOCK.x1 && z >= DOCK.z0 && z <= DOCK.z1; }
+function inSea(x, z) { return area === 'town' && x > SEA_X && !onDock(x, z); }
+function buildCoast() {
+  // the sea all round the island, and a sandy beach at the east end of town
+  sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: 0x3a8ec0, roughness: 0.2, metalness: 0.05, emissive: 0x0a2a40 }));
+  sea.rotation.x = -Math.PI / 2; sea.position.set(0, -0.25, 0); sea.receiveShadow = true; scene.add(sea);
+  const sand = M.box(15.5, 0.3, 120, texMat('sand', 4, 28), 81.25, -0.135, 17, { shadow: false, sharp: true }); sand.receiveShadow = true; scene.add(sand);
+  const foam = M.box(1.6, 0.02, 120, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }), SEA_X + 1, 0.04, 17, { sharp: true }); foam.userData.noAO = true; scene.add(foam);
+  agents.push({ obj: foam, update: (dt, t) => { foam.position.x = SEA_X + 1 + Math.sin(t * 0.8) * 0.6; foam.material.opacity = 0.35 + Math.sin(t * 0.8) * 0.2; sea.position.y = -0.25 + Math.sin(t * 0.6) * 0.04; } });
+  // the dock: planks on posts, with boats tied up
+  const plank = M.box(DOCK.x1 - DOCK.x0, 0.12, DOCK.z1 - DOCK.z0, texMat('planks', 10, 1), (DOCK.x0 + DOCK.x1) / 2, 0.06, 13, { sharp: true }); scene.add(plank);
+  for (let x = DOCK.x0 + 1; x <= DOCK.x1; x += 3) for (const z of [DOCK.z0, DOCK.z1]) scene.add(M.cyl(0.12, 0.12, 1.4, 0x6e4a2a, x, -0.3, z));
+  for (let x = DOCK.x0 + 4; x <= DOCK.x1; x += 4) for (const z of [DOCK.z0 + 0.05, DOCK.z1 - 0.05]) scene.add(M.cyl(0.05, 0.05, 0.6, 0x6e4a2a, x, 0.4, z));
+  const moor = [['boat:boat-fishing-small', 92, 16.5, 3.2], ['boat:boat-row-large', 98, 9.3, 2.4], ['boat:boat-sail-a', 103, 19, 2.6]];
+  for (const [k, x, z, w] of moor) { const b = M.fit(k, { w }); if (b) { add(b, x, -0.15, z, Math.PI / 2); agents.push({ obj: b, update: (dt, t) => { b.position.y = -0.15 + Math.sin(t * 1.1 + x) * 0.05; b.rotation.z = Math.sin(t * 0.8 + x) * 0.03; } }); } }
+  for (const [x, z] of [[108, 6], [112, 20], [96, 28]]) { const bu = M.fit('boat:buoy-flag', { h: 1.2 }); if (bu) { add(bu, x, -0.2, z); agents.push({ obj: bu, update: (dt, t) => { bu.rotation.z = Math.sin(t + x) * 0.1; } }); } }
+  // a fish and chip kiosk at the start of the dock
+  const hut = new THREE.Group(); hut.position.set(78, 0, 8.6); scene.add(hut);
+  hut.add(M.box(3, 2.4, 2.2, 0x5b9bd5, 0, 1.2, 0), M.box(3.3, 0.2, 2.6, 0xffffff, 0, 2.5, 0), M.box(2.2, 0.8, 0.1, 0x2d2118, 0, 1.3, 1.11));
+  const sign = M.signPlane('COD ALMIGHTY · FISH & CHIPS', 2.9, 0.4, { bg: '#fffaf0', color: '#1d4a7a' }); sign.position.set(0, 2.85, 0.9); hut.add(sign);
+  collide(76.4, 7.4, 79.6, 9.8);
+  const chippy = M.person({ shirt: 0xffffff, legs: 0x333333, char: 'e' }); add(chippy, 78, 0, 10.2, 0);
+  interact(chippy, { range: 3, prompt: () => 'Buy chips<small>Salt and vinegar, obviously</small>', use: () => LC.game.chips(chippy) });
+  // Captain Pete, fishing off the end of the dock
+  const pete = M.person({ char: 'p', shirt: 0x1d3a6a }); add(pete, DOCK.x1 - 1.5, 0.12, 13, -Math.PI / 2);
+  spots.pete = pete;
+  interact(pete, { range: 3, prompt: () => 'Talk to Captain Pete', use: () => LC.game.pete(pete) });
+  const rod = M.cyl(0.02, 0.02, 2.2, 0x3a2a1a, 0, 0, 0, { rot: [0, 0, -1.1] }); rod.position.set(DOCK.x1 - 0.6, 1.3, 13.4); scene.add(rod);
+  // the magnet-fishing spot: a bucket and a coil of rope at the end
+  const spot = M.fit('surv:bucket', { h: 0.4 }) || M.cyl(0.18, 0.15, 0.4, 0x8a8a8a, 0, 0.2, 0);
+  add(spot, DOCK.x1 - 2.6, 0.12, 14);
+  interact(spot, { range: 2.6, prompt: () => LC.game.fishPrompt(), use: () => LC.game.fish() });
+  // the far end of the road is shut: this is an island, after all
+  for (const z of [10.5, 13, 15.5]) { const b = M.fit('road:construction-barrier', { w: 2.4 }); if (b) add(b, -63, 0, z, Math.PI / 2); }
+  const shut = M.signPlane('ROAD CLOSED · ISLAND ENDS HERE · SORRY', 4, 0.5, { bg: '#d9534f', color: '#fffaf0' }); shut.position.set(-62.8, 2.2, 13); shut.rotation.y = Math.PI / 2; shut.material.side = THREE.DoubleSide; scene.add(shut);
+  collide(-64, 8, -63, 18);
+  collide(SEA_X + 18, -30, SEA_X + 19, 70); collide(60, -30, SEA_X + 19, -27); collide(62, 61, SEA_X + 19, 62);
+  // the message in a bottle and the treasure X on the beach
+  const bottle = new THREE.Group(); bottle.position.set(84, 0.05, 30); scene.add(bottle);
+  bottle.add(M.cyl(0.08, 0.08, 0.3, 0x6ab08a, 0, 0.08, 0, { rot: [0, 0, Math.PI / 2], mat: { transparent: true, opacity: 0.8 } }), M.cyl(0.03, 0.03, 0.1, 0x9a6a3a, 0.2, 0.08, 0, { rot: [0, 0, Math.PI / 2] }));
+  hitbox(bottle, 0.8, 0.5, 0.8, 0.2); spots.bottle = bottle;
+  interact(bottle, { range: 2.4, prompt: () => 'A message in a bottle', use: () => LC.game.bottle() });
+  const xm = M.xMark(); xm.position.set(80, 0.04, 46); xm.visible = false; scene.add(xm); spots.treasureX = xm;
+  const beachSite = new THREE.Group(); beachSite.position.set(80, 0, 46); scene.add(beachSite);
+  const mound = M.cone(0.6, 0.2, 0xd9c084, 0, 0.1, 0, { seg: 10 }); mound.name = 'lid'; beachSite.add(mound);
+  const pit = M.cyl(0.42, 0.42, 0.02, 0x7a5a2a, 0, 0.03, 0, { seg: 16 }); pit.name = 'pit'; pit.visible = false; beachSite.add(pit);
+  const ladder = new THREE.Group(); ladder.name = 'ladder'; ladder.visible = false; beachSite.add(ladder);
+  hitbox(beachSite, 1.6, 1.0, 1.6, 0); sites.beach = beachSite; beachSite.visible = false;
+  interact(beachSite, { range: 3, hold: true, tool: 'dig', prompt: () => LC.game.sitePrompt('beach'), use: () => { if (!beachSite.visible) return; const r = LC.game.siteUse('beach'); if (r === 'dig') burstAt(beachSite.position.clone().setY(0.3), 5, 0xd9c084); } });
+}
+function showTreasure(on) { if (spots.treasureX) { spots.treasureX.visible = on; sites.beach.visible = on; } }
+// the pirates come for anyone who swims out too far
+let pirateShip = null, pirating = false;
+function pirateCheck() {
+  if (pirating || cut.active || !inSea(player.pos.x, player.pos.z) || player.pos.x < SEA_X + 2) return;
+  pirating = true;
+  if (!pirateShip) {
+    pirateShip = M.fit('boat:ship-small', { w: 7 }) || M.box(3, 2, 7, 0x3a2a1a, 0, 1, 0);
+    const flag = M.box(0.9, 0.6, 0.02, 0x111111, 0, 5.6, 0); flag.add(M.ball(0.12, 0xffffff, 0, 0.05, 0.02)); pirateShip.add(flag);
+    scene.add(pirateShip);
+  }
+  pirateShip.position.set(player.pos.x + 40, -0.2, player.pos.z + 6); pirateShip.rotation.y = -Math.PI / 2; pirateShip.visible = true;
+  LC.audio.sfx('event');
+  LC.game.say('A ship with a black flag is coming. Fast. Very fast. Worryingly fast.');
+  const start = pirateShip.position.clone(), end = new THREE.Vector3(player.pos.x + 7, -0.2, player.pos.z + 2);
+  tween(3, (k) => { pirateShip.position.lerpVectors(start, end, k); }, () => {
+    LC.audio.sfx('smash'); shake = 0.6; burstAt(player.pos.clone().setY(0.5), 14, 0xffffff);
+    setTimeout(() => LC.game.pirates(pirateShip), 600);
+  });
+}
+function washAshore() {
+  const f = document.getElementById('fade'); f.classList.add('show');
+  setTimeout(() => { player.pos.set(84, 0, 22); player.yaw = Math.PI / 2; player.pitch = -0.1; if (pirateShip) pirateShip.visible = false; f.classList.remove('show'); pirating = false; }, 700);
 }
 
 // ---------- the museum shelf in the hall: rare finds on display for good ----------
@@ -898,7 +976,7 @@ function buildTown() {
   add(M.hedge(30), 46, 0, 18.3); collide(31, 18, 62, 18.8);   // front hedge with a gap at the gate (x 28-31)
   const gate = M.signPlane('ACACIA PARK', 2.6, 0.5, { bg: '#2d6a4f' }); gate.position.set(29.5, 2.2, 17.9); gate.rotation.y = Math.PI; scene.add(gate);
   add(M.box(0.2, 2.4, 0.2, 0x333333, 0, 0, 0), 28.2, 1.2, 18); add(M.box(0.2, 2.4, 0.2, 0x333333, 0, 0, 0), 30.8, 1.2, 18);
-  collide(62, 18, 63, 56); collide(28, 55.5, 62, 56.5); collide(27.5, 26, 28, 56);
+  collide(28, 55.5, 62, 56.5); collide(27.5, 26, 28, 56);
   const pondAt = new THREE.Vector3(49, 0, 43);
   add(M.pond(6), pondAt.x, 0, pondAt.z); collide(pondAt.x - 5.5, pondAt.z - 5.5, pondAt.x + 5.5, pondAt.z + 5.5);
   for (let i = 0; i < 5; i++) {
@@ -915,6 +993,7 @@ function buildTown() {
   for (const [x, z, ry] of [[34, 36, Math.PI / 2], [44, 50, Math.PI], [36, 46, Math.PI / 2], [52, 34, 0]]) { const b = add(M.bench(), x, 0, z, ry); collideObj(b); interact(b, { range: 2.5, prompt: () => 'Check under the bench', use: () => LC.game.checkBench() }); }
   for (const [x, z, h] of [[33, 22, 5], [59, 21, 4.5], [32, 52, 6], [58, 52, 5], [42, 40, 4], [60, 40, 5.5], [36, 42, 4.5]]) { add(M.tree(h), x, 0, z); collide(x - 0.3, z - 0.3, x + 0.3, z + 0.3); }
   spots.park = [{ x0: 31, x1: 60, z0: 20, z1: 54 }];
+  buildCoast();
   // a little skate area next to the park, and a rowing boat on the pond
   if (M.lib['skate:half-pipe']) {
     floor(63, 30, 73, 42, 0xbcb3a3, 0.02);
@@ -1327,7 +1406,7 @@ function gooseUpdate(dt, t) {
 
 // ---------- visitors for random events ----------
 // Characters that come and talk to you: they walk (or fly) up, chat in a speech bubble, then leave.
-const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk', shopkeeper: 'babble', piggy: 'oink', dev: 'babble', mum: 'babbleHigh', aussie: 'babbleLow' };
+const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk', shopkeeper: 'babble', piggy: 'oink', dev: 'babble', mum: 'babbleHigh', aussie: 'babbleLow', pirate: 'babbleLow' };
 function makeVisitor(kind) {
   if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92 });
   if (kind === 'badger') { const o = M.badger(); o.scale.setScalar(1.4); const tie = M.box(0.06, 0.18, 0.02, 0xc8231f, 0, 0.28, 0.62); o.add(tie); return o; }
@@ -1913,7 +1992,7 @@ function updatePlayer(dt) {
   shake = Math.max(0, shake - dt);
   camera.position.set(
     player.pos.x + (shake ? rand(-shake, shake) * 0.3 : 0),
-    player.pos.y + eye + (moving ? Math.sin(player.bob) * 0.04 : 0) + (shake ? rand(-shake, shake) * 0.3 : 0),
+    player.pos.y + eye - (inSea(player.pos.x, player.pos.z) ? Math.min(0.75, (player.pos.x - SEA_X) * 0.25) : 0) + (moving ? Math.sin(player.bob) * 0.04 : 0) + (shake ? rand(-shake, shake) * 0.3 : 0),
     player.pos.z);
   camera.rotation.set(player.pitch, player.yaw, flip * Math.PI, 'YXZ');
   sun.position.set(player.pos.x + sunDir.x * 40, sunDir.y * 40, player.pos.z + sunDir.z * 40);
@@ -2290,6 +2369,7 @@ function frame(now) {
   updateEvent(dt);
   updateCut();
   updateSpeech();
+  pirateCheck();
   for (const m of M.mixers) if (m.parent && m.parent.parent) m.userData.anim.mixer.update(dt);
   if (pig) {
     pigWobble = Math.max(0, pigWobble - dt * 4);
@@ -2386,7 +2466,7 @@ LC.world = {
   syncHelpers,
   setPig,
   setGoose,
-  talkStart, talkSay, talkEnd, evolve, speak, voice, guide, near, spawnActor, walkActor, removeActor, setSiteOpen, keeper: () => spots.keeper,
+  talkStart, talkSay, talkEnd, evolve, speak, voice, washAshore, showTreasure, inSea: () => inSea(player.pos.x, player.pos.z), guide, near, spawnActor, walkActor, removeActor, setSiteOpen, keeper: () => spots.keeper,
   townEvent, treasureReveal, treasureSpot: () => ev.spot, eventId: () => ev.id, onFilmMark: () => !!(ev.group && ev.group.userData.xmark && player.pos.distanceTo(ev.group.userData.xmark) < 1.2),
   startCard, cardActive: () => card.active,
   isUnderground: () => area === 'under',

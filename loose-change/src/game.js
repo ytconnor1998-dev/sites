@@ -1285,10 +1285,11 @@
   }
   // ---------- hidden ways underground ----------
   const siteOpen = (id) => !!(S.sites[id] && S.sites[id].open);
-  function syncSites() { for (const id of Object.keys(LC.DIG_SITES)) LC.world.setSiteOpen(id, siteOpen(id)); }
+  function syncSites() { for (const id of Object.keys(LC.DIG_SITES)) LC.world.setSiteOpen(id, siteOpen(id)); LC.world.showTreasure(!!S.flags.treasureMap && !siteOpen('beach')); }
   function sitePrompt(id) {
     const def = LC.DIG_SITES[id], st = S.sites[id] || {};
-    if (st.open) return `Climb down into ${def.name}`;
+    if (st.open) return def.treasure ? 'An empty hole. You got the treasure.' : `Climb down into ${def.name}`;
+    if (def.treasure) return `Dig for the pirate treasure <b>${Math.floor(((st.dug || 0) / def.need) * 100)}%</b><small>Hold to keep digging</small>`;
     if (id === 'drain') return S.stallUps.includes('crowbar') ? 'Lever up the drain cover<small>With your crowbar. Very official.</small>' : 'A heavy drain cover<small>You can hear dripping down there. And coins?</small>';
     if (id === 'cellar' && !S.flags.cellarKnown) return 'A dusty trapdoor<small>STAFF ONLY</small>';
     const pct = Math.floor(((st.dug || 0) / def.need) * 100);
@@ -1297,7 +1298,7 @@
   function siteUse(id) {
     const def = LC.DIG_SITES[id];
     const st = S.sites[id] = S.sites[id] || { dug: 0, open: false };
-    if (st.open) return 'down';
+    if (st.open) return def.treasure ? null : 'down';
     if (id === 'drain') {
       if (!S.stallUps.includes('crowbar')) { LC.audio.sfx('nope'); say(pick(LC.SITE_LINES.drainNo)); return null; }
       st.open = true; syncSites(); LC.audio.sfx('open'); say('CLANG. The drain cover slides off. It smells of 1970s pennies and regret.'); return null;
@@ -1305,6 +1306,13 @@
     if (id === 'cellar' && !S.flags.cellarKnown) { LC.audio.sfx('nope'); LC.world.voice(LC.world.keeper(), pick(LC.SITE_LINES.cellarNo), 'Shopkeeper'); return null; }
     st.dug += 1 + toolEff('dig'); wear('dig'); LC.audio.sfx('dig');
     if (id === 'molehill' && chance(0.12)) say(pick(LC.SITE_LINES.molehill));
+    if (st.dug >= def.need && def.treasure) {
+      st.open = true; syncSites(); LC.audio.sfx('fanfare'); LC.world.coinRain(25);
+      const n = lump(1500, 40); gain(n); giveJunk('ring', true); giveJunk('foreign', true);
+      S.flags.pirateTreasure = true;
+      modal({ icon: '🏴‍☠️', title: 'Pirate treasure!', text: `A chest! Inside: ${fmt(n)} in old coins, a gold ring, some foreign money, and a note in Grandad's handwriting: "Gary, if you're reading this, you owe me a pint. Ken." Captain Pete will want to hear about this.` });
+      return 'dig';
+    }
     if (st.dug >= def.need) {
       st.open = true; syncSites(); LC.audio.sfx('fanfare');
       toast(`${ic('🕳️')}<div><b>You broke through!</b><br><small>There's a way down into ${def.name}.</small></div>`, 'gold');
@@ -1387,6 +1395,53 @@
     if (!tut) return;
     const st = TUTORIAL[tut.i];
     if (st && st.done()) setTimeout(() => tut && TUTORIAL[tut.i] === st && tutorialNext(), 600);
+  }
+
+  // ---------- the dock ----------
+  function pete(npc) {
+    S.flags.peteIdx = S.flags.peteIdx || 0;
+    if (S.flags.pirateTreasure && !S.flags.peteTreasureTold) {
+      S.flags.peteTreasureTold = true; const n = lump(600, 15); gain(n);
+      return modal({ speaker: 'man', npc, icon: '⚓', title: 'Captain Pete', text: `You found it! Ha! Ken and Gary the First buried that in \'62 after a game of cards went wrong. Here, take ${fmt(n)}. Ken won it off me fair and square. Well. Square.`, choices: [{ label: 'Cheers, Captain!' }] });
+    }
+    const line = LC.PETE[S.flags.peteIdx % LC.PETE.length]; S.flags.peteIdx++;
+    LC.audio.sfx('babbleLow'); LC.world.speak(npc, line, 'Captain Pete');
+  }
+  function chips(npc) {
+    const cost = lump(20, 1);
+    if (!spend(cost)) { LC.audio.sfx('nope'); return LC.world.speak(npc, `It\'s ${fmt(cost)} a cone, love. Come back when you\'re minted.`, 'Chippy'); }
+    LC.audio.sfx('ding');
+    addBuff({ id: 'chips', icon: '🍟', label: 'Chips: everything ×1.2 for a minute', income: 1.2, click: 1.2, secs: 60 });
+    LC.world.speak(npc, pick(LC.CHIPS), 'Chippy');
+    if (chance(0.3)) setTimeout(() => say('A seagull steals one chip. Just one. It maintains eye contact the whole time.'), 2500);
+  }
+  function fishPrompt() { const w = waitFor('fish'); return w ? `Magnet fishing<small>Untangling the string... (${w}s)</small>` : 'Go magnet fishing<small>Drop a magnet on a string off the end of the dock</small>'; }
+  function fish() {
+    if (!ready('fish', 35)) { LC.audio.sfx('nope'); return; }
+    LC.audio.sfx('splash');
+    setTimeout(() => {
+      const r = Math.random();
+      if (r < 0.45) { const n = lump(50, 1); gain(n); floatAt(null, n); LC.audio.sfx('coin'); say(pick(['A soggy handful of coins. Smells of the sea. And money.', 'Coins! And a crab, which you return. It is furious.'])); }
+      else if (r < 0.8) { giveJunk(randJunk(r < 0.5 ? 3 : 2)); }
+      else say(pick(['A shopping trolley. You put it back. It belongs to the sea now.', 'Somebody\'s false teeth. You put them back, very quickly.', 'A wellington boot with a fish living in it. You leave them to it.']));
+    }, 900);
+  }
+  function bottle() {
+    if (S.flags.treasureMap) return say('An empty bottle. You already read the map.');
+    S.flags.treasureMap = true; LC.audio.sfx('sparkle');
+    modal({ icon: '🍾', title: 'A message in a bottle', text: LC.BOTTLE, choices: [{ label: 'Dig it up!' }] });
+    syncSites();
+  }
+  function pirates(npc) {
+    const toll = S.money * 0.1;
+    let i = 0;
+    const next = () => {
+      if (i < LC.PIRATE.length) { const line = LC.PIRATE[i++]; return modal({ speaker: 'pirate', npc, icon: '🏴‍☠️', title: 'Captain Gary Blackbeard IV', text: line, choices: [{ label: i === 1 ? 'Er... hello?' : i === 2 ? `Pay ${fmt(toll)}` : 'Aye aye...', fn: () => { if (i === 2) { S.money -= toll; floatAt(null, '-' + fmt(toll), 'bad'); } setTimeout(next, 50); return null; } }] }); }
+      S.stats.pirated = (S.stats.pirated || 0) + 1;
+      LC.world.washAshore();
+      setTimeout(() => say('You wash up on the beach, coughing up seaweed. Your pockets are lighter.'), 900);
+    };
+    next(); void npc;
   }
 
   // ---------- the museum shelf: rare things on display give a permanent bonus this run ----------
@@ -2361,7 +2416,7 @@
       onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,
       pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
-      sitePrompt, siteUse, resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
+      sitePrompt, siteUse, pete, chips, fishPrompt, fish, bottle, pirates, resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
       hookADuck, binPrompt, bin, cheer, filmExtra, iceCream, snowman, mayor, treasureDig, pigeonStrike, saleSofa, bbqSausage, townOn,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),

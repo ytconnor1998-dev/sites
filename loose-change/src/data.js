@@ -924,6 +924,7 @@ LC.DIG_SITES = {
   drain: { name: 'the sewer', spawn: 'sewer' },
   cellar: { name: 'the Roman ruins', spawn: 'roman', need: 45 },
   molehill: { name: 'the Mole Kingdom', spawn: 'mole', need: 80 },
+  beach: { name: 'the pirate treasure', need: 30, treasure: true },
 };
 LC.SITE_LINES = {
   cellarNo: ['"Oi oi! Customers THAT side of the counter, sunshine."', '"That\'s the cellar, innit. Nothing down there. Definitely not Roman. Stop lookin\' at it."', '"STAFF ONLY. Especially you. ESPECIALLY you."'],
@@ -940,3 +941,20 @@ LC.BRIAN_WARNINGS = [
   { at: 0.93, icon: '😤', from: 'Brian', text: 'Just measuring my hallway for The Thing. Thanks for keeping it warm. Don\'t take it personally. (Take it personally.)' },
   { at: 0.98, icon: '🚨', from: 'Mum', text: 'BRIAN HAS GOT HIS CHEQUEBOOK OUT. Whatever you\'re going to do, DO IT NOW.' },
 ];
+
+// ---------- the dock: Captain Pete, the chippy, and Captain Gary Blackbeard IV ----------
+LC.PETE = [
+  'Ahoy, nipper! Captain Pete. Retired. Well, the ferry retired. Last one to the mainland was in 1987. I\'m still waitin\'. Brought sandwiches.',
+  'Mind the water, matey. Captain Gary Blackbeard the Fourth runs these waters. Swim out too far and he\'ll have ye. Charges a "swimmin\' tax". Daylight robbery. Well. Seawater robbery.',
+  'See that bucket? Magnet on a string. Drop it off the end and you\'ll fish up all sorts. Coins, keys, a bloke\'s false teeth once. He wanted \'em back.',
+  'Your grandad and me sailed together, you know. HMS Biscuit. Smallest ship in the navy. He was the only one who could reach the top shelf.',
+  'Bottles wash up on that beach all the time. Most of \'em are just bottles. Some of \'em aren\'t. Keep your eyes peeled.',
+  'Gary Blackbeard\'s not a bad lad really. His mum still does his washing. Skull and crossbones, 40 degree wash.',
+];
+LC.PIRATE = [
+  'ARRR! Ye\'ve strayed into the waters of Captain Gary Blackbeard the FOURTH! The Fourth! Me dad was the Third. He was rubbish.',
+  'That\'ll be the swimmin\' tax, matey. Ten per cent. Plus VAT. Pirates pay VAT now. It\'s been a whole thing.',
+  'Now back to the beach with ye, ye soggy little landlubber. And wipe yer feet!',
+];
+LC.CHIPS = ['Salt and vinegar, love? Course you do. You\'re not a monster.', 'Mind the seagulls. They\'re organised. They\'ve got a WhatsApp group.', 'Cod almighty, you look starving. Have a few extra chips. Go on.', 'Mushy peas are extra. Mushy peas are always extra. That\'s the law.'];
+LC.BOTTLE = 'A soggy treasure map, signed "G.B. the 1st, 1962 (and Ken)". There\'s an X on the beach by the big rock, near the park end. Grandad helped bury pirate treasure?!';

@@ -87,6 +87,15 @@ const make = {
     for (let i = 0; i < 3000; i++) { g.strokeStyle = cols[Math.floor(rnd() * 5)]; g.globalAlpha = 0.5; g.lineWidth = 2 + rnd() * 3; g.lineCap = 'round'; const x = rnd() * w, y = rnd() * h, a = rnd() * 6; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 7, y + Math.sin(a) * 7); g.stroke(); }
     g.globalAlpha = 1;
   }); },
+  sand: () => { seed = 31; return canvas(256, 256, (g, w, h) => {
+    g.fillStyle = '#e8d29a'; g.fillRect(0, 0, w, h);
+    const c = ['#f2dfae', '#d9c084', '#efd9a0', '#cbb27a'];
+    for (let i = 0; i < 2500; i++) { g.fillStyle = c[i % 4]; g.globalAlpha = 0.5; g.beginPath(); g.ellipse(rnd() * w, rnd() * h, 1 + rnd() * 3, 1 + rnd() * 2, rnd() * 3, 0, 7); g.fill(); }
+    g.globalAlpha = 1;
+  }); },
+  planks: () => { seed = 37; return canvas(256, 256, (g, w, h) => {
+    for (let i = 0; i < 8; i++) { g.fillStyle = shade('#9a7048', (rnd() - 0.5) * 0.14); g.fillRect(0, i * 32, w, 30); g.fillStyle = 'rgba(40,25,10,.6)'; g.fillRect(0, i * 32 + 30, w, 2); for (let k = 0; k < 3; k++) { g.fillStyle = 'rgba(40,25,10,.5)'; g.fillRect(40 + rnd() * 170, i * 32 + 13, 3, 3); } }
+  }); },
   tarmac: () => { seed = 13; return canvas(256, 256, (g, w, h) => {
     g.fillStyle = '#4b4d55'; g.fillRect(0, 0, w, h);
     speckle(g, w, h, 5000, () => (rnd() < 0.5 ? 'rgba(0,0,0,.25)' : 'rgba(255,255,255,.12)'), 2);

@@ -400,5 +400,23 @@
   "kenney/cars/taxi.glb",
   "kenney/cars/sedan-sports.glb",
   "kenney/cars/van.glb"
+ ],
+ "boat:ship-small": [
+  "kenney/boats/ship-small.glb"
+ ],
+ "boat:boat-sail-a": [
+  "kenney/boats/boat-sail-a.glb"
+ ],
+ "boat:boat-fishing-small": [
+  "kenney/boats/boat-fishing-small.glb"
+ ],
+ "boat:buoy-flag": [
+  "kenney/boats/buoy-flag.glb"
+ ],
+ "road:construction-barrier": [
+  "kenney/road/construction-barrier.glb"
+ ],
+ "road:construction-cone": [
+  "kenney/road/construction-cone.glb"
  ]
 }
