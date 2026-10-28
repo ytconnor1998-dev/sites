@@ -95,18 +95,18 @@
       fetch(n.startsWith('i/') ? `assets/sounds/impact/${n.slice(2)}.ogg` : `assets/sounds/ui/${n}.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b)).then((buf) => { buffers[n] = buf; }).catch(() => { delete buffers[n]; });
     }
   }
-  function playSample(name) {
+  function playSample(name, gain = 0.6) {
     const list = SAMPLES[name]; if (!list) return false;
     const buf = buffers[list[Math.floor(Math.random() * list.length)]];
     if (!buf || buf === 'loading') return false;
     const src = ctx.createBufferSource(); src.buffer = buf; src.playbackRate.value = 0.95 + Math.random() * 0.1;
-    const g = ctx.createGain(); g.gain.value = 0.6; src.connect(g); g.connect(sfxBus || master); src.start();
+    const g = ctx.createGain(); g.gain.value = gain; src.connect(g); g.connect(sfxBus || master); src.start();
     return true;
   }
   function sfx(name, arg) {
     if (!ctx || !sfxOn() || ctx.state !== 'running') return;
     if (!Object.keys(buffers).length) loadSamples();
-    if (name === 'step' && playSample('step-' + (arg || 'hard'))) return;
+    if (name === 'step') { playSample('step-' + (arg || 'hard'), 0.28); return; }   // quiet, and never the synth fallback
     if (name !== 'buy' && playSample(name)) return;
     if (name === 'buy' && playSample('buy')) { SFX.buy?.(ctx.currentTime + 0.005, arg); return; }
     SFX[name]?.(ctx.currentTime + 0.005, arg);
@@ -133,11 +133,12 @@
     const bar = Math.floor(s / 8) % 16, pos = s % 8;
     const ch = CHORDS[PROG[bar]];
     const n = MELODY[bar][pos];
-    // the melody sits out every third loop so it doesn't get stuck in your head (much)
-    if (n != null && loops % 3 !== 2) {
+    // every third loop the melody drops an octave and goes soft, so it doesn't get stuck in your head (much)
+    if (n != null) {
+      const soft = loops % 3 === 2;
       const len = MELODY[bar][pos + 1] === null ? STEP * 1.8 : STEP * 0.9;
-      tone(t, { freq: hz(n), type: 'square', dur: len, gain: 0.09, attack: 0.01, filter: 2600, out: musicBus });
-      tone(t, { freq: hz(n + 12), type: 'sine', dur: len * 0.6, gain: 0.025, out: musicBus });
+      tone(t, { freq: hz(soft ? n - 12 : n), type: soft ? 'triangle' : 'square', dur: len, gain: soft ? 0.12 : 0.09, attack: 0.01, filter: 2600, out: musicBus });
+      if (!soft) tone(t, { freq: hz(n + 12), type: 'sine', dur: len * 0.6, gain: 0.025, out: musicBus });
     }
     if (pos === 0 || pos === 4) tone(t, { freq: hz(ch.bass), type: 'triangle', dur: STEP * 1.6, gain: 0.32, out: musicBus });
     if (pos === 6) tone(t, { freq: hz(ch.bass + 7), type: 'triangle', dur: STEP * 0.9, gain: 0.22, out: musicBus });
@@ -146,8 +147,11 @@
     if (pos === 2 || pos === 6) noise(t, { dur: 0.09, gain: 0.12, freq: 1800, q: 0.7, out: musicBus });
     noise(t, { dur: 0.03, gain: pos % 2 ? 0.03 : 0.05, freq: 8000, type: 'highpass', out: musicBus });
   }
+  // Schedules half a second ahead so a slow frame (busy laptop, lots of footsteps and streaming) can't starve it.
+  // If the page stalled for longer than that, skip ahead rather than cramming the missed notes into one instant.
   function scheduler() {
-    while (nextTime < ctx.currentTime + 0.15) {
+    if (nextTime < ctx.currentTime - 0.05) nextTime = ctx.currentTime + 0.05;
+    while (nextTime < ctx.currentTime + 0.5) {
       scheduleStep(step, nextTime);
       nextTime += STEP;
       step++;
@@ -161,7 +165,7 @@
       step = 0; nextTime = ctx.currentTime + 0.1;
       musicBus.gain.cancelScheduledValues(ctx.currentTime);
       musicBus.gain.setValueAtTime(0.32, ctx.currentTime);
-      timer = setInterval(scheduler, 40);
+      timer = setInterval(scheduler, 100);
     } else if (!on && playing) {
       playing = false;
       clearInterval(timer);

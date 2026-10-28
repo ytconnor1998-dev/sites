@@ -275,7 +275,7 @@
     if (!b) { c.classList.remove('show'); return; }
     c.classList.add('show');
     c.querySelector('.arrow').style.transform = `rotate(${b.angle}rad)`;
-    c.querySelector('span').textContent = Math.round(b.dist) + ' m';
+    c.querySelector('span').textContent = '';   // no distances: just the direction
   }
 
   // ---------- modal (events, endings, offline) ----------
@@ -977,7 +977,18 @@
     if (gnomeStares >= 5) { findSecret('gnome'); say("You stare the gnome down. It blinks first. Inside its tiny notebook: 'KID IS WINNING. TELL BRIAN.'"); return; }
     say(pick(['The gnome is watching you.', 'The gnome has a tiny notebook. Your name is in it.', 'The gnome says nothing. Loudly.', 'You stare at the gnome. The gnome stares back.']));
   }
-  const chatIdx = {};
+  // Lines that change with your progress, so the first chat each day says something new.
+  function todayLine(who) {
+    const m = S.money, d = Math.floor(S.depth || 0), rich = m >= 1e6, ok = m >= 1000;
+    const pool = [
+      `"Day ${S.day} of the great savings, is it? ${S.day > 5 ? "You're committed, I'll give you that." : 'Early days, early days.'}"`,
+      rich ? `"Word is you've got ${fmt(m)} stashed. Is that true? You don't LOOK like a millionaire."` : ok ? `"${fmt(m)}? That's more than my nan's got. And she's got a caravan."` : `"How much you got now? ${fmt(m)}? ...Keep going, mate. Keep going."`,
+      d > 2 ? `"Your hole's ${d}m deep now, they reckon. ${d > 50 ? 'People are worried. Geologists are worried.' : 'Mind you don\'t fall in.'}"` : `"You've barely scratched that garden. My dog digs deeper than that."`,
+      S.stats.brianRivalry || S.flags.brianMet ? `"Saw Brian earlier. He looked at your house and did a face. A proper face."` : `"Have you met Brian at number 7 yet? You will. Oh, you will."`,
+      evening() ? `"Getting late, innit. Your mum'll be calling you in soon."` : `"Lovely day for it. Whatever 'it' is. Probably money."`,
+    ];
+    return pool[(S.day * 7 + who.length * 3) % pool.length];
+  }
   // ---------- friends ----------
   const hearts = (id) => Math.min(5, Math.floor((S.friends[id] || 0) / 3));
   function perk(id, n) { return hearts(id) >= n; }
@@ -1020,9 +1031,13 @@
   function chat(who, npc) {
     if (LC.FRIENDS[who] && ready('chat_' + who, 60)) { S.stats.chats = (S.stats.chats || 0) + 1; if (befriend(who, 1, npc)) return; }
     const lines = LC.CHAT[who] || ['"Hello."'];
-    const i = chatIdx[who] = ((chatIdx[who] ?? -1) + 1) % lines.length;
+    S.chatDay = S.chatDay || {}; S.chatIdx = S.chatIdx || {};
+    let line;
+    // first chat of the day: something about today (your money, the hole, Brian, the day). After that, their usual patter, carrying on where you left off.
+    if (S.chatDay[who] !== S.day) { S.chatDay[who] = S.day; line = todayLine(who); }
+    if (!line) { const i = S.chatIdx[who] = ((S.chatIdx[who] ?? -1) + 1) % lines.length; line = lines[i]; }
     LC.audio.sfx('babble');
-    LC.world.voice(npc, lines[i], LC.FRIENDS[who] ? LC.FRIENDS[who].name : '');
+    LC.world.voice(npc, line, LC.FRIENDS[who] ? LC.FRIENDS[who].name : '');
     if (!S.chatted.includes(who)) S.chatted.push(who);
     if (Object.keys(LC.CHAT).every((k) => S.chatted.includes(k))) findSecret('chatty');
   }
@@ -1193,7 +1208,7 @@
           ? (gain(S.money * 0.25 + 1), { text: 'You win! The seagull drops its stash of stolen coins. +25%!' })
           : (S.money *= 0.85, { text: 'You lose. Badly. It took 15% and your dignity.' }) },
       ] }) },
-    { id: 'nan', w: 10, run: () => S.flags.hasRing && !S.flags.ringReturned ? modal({ speaker: 'nan', icon: '💍', title: 'Nan', text: 'Is that... is that KEN\'S RING? Where on earth did you find it?',
+    { id: 'nan', w: 10, cond: () => LC.world.inHouse(), run: () => !LC.world.inHouse() ? setTimeout(() => queueEvent(() => EVENTS.find((e) => e.id === 'nan').run()), 30000) : S.flags.hasRing && !S.flags.ringReturned ? modal({ speaker: 'nan', icon: '💍', title: 'Nan', text: 'Is that... is that KEN\'S RING? Where on earth did you find it?',
       choices: [{ label: 'Give Nan the ring', fn: () => {
         S.flags.ringReturned = true; S.flags.hasRing = false; const n = lump(1200, 50); gain(n); S.flags.nanJumper = true; LC.audio.sfx('fanfare');
         return { icon: '🧶', text: `Nan cries a bit. Then she gives you ${fmt(n)} and a knitted jumper with a coin on it. "He'd be so proud." (All income +10%)` };

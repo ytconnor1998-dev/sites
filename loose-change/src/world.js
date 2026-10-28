@@ -416,18 +416,28 @@ function buildTraffic() {
   // cars drive along the road, and brake (and honk) if you're in the way
   for (let i = 0; i < 4; i++) {
     const car = M.car([0x3b6ea5, 0xd9534f, 0x6aa84f, 0xf2b631][i]); scene.add(car);
-    const dir = i % 2 ? -1 : 1, z = dir > 0 ? 11.6 : 14.4;
-    car.position.set(rand(-60, 60), 0, z); car.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+    // the island road is a dead end both ways (roadworks one end, the beach the other): cars U-turn and come back
+    let dir = i % 2 ? -1 : 1, z = dir > 0 ? 11.6 : 14.4, turn = null;
+    car.position.set(rand(-50, 55), 0, z); car.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
     let speed = 7, honked = 0;
+    const END_E = 66, END_W = -58;
     agents.push({ obj: car, update: (dt) => {
       if (isNightNow && i > 1) { car.visible = false; return; } car.visible = true;
+      if (turn) {
+        turn.a = Math.min(Math.PI, turn.a + dt * 1.5);
+        car.position.x = turn.cx + turn.dir * Math.sin(turn.a) * 1.4;
+        car.position.z = 13 - turn.dir * Math.cos(turn.a) * 1.4;
+        car.rotation.y = Math.atan2(turn.dir * Math.cos(turn.a), turn.dir * Math.sin(turn.a));
+        if (turn.a >= Math.PI) { dir = -turn.dir; z = dir > 0 ? 11.6 : 14.4; turn = null; }
+        return;
+      }
       const ahead = (player.pos.x - car.position.x) * dir, inLane = Math.abs(player.pos.z - z) < 1.6 && area === 'town';
       const blockedAhead = inLane && ahead > 0 && ahead < 6;
       speed += ((blockedAhead ? 0 : 7) - speed) * Math.min(1, dt * (blockedAhead ? 5 : 1));
       if (blockedAhead && honked <= 0) { LC.audio.sfx('honk'); honked = 4; }
       honked -= dt;
       car.position.x += dir * speed * dt;
-      if (car.position.x > 75) car.position.x = -75; if (car.position.x < -75) car.position.x = 75;
+      if ((dir > 0 && car.position.x > END_E) || (dir < 0 && car.position.x < END_W)) turn = { cx: car.position.x, dir, a: 0 };
     } });
   }
 }
@@ -1165,7 +1175,11 @@ function buildTown() {
   board.add(M.box(2.2, 1.5, 0.12, 0xb08050, 0, 1.55, 0, { sharp: true }), M.box(0.1, 2.3, 0.1, 0x5a4a3a, -1.0, 1.15, -0.05), M.box(0.1, 2.3, 0.1, 0x5a4a3a, 1.0, 1.15, -0.05));
   const head = M.signPlane('HELP WANTED', 2.0, 0.3, { bg: '#c8231f' }); head.position.set(0, 2.45, 0.07); board.add(head);
   for (let i = 0; i < 6; i++) { const c = M.box(0.42, 0.32, 0.02, [0xfffdf2, 0xfff7d6, 0xe8f4ff][i % 3], -0.7 + (i % 3) * 0.7, 1.85 - Math.floor(i / 3) * 0.6, 0.07, { rot: [0, 0, (Math.random() - 0.5) * 0.2] }); board.add(c); }
+  // a little hood lamp so it can be read after dark
+  board.add(M.box(2.3, 0.08, 0.35, 0x3a3a3a, 0, 2.66, 0.12, { sharp: true }));
+  board.traverse((o) => { if (o.isMesh && o.material?.color && o !== board.children[0]) { o.material = o.material.clone(); o.material.emissive = o.material.color.clone(); o.material.emissiveIntensity = 0; streetGlow.push({ isEmissive: true, m: o.material }); } });
   board.position.set(19.5, 0, 16.9); board.rotation.y = Math.PI; scene.add(board);
+  const boardLamp = new THREE.PointLight(0xfff0d0, 0, 5, 1.6); boardLamp.position.set(19.5, 2.5, 16.3); scene.add(boardLamp); streetGlow.push(boardLamp);
   collide(18.3, 16.75, 20.7, 17.05);
   interact(board, { range: 3, prompt: () => 'Read the notice board<small>Hire helpers</small>', use: () => LC.game.openScreen('board') });
   const pb = add(M.phoneBox(), -15.6, 0, 17.2); collide(-16.2, 16.6, -15, 17.8);
@@ -1665,11 +1679,56 @@ function makeVisitor(kind) {
   return M.person({ shirt: 0x7a7a7a, legs: 0x333333, hat: 'beanie' });
 }
 let talker = null;
+// turn the camera smoothly to look someone in the face when they start talking to you
+let faceTurn = null;
+function faceTowards(o) {
+  const p = o.getWorldPosition(new THREE.Vector3());
+  const dx = p.x - player.pos.x, dz = p.z - player.pos.z, d = Math.hypot(dx, dz);
+  let yaw = Math.atan2(-dx, -dz); while (yaw - player.yaw > Math.PI) yaw -= Math.PI * 2; while (yaw - player.yaw < -Math.PI) yaw += Math.PI * 2;
+  const headY = p.y + (o.userData.person ? 1.45 : 0.6);
+  faceTurn = { yaw, pitch: Math.max(-0.6, Math.min(0.5, Math.atan2(headY - (player.pos.y + eye), Math.max(0.5, d)))), t: 0 };
+}
+function updateFaceTurn(dt) {
+  if (!faceTurn) return;
+  faceTurn.t += dt; const k = Math.min(1, dt * 6);
+  player.yaw += (faceTurn.yaw - player.yaw) * k; player.pitch += (faceTurn.pitch - player.pitch) * k;
+  if (faceTurn.t > 0.8) faceTurn = null;
+}
+// visitors walk up along a clear line: never through a wall, a house or a hedge
+function clearLine(a, b, r = 0.25) {
+  const n = Math.ceil(a.distanceTo(b) / 0.4);
+  for (let i = 0; i <= n; i++) { const t = i / n; if (blocked(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, r)) return false; }
+  return true;
+}
+function visitorRoute(flying) {
+  const fwd = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  // indoors at home: they come to the front door and in through the hall
+  if (area === 'town' && inHouse()) return { stand: new THREE.Vector3(3, 0, 3.4), from: new THREE.Vector3(3, 0, 9.5) };
+  const stands = [];
+  for (const a of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, Math.PI]) for (const d of [2.2, 1.6]) {
+    const dir = fwd.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), a);
+    const s = player.pos.clone().addScaledVector(dir, d); s.y = 0;
+    if (!blocked(s.x, s.z, 0.3) && clearLine(player.pos, s, 0.1)) stands.push(s);
+  }
+  for (const stand of stands) {
+    if (flying) return { stand, from: stand.clone().add(new THREE.Vector3(6, 0, 6)) };
+    const start = Math.random() * Math.PI * 2;
+    for (let i = 0; i < 16; i++) for (const len of [9, 6]) {
+      const a = start + (i / 16) * Math.PI * 2;
+      const from = stand.clone().add(new THREE.Vector3(Math.cos(a) * len, 0, Math.sin(a) * len));
+      if (!blocked(from.x, from.z, 0.3) && clearLine(from, stand)) return { stand, from };
+    }
+  }
+  // boxed in somewhere: they're just... there. You didn't see them come in.
+  const stand = stands[0] || player.pos.clone().addScaledVector(fwd, 1.4);
+  return { stand, from: stand.clone() };
+}
 function talkStart(kind, npc) {
   talkEnd(true);
   if ((kind === 'brian' && brian.obj) || npc) {
     // someone already in the world: they just turn to face you
     const o = npc || brian.obj;
+    faceTowards(o);
     talker = { kind, obj: o, persistent: true, head: 2.05, state: 'talk' };
     talker.update = () => {
       if (!talker || talker.obj !== o) return;
@@ -1683,15 +1742,10 @@ function talkStart(kind, npc) {
   }
   const o = makeVisitor(kind);
   const flying = kind === 'seagull';
-  const fwd = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
-  // stand about 2.2 m in front of the player, arriving from further away
-  let stand = player.pos.clone().addScaledVector(fwd, 2.2);
-  if (blocked(stand.x, stand.z, 0.3)) stand = player.pos.clone().addScaledVector(fwd, 1.4);
-  const side = new THREE.Vector3(fwd.z, 0, -fwd.x).multiplyScalar(Math.random() < 0.5 ? 1 : -1);
-  const from = stand.clone().addScaledVector(fwd, 5).addScaledVector(side, 4);
+  const { stand, from } = visitorRoute(flying);
   o.position.set(from.x, flying ? 7 : 0, from.z);
   scene.add(o);
-  talker = { kind, obj: o, stand, flying, state: 'arrive', t: 0, head: kind === 'nan' || kind === 'icecream' || kind === 'man' || kind === 'buttonman' || kind === 'brian' ? 1.95 : kind === 'goose' ? 1.15 : 1.0 };
+  talker = { kind, obj: o, stand, from, flying, state: 'arrive', t: 0, head: kind === 'nan' || kind === 'icecream' || kind === 'man' || kind === 'buttonman' || kind === 'brian' ? 1.95 : kind === 'goose' ? 1.15 : 1.0 };
   talker.update = (dt, t) => {
     const T = talker; if (!T || T.obj !== o) return;
     T.t += dt;
@@ -1738,8 +1792,9 @@ function talkEnd(now) {
   bubble(false);
   if (talker.persistent) { agents.splice(agents.indexOf(talker), 1); talker = null; return; }
   if (now) { scene.remove(talker.obj); agents.splice(agents.indexOf(talker), 1); talker = null; return; }
-  const away = talker.obj.position.clone().sub(player.pos).setY(0).normalize();
-  talker.exit = talker.obj.position.clone().addScaledVector(away, 25);
+  // leave the way they came (they know that way isn't through a wall)
+  if (talker.from && !talker.flying) talker.exit = talker.from.clone();
+  else { const away = talker.obj.position.clone().sub(player.pos).setY(0).normalize(); talker.exit = talker.obj.position.clone().addScaledVector(away, 25); }
   talker.state = 'leave';
 }
 
@@ -2644,14 +2699,16 @@ function addGrade() {
 // ---------- time of day: bright summer day, golden evening, dusk, then Mum calls you in ----------
 // keyframes: t, sun power, sun colour, sun height, hemi power, hemi sky, hemi ground, sky top, sky bottom, fog, cloud, cloud glow, exposure, vignette, grain, saturation, street lamps
 const SKY_KEYS = [
-  [0.00, 3.0, 0xffdcb0, 0.35, 1.0, 0xd8dce4, 0x9a7a52, 0x6a9ad0, 0xf2d8b8, 0xe8d6bc, 0xffffff, 0x705a50, 1.0, 0.35, 0.025, 1.18, 0],
-  [0.10, 4.2, 0xffe6c0, 0.6, 1.1, 0xd8e0e8, 0x9a7a52, 0x5a9ad8, 0xe8e0c8, 0xe0d8c4, 0xffffff, 0x8a8a90, 1.0, 0.32, 0.02, 1.24, 0],
-  [0.55, 4.0, 0xffdcb0, 0.5, 1.05, 0xd8e0e8, 0x9a7a52, 0x5a94d0, 0xeedcc0, 0xe2d6c0, 0xffffff, 0x8a8a90, 1.0, 0.32, 0.02, 1.22, 0],
-  [0.72, 3.4, 0xffc890, 0.3, 1.0, 0xb8c6e0, 0x5a4a3a, 0x3d64a0, 0xf6c49a, 0xe0b08a, 0xffe6cc, 0xa0705a, 0.97, 0.45, 0.035, 1.05, 0.4],
-  [0.84, 3.0, 0xffaa70, 0.16, 0.9, 0xa8bce0, 0x4a3a2e, 0x36588f, 0xf6b98a, 0xd89c78, 0xffe2c8, 0xb0705a, 0.95, 0.55, 0.045, 1.0, 1],
-  [1.00, 1.0, 0xff7a50, 0.05, 0.5, 0x5a6a9a, 0x2a2430, 0x141e48, 0xc0706a, 0x5a4a6a, 0x9a7a9a, 0x402a40, 0.9, 0.6, 0.05, 0.95, 1],
-  [1.06, 0.35, 0x9ab0ff, 0.5, 0.42, 0x3a4a8a, 0x1a1a2a, 0x060a20, 0x182040, 0x10162a, 0x3a4060, 0x101830, 0.95, 0.65, 0.05, 0.9, 1],
-  [1.30, 0.35, 0x9ab0ff, 0.5, 0.42, 0x3a4a8a, 0x1a1a2a, 0x060a20, 0x182040, 0x10162a, 0x3a4060, 0x101830, 0.95, 0.65, 0.05, 0.9, 1],
+  // softer than it was: less sun, more sky fill, so shadows aren't harsh and colours don't burn
+  [0.00, 2.2, 0xffdcb0, 0.35, 1.25, 0xd8dce4, 0x9a8a6a, 0x6a9ad0, 0xf2d8b8, 0xe8d6bc, 0xffffff, 0x705a50, 1.0, 0.3, 0.02, 1.1, 0],
+  [0.10, 2.9, 0xffe8c8, 0.6, 1.35, 0xdce4ec, 0x9a8a6a, 0x5a9ad8, 0xe8e0c8, 0xe0d8c4, 0xffffff, 0x8a8a90, 1.0, 0.28, 0.018, 1.12, 0],
+  [0.55, 2.8, 0xffe0b8, 0.5, 1.3, 0xdce4ec, 0x9a8a6a, 0x5a94d0, 0xeedcc0, 0xe2d6c0, 0xffffff, 0x8a8a90, 1.0, 0.28, 0.018, 1.1, 0],
+  [0.72, 2.5, 0xffc890, 0.3, 1.15, 0xb8c6e0, 0x6a5a4a, 0x3d64a0, 0xf6c49a, 0xe0b08a, 0xffe6cc, 0xa0705a, 0.98, 0.4, 0.03, 1.02, 0.4],
+  [0.84, 2.2, 0xffaa70, 0.16, 1.05, 0xa8bce0, 0x5a4a3e, 0x36588f, 0xf6b98a, 0xd89c78, 0xffe2c8, 0xb0705a, 0.98, 0.48, 0.04, 1.0, 1],
+  // dusk: blue moonlight comes up, street lamps on, still easy to see where you're going
+  [1.00, 0.9, 0xb0b8ff, 0.3, 0.8, 0x7a8ac0, 0x2a2a3a, 0x1a2a5a, 0x7a6a9a, 0x3a4a72, 0x9a9ab8, 0x2a2a48, 1.05, 0.5, 0.035, 0.95, 1],
+  [1.06, 0.7, 0xa8c0ff, 0.5, 0.7, 0x6a7ab8, 0x22222e, 0x0a1430, 0x2a3a62, 0x1a2440, 0x4a5070, 0x141c38, 1.08, 0.5, 0.035, 0.92, 1],
+  [1.30, 0.7, 0xa8c0ff, 0.5, 0.7, 0x6a7ab8, 0x22222e, 0x0a1430, 0x2a3a62, 0x1a2440, 0x4a5070, 0x141c38, 1.08, 0.5, 0.035, 0.92, 1],
 ];
 const MOODS = {
   storm: { sun: 0.35, hemi: 0.75, top: 0x3a4250, bottom: 0x7a8290, fog: 0x6a7280, cloud: 0x8a8f9a, sat: 0.8, lamps: 1 },
@@ -2695,7 +2752,7 @@ function updateSky(tod) {
   if (grainPass) { grainPass.uniforms.vig.value = n(13); grainPass.uniforms.grain.value = n(14); grainPass.uniforms.sat.value = mood ? mood.sat : n(15); }
   const lamps = mood ? mood.lamps : n(16);
   for (const l of indoorLamps) l.intensity = l.userData.base * (0.3 + 0.7 * lamps);
-  for (const g of streetGlow) { if (g.isPointLight) { g.visible = lamps > 0.05; g.intensity = 4 * lamps; } else g.material.opacity = 0.035 * lamps; }
+  for (const g of streetGlow) { if (g.isEmissive) g.m.emissiveIntensity = 0.45 * lamps; else if (g.isPointLight) { g.visible = lamps > 0.05; g.intensity = 9 * lamps; g.distance = g.distance > 6 ? 11 : g.distance; } else g.material.opacity = 0.05 * lamps; }
 }
 
 // a soft gradient sky dome with a few slow clouds
@@ -2732,6 +2789,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now; time += dt;
   if (menuCam) { menuT += dt; player.pos.set(-4 + Math.sin(menuT * 0.035) * 5, 0, 17.2); player.yaw = -0.35 + Math.sin(menuT * 0.05) * 0.3; player.pitch = 0.02; }
+  updateFaceTurn(dt);
   updatePlayer(dt);
   unstickPlayer(dt);
   updateDoors(dt);
@@ -2789,7 +2847,7 @@ function init() {
   // laptops can run out of graphics memory: save, drop to Low graphics and reload rather than freezing
   canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); if (LC.game.onContextLost) LC.game.onContextLost(); });
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;   // soft edges on shadows
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.95;
