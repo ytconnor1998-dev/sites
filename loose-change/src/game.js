@@ -763,7 +763,7 @@
     if (!quiet) toast(`${ic(ITEMS[id][0])}<div><b>${ITEMS[id][1]}</b> in your pocket.<br><small>Brian won't like this.</small></div>`);
   }
   const useItem = (id) => { if (!S.items[id]) return false; S.items[id]--; return true; };
-  const BRIAN_SECS = 3.6 * 3600; // unhindered and racing a player who is ahead, Brian gets there in about 2h45m
+  const BRIAN_SECS = 3.15 * 3600; // racing a player who is ahead, Brian gets there in about 2h25m: lazy players need pranks to win
   const brianActive = () => S.lifetime >= 20 && !endingPlaying;
   const brianMoney = () => Math.pow(10, 12 * Math.max(0, S.brian.p)) - 1;
   function brianTick(dt) {
@@ -2367,7 +2367,7 @@
     };
     // Balance bot: fast-forwards a run with the real economy, playing like a busy but not perfect player.
     // active = share of time spent rummaging, rhythm = average rummage multiplier from timing.
-    function simRun({ secs = 5 * 3600, active = 0.45, rhythm = 1.7, log = 600, incomes = null, payback = null } = {}) {
+    function simRun({ secs = 5 * 3600, active = 0.45, rhythm = 1.7, log = 600, incomes = null, payback = null, bonus = 1 } = {}) {
       if (incomes) LC.GENERATORS.forEach((g) => { if (incomes[g.id]) g.income = incomes[g.id]; });
       if (payback) LC.GENERATORS.forEach((g, i) => { g.income = g.cost / (payback[0] * Math.pow(payback[1], i)); });
       const marks = [], realNow = Date.now; let fake = realNow();
@@ -2390,7 +2390,7 @@
       for (; t < secs; t++) {
         if (S.money >= LC.THING_COST) break;
         fake += 1000; S.playSecs += 1;
-        gain(income()); addDepth(digRate()); brianTick(1);
+        gain(income() * bonus); addDepth(digRate()); brianTick(1);
         S.tod += 1 / DAY_SECS; if (S.tod >= 1) { S.tod = 0; S.day++; gain(lump(90, 1)); }
         clickAcc += active / 0.85;
         while (clickAcc >= 1) { clickAcc--; gain(clickValue() * rhythm); S.stats.clicks++; wear('sofa'); }
