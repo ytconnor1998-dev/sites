@@ -220,7 +220,7 @@ textarea { width: 100%; font: 13px monospace; border: var(--line); border-radius
 .prompt kbd { color: var(--gold); }
 .say { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%) translateY(10px); background: var(--card); border: var(--line); border-radius: 16px; padding: 10px 18px; font-weight: 600; font-size: 18px; box-shadow: var(--shadow); opacity: 0; transition: .2s; max-width: min(560px, 90vw); text-align: center; }
 .say.show { opacity: 1; transform: translateX(-50%); }
-.compass { position: absolute; left: 50%; top: 110px; transform: translateX(-50%); display: none; flex-direction: column; align-items: center; font-weight: 700; color: #fff; text-shadow: 0 0 4px var(--ink); }
+.compass { position: absolute; left: 50%; top: 152px; transform: translateX(-50%); display: none; flex-direction: column; align-items: center; font-weight: 700; color: #fff; text-shadow: 0 0 4px var(--ink); }
 .compass.show { display: flex; animation: glowpulse 1s infinite alternate; }
 .compass .arrow { width: 56px; height: 56px; display: grid; place-items: center; position: relative; }
 .compass .arrow::before { content: ''; position: absolute; top: -10px; left: 50%; margin-left: -9px; border: 9px solid transparent; border-bottom: 14px solid #ffd34d; filter: drop-shadow(0 0 2px var(--ink)); }
@@ -483,3 +483,7 @@ body.cutscene .hud, body.cutscene .news { opacity: 0; transition: opacity .6s; p
 .board-times .ic { width: 22px; height: 22px; }
 .board-times small { opacity: 0.6; }
 .bubble3d.mini.edge::after { display: none; } .bubble3d.mini.edge { opacity: 0.92; }
+
+.pause-save { margin: 6px 0 0; font-size: 13px; opacity: .75; }
+.pause-btns { display: flex; gap: 8px; justify-content: center; margin: 10px 0 14px; flex-wrap: wrap; }
+.modal-choices .btn small { opacity: .7; }

@@ -409,9 +409,9 @@ How much IS a trillion???
 
 // ---- Phone: text messages. Each arrives once its `when` is true. ----
 LC.TEXTS = [
-  { id: 'mum1', from: 'Mum', when: () => true, msgs: ['Morning love. Have you seen the big thing in the hall??', "Grandad's note says it's yours if you can pay for it. Good luck with that x"] },
+  { id: 'mum1', from: 'Mum', when: (s) => s.flags.tutorialDone, msgs: ['At work now love. Tea\'s in the freezer. It\'s a pie. Probably.', "Don't let Brian in. Don't dig up the garden. Love you x", 'Mum x'] },
   { id: 'nan1', from: 'Nan', when: (s) => s.lifetime >= 2, msgs: ['HELLO DEAR THIS IS NAN', 'HOW DO I TURN OFF CAPITALS', 'I have put a fiver aside for you. It is under the fiver I put aside last time.'] },
-  { id: 'brian1', from: 'Brian (next door)', when: (s) => s.lifetime >= 20, msgs: ["Just so you know, your grandad promised that Thing to ME.", "I'm saving up too. I have a spreadsheet.", "Good luck kiddo 🙂"] },
+  { id: 'brian1', from: 'Brian (next door)', when: (s) => s.flags.tutorialDone && s.lifetime >= 20, msgs: ["Lovely to meet you earlier. Just to reiterate: that Thing is MINE.", "I've updated the spreadsheet. It has a new tab now. The tab is called 'Victory'.", "Cheerio kiddo 🙂"] },
   { id: 'mum2', from: 'Mum', when: (s) => s.depth >= 0.5, msgs: ['Why is there a hole in the garden', 'Fill it in please', 'Is that my good spoon'] },
   { id: 'unknown1', from: 'Unknown number', when: (s) => s.lifetime >= 200, msgs: ['hello is this the sofa'] },
   { id: 'brother1', from: 'Little brother', when: (s) => (s.gens.brother || 0) >= 1, msgs: ["i am in the sofa", "it is dark", "i found a crisp", "i am staying here forever"] },

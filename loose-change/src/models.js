@@ -292,7 +292,7 @@ export function heldTool(kind, tier = 0) {
   const g = new THREE.Group();
   const handle = (len, col) => cyl(0.022, 0.026, len, col, 0, len / 2 - 0.1, 0);
   if (kind === 'sofa') {
-    if (tier === 0) { g.add(glove()); return g; }
+    if (tier === 0) return g; // bare hands: nothing on screen
     if (tier === 1) { g.add(handle(0.7, 0x888888), box(0.02, 0.12, 0.05, 0xf2b631, 0.02, 0.62, 0), box(0.02, 0.12, 0.05, 0xf2b631, -0.02, 0.62, 0), box(0.06, 0.1, 0.08, 0xd9534f, 0, -0.05, 0.05)); g.rotation.x = 1.0; return g; }
     if (tier === 2) { g.add(handle(0.6, 0x5b8bd9), box(0.18, 0.05, 0.08, 0x333333, 0, 0.55, 0.02), cyl(0.05, 0.05, 0.14, 0xd9534f, 0, -0.08, 0)); g.rotation.x = 1.0; return g; }
     g.add(box(0.26, 0.09, 0.08, 0x3fb3c9, 0, 0, 0, { mat: { emissive: 0x1a6a7a } })); return g;

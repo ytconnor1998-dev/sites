@@ -72,11 +72,41 @@
   let S = freshRun();
   LC.state = () => S;
 
+  let leaving = false; // set before a reload that swaps the save, so the unload save doesn't undo it
   function save() {
+    if (leaving) return;
     S.lastSave = Date.now();
     const json = JSON.stringify(S);
     try { localStorage.setItem(SAVE_KEY, json); } catch (e) { /* storage unavailable */ }
     try { globalThis.steam?.cloudSave(json); } catch (e) { /* not on Steam */ }
+  }
+  // three save slots on top of the autosave, from the pause screen
+  const slotKey = (i) => SAVE_KEY + '-slot' + i;
+  function slotData(i) { try { const d = JSON.parse(localStorage.getItem(slotKey(i))); return d && typeof d.money === 'number' ? d : null; } catch (e) { return null; } }
+  function slotLabel(i) {
+    const d = slotData(i);
+    if (!d) return `Slot ${i}: <i>empty</i>`;
+    const when = new Date(d.lastSave || 0).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `Slot ${i}: <b>${fmt(d.money)}</b> · run ${(d.runs || 0) + 1} · ${fmtTime(d.playSecs || 0)} · <small>${when}</small>`;
+  }
+  function swapSave(json) { leaving = true; try { localStorage.setItem(SAVE_KEY, json); } catch (e) { /* ignore */ } location.reload(); }
+  function saveMenu() {
+    save();
+    modal({ icon: '💾', title: 'Save game', text: 'Pick a slot. The game also saves itself every 10 seconds and whenever you close it, so this is for keeping a copy.',
+      choices: [1, 2, 3].map((i) => ({ label: slotLabel(i), fn: () => {
+        try { localStorage.setItem(slotKey(i), JSON.stringify(S)); renderSaveLine(); return { icon: '✅', text: `Saved to slot ${i}. Safe as houses.` }; } catch (e) { return { icon: '❌', text: 'Couldn\'t save. Your browser has storage switched off (private window?). Use a save code in Settings instead.' }; }
+      } })).concat([{ label: 'Never mind', cls: 'ghost' }]) });
+  }
+  function loadMenu() {
+    const full = [1, 2, 3].filter(slotData);
+    if (!full.length) { modal({ icon: '💾', title: 'Load game', text: 'No saved slots yet. Use <b>Save game</b> first. Your progress is autosaved anyway, so you\'ve lost nothing.' }); return; }
+    modal({ icon: '📂', title: 'Load game', text: 'Load a slot? Whatever you\'re doing now is replaced, so save it to a slot first if you want to keep it.',
+      choices: full.map((i) => ({ label: slotLabel(i), fn: () => swapSave(localStorage.getItem(slotKey(i))) })).concat([{ label: 'Never mind', cls: 'ghost' }]) });
+  }
+  function renderSaveLine() {
+    const line = $('#pause-save'); if (!line) return;
+    const ago = S.lastSave ? Math.round((Date.now() - S.lastSave) / 1000) : null;
+    line.innerHTML = ago == null ? 'Not saved yet' : `Run ${S.runs + 1} · ${fmt(S.money)} · saved ${ago < 5 ? 'just now' : ago < 60 ? ago + 's ago' : Math.round(ago / 60) + ' min ago'}`;
   }
   function load() {
     let raw = null;
@@ -2419,13 +2449,12 @@
       try {
         const data = JSON.parse(decodeURIComponent(escape(atob($('#save-code').value.trim()))));
         if (typeof data.money !== 'number') throw new Error('bad');
-        localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-        location.reload();
+        swapSave(JSON.stringify(data));
       } catch (e) { toast(`${ic('❌')}<div>That save code didn't work.</div>`); }
     };
     $('#set-reset').onclick = () => modal({ icon: '🔥', title: 'Wipe everything?', text: 'This deletes your save, endings and achievements. There is no undo.',
       choices: [
-        { label: 'Wipe it', cls: 'danger', fn: () => { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } location.reload(); } },
+        { label: 'Wipe it', cls: 'danger', fn: () => { leaving = true; try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } location.reload(); } },
         { label: 'Keep my coins', cls: 'ghost' },
       ] });
     $('#set-credits').onclick = () => modal({ icon: '📜', title: 'Credits',
@@ -2439,7 +2468,7 @@
   // ---------- boot ----------
   function onLockChange(locked) {
     if (locked) { $('#pause').classList.remove('show'); return; }
-    if (!screenOpen && !endingPlaying) $('#pause').classList.add('show');
+    if (!screenOpen && !endingPlaying) { save(); renderSaveLine(); $('#pause').classList.add('show'); }
   }
 
   function boot() {
@@ -2454,6 +2483,8 @@
     renderCard();
     if (!loaded || (!S.flags.tutorialDone && S.runs === 0)) setTimeout(tutorialStart, 800);
 
+    $('#pause-savebtn').onclick = (e) => { e.stopPropagation(); saveMenu(); };
+    $('#pause-loadbtn').onclick = (e) => { e.stopPropagation(); loadMenu(); };
     $('#pause').onclick = () => { LC.audio.unlock(); LC.audio.music(S.settings.music); LC.world.lock(); };
     $('#screen-close').onclick = back;
     $('#screen').addEventListener('mousedown', (e) => { if (e.target.id === 'screen') closeScreen(); });
@@ -2482,6 +2513,9 @@
     setInterval(tick, TICK_MS);
     setInterval(save, 10000);
     addEventListener('beforeunload', save);
+    addEventListener('pagehide', save);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+    renderSaveLine();
     addEventListener('resize', () => { if (card && !card.done && panelVisible('scratch')) renderCard(); });
 
     LC.game = {

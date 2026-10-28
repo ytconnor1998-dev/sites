@@ -41,6 +41,8 @@
     <div class="pause-card">
       <div class="logo"><img class="ic" src="assets/icons/1fa99.svg" alt=""> Loose <span>Change</span></div>
       <p class="click">Click to play</p>
+      <p id="pause-save" class="pause-save"></p>
+      <div class="pause-btns"><button id="pause-savebtn" class="btn small"><img class="ic" src="assets/icons/1f4be.svg" alt=""> Save game</button><button id="pause-loadbtn" class="btn small ghost"><img class="ic" src="assets/icons/1f4c2.svg" alt=""> Load game</button></div>
       <div class="controls">
         <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Walk</div>
         <div><kbd>Mouse</kbd> Look</div>
@@ -144,7 +146,7 @@
         <label class="set"><input type="checkbox" id="set-timer"> Speedrun timer</label>
         <label class="set">Mouse sensitivity <input type="range" id="set-sens" min="0.2" max="3" step="0.1"></label>
         <div class="sub-title">Save</div>
-        <p class="muted small">The game saves by itself every 10 seconds.</p>
+        <p class="muted small">The game saves by itself every 10 seconds and when you close it. Save slots are on the pause screen (Esc). A save code moves your game to another computer or browser.</p>
         <textarea id="save-code" rows="3" placeholder="Paste a save code here to load it"></textarea>
         <div class="btn-row">
           <button id="set-export" class="btn small">Copy save code</button>

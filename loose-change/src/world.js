@@ -134,6 +134,11 @@ function buildLevel() {
     const r = new THREE.Mesh(new THREE.BoxGeometry(14.8, 0.2, 6.2), roofMat);
     r.position.set(0, 3.95, s * 2.75); r.rotation.x = s * 0.42; r.castShadow = true; scene.add(r);
   }
+  // soffit and fascia under the eaves, so the underside of the roof isn't a black band from the street
+  for (const s of [-1, 1]) {
+    scene.add(M.box(14.9, 0.06, 0.62, wc, 0, 2.86, s * 5.33, { shadow: false }));
+    scene.add(M.box(14.9, 0.26, 0.06, 0xf7f1e4, 0, 2.8, s * 5.63, { shadow: false }));
+  }
   // gable ends: triangles from the top of the walls up to the ridge
   const tri = new THREE.Shape([new THREE.Vector2(-5.1, 0), new THREE.Vector2(5.1, 0), new THREE.Vector2(0, 2.35)]);
   const gableGeo = new THREE.ExtrudeGeometry(tri, { depth: 0.2, bevelEnabled: false });
@@ -1971,10 +1976,8 @@ function buildViewModel() {
 function viewMesh(kind, tier) {
   const key = kind + tier;
   if (!view.meshes[key]) {
-    const m = kind === 'hand' ? M.glove() : M.heldTool(kind, tier);
-    if (kind !== 'hand' && !(kind === 'sofa' && tier === 0)) {
-      const hand = M.glove(); hand.position.set(0, 0, 0.02); hand.rotation.x = -0.4; m.add(hand);
-    }
+    // no arm on screen: an empty hand shows nothing, tools float in view on their own
+    const m = kind === 'hand' ? new THREE.Group() : M.heldTool(kind, tier);
     m.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
     m.visible = false;
     view.group.add(m);
@@ -2547,7 +2550,15 @@ LC.worldReady = (async () => {
     const manifest = await res.json(), loader = new GLTFLoader(), seen = {};
     THREE.Cache.enabled = true;
     // each file loads once, even if several groups list it
-    const load = (f) => (seen[f] = seen[f] || loader.loadAsync('assets/models/' + f).then((g) => { g.scene.userData.anims = g.animations; return g.scene; }));
+    // a .glb.txt is the same model as base64 text, for hosts that won't serve .glb
+    const get = async (f) => {
+      const url = 'assets/models/' + f;
+      if (!f.endsWith('.txt')) return loader.loadAsync(url);
+      const b64 = await (await fetch(url)).text(), bin = atob(b64.trim()), buf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      return loader.parseAsync(buf.buffer, url.slice(0, url.lastIndexOf('/') + 1));
+    };
+    const load = (f) => (seen[f] = seen[f] || get(f).then((g) => { g.scene.userData.anims = g.animations; return g.scene; }));
     await Promise.all(Object.entries(manifest).flatMap(([kind, files]) => files.map(async (f) => {
       try { const sc = await load(f); (M.lib[kind] = M.lib[kind] || []).push(sc); } catch (e) { console.warn('model failed', f, e.message); }
     })));
