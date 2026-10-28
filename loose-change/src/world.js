@@ -250,7 +250,7 @@ function buildLevel() {
   shopSign.position.set(0, 3.9, sz0 - 0.2); scene.add(shopSign);
   for (const s of [-1, 1]) add(M.box(2.6, 1.4, 0.05, M.displayMat('charity'), 0, 0, 0, { shadow: false, sharp: true }), s * 3, 1.6, sz0 - 0.12, Math.PI);
   const counter = add(M.counter(4), 0, 0, 23.6); collideObj(counter);
-  const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222 }), 0, 0, 24.6, Math.PI); spots.keeper = keeper;
+  const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222, char: 'b' }), 0, 0, 24.6, Math.PI); spots.keeper = keeper;
   agents.push({ obj: keeper, update: (dt, t) => { keeper.rotation.y = Math.PI + Math.sin(t * 0.7) * 0.3; } });
   interact(counter, { range: 3, prompt: () => 'Shop counter<small>Treats for helpers and scratch cards</small>', use: () => LC.game.openScreen('corner') });
   interact(keeper, { range: 3.5, prompt: () => 'Talk to the shopkeeper', use: () => LC.game.openScreen('corner') });
@@ -394,7 +394,7 @@ function buildCoast() {
   const sign = M.signPlane('COD ALMIGHTY · FISH & CHIPS', 2.9, 0.4, { bg: '#fffaf0', color: '#1d4a7a' }); sign.position.set(0, 2.85, 0.9); hut.add(sign);
   collide(76.4, 7.4, 79.6, 9.8);
   for (const [k, x, z] of [['kk:crate_potatoes', 76.2, 10.1], ['kk:crate', 76.3, 11], ['kk:crate_potatoes', 79.8, 10.2]]) { const c = M.fit(k, { w: 0.6 }); if (c) add(c, x, 0, z, Math.random()); }
-  const chippy = M.person({ shirt: 0xffffff, legs: 0x333333, char: 'e' }); add(chippy, 78, 0, 10.2, 0);
+  const chippy = M.person({ shirt: 0xffffff, legs: 0x333333, char: 'i' }); add(chippy, 78, 0, 10.2, 0);
   interact(chippy, { range: 3, prompt: () => 'Buy chips<small>Salt and vinegar, obviously</small>', use: () => LC.game.chips(chippy) });
   // Captain Pete, fishing off the end of the dock
   const pete = M.person({ char: 'p', shirt: 0x1d3a6a }); add(pete, DOCK.x1 - 1.5, 0.12, 13, -Math.PI / 2);
@@ -881,6 +881,15 @@ function setSkyMood(mood) {
   skyMood = mood;
   scene.traverse((o) => { if (o.isPointLight && !o.userData.area && !streetGlow.includes(o)) o.visible = mood !== 'powercut'; });
 }
+// at night the town empties and Brian goes to sleep on his sofa
+const townsfolk = [];
+let isNightNow = false;
+function setNight(on) {
+  if (on === isNightNow) return;
+  isNightNow = on;
+  for (const o of townsfolk) { o.visible = !on; if (on) { o.userData.dayPos = o.position.clone(); o.position.y = -50; } else if (o.userData.dayPos) o.position.copy(o.userData.dayPos); }
+  if (brian.obj) { brian.asleep = on; if (on) { brian.obj.position.copy(brianSpots.seat); brian.path = []; brian.sitting = true; } else setBrianState('home'); }
+}
 function brianBBQ(on) {
   brian.bbq = on;
   if (on) { brian.obj.position.set(brianSpots.doorX + 2.2, 0, 7.4); brian.path = []; brian.sitting = false; }
@@ -1010,7 +1019,7 @@ function buildTown() {
     const ramp = M.fit('skate:ramp', { w: 2 }); if (ramp) { add(ramp, 65, 0, 33, Math.PI / 2); collideObj(ramp); }
     const box2 = M.fit('skate:obstacle-box', { w: 2 }); if (box2) { add(box2, 70, 0, 33); collideObj(box2); }
     const rail = M.fit('skate:rail-low', { h: 0.45 }); if (rail) add(rail, 68, 0, 36);
-    const skater = M.person({ char: 'n', height: 0.8 }); add(skater, 66.5, 0, 36.5); walker(skater, [{ x0: 64, x1: 72, z0: 34, z1: 38 }], 2.6, { pause: 1 });
+    const skater = M.person({ char: 'b', height: 0.8 }); add(skater, 66.5, 0, 36.5); walker(skater, [{ x0: 64, x1: 72, z0: 34, z1: 38 }], 2.6, { pause: 1 });
     interact(skater, { range: 2.6, prompt: () => 'Talk to the skater', use: () => voice(skater, pick(['"Bruv, I\'ve been tryin\' this kickflip since March. MARCH."', '"Skate park\'s better than the actual park. The actual park has a goose in it."', '"Found a quid under the half-pipe once. Bought a Freddo. Life peaked, innit."']), 'Skater') });
   }
   if (M.lib['boat:boat-row-small']) {
@@ -1023,18 +1032,18 @@ function buildTown() {
   // ---- townsfolk, wandering about ----
   const pave = [{ x0: -60, x1: 60, z0: 8.5, z1: 9.4 }, { x0: -60, x1: 60, z0: 16.6, z1: 17.4 }];
   const folk = [
-    { look: { shirt: 0xd9534f, legs: 0x222222, hat: 'cap' }, speed: 3.2, zone: pave, lines: 'jogger' },
-    { look: { shirt: 0x6a8a4a, legs: 0x5a4a3a, hair: 0xcccccc }, speed: 0.9, zone: spots.park, lines: 'oldman', dog: true },
-    { look: { shirt: 0xc8231f, legs: 0x2a3a5a, hat: 'cap' }, speed: 1.6, zone: pave, lines: 'postman' },
-    { look: { shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a }, speed: 1.1, zone: pave, lines: 'mum', pram: true },
-    { look: { shirt: 0x3a7bd5, legs: 0x3a3f58, hair: 0x222222, height: 0.7 }, speed: 1.8, zone: spots.park, lines: 'kid' },
+    { look: { shirt: 0xd9534f, legs: 0x222222, hat: 'cap', char: 'b' }, speed: 3.2, zone: pave, lines: 'jogger' },
+    { look: { shirt: 0x6a8a4a, legs: 0x5a4a3a, hair: 0xcccccc, char: 'a' }, speed: 0.9, zone: spots.park, lines: 'oldman', dog: true },
+    { look: { shirt: 0xc8231f, legs: 0x2a3a5a, hat: 'cap', char: 'm' }, speed: 1.6, zone: pave, lines: 'postman' },
+    { look: { shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a, char: 'f' }, speed: 1.1, zone: pave, lines: 'mum', pram: true },
+    { look: { shirt: 0x3a7bd5, legs: 0x3a3f58, hair: 0x222222, height: 0.7, char: 'c' }, speed: 1.8, zone: spots.park, lines: 'kid' },
     { look: { shirt: 0x9b59b6, legs: 0x5a4a6a, hat: 'bun', height: 0.92 }, speed: 0.7, zone: pave, lines: 'lady' },
   ];
   for (const f of folk) {
     const o = add(M.person(f.look), 0, 0, 0);
     o.position.copy(randomIn(f.zone));
     if (f.pram) { const pr = M.pram(); pr.position.set(0, 0, 0.8); o.add(pr); }
-    walker(o, f.zone, f.speed, { pause: 4 });
+    walker(o, f.zone, f.speed, { pause: 4 }); townsfolk.push(o);
     interact(o, { range: 2.6, slot: true, prompt: () => LC.game.friendPrompt(f.lines), use: () => LC.game.chat(f.lines, o), alt: () => LC.game.gift(f.lines, o) });
     if (f.dog) {
       const dg = add(M.dog(), o.position.x + 1, 0, o.position.z);
@@ -1104,7 +1113,7 @@ function buildBrianHouse(h) {
 // Brian's day: at home (sofa, desk, fridge), out mowing the front lawn, then off to the shops and back.
 const brian = { obj: null, state: 'home', t: 0, path: [], speed: 1.6, sitting: false, suspicion: 0, mower: null, busy: false };
 function buildBrian() {
-  const o = M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08 });
+  const o = M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08, char: 'k' });
   o.add(M.moustache());
   o.position.set(brianSpots.seat.x + 1.5, 0, 0);
   scene.add(o);
@@ -1138,6 +1147,7 @@ function brianUpdate(dt, t) {
   const o = brian.obj;
   if (talker && talker.obj === o) return; // talking to you
   if (brian.bbq) { o.rotation.y = Math.sin(t) * 0.5; limbs(o, 0); LC.game.setSuspicion(0, false); return; }
+  if (brian.asleep) { M.playAnim(o, 'sit'); LC.game.setSuspicion(0, false); if (Math.random() < 0.004 && o.position.distanceTo(player.pos) < 8) speak(o, pick(['Zzzz...', 'Zzz... mine... the Thing is mine... zzz', '*snores like a lawnmower*', 'Zzz... gnome log... zzz']), 'Brian'); return; }
   brian.t += dt;
   // follow the current path
   if (brian.path.length) {
@@ -1417,14 +1427,14 @@ function gooseUpdate(dt, t) {
 // Characters that come and talk to you: they walk (or fly) up, chat in a speech bubble, then leave.
 const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk', shopkeeper: 'babble', piggy: 'oink', dev: 'babble', mum: 'babbleHigh', aussie: 'babbleLow', pirate: 'babbleLow' };
 function makeVisitor(kind) {
-  if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92 });
+  if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92, char: 'f' });
   if (kind === 'badger') { const o = M.badger(); o.scale.setScalar(1.4); const tie = M.box(0.06, 0.18, 0.02, 0xc8231f, 0, 0.28, 0.62); o.add(tie); return o; }
   if (kind === 'fox') { const o = M.cat(0xe0662a); o.scale.setScalar(1.6); return o; }
   if (kind === 'seagull') { const o = M.pigeon(); o.scale.setScalar(3.2); o.traverse((m) => { if (m.material && m.material.color && m.material.color.getHex() === 0x8d93a3) m.material = M.mat(0xffffff); }); return o; }
   if (kind === 'goose') return M.goose();
   if (kind === 'buttonman') return M.person({ shirt: 0x333355, legs: 0x333355, height: 1.25, hat: 'cap' });
   if (kind === 'icecream') return M.person({ shirt: 0xffffff, legs: 0xf7a8bd, hat: 'cap' });
-  if (kind === 'brian') return M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08 });
+  if (kind === 'brian') return M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08, char: 'k' });
   if (kind === 'coin') { const g = new THREE.Group(); const c = M.coin(0.35); c.rotation.x = Math.PI / 2; c.position.y = 0.5; g.add(c, M.ball(0.05, 0x2d2118, -0.1, 0.58, 0.07), M.ball(0.05, 0x2d2118, 0.1, 0.58, 0.07)); return g; }
   return M.person({ shirt: 0x7a7a7a, legs: 0x333333, hat: 'beanie' });
 }
@@ -1605,7 +1615,7 @@ function cutActor(kind) {
   let o;
   if (kind === 'shopkeeper') { o = M.person({ shirt: 0x3a6ea5, legs: 0x333333, hair: 0x333333, height: 1.05 }); o.add(M.box(0.36, 0.5, 0.04, 0xffffff, 0, 0.95, 0.15)); }
   else if (kind === 'dev') { o = M.person({ shirt: 0x2a2a2a, legs: 0x3a3f58, hat: 'beanie' }); }
-  else if (kind === 'mum') o = M.person({ shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a });
+  else if (kind === 'mum') o = M.person({ shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a, char: 'e' });
   else if (kind === 'aussie') { o = M.person({ shirt: 0xc8a050, legs: 0x6a5a3a, hat: 'cap', hair: 0xd8b060 }); }
   else if (kind === 'goose') { o = M.goose(); o.scale.setScalar(1.8); }
   else o = makeVisitor(kind);
@@ -2080,12 +2090,19 @@ function spawnActor(kind, x, z) {
       const tg = a.path[0], d = new THREE.Vector3(tg[0] - o.position.x, 0, tg[1] - o.position.z);
       if (d.length() < 0.15) { a.path.shift(); if (!a.path.length && a.then) a.then(); return; }
       d.normalize(); o.position.addScaledVector(d, 1.6 * dt); o.rotation.y = Math.atan2(d.x, d.z); limbs(o, Math.sin(t * 9));
-    } else { o.rotation.y += ((Math.atan2(player.pos.x - o.position.x, player.pos.z - o.position.z) - o.rotation.y + Math.PI * 3) % (Math.PI * 2) - Math.PI) * Math.min(1, dt * 3); limbs(o, 0); }
+    } else if (!a.sit) { o.rotation.y += ((Math.atan2(player.pos.x - o.position.x, player.pos.z - o.position.z) - o.rotation.y + Math.PI * 3) % (Math.PI * 2) - Math.PI) * Math.min(1, dt * 3); limbs(o, 0); }
   } };
   agents.push(a); o.userData.actor = a;
   return o;
 }
-function walkActor(o, path, then) { const a = o.userData.actor; a.path = path.map((p) => p.slice()); a.then = then; }
+function sitActor(o, yaw) { o.userData.actor.path = []; o.userData.actor.sit = true; o.rotation.y = yaw; M.playAnim(o, 'sit'); }
+const HOUSE = { x0: -7, x1: 7, z0: -5, z1: 5 };
+function inHouse() { return area === 'loft' || (area === 'town' && player.pos.x > HOUSE.x0 && player.pos.x < HOUSE.x1 && player.pos.z > HOUSE.z0 && player.pos.z < HOUSE.z1); }
+function sendHome(quiet) {
+  const f = document.getElementById('fade'); f.classList.add('show');
+  setTimeout(() => { if (area !== 'town') { area = 'town'; scene.traverse((ob) => { if (ob.isPointLight) ob.visible = !ob.userData.area; }); } player.pos.set(-3.5, 0, 0.6); player.yaw = Math.PI; player.pitch = -0.1; if (!quiet) f.classList.remove('show'); }, 500);
+}
+function walkActor(o, path, then) { const a = o.userData.actor; a.sit = false; a.path = path.map((p) => p.slice()); a.then = then; }
 function removeActor(o) { scene.remove(o); const i = agents.indexOf(o.userData.actor); if (i >= 0) agents.splice(i, 1); }
 
 function goldenBearing() {
@@ -2305,6 +2322,8 @@ const SKY_KEYS = [
   [0.72, 3.4, 0xffc890, 0.3, 1.0, 0xb8c6e0, 0x5a4a3a, 0x3d64a0, 0xf6c49a, 0xe0b08a, 0xffe6cc, 0xa0705a, 0.97, 0.45, 0.035, 1.05, 0.4],
   [0.84, 3.0, 0xffaa70, 0.16, 0.9, 0xa8bce0, 0x4a3a2e, 0x36588f, 0xf6b98a, 0xd89c78, 0xffe2c8, 0xb0705a, 0.95, 0.55, 0.045, 1.0, 1],
   [1.00, 1.0, 0xff7a50, 0.05, 0.5, 0x5a6a9a, 0x2a2430, 0x141e48, 0xc0706a, 0x5a4a6a, 0x9a7a9a, 0x402a40, 0.9, 0.6, 0.05, 0.95, 1],
+  [1.06, 0.35, 0x9ab0ff, 0.5, 0.42, 0x3a4a8a, 0x1a1a2a, 0x060a20, 0x182040, 0x10162a, 0x3a4060, 0x101830, 0.95, 0.65, 0.05, 0.9, 1],
+  [1.30, 0.35, 0x9ab0ff, 0.5, 0.42, 0x3a4a8a, 0x1a1a2a, 0x060a20, 0x182040, 0x10162a, 0x3a4060, 0x101830, 0.95, 0.65, 0.05, 0.9, 1],
 ];
 const MOODS = {
   storm: { sun: 0.35, hemi: 0.75, top: 0x3a4250, bottom: 0x7a8290, fog: 0x6a7280, cloud: 0x8a8f9a, sat: 0.8, lamps: 1 },
@@ -2314,7 +2333,22 @@ const MOODS = {
 const sunDir = new THREE.Vector3(-0.75, 0.37, 0.5);
 const _c1 = new THREE.Color(), _c2 = new THREE.Color();
 const lerpHex = (target, a, b, f) => target.set(_c1.setHex(a).lerp(_c2.setHex(b), f));
+let stars = null, moon = null;
+function buildNightSky() {
+  const n = 900, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, e = 0.12 + Math.random() * 1.3; pos[i * 3] = Math.cos(a) * Math.cos(e) * 260; pos[i * 3 + 1] = Math.sin(e) * 260; pos[i * 3 + 2] = Math.sin(a) * Math.cos(e) * 260; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+  moon = new THREE.Mesh(new THREE.SphereGeometry(9, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff4d8, fog: false, transparent: true, opacity: 0 }));
+  moon.position.set(-120, 150, -160); stars.userData.noAO = true; moon.userData.noAO = true;
+  scene.add(stars, moon);
+}
 function updateSky(tod) {
+  if (!stars) buildNightSky();
+  const nightK = Math.max(0, Math.min(1, (tod - 0.95) / 0.1));
+  stars.material.opacity = area === 'town' ? nightK : 0; moon.material.opacity = area === 'town' ? nightK : 0;
+  stars.position.copy(camera.position); moon.visible = stars.visible = nightK > 0.01;
+  setNight(nightK > 0.5);
   if (area !== 'town') return;
   let i = 0; while (i < SKY_KEYS.length - 2 && tod > SKY_KEYS[i + 1][0]) i++;
   const A = SKY_KEYS[i], B = SKY_KEYS[i + 1], f = Math.min(1, Math.max(0, (tod - A[0]) / (B[0] - A[0])));
@@ -2476,7 +2510,7 @@ LC.world = {
   syncHelpers,
   setPig,
   setGoose,
-  talkStart, talkSay, talkEnd, evolve, speak, voice, washAshore, showTreasure, inSea: () => inSea(player.pos.x, player.pos.z), guide, near, spawnActor, walkActor, removeActor, setSiteOpen, keeper: () => spots.keeper,
+  talkStart, talkSay, talkEnd, evolve, speak, voice, washAshore, sitActor, inHouse, sendHome, nearObj: (o, d) => o && o.position.distanceTo(player.pos) < d, showTreasure, inSea: () => inSea(player.pos.x, player.pos.z), guide, near, spawnActor, walkActor, removeActor, setSiteOpen, keeper: () => spots.keeper,
   townEvent, treasureReveal, treasureSpot: () => ev.spot, eventId: () => ev.id, onFilmMark: () => !!(ev.group && ev.group.userData.xmark && player.pos.distanceTo(ev.group.userData.xmark) < 1.2),
   startCard, cardActive: () => card.active,
   isUnderground: () => area === 'under',

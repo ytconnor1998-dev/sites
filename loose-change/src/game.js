@@ -146,7 +146,7 @@
   function clickValue() {
     const mult = (eff('sofa').mult || 1) * karmaMult();
     const pct = eff('sofa').pct || 0;
-    return ((0.01 + Math.random() * 0.04) * mult + baseIncome() * pct) * buffMult('click') * (evening() ? (chal('nightowl') ? 3 : 1.5) : 1) * (chal('diy') ? 3 : 1);
+    return ((0.01 + Math.random() * 0.04) * mult + baseIncome() * pct) * buffMult('click') * (night() ? 2 : evening() ? (chal('nightowl') ? 3 : 1.5) : 1) * (chal('diy') ? 3 : 1);
   }
   const costMult = () => buffMult('cost') * (hasPerk('haggler') ? 0.9 : 1);
   const hasPerk = (id) => S.perks.includes(id);
@@ -668,7 +668,7 @@
   function stallTick(dt) {
     if (!stallItems().length) return;
     if (S.stallUps.includes('lemonade') && LC.world.nearStall(8)) gain(baseIncome() * 0.1 * dt);
-    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1) * (chal('skinflint') ? 2 : 1) * (S.tod < 0.7 ? 1.2 : S.tod < 0.84 ? 0.9 : 0.5);
+    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1) * (chal('skinflint') ? 2 : 1) * (S.tod < 0.7 ? 1.2 : S.tod < 0.84 ? 0.9 : S.tod < 1 ? 0.5 : 0.05);
     if (S.stallUps.includes('sign')) rate *= 1.4;
     if (S.stallUps.includes('parasol')) rate *= 1.3;
     if (S.stallUps.includes('bell')) rate *= 2;
@@ -1013,6 +1013,7 @@
   // ---------- the kitchen ----------
   function jarPrompt() { const w = waitFor('jar'); return w ? `Mum's change jar<small>Empty. She'll top it up later (${w}s)</small>` : "Take some coins from Mum's change jar<small>She won't notice. Probably.</small>"; }
   function kitchenJar() {
+    if (S.mumAt === 'home' && mumObj && LC.world.nearObj(mumObj, 7)) { LC.audio.sfx('nope'); LC.world.speak(mumObj, pick(['OI. I SAW that.', 'Hand. Out. Of. The. Jar.', 'I count that jar every night, you know. EVERY night.']), 'Mum'); S.money *= 0.97; return; }
     if (!ready('jar', 150)) { LC.audio.sfx('nope'); return; }
     const n = lump(60, 0.8); gain(n); floatAt(null, n); LC.audio.sfx('coin');
     S.stats.jar = (S.stats.jar || 0) + 1;
@@ -1265,16 +1266,68 @@
   // ---------- the day: 07:00 to 22:00 in about 16 minutes, then Mum calls you in ----------
   const DAY_SECS = 16 * 60;
   const evening = () => S.tod >= 0.7;
-  function clockText() { const mins = 7 * 60 + Math.floor(S.tod * 15 * 60); return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`; }
+  const NIGHT_END = 1.3; // 07:00 at 0, 22:00 at 1, 02:30 at 1.3
+  const night = () => S.tod >= 1;
+  function clockText() { const mins = (7 * 60 + Math.floor(S.tod * 15 * 60)) % (24 * 60); return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`; }
   function dayTick(dt) {
     const before = S.tod;
     S.tod += dt / DAY_SECS * (chal('nightowl') ? 2 : 1);
     if (before < 0.7 && S.tod >= 0.7) toast(`${ic('🌇')}<div><b>It's getting late.</b><br><small>Everyone's indoors watching telly. Sofa rummaging ×1.5, fewer stall customers.</small></div>`);
     if (before < 0.95 && S.tod >= 0.95) { LC.audio.sfx('text'); toast(`${ic('💬')}<div><b>Mum</b><br><small>Bedtime in 5 minutes. I mean it this time.</small></div>`, 'msg'); }
-    if (S.tod >= 1 && !modalOpen && !screenOpen && !endingPlaying) newDay();
+    if (before < 1 && S.tod >= 1) toast(`${ic('🌙')}<div><b>Night time.</b><br><small>Mum's in bed. Brian's asleep. Everyone is. The sofa's all yours (×2)... if you don't get caught out of bed.</small></div>`, 'gold');
+    mumTick(dt);
+    if (S.tod >= NIGHT_END && !modalOpen && !screenOpen && !endingPlaying) newDay();
+  }
+  // ---------- Mum: home in the morning, at work all day, home in the evening, bed at ten ----------
+  let mumObj = null, mumCheck = 30;
+  const mumLines = {
+    leave: ['Right, I\'m off to work! Don\'t burn the house down. Don\'t let Brian in. Don\'t touch my change jar.', 'Off to work, love! There\'s beans in the cupboard. Don\'t eat them cold. You\'re going to eat them cold.', 'Work! Back at six. If the goose comes back, DO NOT engage.'],
+    home: ['I\'m HOME! Why is there a hole in the garden? Don\'t answer that.', 'Evening, love! What a day. Kettle on? Kettle on.', 'Home! Has Brian been round? He has, hasn\'t he. I can smell his aftershave.'],
+    cook: ['Fish fingers tonight. And peas. Don\'t give me that face.', 'Tea\'s nearly ready! Wash your hands. Both of them.'],
+    telly: ['Shh, my programme\'s on.', 'Ooh, he\'s not going to marry HER, is he?', 'Do you mind? I\'m watching this.'],
+    bed: ['BEDTIME! Teeth! Pyjamas! Bed! NOW!', 'Bed. Now. I mean it. I MEAN it this time.'],
+  };
+  function mumSayLine(kind) { if (mumObj) { LC.world.speak(mumObj, pick(mumLines[kind]), 'Mum'); LC.audio.sfx('babbleHigh'); } }
+  function mumTick(dt) {
+    if (tut || endingPlaying) return;
+    const st = S.mumAt || 'home';
+    if (st === 'home' && !mumObj && S.tod < 0.1) { mumObj = LC.world.spawnActor('mum', 4.2, -3.0); }
+    if (st === 'home' && S.tod >= 0.1 && S.tod < 0.7) {
+      if (!mumObj) mumObj = LC.world.spawnActor('mum', 4.2, -3.0);
+      mumSayLine('leave'); S.mumAt = 'work';
+      const m = mumObj; mumObj = null;
+      LC.world.walkActor(m, [[3, 3.5], [3, 5.6], [3, 8.8], [30, 8.8]], () => LC.world.removeActor(m));
+    }
+    if (st === 'work' && S.tod >= 0.733 && S.tod < 1) {
+      S.mumAt = 'home';
+      mumObj = LC.world.spawnActor('mum', 26, 8.8);
+      const m = mumObj;
+      LC.world.walkActor(m, [[3, 8.8], [3, 5.6], [3, 3.5], [4.2, -3.0]], () => { mumSayLine('home'); setTimeout(() => mumSayLine('cook'), 9000); });
+      toast(`${ic('🏠')}<div><b>Mum's home from work.</b><br><small>Hands off the change jar while she's about.</small></div>`, 'msg');
+    }
+    if (S.mumAt === 'home' && mumObj && S.tod >= 0.866 && !S.mumTelly) { S.mumTelly = true; const m = mumObj; LC.world.walkActor(m, [[2.4, 0.2], [-1, 0.2], [-5.4, 1.4]], () => { LC.world.sitActor(m, -Math.PI / 2); }); }
+    if (S.mumAt === 'home' && mumObj && S.mumTelly && chance(dt / 50)) mumSayLine('telly');
+    if (S.mumAt === 'home' && S.tod >= 1) {
+      mumSayLine('bed'); if (!LC.world.near('sofa', 12)) toast(`${ic('💬')}<div><b>Mum</b><br><small>BEDTIME! Teeth! Pyjamas! Bed! NOW!</small></div>`, 'msg');
+      S.mumAt = 'bed'; S.mumTelly = false;
+      const m = mumObj; mumObj = null; setTimeout(() => m && LC.world.removeActor(m), 2500);
+    }
+    // at night she might check your room. Be in the house.
+    if (S.mumAt === 'bed' && night()) {
+      mumCheck -= dt;
+      if (mumCheck <= 0) { mumCheck = rand(35, 60); if (!LC.world.inHouse() && chance(0.35) && !modalOpen) caughtOut(); }
+    }
+  }
+  function caughtOut() {
+    const n = S.money * 0.05; S.money -= n;
+    LC.audio.sfx('nope');
+    modal({ speaker: 'mum', icon: '😠', title: 'Mum', text: `WHERE have you BEEN? It's gone midnight! Right. That's ${fmt(n)} in the swear jar. I don't care that you didn't swear. I'm about to.`,
+      choices: [{ label: 'Sorry Mum...', fn: () => { LC.world.sendHome(); return null; } }, { label: 'I was sleepwalking?', fn: () => { LC.world.sendHome(); return { text: '"Sleepwalking. Into a sewer. With a crowbar." She does not believe you. She is right not to.' }; } }] });
   }
   function newDay() {
-    S.tod = 0; S.day++;
+    S.tod = 0; S.day++; S.mumAt = 'home'; S.mumTelly = false;
+    if (mumObj) { LC.world.removeActor(mumObj); mumObj = null; }
+    LC.world.sendHome(true);
     const f = $('#fade'); f.classList.add('show');
     setTimeout(() => f.classList.remove('show'), 1400);
     const n = lump(90, 1); gain(n);
@@ -1373,6 +1426,7 @@
   ];
   function tutorialStart() {
     if (S.flags.tutorialDone || S.runs > 0) return;
+    S.mumAt = 'tutorial';
     tut = { i: -1 };
     mum = LC.world.spawnActor('mum', -1.6, 1.2);
     tutorialNext();
@@ -1386,7 +1440,7 @@
     taskKey = '';
   }
   function tutorialEnd() {
-    S.flags.tutorialDone = true; tut = null; LC.world.guide(null); taskKey = '';
+    S.flags.tutorialDone = true; tut = null; LC.world.guide(null); taskKey = ''; S.mumAt = 'work';
     if (mum) { const m = mum; LC.world.walkActor(m, [[2.4, 3.6], [3, 5.5], [3, 8.8], [20, 8.8]], () => LC.world.removeActor(m)); mum = null; }
     LC.audio.sfx('fanfare');
     toast(`${ic('🎓')}<div><b>That's the basics!</b><br><small>Follow your task list. Watch for things happening around town. Find the secrets. Beat Brian. And never stop checking the sofa.</small></div>`, 'gold');
@@ -1519,7 +1573,7 @@
     }
     T.next -= dt;
     // only start when you're in town and free, so you actually see it
-    if (T.next <= 0 && !modalOpen && !endingPlaying && LC.world.area() === 'town' && T.queue.length) townStart(T.queue.shift());
+    if (T.next <= 0 && !modalOpen && !endingPlaying && LC.world.area() === 'town' && T.queue.length && S.tod < 0.85) townStart(T.queue.shift());
   }
   function townStart(id) {
     const T = S.town, e = townDef(id);
@@ -1655,6 +1709,7 @@
     endingPlaying = true;
     if (tut) { tut = null; S.flags.tutorialDone = true; LC.world.guide(null); }
     if (mum) { LC.world.removeActor(mum); mum = null; }
+    if (mumObj) { LC.world.removeActor(mumObj); mumObj = null; }
     closeModal();
     closeScreen();
     LC.world.unlock();
@@ -2416,7 +2471,7 @@
       onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,
       pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
-      sitePrompt, siteUse, pete, chips, fishPrompt, fish, bottle, pirates, resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
+      sitePrompt, siteUse, pete, chips, fishPrompt, fish, bottle, pirates, isNight: () => night(), resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
       hookADuck, binPrompt, bin, cheer, filmExtra, iceCream, snowman, mayor, treasureDig, pigeonStrike, saleSofa, bbqSausage, townOn,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),
