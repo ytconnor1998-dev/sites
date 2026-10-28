@@ -57,6 +57,7 @@
       texts: {}, notesSeen: [], openedNotes: [], cooldowns: {}, chatted: [], tasksDone: [],
       brian: { p: 0, slowUntil: 0 }, items: {}, armed: {},
       pockets: [], stall: [], stallPrice: 'fair', stallUps: [],
+      tools: { sofa: 0, pig: 0, dig: 0 }, toolDur: {}, request: null, nextRequestAt: 0, boosts: {}, crafted: [],
       buffs: [], flags: {},
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0, floor: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
@@ -84,6 +85,7 @@
       S.buffs = []; // buffs don't survive a reload
       S.brian = Object.assign({ p: 0, slowUntil: 0 }, data.brian); S.items = data.items || {}; S.armed = data.armed || {};
       S.pockets = data.pockets || []; S.stall = data.stall || []; S.stallUps = data.stallUps || [];
+      S.tools = Object.assign({ sofa: 0, pig: 0, dig: 0 }, data.tools); S.toolDur = data.toolDur || {}; S.boosts = data.boosts || {}; S.crafted = data.crafted || [];
       return true;
     } catch (e) { return false; }
   }
@@ -93,16 +95,31 @@
   const upgradesOf = (kind) => LC.UPGRADES.filter((u) => u.kind === kind && has(u.id));
   const buffMult = (key) => S.buffs.reduce((m, b) => m * (b[key] ?? 1), 1);
 
+  const crafted = (id) => S.crafted.includes(id);
+  const CRAFT_GEN = { detectorist: ['detector', 2], cat: ['robocat', 5], brother: ['spelunk', 5], pigeons: ['pigeonradio', 3] };
   function genMult(g) {
     let m = 1;
     LC.GEN_UP_TIERS.forEach((t, i) => { if (has(`${g.id}_${i}`)) m *= 2; });
+    const c = CRAFT_GEN[g.id];
+    if (c && crafted(c[0])) m *= c[1];
+    if ((S.boosts[g.id] || 0) > Date.now()) m *= 3;
     return m;
+  }
+  // ---- tools: tiers, wear and tear ----
+  function toolEff(k) { const t = S.tools[k] || 0; return t > 0 && (S.toolDur[k] ?? 1) <= 0 ? t - 1 : t; }
+  const eff = (k) => LC.TOOLS[k][toolEff(k)];
+  function wear(k) {
+    const t = S.tools[k] || 0;
+    if (!t || S.toolDur[k] <= 0) return;
+    S.toolDur[k] = (S.toolDur[k] ?? LC.TOOLS[k][t].dur) - 1;
+    if (S.toolDur[k] === 0) { LC.audio.sfx('nope'); toast(`${ic('🔧')}<div><b>Your ${LC.TOOLS[k][t].name.toLowerCase()} broke!</b><br><small>Repair it at the workbench in the shed.</small></div>`); }
   }
   function karmaMult() { return 1 + 0.25 * S.endings.length + 0.05 * S.runs; }
   function globalMult() {
     let m = 1 + upgradesOf('global').reduce((t, u) => t + u.value, 0);
     for (const f of S.finds) { const d = LC.DIG_FINDS.find((x) => x.name === f); if (d && d.reward.mult) m += d.reward.mult; }
     m += S.socks * 0.01;
+    if (crafted('charm')) m += 0.25;
     if (S.flags.derek) m += 0.05;
     if (S.goose.friend) m += 0.1;
     return m * karmaMult();
@@ -111,8 +128,8 @@
   function baseIncome() { return LC.GENERATORS.reduce((t, g) => t + genIncome(g), 0) * globalMult(); }
   function income() { return baseIncome() * buffMult('income'); }
   function clickValue() {
-    const mult = upgradesOf('click').reduce((m, u) => m * u.value, 1) * karmaMult();
-    const pct = upgradesOf('clickPct').reduce((t, u) => t + u.value, 0);
+    const mult = (eff('sofa').mult || 1) * karmaMult();
+    const pct = eff('sofa').pct || 0;
     return ((0.01 + Math.random() * 0.04) * mult + baseIncome() * pct) * buffMult('click');
   }
   const costMult = () => buffMult('cost');
@@ -143,10 +160,11 @@
   function digMult() {
     let m = 1;
     for (const f of S.finds) { const d = LC.DIG_FINDS.find((x) => x.name === f); if (d && d.reward.dig) m *= d.reward.dig; }
+    if (crafted('molekit')) m *= 3;
     return m * buffMult('dig');
   }
   const digRate = () => LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.rate, 0) * digMult();
-  const digClick = () => (0.05 + LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.click, 0) + digRate() * 0.05) * digMult();
+  const digClick = () => ((0.05 + LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.click, 0)) * (eff('dig').mult || 1) + digRate() * 0.05) * digMult();
 
   const pigCap = () => Math.max(1, baseIncome() * 180) * upgradesOf('piggyCap').reduce((m, u) => m * u.value, 1);
   const pigFill = () => (0.02 + baseIncome() * 0.3) * upgradesOf('piggyFill').reduce((m, u) => m * u.value, 1);
@@ -274,6 +292,7 @@
     LC.audio.unlock();
     const v = clickValue();
     gain(v);
+    wear('sofa');
     S.stats.clicks++;
     LC.audio.sfx('coin');
     if (chance(0.04)) sofaFind();
@@ -318,9 +337,10 @@
     if (S.depth >= LC.EARTH_DIAMETER) return null;
     const m = digClick();
     addDepth(m);
+    wear('dig');
     LC.audio.sfx('dig');
     if (chance(0.03)) { const n = lump(20, 0.2); gain(n); toast(`${ic('🪙')}<div>Your spade hit a coin. <b>+${fmt(n)}</b></div>`); }
-    else if (chance(0.06)) { const tier = LC.DIG_JUNK.find((t) => S.depth <= t.upTo); giveJunk(pick(tier.ids)); }
+    else if (chance(crafted('detector') ? 0.12 : 0.06)) { const tier = LC.DIG_JUNK.find((t) => S.depth <= t.upTo); giveJunk(pick(tier.ids)); }
     return { text: '+' + fmtDepth(m) };
   }
   function addDepth(m) {
@@ -370,7 +390,7 @@
   }
   function showPig() { LC.world.setPig(S.pig.type, S.pig.nest ? Math.pow(0.78, S.pig.nest) : 1); }
   function pigType() { return LC.PIGS.find((p) => p.id === S.pig.type); }
-  function pigHitsNeeded() { const t = pigType(); return Math.max(2, Math.ceil(t.hits * pigHitsMult() * (S.pig.nest ? 0.7 : 1))); }
+  function pigHitsNeeded() { const t = pigType(), tool = eff('pig'); if (tool.hits === 0) return 1; return Math.max(2, Math.ceil(t.hits * (tool.hits || 1) * pigHitsMult() * (S.pig.nest ? 0.7 : 1))); }
   function pigPrompt() {
     if (!S.pig) return '';
     const t = pigType();
@@ -390,10 +410,11 @@
       return { type: 'real' };
     }
     S.pig.hits++;
-    LC.audio.sfx('tap');
+    wear('pig');
+    LC.audio.sfx(eff('pig').hits === 0 ? 'smash' : 'tap');
     if (t.id === 'kevin' && chance(0.15)) say(pick(['Kevin: "Oi!"', 'Kevin: "Rude."', 'Kevin: "Kevin remembers."', 'Kevin: "Not the face!"']));
     if (S.pig.hits < pigHitsNeeded()) return { type: 'hit' };
-    const payout = S.pig.stored * t.mult;
+    const payout = S.pig.stored * t.mult * (eff('pig').pay || 1);
     gain(payout);
     S.stats.pigs++;
     LC.audio.sfx('smash');
@@ -520,6 +541,7 @@
     if (r.gen) S.gens[r.gen[0]] = (S.gens[r.gen[0]] || 0) + r.gen[1];
     if (r.tool) S.digTools[r.tool[0]] = (S.digTools[r.tool[0]] || 0) + r.tool[1];
     if (r.up && !has(r.up)) S.upgrades.push(r.up);
+    if (r.toolTier) { const [k, t] = r.toolTier; if ((S.tools[k] || 0) < t) { S.tools[k] = t; S.toolDur[k] = LC.TOOLS[k][t].dur; } }
   }
   function activeTasks() { return LC.TASKS.filter((t) => !S.tasksDone.includes(t.id)).slice(0, 1); }
   function checkTasks() {
@@ -932,7 +954,7 @@
     LC.audio.sfx('coin');
     return n;
   }
-  const magnet = () => 1.1 + upgradesOf('magnet').reduce((t, u) => t + u.value, 0);
+  const magnet = () => 1.1 + upgradesOf('magnet').reduce((t, u) => t + u.value, 0) + (crafted('supermagnet') ? 2.5 : 0);
 
   // ---------- random events ----------
   const pending = [];
@@ -1127,8 +1149,7 @@
 
   // ---------- screens: the phone, the shed, the corner shop ----------
   const APPS = [
-    { id: 'finders', icon: '🛒', label: 'Hire', color: '#f2b631' },
-    { id: 'upgrades', icon: '⬆️', label: 'Upgrades', color: '#6aa84f' },
+    { id: 'roster', icon: '👥', label: 'Helpers', color: '#f2b631' },
     { id: 'messages', icon: '💬', label: 'Messages', color: '#5bc236' },
     { id: 'notes', icon: '📝', label: 'Notes', color: '#ffd84a' },
     { id: 'bank', icon: '🏦', label: 'Bank', color: '#3b6ea5' },
@@ -1140,8 +1161,11 @@
   ];
   const SCREENS = {
     phone: { title: 'Phone', icon: '📱' },
-    shed: { title: 'The Shed', icon: '🛖', tab: 'shed' },
-    scratch: { title: 'Corner Shop', icon: '🏪', tab: 'scratch' },
+    shed: { title: 'The Shed', icon: '🛖', tabs: [['shed', '⛏️', 'Diggers'], ['workbench', '🔧', 'Workbench']] },
+    corner: { title: 'Corner Shop', icon: '🏪', tabs: [['shop-corner', '🍬', 'Treats & gear'], ['scratch', '🎟️', 'Scratchcards']] },
+    charity: { title: 'Second Chances Charity Shop', icon: '🧥', tabs: [['shop-charity', '🧥', 'Everything 50p*']] },
+    hardware: { title: 'Nailed It Hardware', icon: '🔨', tabs: [['shop-hardware', '🔨', 'Tools']] },
+    board: { title: 'Notice Board', icon: '📌', tabs: [['finders', '📌', 'Help wanted']] },
   };
   let screenOpen = null, phoneApp = null, msgThread = null, openNote = null;
   function openScreen(name, tab) {
@@ -1153,15 +1177,19 @@
     $('#screen').classList.add('show');
     $('#pause').classList.remove('show');
     LC.audio.sfx('open');
-    if (name === 'phone') { if (tab) openApp(tab); else phoneHome(); return; }
+    if (name === 'phone') { $('#screen-tabs').innerHTML = ''; if (tab) openApp(tab); else phoneHome(); return; }
     const def = SCREENS[name];
     $('#screen-title').innerHTML = `${ic(def.icon)} ${def.title}`;
     $('#screen-close').innerHTML = 'Back <kbd>Esc</kbd>';
-    setTab(def.tab);
+    const tabs = $('#screen-tabs');
+    tabs.innerHTML = def.tabs.length > 1 ? def.tabs.map(([id, icon, label]) => `<button class="tab" data-tab="${id}">${ic(icon)} ${label}</button>`).join('') : '';
+    tabs.querySelectorAll('.tab').forEach((b) => (b.onclick = () => { LC.audio.sfx('click'); setTab(b.dataset.tab); }));
+    setTab(tab || def.tabs[0][0]);
   }
   function phoneHome() {
     phoneApp = null; msgThread = null; openNote = null;
     $('#screen-title').innerHTML = '';
+    $('#screen-tabs').innerHTML = '';
     $('#screen-close').innerHTML = 'Put away <kbd>Esc</kbd>';
     renderHome();
     setTab('home');
@@ -1189,14 +1217,124 @@
     LC.audio.sfx('click');
     LC.world.lock();
   }
+  let shopOpen = null;
   function setTab(id) {
-    document.querySelectorAll('.panel').forEach((p) => (p.hidden = p.id !== 'panel-' + id));
+    document.querySelectorAll('#screen-tabs .tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === id));
+    shopOpen = id.startsWith('shop-') ? id.slice(5) : null;
+    const panel = shopOpen ? 'shop' : id;
+    document.querySelectorAll('.panel').forEach((p) => (p.hidden = p.id !== 'panel-' + panel));
+    if (shopOpen) renderShopPanel();
+    if (id === 'workbench') renderWorkbench();
+    if (id === 'roster') renderRoster();
     if (id === 'notebook') renderStats();
     if (id === 'endings') renderEndings();
     if (id === 'finders' || id === 'upgrades') renderShop(true);
     if (id === 'shed') { gardenDirty = true; renderGarden(); }
     if (id === 'scratch') { renderShopCards(); setTimeout(renderCard, 0); }
     renderPhoneApp(id);
+  }
+
+  // ---------- shops: what each one sells ----------
+  function shopItems(shop) {
+    const out = [];
+    const seen = (u) => S.lifetime >= u.cost * 0.3;
+    if (shop === 'corner') {
+      if (S.request && !S.items[S.request.item]) {
+        const r = S.request;
+        out.push({ key: 'treat', icon: r.icon, name: r.name, desc: `${r.text} Give them to a ${r.gen === 'cat' ? 'cat' : r.gen === 'brother' ? 'your brother' : 'detectorist'}.`, cost: lump(45, 2), buy: () => { S.items[r.item] = 1; toast(`${ic(r.icon)}<div><b>${r.name}</b> in your pocket. Go and give them to your helper!</div>`); } });
+      }
+      // treats & gear for each kind of helper: just the next one for each
+      for (const g of LC.GENERATORS) {
+        const owned = S.gens[g.id] || 0;
+        const u = GEN_UPS.find((x) => x.gen === g.id && !has(x.id));
+        if (u && owned >= u.at) out.push({ key: u.id, icon: g.icon, name: u.name, desc: `For your ${g.name}s: they find twice as much.`, cost: upCost(u), buy: () => S.upgrades.push(u.id) });
+        else if (u && owned > 0) out.push({ key: u.id, icon: g.icon, name: u.name, desc: `Needs ${u.at} ${g.name}s (you have ${owned}).`, cost: upCost(u), locked: true });
+      }
+    }
+    for (const u of LC.UPGRADES.filter((x) => x.shop === shop && !has(x.id) && seen(x))) out.push({ key: u.id, icon: u.icon, name: u.name, desc: u.desc, cost: upCost(u), buy: () => S.upgrades.push(u.id) });
+    if (shop === 'hardware') {
+      for (const k of ['sofa', 'pig', 'dig']) {
+        const t = (S.tools[k] || 0) + 1, def = LC.TOOLS[k][t];
+        if (def) out.unshift({ key: 'tool-' + k, icon: def.icon, name: def.name, desc: `${def.desc} Lasts ${def.dur} uses.`, cost: def.cost * costMult(), buy: () => { S.tools[k] = t; S.toolDur[k] = def.dur; } });
+      }
+      for (const x of LC.HARDWARE_EXTRAS) if (!S.stallUps.includes(x.id) && seen(x)) out.push({ key: x.id, icon: x.icon, name: x.name, desc: x.desc, cost: x.cost * costMult(), buy: () => { S.stallUps.push(x.id); renderHotbar(); } });
+    }
+    return out;
+  }
+  const SHOP_FLAVOUR = {
+    corner: '"Treats for your helpers. And sweets for you, if you\'re good." The man behind the counter is also selling scratch cards.',
+    charity: 'Everything is 50p.* (*Nothing is 50p.) It smells of old books and mystery.',
+    hardware: '"Tools, love? We\'ve got tools." There is a man here who has been choosing a screwdriver since 2003.',
+  };
+  function renderShopPanel() {
+    const items = shopItems(shopOpen);
+    $('#shop-view').innerHTML = `<p class="muted shop-flavour">${SHOP_FLAVOUR[shopOpen] || ''}</p><div class="shelf">` + (items.map((it, i) =>
+      `<button class="product ${it.locked ? 'locked' : S.money < it.cost ? 'poor' : ''}" data-i="${i}">${ic(it.icon)}<b>${it.name}</b><small>${it.desc}</small><span class="price-tag">${fmt(it.cost)}</span></button>`).join('') || '<p class="muted">Sold out. Come back when you\'re richer.</p>') + '</div>';
+    $('#shop-view').querySelectorAll('.product').forEach((b) => (b.onclick = () => {
+      const it = items[+b.dataset.i];
+      if (it.locked || !spend(it.cost)) { LC.audio.sfx('nope'); return; }
+      it.buy(); LC.audio.sfx('buy'); renderShopPanel();
+    }));
+  }
+  // ---- the shed workbench: repairs and crafting ----
+  function renderWorkbench() {
+    const repairs = ['sofa', 'pig', 'dig'].filter((k) => S.tools[k] > 0).map((k) => {
+      const t = S.tools[k], def = LC.TOOLS[k][t], left = S.toolDur[k] ?? def.dur, cost = def.cost * 0.15;
+      return `<div class="bench-row">${ic(def.icon)}<div><b>${def.name}</b><div class="dur"><i style="width:${(left / def.dur) * 100}%"></i></div><small>${left <= 0 ? 'BROKEN' : `${left} / ${def.dur} uses left`}</small></div>${left < def.dur ? `<button class="btn small" data-repair="${k}">Repair ${fmt(cost)}</button>` : ''}</div>`;
+    }).join('') || '<p class="muted small">No tools yet. Nailed It Hardware sells them.</p>';
+    const have = (id) => S.pockets.filter((p) => p.id === id).length;
+    const recipes = LC.RECIPES.filter((r) => !crafted(r.id)).map((r) => {
+      const ok = r.needs.every((id) => have(id) >= r.needs.filter((x) => x === id).length) && (!r.minGen || (S.gens[r.minGen[0]] || 0) >= r.minGen[1]);
+      return `<div class="bench-row">${ic(r.icon)}<div><b>${r.name}</b><small>${r.desc}</small><div class="needs">${r.needs.map((id) => `<span class="${have(id) ? 'got' : ''}">${ic(LC.JUNK[id].icon, 'tiny')} ${LC.JUNK[id].name}</span>`).join('')}${r.minGen ? `<span class="${(S.gens[r.minGen[0]] || 0) >= r.minGen[1] ? 'got' : ''}">${r.minGen[1]} ${LC.GENERATORS.find((g) => g.id === r.minGen[0]).name}s</span>` : ''}</div></div><button class="btn small ${ok ? '' : 'ghost'}" data-craft="${r.id}" ${ok ? '' : 'disabled'}>Make it</button></div>`;
+    }).join('');
+    $('#workbench-view').innerHTML = `<div class="sub-title">Repairs</div>${repairs}<div class="sub-title">Make something from junk</div><p class="muted small">Uses junk from your pockets.</p>${recipes || '<p class="muted">You\'ve made everything!</p>'}`;
+    $('#workbench-view').querySelectorAll('[data-repair]').forEach((b) => (b.onclick = () => {
+      const k = b.dataset.repair, def = LC.TOOLS[k][S.tools[k]];
+      if (!spend(def.cost * 0.15)) { LC.audio.sfx('nope'); return; }
+      S.toolDur[k] = def.dur; LC.audio.sfx('buy'); renderWorkbench();
+    }));
+    $('#workbench-view').querySelectorAll('[data-craft]').forEach((b) => (b.onclick = () => {
+      const r = LC.RECIPES.find((x) => x.id === b.dataset.craft);
+      for (const id of r.needs) S.pockets.splice(S.pockets.findIndex((p) => p.id === id), 1);
+      S.crafted.push(r.id); renderHotbar();
+      LC.audio.sfx('fanfare');
+      toast(`${ic(r.icon)}<div><b>You made: ${r.name}!</b><br><small>${r.desc}</small></div>`, 'gold');
+      if (r.id === 'robocat') LC.world.evolve('cat');
+      renderWorkbench();
+    }));
+  }
+  // ---- helper roster (phone) and requests ----
+  const helperNames = (id, n) => { const names = LC.HELPER_NAMES[id] || []; const list = names.slice(0, Math.min(n, 3)); return list.join(', ') + (n > list.length ? ` and ${n - list.length} more` : ''); };
+  function renderRoster() {
+    const rows = LC.GENERATORS.filter((g) => S.gens[g.id] > 0).map((g) => {
+      const boosted = (S.boosts[g.id] || 0) > Date.now();
+      return `<div class="bench-row">${ic(g.icon)}<div><b>${g.name} x${S.gens[g.id]}</b><small>${helperNames(g.id, S.gens[g.id])}</small><small>${fmtRate(genIncome(g) * globalMult())}${boosted ? ' · <b>3x BOOST!</b>' : ''}</small></div></div>`;
+    }).join('');
+    const req = S.request ? `<div class="request">${ic(S.request.icon)}<div><b>Request!</b><small>${S.request.text} Get ${S.request.name.toLowerCase()} from the corner shop. ${Math.ceil((S.request.until - Date.now()) / 1000)}s left.</small></div></div>` : '';
+    $('#roster-view').innerHTML = req + (rows || '<p class="muted">No helpers yet. There is a notice board outside the post office...</p>');
+  }
+  function requestTick(now) {
+    if (S.request && now > S.request.until) { say(`Too late. ${S.request.gen === 'cat' ? 'The cats' : S.request.gen === 'brother' ? 'Your brother' : 'The detectorists'} gave up waiting.`); S.request = null; delete S.items.sardines; delete S.items.haribo; delete S.items.batteries; }
+    if (S.request || S.lifetime < 50) return;
+    if (!S.nextRequestAt) S.nextRequestAt = now + 240000;
+    if (now < S.nextRequestAt) return;
+    S.nextRequestAt = now + rand(300000, 480000);
+    const options = LC.REQUESTS.filter((r) => (S.gens[r.gen] || 0) > 0);
+    if (!options.length) return;
+    S.request = Object.assign({ until: now + 240000 }, pick(options));
+    LC.audio.sfx('text');
+    toast(`${ic(S.request.icon)}<div><b>Request:</b> ${S.request.text}<br><small>Get some from the corner shop and give it to them.</small></div>`, 'msg');
+  }
+  // the world calls this when you interact with a helper; true if a request was fulfilled
+  function helperUse(gen) {
+    const r = S.request;
+    if (!r || r.gen !== gen || !S.items[r.item]) return false;
+    delete S.items[r.item];
+    S.request = null;
+    S.boosts[gen] = Date.now() + 300000;
+    LC.audio.sfx('fanfare');
+    toast(`${ic(r.icon)}<div><b>They love it!</b><br><small>${LC.GENERATORS.find((g) => g.id === gen).name}s work 3x harder for 5 minutes.</small></div>`, 'gold');
+    return true;
   }
 
   // ---------- phone apps ----------
@@ -1206,7 +1344,7 @@
   function appBadge(id) {
     if (id === 'messages') return unreadTexts();
     if (id === 'notes') return newNotes();
-    if (id === 'upgrades') return ALL_UPS.filter((u) => !has(u.id) && (u.gen ? (S.gens[u.gen] || 0) >= u.at : S.lifetime >= u.cost * 0.4) && S.money >= upCost(u)).length;
+    if (id === 'roster') return S.request ? 1 : 0;
     return 0;
   }
   function renderHome() {
@@ -1345,7 +1483,7 @@
       row.classList.toggle('poor', S.money < cost);
       row.classList.toggle('mystery', !known);
       row.querySelector('.gen-name').textContent = known ? g.name : '???';
-      row.querySelector('.gen-desc').textContent = known ? g.desc : 'Keep finding money to find out.';
+      row.querySelector('.gen-desc').textContent = known ? (owned ? `${g.desc} Working for you: ${helperNames(g.id, owned)}.` : g.desc) : 'Keep finding money to find out.';
       row.querySelector('.gen-cost').innerHTML = `${ic('🪙', 'tiny')} ${fmt(cost)}${n > 1 ? ` <small>(x${n})</small>` : ''} · <span class="muted">${fmtRate(g.income * genMult(g) * globalMult())} each</span>`;
       row.querySelector('.gen-count').textContent = owned || '';
     });
@@ -1510,6 +1648,9 @@
       if (panelVisible('bank')) renderBank();
       if (panelVisible('home')) renderHome();
       checkPhone();
+      requestTick(Date.now());
+      if (panelVisible('shop')) renderShopPanel();
+      if (panelVisible('roster')) renderRoster();
       $('#phone-time').textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       document.title = `${fmt(S.money)} · Loose Change`;
       LC.world.syncHelpers(S.gens);
@@ -1580,6 +1721,7 @@
     buildShop(); buildGarden(); buildSettings();
     if (!S.pig || S.pig.smashed) newPig(); else showPig();
     syncStall(); LC.world.setStallUps(S.stallUps); renderHotbar();
+    if (crafted('robocat')) LC.world.evolve('cat');
     renderCard();
     if (!loaded) queueEvent(() => modal({ icon: '🛋️', title: 'Loose Change',
       text: `You're saving up for something. You're not sure what. It's under a sheet in the hall, and it costs <b>${fmt(LC.THING_COST)}</b>.<br><br>You have 0p.<br><br>Better check down the back of the sofa.`,
@@ -1625,7 +1767,8 @@
       brianComputer, brianCarPrompt, brianCar, brianLawnPrompt, brianLawn, caughtByBrian, chatBrian, setSuspicion,
       tip: (secs, secret) => { const n = lump(secs, 0.05); gain(n); floatAt(null, n); if (secret) findSecret(secret); },
       depth: () => S.depth,
-      toolTier: (kind) => (S.tools && S.tools[kind]) || 0,
+      toolTier: (kind) => (kind === 'sofa' ? [0, 0, 1, 2, 3][toolEff('sofa')] : toolEff(kind)),
+      helperUse,
       togglePhone: () => { if (endingPlaying || modalOpen) return; if (screenOpen) closeScreen(); else openScreen('phone'); },
       isBlocked: () => modalOpen || !!screenOpen || endingPlaying,
       canLock: () => !screenOpen && !endingPlaying,

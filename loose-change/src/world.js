@@ -210,8 +210,8 @@ function buildLevel() {
   const counter = add(M.counter(4), 0, 0, 23.6); collideObj(counter);
   const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222 }), 0, 0, 24.6, Math.PI);
   agents.push({ obj: keeper, update: (dt, t) => { keeper.rotation.y = Math.PI + Math.sin(t * 0.7) * 0.3; } });
-  interact(counter, { range: 3, prompt: () => 'Buy scratch cards', use: () => LC.game.openScreen('scratch') });
-  interact(keeper, { range: 3.5, prompt: () => 'Buy scratch cards', use: () => LC.game.openScreen('scratch') });
+  interact(counter, { range: 3, prompt: () => 'Shop counter<small>Treats for helpers and scratch cards</small>', use: () => LC.game.openScreen('corner') });
+  interact(keeper, { range: 3.5, prompt: () => 'Talk to the shopkeeper', use: () => LC.game.openScreen('corner') });
   for (const s of [-1, 1]) {
     const sh = add(M.bookshelf(), s * 4.6, 0, 22, s * -Math.PI / 2); collideObj(sh);
   }
@@ -384,6 +384,13 @@ function buildTown() {
     add(M.lampPost(), x + 6, 0, 16.4, -Math.PI / 2); collide(x + 5.85, 16.25, x + 6.15, 16.55); lightCone(x + 6, 3.85, 16.9, 3.2, 1.3, 0xffd9a0, 0.035);
   }
   add(M.postbox(), 1.0, 0, 9.3); collide(0.7, 9.0, 1.3, 9.6);
+  const board = new THREE.Group();
+  board.add(M.box(2.2, 1.5, 0.12, 0xb08050, 0, 1.55, 0, { sharp: true }), M.box(0.1, 2.3, 0.1, 0x5a4a3a, -1.0, 1.15, -0.05), M.box(0.1, 2.3, 0.1, 0x5a4a3a, 1.0, 1.15, -0.05));
+  const head = M.signPlane('HELP WANTED', 2.0, 0.3, { bg: '#c8231f' }); head.position.set(0, 2.45, 0.07); board.add(head);
+  for (let i = 0; i < 6; i++) { const c = M.box(0.42, 0.32, 0.02, [0xfffdf2, 0xfff7d6, 0xe8f4ff][i % 3], -0.7 + (i % 3) * 0.7, 1.85 - Math.floor(i / 3) * 0.6, 0.07, { rot: [0, 0, (Math.random() - 0.5) * 0.2] }); board.add(c); }
+  board.position.set(19.5, 0, 16.9); board.rotation.y = Math.PI; scene.add(board);
+  collide(18.3, 16.75, 20.7, 17.05);
+  interact(board, { range: 3, prompt: () => 'Read the notice board<small>Hire helpers</small>', use: () => LC.game.openScreen('board') });
   const pb = add(M.phoneBox(), -15.6, 0, 17.2); collide(-16.2, 16.6, -15, 17.8);
   interact(pb, { range: 2.6, prompt: () => 'Check the coin return', use: () => LC.game.phoneBox() });
   add(M.busStop(), -30, 0, 9.4); collide(-31.5, 8.7, -28.5, 9.0);
@@ -405,8 +412,8 @@ function buildTown() {
     { x: -54, w: 12, name: 'THE RUSTY ANCHOR', kind: 'pub', bg: '#3a2a1a', wall: brick(0.8), awning: [0x2d4a2d, 0xe8dcc8], line: 'The pub. You are not allowed in. You are nine.' },
     { x: -41.5, w: 11, name: 'BUN IN THE OVEN', kind: 'bakery', bg: '#d27a5a', color: 0xf3e2c8, awning: [0xf7a8bd, 0xfff6e6], line: 'The bakery. It smells like heaven and sausage rolls.' },
     { x: -29.5, w: 11, name: 'SPIN CITY LAUNDERETTE', kind: 'launderette', bg: '#3b6ea5', color: 0xc8d8e8, awning: [0x3b6ea5, 0xffffff], line: 'The launderette. People leave coins in their pockets. Interesting.' },
-    { x: -19, w: 8, name: 'HAIR TODAY', kind: 'barber', bg: '#c8231f', wall: brick(1), awning: [0xc8231f, 0xffffff], line: 'The barber. The barber is also called Barry.' },
-    { x: -9.5, w: 8, name: 'SECOND CHANCES CHARITY SHOP', kind: 'charity', bg: '#6a3a7a', color: 0xe8d8e8, awning: [0x9b59b6, 0xfff6e6], line: 'The charity shop. Everything is 50p. Including a suit of armour.' },
+    { x: -19, w: 8, name: 'NAILED IT HARDWARE', kind: 'hardware', bg: '#3a4a5a', wall: brick(1), awning: [0x3a4a5a, 0xf2b631], shop: 'hardware' },
+    { x: -9.5, w: 8, name: 'SECOND CHANCES CHARITY SHOP', kind: 'charity', bg: '#6a3a7a', color: 0xe8d8e8, awning: [0x9b59b6, 0xfff6e6], shop: 'charity' },
     { x: 11, w: 10, name: 'THE CODFATHER', kind: 'chippy', bg: '#2a5a8a', color: 0xf6f0d8, awning: [0x2a5a8a, 0xfff6e6], line: 'The chippy. Smells like vinegar and dreams.' },
     { x: 22.5, w: 11, name: 'POST OFFICE', kind: 'post', bg: '#c8231f', wall: brick(0.9), awning: [0xc8231f, 0xf2b631], line: 'The post office. There is always a queue. Always.' },
   ];
@@ -415,7 +422,7 @@ function buildTown() {
     collide(sh.x - sh.w / 2, 18, sh.x + sh.w / 2, 27);
     const door = new THREE.Mesh(new THREE.BoxGeometry(sh.w, 3, 0.4), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
     door.position.set(sh.x, 1.5, 17.8); door.userData.noAO = true; scene.add(door);
-    interact(door, { range: 3, prompt: () => sh.name.charAt(0) + sh.name.slice(1).toLowerCase(), use: () => LC.game.say(sh.line) });
+    interact(door, { range: 3, prompt: () => (sh.shop ? `Go into ${sh.name.charAt(0) + sh.name.slice(1).toLowerCase()}` : sh.name.charAt(0) + sh.name.slice(1).toLowerCase()), use: () => (sh.shop ? LC.game.openScreen(sh.shop) : LC.game.say(sh.line)) });
     void o;
   }
   collide(-62, 26, 28, 56); collide(-62, 18, -60, 26); collide(-5.5, 18, -5, 26); collide(5, 18, 6, 26);
@@ -708,7 +715,7 @@ function makeHelper(id, i) {
       o = add(M.cat(pick([0xf08a24, 0x444444, 0xdddddd, 0x8a6a4a])), 0, 0, 0);
       o.position.copy(safeSpot(ZONES.house));
       walker(o, ZONES.house, 0.9, { pause: 6 });
-      interact(o, { range: 2.5, prompt: () => 'Stroke the cat', use: () => { LC.audio.sfx('meow'); LC.game.say(pick(QUOTES.cat)); if (Math.random() < 0.3) LC.game.tip(10); } });
+      interact(o, { range: 2.5, prompt: () => 'Stroke the cat', use: () => { LC.audio.sfx('meow'); if (LC.game.helperUse('cat')) return; LC.game.say(pick(QUOTES.cat)); if (Math.random() < 0.3) LC.game.tip(10); } });
       break;
     }
     case 'brother': {
@@ -719,7 +726,7 @@ function makeHelper(id, i) {
       o.rotation.set(Math.PI - 0.5, ry + Math.PI, 0); o.position.set(x, 0.85, z);
       scene.add(o);
       agents.push({ obj: o, update: (dt, t) => { limbs(o, Math.sin(t * 9 + i)); } });
-      interact(o, { range: 2.5, prompt: () => 'Pull your brother out', use: () => { LC.audio.sfx('nope'); LC.game.say(pick(QUOTES.brother)); } });
+      interact(o, { range: 2.5, prompt: () => 'Pull your brother out', use: () => { if (LC.game.helperUse('brother')) return; LC.audio.sfx('nope'); LC.game.say(pick(QUOTES.brother)); } });
       break;
     }
     case 'detectorist': {
@@ -730,7 +737,7 @@ function makeHelper(id, i) {
       o.getObjectByName('armR').rotation.x = -0.9;
       walker(o, ZONES.garden, 0.7, { pause: 4 });
       agents.push({ obj: o, update: (dt, t) => { det.rotation.z = Math.sin(t * 2 + i) * 0.5; } });
-      interact(o, { range: 2.5, prompt: () => 'Chat to the detectorist', use: () => { LC.audio.sfx('beep'); LC.game.say(pick(QUOTES.detectorist)); } });
+      interact(o, { range: 2.5, prompt: () => 'Chat to the detectorist', use: () => { if (LC.game.helperUse('detectorist')) return; LC.audio.sfx('beep'); LC.game.say(pick(QUOTES.detectorist)); } });
       break;
     }
     case 'well': o = add(M.well(), spots.well.x, 0, spots.well.z); collideObj(o); break;
@@ -775,6 +782,11 @@ function makeHelper(id, i) {
   }
   return o;
 }
+let evolved = {};
+function evolve(id) {
+  evolved[id] = true;
+  for (const o of helpers[id] || []) o.traverse((m) => { if (m.material && m.material.color) m.material = M.mat(0xb8c4d0, { metalness: 0.8, roughness: 0.25, emissive: 0x203040 }); });
+}
 function syncHelpers(gens) {
   for (const id of Object.keys(CAPS)) {
     const want = Math.min(CAPS[id], gens[id] || 0);
@@ -783,6 +795,7 @@ function syncHelpers(gens) {
       const o = makeHelper(id, helpers[id].length);
       if (!o) break;
       helpers[id].push(o);
+      if (evolved[id]) { evolved[id] = false; evolve(id); }
     }
   }
 }
@@ -1402,7 +1415,7 @@ LC.world = {
   syncHelpers,
   setPig,
   setGoose,
-  talkStart, talkSay, talkEnd,
+  talkStart, talkSay, talkEnd, evolve,
   setStallItems, setStallUps, nearStall, spawnCustomer,
   stallScreenPos: () => project(stall.pos.clone().setY(1.2)),
   stallWaiting: () => !!stallWaiter,

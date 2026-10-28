@@ -48,26 +48,19 @@ LC.GEN_UP_TIERS = [ // owned threshold -> cost multiplier of base cost; each dou
 // ---- Other upgrades ----
 // kind: click (x mult), clickPct (adds % of income/s to each click), global (+%), piggyCap, piggyHits,
 // piggyFill, luck (scratch cards), stock (scratch card stock), dig (click dig x mult)
-LC.UPGRADES = [
-  { id: 'gloves', icon: '🧤', name: 'Rubber Gloves', cost: 3, kind: 'click', value: 2, desc: 'Sofa crumbs no longer a concern. Clicks x2.' },
-  { id: 'torch', icon: '🔦', name: 'Head Torch', cost: 120, kind: 'clickPct', value: 0.01, desc: 'Clicks also find 1% of your £/s.' },
-  { id: 'hoover', icon: '🧹', name: 'Hoover Attachment', cost: 2500, kind: 'click', value: 2, desc: 'The thin nozzle. Clicks x2.' },
-  { id: 'grabby', icon: '🤏', name: 'Grabby Hands Training', cost: 60000, kind: 'clickPct', value: 0.02, desc: 'Clicks find another 2% of £/s.' },
-  { id: 'xray', icon: '🥽', name: 'Sofa X-Ray Goggles', cost: 3e6, kind: 'clickPct', value: 0.03, desc: 'You can see the coins. You can see everything. Clicks +3% of £/s.' },
-  { id: 'bionic', icon: '🦾', name: 'Bionic Fingers', cost: 4e8, kind: 'click', value: 5, desc: 'Clicks x5. Typing is now difficult.' },
-  { id: 'sock', icon: '🧦', name: 'Lucky Sock', cost: 1500, kind: 'global', value: 0.1, desc: "You've never washed it. All income +10%." },
-  { id: 'fengshui', icon: '🪴', name: 'Couch Feng Shui', cost: 80000, kind: 'global', value: 0.2, desc: 'Point the sofa at the money. All income +20%.' },
-  { id: 'shiny', icon: '✨', name: 'Shiny Things Theory', cost: 8e6, kind: 'global', value: 0.3, desc: 'A pigeon explained it to you. All income +30%.' },
-  { id: 'accountant', icon: '🐱', name: 'Accountant (Also A Cat)', cost: 2e9, kind: 'global', value: 0.5, desc: 'Has no idea what he is doing. All income +50%.' },
-  { id: 'bigpig', icon: '🐖', name: 'Bigger Pig', cost: 400, kind: 'piggyCap', value: 2, desc: 'Piggy banks hold twice as much.' },
-  { id: 'hammer', icon: '🔨', name: 'Proper Hammer', cost: 2000, kind: 'piggyHits', value: 0.5, desc: 'Pigs take half as many hits.' },
-  { id: 'pigfood', icon: '🌽', name: 'Premium Pig Feed', cost: 50000, kind: 'piggyFill', value: 2, desc: 'Pigs fill twice as fast. Do not ask what is in it.' },
-  { id: 'hugepig', icon: '🐘', name: 'Pig The Size Of An Elephant', cost: 5e6, kind: 'piggyCap', value: 3, desc: 'Piggy banks hold 3x as much. Is it still a pig?' },
-  { id: 'luckypen', icon: '🖊️', name: 'Lucky Scratching Coin', cost: 5000, kind: 'luck', value: 1, desc: 'Better scratch card odds.' },
-  { id: 'shopmate', icon: '🏪', name: 'Mate At The Corner Shop', cost: 30000, kind: 'stock', value: 3, desc: 'Shop keeps 3 more cards for you.' },
-  { id: 'magnet1', icon: '🧲', name: 'Magnetic Trousers', cost: 250, kind: 'magnet', value: 1.5, desc: 'Coins on the floor fly to you from further away.' },
-  { id: 'magnet2', icon: '👖', name: 'Extremely Magnetic Trousers', cost: 2e6, kind: 'magnet', value: 2.5, desc: 'Coins fly to you from even further. Your keys are stuck to you.' },
-  { id: 'horseshoe', icon: '🧲', name: 'Magnetic Horseshoe', cost: 5e7, kind: 'luck', value: 1, desc: 'Even better scratch card odds. Mildly cursed.' },
+LC.UPGRADES = [ // shop: where you buy it (charity shop, corner shop, hardware shop)
+  { id: 'sock', shop: 'charity', icon: '🧦', name: 'Lucky Sock', cost: 1500, kind: 'global', value: 0.1, desc: "You've never washed it. All income +10%." },
+  { id: 'fengshui', shop: 'charity', icon: '🪴', name: 'Couch Feng Shui', cost: 80000, kind: 'global', value: 0.2, desc: 'Point the sofa at the money. All income +20%.' },
+  { id: 'shiny', shop: 'charity', icon: '✨', name: 'Shiny Things Theory', cost: 8e6, kind: 'global', value: 0.3, desc: 'A pigeon explained it to you. All income +30%.' },
+  { id: 'accountant', shop: 'charity', icon: '🐱', name: 'Accountant (Also A Cat)', cost: 2e9, kind: 'global', value: 0.5, desc: 'Has no idea what he is doing. All income +50%.' },
+  { id: 'bigpig', shop: 'charity', icon: '🐖', name: 'Bigger Pig', cost: 400, kind: 'piggyCap', value: 2, desc: 'Piggy banks hold twice as much.' },
+  { id: 'pigfood', shop: 'corner', icon: '🌽', name: 'Premium Pig Feed', cost: 50000, kind: 'piggyFill', value: 2, desc: 'Pigs fill twice as fast. Do not ask what is in it.' },
+  { id: 'hugepig', shop: 'charity', icon: '🐘', name: 'Pig The Size Of An Elephant', cost: 5e6, kind: 'piggyCap', value: 3, desc: 'Piggy banks hold 3x as much. Is it still a pig?' },
+  { id: 'luckypen', shop: 'corner', icon: '🖊️', name: 'Lucky Scratching Coin', cost: 5000, kind: 'luck', value: 1, desc: 'Better scratch card odds.' },
+  { id: 'shopmate', shop: 'corner', icon: '🏪', name: 'Mate At The Corner Shop', cost: 30000, kind: 'stock', value: 3, desc: 'Shop keeps 3 more cards for you.' },
+  { id: 'magnet1', shop: 'hardware', icon: '🧲', name: 'Magnetic Trousers', cost: 250, kind: 'magnet', value: 1.5, desc: 'Coins on the floor fly to you from further away.' },
+  { id: 'magnet2', shop: 'hardware', icon: '👖', name: 'Extremely Magnetic Trousers', cost: 2e6, kind: 'magnet', value: 2.5, desc: 'Coins fly to you from even further. Your keys are stuck to you.' },
+  { id: 'horseshoe', shop: 'charity', icon: '🧲', name: 'Magnetic Horseshoe', cost: 5e7, kind: 'luck', value: 1, desc: 'Even better scratch card odds. Mildly cursed.' },
 ];
 
 // ---- Garden digging ----
@@ -480,8 +473,8 @@ LC.CHAT = {
 LC.TASKS = [
   { id: 't1', text: 'Rummage down the sofa 10 times', target: 10, progress: (s) => s.stats.clicks, reward: { cash: 1 }, rewardText: '£1' },
   { id: 't2', text: 'Find £1 in total', target: 1, progress: (s) => s.lifetime, reward: { gen: ['cat', 1] }, rewardText: 'A free Nosy Cat' },
-  { id: 't3', text: 'Open your phone (Tab) and hire your Little Brother', target: 1, progress: (s) => s.gens.brother || 0, reward: { cash: 5 }, rewardText: '£5' },
-  { id: 't4', text: 'Smash the piggy bank on the mantelpiece', target: 1, progress: (s) => s.stats.pigs, reward: { up: 'gloves' }, rewardText: 'Free Rubber Gloves' },
+  { id: 't3', text: 'Hire your Little Brother at the notice board outside the post office', target: 1, progress: (s) => s.gens.brother || 0, reward: { cash: 5 }, rewardText: '£5' },
+  { id: 't4', text: 'Smash the piggy bank on the mantelpiece', target: 1, progress: (s) => s.stats.pigs, reward: { toolTier: ['sofa', 1] }, rewardText: 'Free Rubber Gloves (better rummaging)' },
   { id: 't5', text: 'Dig the hole in the back garden to 1 m', target: 1, progress: (s) => s.depth, reward: { secs: 60, min: 8 }, rewardText: 'A minute of income' },
   { id: 't6', text: 'Pick up 5 coins off the floor', target: 5, progress: (s) => s.stats.floor || 0, reward: { up: 'magnet1' }, rewardText: 'Free Magnetic Trousers' },
   { id: 's1', text: 'Put some junk out on your stall in the front garden', target: 1, progress: (s) => s.stall.filter(Boolean).length + (s.stats.sold || 0), reward: { cash: 10 }, rewardText: '£10' },
@@ -497,7 +490,7 @@ LC.TASKS = [
   { id: 't13', text: 'Find a secret somewhere in town', target: 1, progress: (s) => s.secrets.length, reward: { buttons: 5, secs: 120 }, rewardText: '5 buttons + two minutes of income' },
   { id: 'b3', text: 'Pull a prank on Brian (find something to prank him with first)', target: 1, progress: (s) => s.stats.pranks || 0, reward: { secs: 300, buttons: 5 }, rewardText: 'Five minutes of income + 5 buttons' },
   { id: 't14', text: 'Find £10,000 in total', target: 1e4, progress: (s) => s.lifetime, reward: { gen: ['well', 1] }, rewardText: 'A free Wishing Well' },
-  { id: 't15', text: 'Smash 10 piggy banks', target: 10, progress: (s) => s.stats.pigs, reward: { up: 'hammer' }, rewardText: 'Free Proper Hammer' },
+  { id: 't15', text: 'Smash 10 piggy banks', target: 10, progress: (s) => s.stats.pigs, reward: { toolTier: ['pig', 1] }, rewardText: 'Free Proper Hammer' },
   { id: 't16', text: 'Hire a Coin Pusher', target: 1, progress: (s) => s.gens.pusher || 0, reward: { secs: 600 }, rewardText: 'Ten minutes of income' },
   { id: 't17', text: 'Dig to 100 m', target: 100, progress: (s) => s.depth, reward: { secs: 600 }, rewardText: 'Ten minutes of income' },
   { id: 'b4', text: "Raid Brian's Thing Fund jar 3 times", target: 3, progress: (s) => s.stats.fundRaids || 0, reward: { secs: 900 }, rewardText: '15 minutes of income' },
@@ -552,8 +545,6 @@ LC.STALL_UPS = [
   { id: 'parasol', icon: '⛱️', name: 'Parasol', cost: 2500, desc: 'Looks very professional. (+30% customers)' },
   { id: 'lemonade', icon: '🍋', name: 'Lemonade jug', cost: 15000, desc: 'Sell lemonade too: earns a little while anyone is at the stall.' },
   { id: 'bell', icon: '🔔', name: 'Shop bell', cost: 2e5, desc: 'Ding! Customers come twice as often.' },
-  { id: 'rucksack', icon: '🎒', name: 'Bigger rucksack', cost: 800, desc: 'Carry 24 things instead of 12.' },
-  { id: 'wheelbarrow', icon: '🛒', name: 'Wheelbarrow', cost: 5e5, desc: 'Carry 48 things. Very serious.' },
 ];
 LC.STALL_LINES = {
   browse: ['Hmm...', 'Ooh.', 'What\'s this then?', 'How much for the...', 'Interesting.', 'Is this Lego?'],
@@ -561,3 +552,59 @@ LC.STALL_LINES = {
   pass: ['Not today, love.', 'Bit pricey.', 'I\'ve already got one.', 'Maybe next time.', 'Is that a sock?'],
   collector: ['A RARE one! I collect these!', 'My word. Name your price.', 'This belongs in a museum. My museum.'],
 };
+
+
+// ---- Tools you hold. Bought at Nailed It Hardware. They wear out; repair them at the shed workbench. ----
+// sofa: mult = each rummage x, pct = also finds this share of your £/s. pig: hits = hits needed x, pay = payout x. dig: mult = per dig x.
+LC.TOOLS = {
+  sofa: [
+    { name: 'Your hands', icon: '✋' },
+    { name: 'Rubber Gloves', icon: '🧤', cost: 3, mult: 2, pct: 0, dur: 500, desc: 'Sofa crumbs no longer a concern.' },
+    { name: 'Litter Grabber', icon: '🦯', cost: 150, mult: 6, pct: 0.01, dur: 800, desc: 'Reaches the deep bits. Also finds 1% of your £/s.' },
+    { name: 'Hoover', icon: '🧹', cost: 60000, mult: 18, pct: 0.03, dur: 1500, desc: 'The thin nozzle. Finds 3% of your £/s.' },
+    { name: 'X-Ray Goggles', icon: '🥽', cost: 3e6, mult: 90, pct: 0.06, dur: 3000, desc: 'You can see the coins. You can see EVERYTHING. 6% of your £/s.' },
+  ],
+  pig: [
+    { name: 'Toy Hammer', icon: '🔨' },
+    { name: 'Proper Hammer', icon: '🔨', cost: 2000, hits: 0.5, pay: 1, dur: 200, desc: 'Piggy banks take half as many hits.' },
+    { name: 'Sledgehammer', icon: '🔨', cost: 5e5, hits: 0.3, pay: 1.25, dur: 300, desc: 'Fewer hits, and 25% more inside (it shakes more out).' },
+    { name: 'Dynamite', icon: '🧨', cost: 1e8, hits: 0, pay: 1.5, dur: 120, desc: 'One hit. Everything. 50% more. Stand back.' },
+  ],
+  dig: [
+    { name: 'Mum\'s Good Spoon', icon: '🥄' },
+    { name: 'Trowel', icon: '🌱', cost: 40, mult: 3, dur: 400, desc: 'Digs three times as much.' },
+    { name: 'Spade', icon: '⛏️', cost: 5000, mult: 10, dur: 800, desc: 'A real spade. Digs ten times as much.' },
+    { name: 'Power Drill', icon: '🔩', cost: 2e6, mult: 40, dur: 1500, desc: 'BRRRRR. Digs forty times as much.' },
+  ],
+};
+LC.HARDWARE_EXTRAS = [
+  { id: 'rucksack', icon: '🎒', name: 'Bigger Rucksack', cost: 800, desc: 'Carry 24 things instead of 12.' },
+  { id: 'wheelbarrow', icon: '🛒', name: 'Wheelbarrow', cost: 5e5, desc: 'Carry 48 things. Very serious.' },
+];
+
+// ---- Helpers have names ----
+LC.HELPER_NAMES = {
+  cat: ['Tibbles', 'Smudge', 'Mr Whiskers', 'Biscuit', 'Duchess', 'Gerald', 'Socks', 'Chairman Meow', 'Pickle', 'Toast'],
+  brother: ['Your little brother', 'His mate Dev', 'His mate Ollie', 'Cousin Kyle', 'Some kid called Jayden', 'The twins'],
+  detectorist: ['Ken', 'Barry', 'Maureen', 'Big Steve', 'Little Steve', 'Doreen'],
+  well: ['The Wishing Well'], pusher: ['Pushy', 'Edge Lord', 'Big Bertha'], pigeons: ['Don Coo-leone', 'Feathers', 'The Accountant', 'Gaz'],
+  carboot: ['Trevor', 'Sandra', 'Dodgy Dave'], mine: ['The Mineshaft'], factory: ['The Sofa Factory'], moon: ['Moon Sofa'], multiverse: ['Sofa Prime'],
+};
+
+// ---- Helpers sometimes want something. Bring it and they work 3x harder for 5 minutes. ----
+LC.REQUESTS = [
+  { gen: 'cat', item: 'sardines', icon: '🐟', name: 'Sardines', text: 'The cats are on strike until they get SARDINES.' },
+  { gen: 'brother', item: 'haribo', icon: '🍬', name: 'Haribo', text: 'Your little brother wants Haribo. He will not stop asking.' },
+  { gen: 'detectorist', item: 'batteries', icon: '🔋', name: 'Batteries', text: "The detectorists' batteries are flat. Beep... beep... b..." },
+];
+
+// ---- The shed workbench: make gadgets out of junk ----
+LC.RECIPES = [
+  { id: 'detector', icon: '📡', name: 'Homemade Metal Detector', needs: ['spoon', 'phone', 'bottlecap'], desc: 'Detectorists x2, and you find junk twice as often when digging.' },
+  { id: 'supermagnet', icon: '🧲', name: 'Super Magnet', needs: ['horseshoe', 'marble'], desc: 'Coins fly to you from much further away.' },
+  { id: 'robocat', icon: '🤖', name: 'Robo-Cat Suits', needs: ['phone', 'toycar', 'lego'], minGen: ['cat', 25], desc: 'EVOLUTION: your cats become Robo-Cats. Cats x5.' },
+  { id: 'spelunk', icon: '🔦', name: 'Spelunking Kit', needs: ['spoon', 'bottle', 'soldier'], minGen: ['brother', 25], desc: 'EVOLUTION: your brother goes pro. Little Brothers x5.' },
+  { id: 'pigeonradio', icon: '📻', name: 'Pigeon Radio', needs: ['phone', 'key'], minGen: ['pigeons', 10], desc: 'The Pigeon Syndicate gets organised. Pigeons x3.' },
+  { id: 'charm', icon: '🍀', name: 'Lucky Charm', needs: ['horseshoe', 'foreign', 'medal'], desc: 'All income +25%.' },
+  { id: 'molekit', icon: '⛑️', name: "Mole King's Hard Hat", needs: ['crown', 'fossil'], desc: 'Dig speed x3.' },
+];
