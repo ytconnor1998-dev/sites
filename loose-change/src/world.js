@@ -445,11 +445,11 @@ function spawnCustomer(kind) {
     wait -= dt;
     if (stage === 'browse' && wait <= 0) {
       const r = LC.game.customerArrived(kind, o);
-      if (r && r.wait) { stage = 'waiting'; wait = r.wait; stallWaiter = a; say(pick(['Hello? Anyone?', 'Is this your stall?', '*taps foot*'])); return; }
+      if (r && r.wait) { stage = 'waiting'; wait = r.wait; stallWaiter = a; say(pick(LC.STALL_LINES.waiting)); return; }
       if (r && r.say) say(r.say);
       stage = 'leave';
     } else if (stage === 'waiting') {
-      if (Math.random() < dt * 0.15) say(pick(['Helloooo?', '*coughs loudly*', 'I have places to be.', '*looks at watch*']));
+      if (Math.random() < dt * 0.15) say(pick(LC.STALL_LINES.impatient));
       if (nearStall(4.5)) {
         const r = LC.game.customerServe(kind, o);
         if (r && r.say) say(r.say);

@@ -691,7 +691,7 @@
   function customerGaveUp(kind) {
     waiting = Math.max(0, waiting - 1);
     const live = stallSlots().map((x, i) => (x && i < stallSize() ? i : -1)).filter((i) => i >= 0);
-    if (!live.length || chance(0.45) || perk('kid', 5)) return { say: perk('kid', 5) && live.length ? 'Alfie was guarding the stall. I didn\'t dare.' : pick(['Nobody here? Fine.', 'I waited AGES.', "I'll come back. (They won't.)"]) };
+    if (!live.length || chance(0.45) || perk('kid', 5)) return { say: perk('kid', 5) && live.length ? 'Alfie was guarding the stall. I didn\'t dare.' : pick(['Nobody here? Fine. I\'ll write a strongly worded review.', 'I waited AGES. Longer than a bank holiday queue.', "I'll pop back. (They won't pop back.)"]) };
     const idx = kind === 'collector' ? (live.find((i) => LC.JUNK[stallSlots()[i].id].rarity >= 3) ?? pick(live)) : pick(live);
     const it = stallSlots()[idx];
     stallSlots()[idx] = null;
@@ -699,7 +699,7 @@
     stolen = it;
     LC.audio.sfx('event');
     toast(`${ic('🏃')}<div><b>THIEF!</b> Someone nicked your ${LC.JUNK[it.id].name.toLowerCase()}!<br><small>Chase them down the street!</small></div>`, 'gold');
-    return { steal: true, icon: LC.JUNK[it.id].icon, say: pick(['Finders keepers!', 'Bye!', 'It was FREE, right?']) };
+    return { steal: true, icon: LC.JUNK[it.id].icon, say: pick(LC.STALL_LINES.thief) };
   }
   let stolen = null;
   function thiefCaught() {
@@ -711,7 +711,7 @@
     LC.audio.sfx('fanfare');
     toast(`${ic('🫵')}<div><b>Caught them!</b> You got your ${LC.JUNK[stolen.id].name.toLowerCase()} back.${bonus ? `<br><small>They gave you ${fmt(bonus)} to keep it quiet.</small>` : ''}</div>`, 'gold');
     stolen = null;
-    return pick(['Sorry! SORRY!', "Alright, alright, here's your stuff!", 'Please don\'t tell my mum.', "I was just... borrowing it!"]);
+    return pick(LC.STALL_LINES.caught);
   }
   function thiefEscaped() { if (stolen) { say(`They got away with your ${LC.JUNK[stolen.id].name.toLowerCase()}. Gone forever.`); stolen = null; } }
   function customerServe(kind, npc) { waiting = Math.max(0, waiting - 1); return customerAtStall(kind, npc); }
@@ -872,15 +872,16 @@
     ] });
   }
   const BRIAN_CHAT = [
-    () => `"Morning kiddo. Thing Fund's looking healthy. ${fmt(brianMoney())}, if you must know."`,
-    () => '"Your grandad and I had an understanding. The Thing is MINE."',
-    () => '"Lovely day for mowing. Every day is a lovely day for mowing."',
-    () => '"Have you seen my gnome looking at you? He does that."',
-    () => (S.brian.p > Math.log10(1 + S.money) / 12 ? '"Better hurry up. I\'m winning. 🙂"' : '"You\'re doing... well. Suspiciously well."'),
+    () => `"Morning. As per my previous correspondence, the Thing Fund is now at ${fmt(brianMoney())}. Kind regards. Brian."`,
+    () => '"Your grandad and I had an understanding. In 1983. Over a pint. I have it written on a beer mat. Laminated."',
+    () => '"Lovely day for mowing. Every day is a lovely day for mowing. I mow in the rain. It\'s called commitment."',
+    () => '"I\'ve noticed my gnome looking at you. I\'ve logged it. In the gnome log."',
+    () => '"Just to flag: your hole is 0.3 metres from my fence. I\'ve measured. Twice. With a proper tape."',
+    () => (S.brian.p > Math.log10(1 + S.money) / 12 ? '"Better hurry up, sunshine. I\'m winning. I\'ve made a graph."' : '"You\'re doing... well. Suspiciously well. I\'ve written to the council."'),
   ];
   let brianChatIdx = 0;
   function chatBrian() {
-    modal({ speaker: 'brian', icon: '👨', title: 'Brian', text: BRIAN_CHAT[brianChatIdx++ % BRIAN_CHAT.length](), choices: [{ label: '"Cool. Bye Brian."' }, { label: '"Mine\'s bigger."', fn: () => ({ text: '"Your WHAT is bigger?" "Hole." "...Mine\'s deeper."' }) }] });
+    modal({ speaker: 'brian', icon: '👨', title: 'Brian', text: BRIAN_CHAT[brianChatIdx++ % BRIAN_CHAT.length](), choices: [{ label: '"Lovely. Ta-ra, Brian."' }, { label: '"Mine\'s bigger."', fn: () => ({ text: '"Your WHAT is bigger?" "Hole." "...Mine\'s deeper."' }) }] });
   }
   function setSuspicion(v, seeing) {
     const e = $('#sus');
@@ -1168,10 +1169,10 @@
         S.flags.ringReturned = true; S.flags.hasRing = false; const n = lump(1200, 50); gain(n); S.flags.nanJumper = true; LC.audio.sfx('fanfare');
         return { icon: '🧶', text: `Nan cries a bit. Then she gives you ${fmt(n)} and a knitted jumper with a coin on it. "He'd be so proud." (All income +10%)` };
       } }] }) : modal({ speaker: 'nan', icon: '👵', title: "Nan's popped round",
-      text: 'She has her handbag. The handbag always has something in it.',
+      text: '"Ee, there you are, love! Come here, give your Nan a squeeze. Have you eaten? You look peaky." She has her handbag. The handbag always has something in it.',
       choices: [
-        { label: 'Put the kettle on', fn: () => { const n = lump(120, 5); gain(n); return { text: `She gives you ${fmt(n)} and says you look thin.` }; } },
-        { label: 'Hide behind the sofa', fn: () => { const n = lump(60, 1); gain(n); return { text: `While hiding you find ${fmt(n)} and three Werther's Originals. She knew you were there.` }; } },
+        { label: 'Put the kettle on', fn: () => { const n = lump(120, 5); gain(n); return { text: `"Ooh, lovely. Milk, two sugars, and don\'t drown it." She slips you ${fmt(n)}. "Don\'t tell your mother."` }; } },
+        { label: 'Hide behind the sofa', fn: () => { const n = lump(60, 1); gain(n); return { text: `While hiding you find ${fmt(n)} and three butterscotch sweets. "I can see your feet, love."` }; } },
       ] }) },
     { id: 'goose', w: 9, run: () => {
       if (!S.goose.met) return modal({ speaker: 'goose', icon: '🪿', title: 'A goose has entered the garden',
@@ -1314,7 +1315,7 @@
     if (S.flags.cellarKnown || S.stats.cards < 10) return;
     if (LC.world.cardActive() || screenOpen) { setTimeout(() => pending.push(cellarHint), 2000); return; }
     S.flags.cellarKnown = true;
-    modal({ speaker: 'man', npc: LC.world.keeper(), icon: '🏪', title: 'The shopkeeper', text: LC.SITE_LINES.cellarHint,
+    modal({ speaker: 'man', npc: LC.world.keeper(), icon: '🏪', title: 'Del', text: LC.SITE_LINES.cellarHint,
       choices: [{ label: 'Roman ruins?! Under a corner shop?' , fn: () => ({ text: '"Where do you think the Romans bought their scratch cards?" The trapdoor is behind the counter.' }) }, { label: 'Is this a trap?', fn: () => ({ text: '"Everything in life is a trap, kid. This one\'s just got a ladder." The trapdoor is behind the counter.' }) }] });
   }
 
@@ -1552,8 +1553,8 @@
   function mayor(npc) {
     if (!once('mayor')) return say('The Mayor has already shaken your hand. Twice would be weird.');
     const n = lump(300, 5); gain(n);
-    modal({ speaker: 'mayor', npc, icon: '🎩', title: 'The Mayor', text: `Ah! A young entrepreneur! I've heard about your little stall. Have ${fmt(n)} from the town's Small Business Fund. Don't tell Brian. He applied eleven times.`,
-      choices: [{ label: 'Thank you, Mayor!' }, { label: 'Can I have your chain?', fn: () => ({ text: 'No. But he laughs, and gives you a commemorative pen. It is worth nothing.' }) }] });
+    modal({ speaker: 'mayor', npc, icon: '🎩', title: 'The Mayor', text: `Ah! A young entrepreneur! Splendid, simply splendid. I\'ve heard all about your little stall. Do have ${fmt(n)} from the Small Business Fund, there\'s a good chap. Mum\'s the word to Brian. He applied eleven times. In crayon.`,
+      choices: [{ label: 'Thank you, Mayor!' }, { label: 'Can I have your chain?', fn: () => ({ text: '"Ha! Good heavens, no. Cheeky blighter." He gives you a commemorative pen instead. It says MAYOR on it. It does not work.' }) }] });
   }
   function treasureDig() {
     if (!once('treasure')) return say('Already dug. Just a hole now.');
@@ -1742,9 +1743,9 @@
   const SCREENS = {
     phone: { title: 'Phone', icon: '📱' },
     shed: { title: 'The Shed', icon: '🛖', tabs: [['shed', '⛏️', 'Diggers'], ['workbench', '🔧', 'Workbench']] },
-    corner: { title: 'Corner Shop', icon: '🏪', tabs: [['shop-corner', '🍬', 'Treats & gear'], ['scratch', '🎟️', 'Scratchcards']] },
+    corner: { title: 'Del\'s Corner Shop', icon: '🏪', tabs: [['shop-corner', '🍬', 'Treats & gear'], ['scratch', '🎟️', 'Scratchcards']] },
     charity: { title: 'Second Chances Charity Shop', icon: '🧥', tabs: [['shop-charity', '🧥', 'Everything 50p*']] },
-    hardware: { title: 'Nailed It Hardware', icon: '🔨', tabs: [['shop-hardware', '🔨', 'Tools']] },
+    hardware: { title: 'Nailed It Hardware · Big Kev, prop.', icon: '🔨', tabs: [['shop-hardware', '🔨', 'Tools']] },
     board: { title: 'Notice Board', icon: '📌', tabs: [['finders', '📌', 'Help wanted']] },
   };
   let screenOpen = null, phoneApp = null, msgThread = null, openNote = null;
@@ -1842,9 +1843,9 @@
     return out;
   }
   const SHOP_FLAVOUR = {
-    corner: '"Treats for your helpers. And sweets for you, if you\'re good." The man behind the counter is also selling scratch cards.',
-    charity: 'Everything is 50p.* (*Nothing is 50p.) It smells of old books and mystery.',
-    hardware: '"Tools, love? We\'ve got tools." There is a man here who has been choosing a screwdriver since 2003.',
+    corner: 'Del leans on the counter. "Alright, guv\'nor? Treats for your little helpers, sweets for you if you\'re good, and scratchcards if you\'re feelin\' lucky. Which you ain\'t. Nobody is. Go on then."',
+    charity: 'Pauline peers over her glasses. "Everything is 50p, dear.* Please don\'t touch the porcelain owls. They\'re not for sale. They\'re for looking at." (*Nothing is 50p.)',
+    hardware: 'Big Kev looks up from his tea. "Ey up. Tha\'ll be wantin\' tools, will tha? We\'ve got tools. Proper tools. None of that flat-pack rubbish." A man by the screwdrivers has been choosing one since 2003.',
   };
   function renderShopPanel() {
     const items = shopItems(shopOpen);

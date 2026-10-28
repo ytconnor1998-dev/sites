@@ -153,6 +153,13 @@ LC.CARD_RESTOCK_SECS = 60;
 
 // ---- News ticker ----
 LC.NEWS = [
+  'Man queues for forty minutes, reaches front, apologises, leaves.',
+  'Local woman says it is "close" today. It is 19 degrees.',
+  'Hosepipe ban announced after two sunny days.',
+  'Kettle sales soar as nation agrees "it\'s a bit nippy".',
+  'Brian writes 14th letter to council about "the hole".',
+  'Bus arrives on time. Witnesses "shaken".',
+  'Pensioner wins argument about the correct way to make tea. "Milk last," confirms everyone except her.',
   'Local cat arrested for fraud. "He seemed so normal," say neighbours.',
   'Experts confirm sofas are now 40% coins.',
   'Pigeons deny involvement in wave of shiny-thing thefts.',
@@ -463,12 +470,12 @@ LC.SECRETS = [
 
 // ---- What townsfolk say when you say hello. The first lines often hide a hint. ----
 LC.CHAT = {
-  jogger: ['"Can\'t stop! Personal best!"', '"Found a quid on my run once. By the phone box."', '"Do you ever just... run?"', '"I\'ve been running for nine years. I don\'t know how to stop."'],
-  oldman: ['"Back in my day you\'d find a pound under every park bench."', '"That fountain\'s full of wishes. Shame to waste them."', '"Your grandad and I used to go metal detecting. He never told me what he found."', '"The dog\'s called Biscuit. Biscuit is smarter than me."'],
-  postman: ['"Lot of post for your Grandad lately. Big parcels. Heavy."', '"That drain cover on Acacia Road jingles when I walk over it. Jingles! Drains shouldn\'t jingle. Not my department though."', '"That goose bit me on Tuesday. And Wednesday."', '"Brian at number 7 gets a lot of parcels from a shop called SPADES R US."', '"Never trust a letterbox with brushes in it."'],
-  mum: ['"Oh hello love! Saving up for something?"', '"The baby swallowed a 2p once. We got it back. Don\'t ask how."', '"I always leave my change in the washing. Every time."', '"Have you seen the size of the hole next door to Brian\'s?"'],
-  kid: ['"I\'m saving up too. I have 4p."', '"The fountain is magic. My mate got 50p out of it."', '"Brian shouted at me for touching his gnome."', '"Do you want to swap a Lego for a button?"'],
-  lady: ['"Ooh, you\'re Ken\'s grandchild aren\'t you! Lovely man. Hid money everywhere."', '"I put 20p in the phone box in 1994 and it never gave it back."', '"The pigeons round here are organised, dear. Be careful."', '"Have you tried the benches in the park?"'],
+  jogger: ['"Alright la! Can\'t stop! Personal best, this!"', '"Found a quid on me run once. By the phone box. Best day of me life, that."', '"D\'ya ever just... run? Ya should. Clears the head, la."', '"Been runnin\' for nine years. Me legs don\'t know how to stop. Send help."', '"That drain on Acacia Road jingles, by the way. Just sayin\'. Proper jingles."'],
+  oldman: ['"Ooh arr. Back in my day you\'d find a pound under every park bench, and a pickled egg."', '"That fountain\'s full of wishes, my lover. Shame to waste \'em."', '"Your grandad and I went metal detectin\'. He never told me what he found. Proper secretive, he were."', '"The dog\'s called Biscuit. Biscuit is cleverer than I. Biscuit does my taxes."', '"Moles under the park, there are. Big molehill by the swings. They\'m up to summat."'],
+  postman: ['"Ow do! Lot of post for your grandad lately. Big parcels. Heavy. Rattly."', '"That drain cover on Acacia Road jingles when I walk over it. Jingles! Drains shouldn\'t jingle. Not my department though, bab."', '"That goose had me on Tuesday. And Wednesday. Thursday I took the long way round."', '"Brian at number 7 gets a parcel from SPADES R US every week. What\'s he DOING?"'],
+  mum: ['"Oh my DAYS, hiya babe! Saving up for something, are ya?"', '"Tyson swallowed a 2p once. We got it back. Don\'t ask, babe. Honestly, don\'t."', '"I always leave me change in the washing. Every. Single. Time. Shocking."', '"Have you seen the size of that hole in your garden? Your mum\'s gonna do her nut."'],
+  kid: ['"Bruv. I\'m saving up too. I\'ve got 4p. I\'m basically rich, innit."', '"The fountain\'s well magic. My mate got 50p out of it. He\'s a legend."', '"Brian shouted at me for touching his gnome. So I touched it again. Twice."', '"Swap you a Lego for a button? No? Rude, innit."'],
+  lady: ['"Och, you\'re Ken\'s wee grandbairn! Lovely man. Hid money EVERYWHERE, so he did."', '"I put 20p in that phone box in 1994, hen. Never gave it back. I\'ve not forgotten."', '"The pigeons round here are organised, dear. They\'ve got a union."', '"Have you tried the benches in the park? Folk drop all sorts. Mostly their dignity."'],
 };
 
 // ---- Tasks: a guided checklist (separate from secrets). Three show at a time, top-left. ----
@@ -560,10 +567,14 @@ LC.STALL_UPS = [
   { id: 'bell', icon: '🔔', name: 'Shop bell', cost: 2e5, desc: 'Ding! Customers come twice as often.' },
 ];
 LC.STALL_LINES = {
-  browse: ['Hmm...', 'Ooh.', 'What\'s this then?', 'How much for the...', 'Interesting.', 'Is this Lego?'],
-  buy: ['Lovely, I\'ll take it!', 'Bargain!', 'My nephew will love this.', 'Sold!', 'Just what I needed. Somehow.'],
-  pass: ['Not today, love.', 'Bit pricey.', 'I\'ve already got one.', 'Maybe next time.', 'Is that a sock?'],
-  collector: ['A RARE one! I collect these!', 'My word. Name your price.', 'This belongs in a museum. My museum.'],
+  browse: ['Ooh, what\'s all this then?', 'Lovely bit of tat, this.', 'Mind if I have a gander?', 'How much for the... no, go on, guess.', 'Is that a genuine Lego?', 'Just browsing, love. Like a civilised person.', 'Oh, I used to have one of these. Then I grew up.'],
+  buy: ['Go on then, I\'ll take it. Cheers, love!', 'Bargain! Don\'t tell the wife.', 'Our Jason will love this. He loves anything.', 'Sold! Keep the change. Actually, no, give me the change.', 'Smashing. Absolutely smashing.', 'Right, that\'s Christmas sorted.'],
+  pass: ['Ooh, no, not today, love.', 'How much?! I\'ve seen cheaper at the tip.', 'I\'ve already got one. In the loft. Somewhere.', 'Mustn\'t grumble. But I will. No thanks.', 'Is that a sock? Why are you selling a sock?', 'I\'ll have a think. (They will not have a think.)'],
+  collector: ['Good heavens. A RARE one! I collect these, you know.', 'My word. Name your price, young man. Or young lady. Or whoever you are.', 'This belongs in a museum. My museum. It\'s in my shed.'],
+  waiting: ['Hello? Anybody home?', 'Is this your stall? It\'s very... a stall.', '*taps foot in a very British way*', 'I don\'t want to be a bother, but...', '*clears throat politely*'],
+  impatient: ['Helloooo? I\'m queueing here.', 'I\'ve been stood here longer than the bus takes.', 'Right, I\'m going to sigh. *sighs*', 'I am NOT making a fuss. *makes a fuss*', 'This is worse than the post office.'],
+  thief: ['Finders keepers, losers weepers!', 'Ta very much!', 'It said "free", innit? Didn\'t it? It didn\'t.', 'Cheerio!'],
+  caught: ['Sorry! SORRY! Very sorry! I\'m British!', 'Alright, alright, keep your hair on!', 'Please don\'t tell me mum.', 'I was only borrowing it, honest guv!'],
 };
 
 
@@ -743,7 +754,7 @@ LC.TREASURE_CLUES = [
 LC.FRIENDS = {
   jogger: { name: 'Speedy Steve', icon: '🏃', likes: ['sock', 'bottle', 'medal'], likeText: 'Likes: anything to do with running. And socks.',
     hearts: [
-      'You again! You\'re alright, you. Most people just tell me to slow down.',
+      'You again! You\'re sound, you are, la. Most people just tell me to slow down.',
       'Can I tell you something? I don\'t know where I\'m running TO. I just started in 2015 and never stopped.',
       'Here\'s a tip: lean forward, swing your arms. You\'ll get everywhere faster. (You now walk 15% faster.)',
       'I ran past your grandad every morning for nine years. He always waved with a biscuit in his hand.',
@@ -751,7 +762,7 @@ LC.FRIENDS = {
     ], perks: { 3: 'Walk 15% faster', 5: 'Steve drops off coins from his runs' } },
   oldman: { name: 'Old Reg', icon: '👴', likes: ['pipe', 'roman', 'horseshoe', 'foreign'], likeText: 'Likes: old things. "Like me," he says.',
     hearts: [
-      'Ken\'s grandchild! You\'ve got his nose. And his habit of looking under things.',
+      'Ooh arr, Ken\'s grandchild! You\'ve got his nose. And his habit of lookin\' under things.',
       'Biscuit likes you. Biscuit doesn\'t like anyone. Biscuit bit the vicar.',
       'Secret: under the park benches, look right at the back where the bolts are. (Benches pay three times as much.)',
       'Your grandad and I found a Roman coin once. He swapped it for a pint and a pickled egg. Best day of his life.',
@@ -767,7 +778,7 @@ LC.FRIENDS = {
     ], perks: { 3: 'Dave delivers unclaimed parcels', 5: 'Dave loses Brian\'s parcels' } },
   mum: { name: 'Kelly (and baby Tyson)', icon: '👶', likes: ['remote', 'marble', 'toycar', 'lego'], likeText: 'Likes: toys for Tyson. He eats them.',
     hearts: [
-      'Hiya! Say hello, Tyson. He won\'t. He\'s a baby.',
+      'Hiya babe! Say hello, Tyson. He won\'t. He\'s a baby. Bless him, he\'s thick as mince.',
       'Tyson swallowed a 2p last week. We got it back. You can have it. Don\'t ask how.',
       'Little trick: put your washing on the quick cycle. Same coins, half the time. (Washing machine twice as fast.)',
       'I went to school with Brian. He was exactly the same. Even his moustache, I think.',
@@ -775,7 +786,7 @@ LC.FRIENDS = {
     ], perks: { 3: 'Washing machine twice as fast', 5: 'A big babysitting payday' } },
   kid: { name: 'Little Alfie', icon: '🧒', likes: ['soldier', 'toycar', 'lego', 'tamagotchi'], likeText: 'Likes: toys. ALL toys. Especially soldiers.',
     hearts: [
-      'You\'re the kid with the stall! That\'s SO cool. I\'ve got 4p. I\'m saving up too.',
+      'You\'re the kid with the stall! That\'s well peak, bruv. I\'ve got 4p. I\'m saving up too, innit.',
       'I\'ve got 6p now. I found 2p on the slide. Do you think I\'ll be rich?',
       'I told EVERYONE at school about your stall. (Stall customers come 25% more often.)',
       'Brian shouted at me for touching his gnome. I touched it again when he wasn\'t looking.',
@@ -783,7 +794,7 @@ LC.FRIENDS = {
     ], perks: { 3: 'Stall customers +25%', 5: 'Alfie guards your stall: no thieves' } },
   lady: { name: 'Mrs Higgins', icon: '👵', likes: ['spoon', 'ring', 'bottlecap', 'fossil'], likeText: 'Likes: shiny things and spoons. She collects spoons.',
     hearts: [
-      'Ooh, Ken\'s grandchild! Come here, let me look at you. You need feeding.',
+      'Och, Ken\'s grandbairn! Come here, let me look at you. You\'re wasting away, hen. Have a biscuit.',
       'I put 20p in that phone box in 1994. It never gave it back. I think about it every day.',
       'I knitted you a little coin purse. Coins seem to stick to it. (All income +5%.)',
       'Your grandad asked me to the dance in 1962. I said no. Biggest mistake of my life. Then I married Gerald.',
@@ -915,8 +926,8 @@ LC.DIG_SITES = {
   molehill: { name: 'the Mole Kingdom', spawn: 'mole', need: 80 },
 };
 LC.SITE_LINES = {
-  cellarNo: ['"Oi. Customers THAT side of the counter."', '"That\'s the cellar. Nothing down there. Definitely not Roman. Stop looking at it."', '"STAFF ONLY. Especially you."'],
-  cellarHint: 'You\'re my best scratch card customer. Nobody loses money like you. So... between us? When we did the cellar, the builders hit old Roman stones and I told them to fill it back in. They were cowboys. They didn\'t. Grab a spade.',
+  cellarNo: ['"Oi oi! Customers THAT side of the counter, sunshine."', '"That\'s the cellar, innit. Nothing down there. Definitely not Roman. Stop lookin\' at it."', '"STAFF ONLY. Especially you. ESPECIALLY you."'],
+  cellarHint: 'Listen \'ere. You\'re my best scratchcard customer, you are. Nobody loses money like you, it\'s beautiful. So, between you and me and the gatepost... when we done the cellar, the builders hit old Roman stones. I told \'em fill it in. Proper cowboys, they were. They never. Grab a spade, my son.',
   drainNo: ['It won\'t budge. You need something to lever it up. Something crow-shaped. And bar-ish.', 'You pull with all your might. The drain wins.', 'You can hear dripping down there. And coins. Definitely coins.'],
   molehill: ['A mole pops out, looks at you, and goes back in. Rude.', 'You dig. Somewhere below, a tiny voice shouts "KNOCK FIRST!"', 'Dirt. More dirt. A mole-sized "KEEP OUT" sign.', 'The molehill is fighting back. You are winning. Just.'],
 };
