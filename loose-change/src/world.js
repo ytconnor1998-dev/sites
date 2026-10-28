@@ -1473,7 +1473,7 @@ function gooseUpdate(dt, t) {
 // Characters that come and talk to you: they walk (or fly) up, chat in a speech bubble, then leave.
 const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk', shopkeeper: 'babble', piggy: 'oink', dev: 'babble', mum: 'babbleHigh', aussie: 'babbleLow', pirate: 'babbleLow', bully: 'babble' };
 function makeVisitor(kind) {
-  if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92, char: 'f' });
+  if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92, char: 'nan' });
   if (kind === 'badger') { const o = M.badger(); o.scale.setScalar(1.4); const tie = M.box(0.06, 0.18, 0.02, 0xc8231f, 0, 0.28, 0.62); o.add(tie); return o; }
   if (kind === 'fox') { const o = M.cat(0xe0662a); o.scale.setScalar(1.6); return o; }
   if (kind === 'seagull') { const o = M.pigeon(); o.scale.setScalar(3.2); o.traverse((m) => { if (m.material && m.material.color && m.material.color.getHex() === 0x8d93a3) m.material = M.mat(0xffffff); }); return o; }
@@ -1494,7 +1494,7 @@ function talkStart(kind, npc) {
     talker.update = () => {
       if (!talker || talker.obj !== o) return;
       o.rotation.y = Math.atan2(player.pos.x - o.position.x, player.pos.z - o.position.z);
-      const p = project(o.position.clone().setY(o.position.y + talker.head));
+      const p = project(o.position.clone().setY(bubbleY(o.position.y, talker.head)));
       const b = document.getElementById('bubble');
       if (p && b.classList.contains('show')) b.style.transform = `translate(${Math.max(160, Math.min(innerWidth - 160, p.x))}px, ${Math.max(90, Math.min(innerHeight - 260, p.y))}px) translate(-50%, -100%)`;
     };
@@ -1533,7 +1533,7 @@ function talkStart(kind, npc) {
     if (T.flying) o.position.y += ((T.state === 'leave' ? 9 : 0.9 + Math.sin(t * 6) * 0.15) - o.position.y) * Math.min(1, dt * 2.5);
     if (kind === 'coin') o.position.y = Math.abs(Math.sin(t * 6)) * 0.3;
     // keep the speech bubble over their head
-    const p = project(o.position.clone().setY(o.position.y + T.head));
+    const p = project(o.position.clone().setY(bubbleY(o.position.y, T.head)));
     const b = document.getElementById('bubble');
     if (p && b.classList.contains('show')) {
       const x = Math.max(160, Math.min(innerWidth - 160, p.x)), y = Math.max(90, Math.min(innerHeight - 260, p.y));
@@ -1550,6 +1550,8 @@ function talkSay(text, name) {
   bubble(true);
   LC.audio.sfx(VOICES[talker.kind] || 'babble');
 }
+// where a speech bubble hangs: over the head, or under the feet when the world is upside down (Australia)
+function bubbleY(y, head) { return flipTarget ? y - 0.2 : y + head; }
 function bubble(on) { document.getElementById('bubble').classList.toggle('show', on); }
 function talkEnd(now) {
   if (!talker) return;
@@ -2121,7 +2123,7 @@ function updateSpeech() {
   for (let i = speech.length - 1; i >= 0; i--) {
     const s2 = speech[i];
     if (performance.now() / 1000 > s2.until || !s2.obj.parent) { s2.el.remove(); speech.splice(i, 1); continue; }
-    s2.obj.getWorldPosition(_hp); _hp.y += headOf(s2.obj);
+    s2.obj.getWorldPosition(_hp); _hp.y = bubbleY(_hp.y, headOf(s2.obj));
     // only readable when you're close to them and looking their way
     const dist = _hp.distanceTo(camera.position), p = dist > SPEECH_RANGE ? null : project(_hp);
     const onScreen = p && p.x > 40 && p.x < innerWidth - 40 && p.y > 60 && p.y < innerHeight - 40;

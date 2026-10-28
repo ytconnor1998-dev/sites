@@ -521,5 +521,8 @@
   "kenney/houses/building-sample-house-a.glb",
   "kenney/houses/building-sample-house-b.glb",
   "kenney/houses/building-sample-house-c.glb"
+ ],
+ "char:nan": [
+  "kenney/people/character-nan.glb"
  ]
 }
