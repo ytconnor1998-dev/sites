@@ -516,5 +516,10 @@
  ],
  "kk:table_round_A_small_decorated": [
   "kaykit/kitchen/table_round_A_small_decorated.gltf"
+ ],
+ "house": [
+  "kenney/houses/building-sample-house-a.glb",
+  "kenney/houses/building-sample-house-b.glb",
+  "kenney/houses/building-sample-house-c.glb"
  ]
 }

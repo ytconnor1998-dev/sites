@@ -555,6 +555,16 @@ export function signPlane(text, w, h, { bg = '#2d6a4f', color = '#fffaf0', font 
 const triShape = (w, h) => new THREE.Shape([new THREE.Vector2(-w / 2, 0), new THREE.Vector2(w / 2, 0), new THREE.Vector2(0, h)]);
 // a two-storey British terraced/semi house, front facing +z. Origin at the middle of the front wall, on the ground.
 export function townHouse({ w = 9, d = 9, wallTex = null, wallColor = 0xb5573b, door = 0x3b6ea5, roof = M_ROOF, trim = 0xf3eee4, number = null, lit = true, hollow = false } = {}) {
+  // the neighbours' houses are real models when we have them (yours and Brian's are built so you can go in)
+  if (!hollow && lib.house) {
+    const real = fit('house', { w, n: number || Math.floor(w * 7) });
+    if (real) {
+      real.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(real);
+      real.children[0].position.z -= b.max.z; // front of the house on the pavement line
+      return real;
+    }
+  }
   const g = new THREE.Group();
   const H = 5.4;
   // a hollow house (one you can go inside) gets its walls built separately; this adds the upstairs, roof and windows
