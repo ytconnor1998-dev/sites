@@ -1,59 +1,59 @@
 {
  "tree": [
-  "kaykit/Tree_1_A_Color1.gltf",
-  "kaykit/Tree_1_B_Color1.gltf",
-  "kaykit/Tree_1_C_Color1.gltf",
-  "kaykit/Tree_2_A_Color1.gltf",
-  "kaykit/Tree_2_B_Color1.gltf",
-  "kaykit/Tree_2_C_Color1.gltf",
-  "kaykit/Tree_3_A_Color1.gltf",
-  "kaykit/Tree_3_B_Color1.gltf",
-  "kaykit/Tree_4_A_Color1.gltf",
-  "kaykit/Tree_4_B_Color1.gltf"
+  "kaykit/Tree_1_A_Color1.glb",
+  "kaykit/Tree_1_B_Color1.glb",
+  "kaykit/Tree_1_C_Color1.glb",
+  "kaykit/Tree_2_A_Color1.glb",
+  "kaykit/Tree_2_B_Color1.glb",
+  "kaykit/Tree_2_C_Color1.glb",
+  "kaykit/Tree_3_A_Color1.glb",
+  "kaykit/Tree_3_B_Color1.glb",
+  "kaykit/Tree_4_A_Color1.glb",
+  "kaykit/Tree_4_B_Color1.glb"
  ],
  "bush": [
-  "kaykit/Bush_1_A_Color1.gltf",
-  "kaykit/Bush_1_B_Color1.gltf",
-  "kaykit/Bush_2_A_Color1.gltf",
-  "kaykit/Bush_2_B_Color1.gltf",
-  "kaykit/Bush_4_A_Color1.gltf",
-  "kaykit/Bush_4_B_Color1.gltf"
+  "kaykit/Bush_1_A_Color1.glb",
+  "kaykit/Bush_1_B_Color1.glb",
+  "kaykit/Bush_2_A_Color1.glb",
+  "kaykit/Bush_2_B_Color1.glb",
+  "kaykit/Bush_4_A_Color1.glb",
+  "kaykit/Bush_4_B_Color1.glb"
  ],
  "rock": [
-  "kaykit/Rock_1_A_Color1.gltf",
-  "kaykit/Rock_1_B_Color1.gltf",
-  "kaykit/Rock_1_C_Color1.gltf",
-  "kaykit/Rock_2_A_Color1.gltf",
-  "kaykit/Rock_2_B_Color1.gltf"
+  "kaykit/Rock_1_A_Color1.glb",
+  "kaykit/Rock_1_B_Color1.glb",
+  "kaykit/Rock_1_C_Color1.glb",
+  "kaykit/Rock_2_A_Color1.glb",
+  "kaykit/Rock_2_B_Color1.glb"
  ],
  "pebble": [
-  "nature/Pebble_Round_1.gltf",
-  "nature/Pebble_Round_2.gltf",
-  "nature/Pebble_Round_3.gltf",
-  "nature/Pebble_Square_1.gltf",
-  "nature/Pebble_Square_2.gltf"
+  "nature/Pebble_Round_1.glb",
+  "nature/Pebble_Round_2.glb",
+  "nature/Pebble_Round_3.glb",
+  "nature/Pebble_Square_1.glb",
+  "nature/Pebble_Square_2.glb"
  ],
  "grass": [
-  "nature/Grass_Common_Short.gltf",
-  "nature/Grass_Common_Tall.gltf",
-  "nature/Grass_Wispy_Short.gltf",
-  "nature/Grass_Wispy_Tall.gltf"
+  "nature/Grass_Common_Short.glb",
+  "nature/Grass_Common_Tall.glb",
+  "nature/Grass_Wispy_Short.glb",
+  "nature/Grass_Wispy_Tall.glb"
  ],
  "flower": [
-  "nature/Flower_3_Group.gltf",
-  "nature/Flower_4_Group.gltf",
-  "nature/Clover_1.gltf",
-  "nature/Clover_2.gltf"
+  "nature/Flower_3_Group.glb",
+  "nature/Flower_4_Group.glb",
+  "nature/Clover_1.glb",
+  "nature/Clover_2.glb"
  ],
  "plant": [
-  "nature/Fern_1.gltf",
-  "nature/Plant_1.gltf",
-  "nature/Plant_7.gltf",
-  "nature/Plant_1_Big.gltf"
+  "nature/Fern_1.glb",
+  "nature/Plant_1.glb",
+  "nature/Plant_7.glb",
+  "nature/Plant_1_Big.glb"
  ],
  "mushroom": [
-  "nature/Mushroom_Common.gltf",
-  "nature/Mushroom_Laetiporus.gltf"
+  "nature/Mushroom_Common.glb",
+  "nature/Mushroom_Laetiporus.glb"
  ],
  "boat:boat-row-large": [
   "kenney/boats/boat-row-large.glb"
@@ -419,103 +419,103 @@
   "kenney/road/construction-cone.glb"
  ],
  "kf:pillow_A": [
-  "kaykit/furniture/pillow_A.gltf"
+  "kaykit/furniture/pillow_A.glb"
  ],
  "kf:table_medium": [
-  "kaykit/furniture/table_medium.gltf"
+  "kaykit/furniture/table_medium.glb"
  ],
  "kf:book_set": [
-  "kaykit/furniture/book_set.gltf"
+  "kaykit/furniture/book_set.glb"
  ],
  "kf:pictureframe_large_A": [
-  "kaykit/furniture/pictureframe_large_A.gltf"
+  "kaykit/furniture/pictureframe_large_A.glb"
  ],
  "kf:pictureframe_medium": [
-  "kaykit/furniture/pictureframe_medium.gltf"
+  "kaykit/furniture/pictureframe_medium.glb"
  ],
  "kf:rug_rectangle_stripes_A": [
-  "kaykit/furniture/rug_rectangle_stripes_A.gltf"
+  "kaykit/furniture/rug_rectangle_stripes_A.glb"
  ],
  "kf:shelf_B_large_decorated": [
-  "kaykit/furniture/shelf_B_large_decorated.gltf"
+  "kaykit/furniture/shelf_B_large_decorated.glb"
  ],
  "kf:cabinet_medium_decorated": [
-  "kaykit/furniture/cabinet_medium_decorated.gltf"
+  "kaykit/furniture/cabinet_medium_decorated.glb"
  ],
  "kf:chair_A_wood": [
-  "kaykit/furniture/chair_A_wood.gltf"
+  "kaykit/furniture/chair_A_wood.glb"
  ],
  "kf:couch_pillows": [
-  "kaykit/furniture/couch_pillows.gltf"
+  "kaykit/furniture/couch_pillows.glb"
  ],
  "kf:pictureframe_small_A": [
-  "kaykit/furniture/pictureframe_small_A.gltf"
+  "kaykit/furniture/pictureframe_small_A.glb"
  ],
  "kf:bed_single_A": [
-  "kaykit/furniture/bed_single_A.gltf"
+  "kaykit/furniture/bed_single_A.glb"
  ],
  "kf:rug_oval_A": [
-  "kaykit/furniture/rug_oval_A.gltf"
+  "kaykit/furniture/rug_oval_A.glb"
  ],
  "kf:lamp_standing": [
-  "kaykit/furniture/lamp_standing.gltf"
+  "kaykit/furniture/lamp_standing.glb"
  ],
  "kf:shelf_A_big": [
-  "kaykit/furniture/shelf_A_big.gltf"
+  "kaykit/furniture/shelf_A_big.glb"
  ],
  "kf:armchair_pillows": [
-  "kaykit/furniture/armchair_pillows.gltf"
+  "kaykit/furniture/armchair_pillows.glb"
  ],
  "kf:table_low": [
-  "kaykit/furniture/table_low.gltf"
+  "kaykit/furniture/table_low.glb"
  ],
  "kf:lamp_table": [
-  "kaykit/furniture/lamp_table.gltf"
+  "kaykit/furniture/lamp_table.glb"
  ],
  "kk:kitchencounter_straight_A_backsplash": [
-  "kaykit/kitchen/kitchencounter_straight_A_backsplash.gltf"
+  "kaykit/kitchen/kitchencounter_straight_A_backsplash.glb"
  ],
  "kk:kitchencounter_straight_A_decorated": [
-  "kaykit/kitchen/kitchencounter_straight_A_decorated.gltf"
+  "kaykit/kitchen/kitchencounter_straight_A_decorated.glb"
  ],
  "kk:kitchencounter_sink_backsplash": [
-  "kaykit/kitchen/kitchencounter_sink_backsplash.gltf"
+  "kaykit/kitchen/kitchencounter_sink_backsplash.glb"
  ],
  "kk:stove_multi_countertop": [
-  "kaykit/kitchen/stove_multi_countertop.gltf"
+  "kaykit/kitchen/stove_multi_countertop.glb"
  ],
  "kk:fridge_A_decorated": [
-  "kaykit/kitchen/fridge_A_decorated.gltf"
+  "kaykit/kitchen/fridge_A_decorated.glb"
  ],
  "kk:kitchentable_A": [
-  "kaykit/kitchen/kitchentable_A.gltf"
+  "kaykit/kitchen/kitchentable_A.glb"
  ],
  "kk:chair_A": [
-  "kaykit/kitchen/chair_A.gltf"
+  "kaykit/kitchen/chair_A.glb"
  ],
  "kk:jar_A_large": [
-  "kaykit/kitchen/jar_A_large.gltf"
+  "kaykit/kitchen/jar_A_large.glb"
  ],
  "kk:jar_B_medium": [
-  "kaykit/kitchen/jar_B_medium.gltf"
+  "kaykit/kitchen/jar_B_medium.glb"
  ],
  "kk:jar_C_small": [
-  "kaykit/kitchen/jar_C_small.gltf"
+  "kaykit/kitchen/jar_C_small.glb"
  ],
  "kk:crate_potatoes": [
-  "kaykit/kitchen/crate_potatoes.gltf"
+  "kaykit/kitchen/crate_potatoes.glb"
  ],
  "kk:crate": [
-  "kaykit/kitchen/crate.gltf"
+  "kaykit/kitchen/crate.glb"
  ],
  "kk:kitchencabinet": [
-  "kaykit/kitchen/kitchencabinet.gltf"
+  "kaykit/kitchen/kitchencabinet.glb"
  ],
  "kk:shelf_papertowel_decorated": [
-  "kaykit/kitchen/shelf_papertowel_decorated.gltf"
+  "kaykit/kitchen/shelf_papertowel_decorated.glb"
  ],
  "kk:table_round_A_small_decorated": [
-  "kaykit/kitchen/table_round_A_small_decorated.gltf"
+  "kaykit/kitchen/table_round_A_small_decorated.glb"
  ],
  "house": [
   "kenney/houses/building-sample-house-a.glb",
