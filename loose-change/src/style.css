@@ -210,7 +210,7 @@ textarea { width: 100%; font: 13px monospace; border: var(--line); border-radius
 #thing-bar { height: 100%; width: 0; background: repeating-linear-gradient(45deg, var(--gold), var(--gold) 8px, #ffd062 8px, #ffd062 16px); transition: width .3s; }
 .thing.ready { animation: pulse 1s infinite; background: #ffe0ea; }
 @keyframes pulse { 50% { transform: scale(1.05); } }
-.buffs { position: absolute; top: 16px; left: 18px; display: grid; gap: 6px; }
+.buffs { position: absolute; top: 110px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
 .buff { position: relative; overflow: hidden; display: flex; gap: 6px; align-items: center; background: var(--card); border: var(--line); border-radius: 999px; padding: 4px 12px 6px; font-weight: 600; font-size: 14px; box-shadow: 3px 3px 0 var(--ink); }
 .buff i { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--grass); }
 .crosshair { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px rgba(45, 33, 24, .7); }
@@ -320,3 +320,35 @@ textarea { width: 100%; font: 13px monospace; border: var(--line); border-radius
 .secret small { display: block; color: var(--ink-soft); }
 .secret.got { border-style: solid; border-color: var(--gold); background: #fff7dc; }
 .egg { font-size: 11px; background: var(--pig); border: 1.5px solid var(--ink); border-radius: 999px; padding: 0 6px; margin-left: 4px; vertical-align: 2px; }
+
+/* to-do list */
+.tasks { position: absolute; top: 16px; left: 18px; width: min(300px, 34vw); background: rgba(255, 250, 240, .93); border: var(--line); border-radius: 14px; box-shadow: 3px 3px 0 var(--ink); padding: 8px 12px 10px; }
+.tasks:empty { display: none; }
+.tasks-head { font-weight: 700; display: flex; align-items: center; gap: 6px; font-size: 15px; }
+.tasks-head span { margin-left: auto; color: var(--ink-soft); font-size: 13px; }
+.task { margin-top: 8px; animation: slidein .3s; }
+.task-text { font-weight: 600; font-size: 14px; line-height: 1.25; }
+.task-bar { height: 8px; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; margin: 4px 0 2px; background: #fff; }
+.task-bar i { display: block; height: 100%; width: 0; background: var(--grass); transition: width .3s; }
+.task-reward { font-size: 12px; color: var(--ink-soft); }
+
+/* in-world conversations */
+.bubble3d { position: fixed; left: 0; top: 0; z-index: 30; max-width: 340px; background: #fffaf0; border: var(--line); border-radius: 18px; padding: 10px 16px; box-shadow: 4px 4px 0 var(--ink); font-size: 18px; font-weight: 500; line-height: 1.35; pointer-events: none; opacity: 0; transition: opacity .15s; }
+.bubble3d.show { opacity: 1; }
+.bubble3d::after { content: ''; position: absolute; left: 50%; bottom: -16px; margin-left: -10px; border: 10px solid transparent; border-top: 14px solid var(--ink); }
+.bubble3d .who { display: block; font-size: 13px; color: var(--ink-soft); }
+.bubble3d .who:empty { display: none; }
+.dialog { position: fixed; left: 50%; bottom: 52px; transform: translateX(-50%); z-index: 35; display: none; background: rgba(255, 250, 240, .95); border: var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 10px 16px 12px; min-width: min(560px, 92vw); text-align: center; }
+.dialog.show { display: block; animation: pop .25s; }
+.dialog-title { font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; justify-content: center; }
+.dialog .modal-choices { margin-top: 0; }
+.dialog .btn { font-size: 15px; padding: 8px 14px; }
+
+.brian-row { margin-top: 8px; padding-top: 6px; border-top: 2px dashed var(--paper-2); }
+#brian-bar { height: 100%; width: 0; background: repeating-linear-gradient(45deg, #b8c0c8, #b8c0c8 8px, #d8dde2 8px, #d8dde2 16px); }
+.brian-where { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+.sus { position: absolute; left: 50%; top: calc(50% - 60px); transform: translateX(-50%); display: none; align-items: center; gap: 8px; background: rgba(255, 250, 240, .9); border: var(--line); border-radius: 999px; padding: 3px 12px; font-weight: 700; font-size: 14px; }
+.sus.show { display: flex; }
+.sus i { display: block; width: 0; height: 8px; max-width: 80px; background: var(--danger); border-radius: 999px; }
+.sus::after { content: ''; display: block; width: 80px; height: 8px; border: 2px solid var(--ink); border-radius: 999px; margin-left: -88px; }
+.sus.seen { animation: shake .25s infinite; background: #ffd6d6; }

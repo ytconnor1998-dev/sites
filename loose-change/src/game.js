@@ -54,9 +54,10 @@
       depth: 0, finds: [], buttons: 0, socks: 0, frogs: 0,
       pig: null, cardStock: 3, cardRestockAt: 0,
       goose: { met: false, friend: false },
-      texts: {}, notesSeen: [], openedNotes: [], cooldowns: {}, chatted: [],
+      texts: {}, notesSeen: [], openedNotes: [], cooldowns: {}, chatted: [], tasksDone: [],
+      brian: { p: 0, slowUntil: 0 }, items: {}, armed: {},
       buffs: [], flags: {},
-      stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0 },
+      stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0, floor: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
       // carried across runs
       endings: keep.endings || [], achievements: keep.achievements || [], runs: keep.runs || 0, secrets: keep.secrets || [],
@@ -80,6 +81,7 @@
       S.stats = Object.assign(freshRun().stats, data.stats);
       S.goose = Object.assign({ met: false, friend: false }, data.goose);
       S.buffs = []; // buffs don't survive a reload
+      S.brian = Object.assign({ p: 0, slowUntil: 0 }, data.brian); S.items = data.items || {}; S.armed = data.armed || {};
       return true;
     } catch (e) { return false; }
   }
@@ -209,32 +211,48 @@
   }
 
   // ---------- modal (events, endings, offline) ----------
-  let modalOpen = false;
-  function modal({ icon, title, text, choices = [{ label: 'OK' }], cls = '' }) {
+  let modalOpen = false, talking = false;
+  // Character events become in-world conversations: they walk up and talk in a speech bubble,
+  // and your replies show at the bottom of the screen (keys 1-3). Everything else uses the card.
+  function modal({ icon, title, text, choices = [{ label: 'OK' }], cls = '', speaker = null }) {
     modalOpen = true;
-    const box = $('#modal');
-    box.className = 'modal-card ' + cls;
-    box.innerHTML = `<div class="modal-icon">${icon ? ic(icon) : ''}</div><h2>${title}</h2><p>${text}</p><div class="modal-choices"></div>`;
+    talking = !!speaker;
+    const box = talking ? $('#dialog') : $('#modal');
+    const name = speaker ? title : '';
+    if (talking) {
+      LC.world.talkStart(speaker);
+      setTimeout(() => LC.world.talkSay(text, name), 900);
+      box.innerHTML = `<div class="dialog-title">${ic(icon)} ${title}</div><div class="modal-choices"></div>`;
+      box.classList.add('show');
+    } else {
+      box.className = 'modal-card ' + cls;
+      box.innerHTML = `<div class="modal-icon">${icon ? ic(icon) : ''}</div><h2>${title}</h2><p>${text}</p><div class="modal-choices"></div>`;
+      $('#overlay').classList.add('show');
+    }
     const row = box.querySelector('.modal-choices');
+    const say2 = (t) => { if (talking) LC.world.talkSay(t, name); else box.querySelector('p').innerHTML = t; };
     choices.forEach((c, i) => {
       const b = el('button', 'btn ' + (c.cls || ''), `<kbd>${i + 1}</kbd> ${c.label}`);
       b.onclick = () => {
         LC.audio.sfx('click');
         const result = c.fn ? c.fn() : null;
-        if (result) { // show outcome in the same card
-          box.querySelector('p').innerHTML = result.text || result;
-          if (result.icon) box.querySelector('.modal-icon').innerHTML = ic(result.icon);
+        if (result) { // show the outcome, then OK
+          say2(result.text || result);
+          if (result.icon && !talking) box.querySelector('.modal-icon').innerHTML = ic(result.icon);
           row.innerHTML = '';
           const ok = el('button', 'btn', '<kbd>1</kbd> OK');
-          ok.onclick = closeModal; row.appendChild(ok); ok.focus();
+          ok.onclick = closeModal; row.appendChild(ok);
         } else closeModal();
       };
       row.appendChild(b);
     });
-    $('#overlay').classList.add('show');
-    row.querySelector('button')?.focus();
   }
-  function closeModal() { $('#overlay').classList.remove('show'); modalOpen = false; }
+  function closeModal() {
+    $('#overlay').classList.remove('show');
+    $('#dialog').classList.remove('show');
+    if (talking) LC.world.talkEnd();
+    modalOpen = false; talking = false;
+  }
 
   // ---------- achievements ----------
   function checkAchievements() {
@@ -260,12 +278,13 @@
     return { value: v };
   }
   function sofaFind() {
-    const f = pick(LC.SOFA_FINDS);
+    const f = LC.SOFA_FINDS.find((x) => x.text === weighted(LC.SOFA_FINDS.map((x) => [x.text, x.weight || 4])));
     S.stats.sofaFinds++;
     let reward = '';
     if (f.cash) { const n = lump(f.cash, f.cash / 100); gain(n); reward = ` <b>+${fmt(n)}</b>`; }
     if (f.flat) { gain(f.flat); reward = ` <b>+${fmt(f.flat)}</b>`; }
     if (f.buttons) { S.buttons += f.buttons; reward = ` <b>+${f.buttons} ${ic('🔘')}</b>`; }
+    if (f.item) giveItem(f.item);
     toast(`${ic('🛋️')}<div>You found ${f.text}${reward}</div>`, 'find');
   }
 
@@ -313,6 +332,7 @@
         if (r.mult) what = `All income +${Math.round(r.mult * 100)}%`;
         if (r.dig) what = `Dig speed x${r.dig}`;
         if (r.buttons) { S.buttons += r.buttons; what = `+${r.buttons} buttons`; }
+        if (r.item) { giveItem(r.item, true); what = '(in your pocket)'; }
         LC.audio.sfx('ding');
         toast(`${ic(f.icon)}<div><b>Dug up: ${f.name}</b><br><small>${f.text} ${what}</small></div>`, 'find');
         gardenDirty = true;
@@ -487,6 +507,167 @@
     return clear / n;
   }
 
+  // ---------- tasks (the to-do list, top-left) ----------
+  function giveReward(r) {
+    if (r.cash) gain(r.cash);
+    if (r.secs) gain(lump(r.secs, r.min || 1));
+    if (r.buttons) S.buttons += r.buttons;
+    if (r.gen) S.gens[r.gen[0]] = (S.gens[r.gen[0]] || 0) + r.gen[1];
+    if (r.tool) S.digTools[r.tool[0]] = (S.digTools[r.tool[0]] || 0) + r.tool[1];
+    if (r.up && !has(r.up)) S.upgrades.push(r.up);
+  }
+  function activeTasks() { return LC.TASKS.filter((t) => !S.tasksDone.includes(t.id)).slice(0, 3); }
+  function checkTasks() {
+    for (const t of activeTasks()) {
+      if (t.progress(S) < t.target) continue;
+      S.tasksDone.push(t.id);
+      if (t.id === 't25') continue; // the last one is The Thing itself
+      giveReward(t.reward);
+      LC.audio.sfx('fanfare');
+      toast(`${ic('✅')}<div><b>Task done!</b> ${t.text}<br><small>Reward: ${t.rewardText}</small></div>`, 'gold');
+      renderShop(true);
+    }
+    renderTasks();
+  }
+  let taskKey = '';
+  function renderTasks() {
+    const list = activeTasks();
+    const key = list.map((t) => t.id).join();
+    const box = $('#tasks');
+    if (key !== taskKey) {
+      taskKey = key;
+      box.innerHTML = `<div class="tasks-head">${ic('📋')} To do <span>${S.tasksDone.length}/${LC.TASKS.length}</span></div>` +
+        list.map((t) => `<div class="task" data-id="${t.id}"><div class="task-text">${t.text}</div><div class="task-bar"><i></i></div><div class="task-reward">${ic('🎁', 'tiny')} ${t.rewardText}</div></div>`).join('');
+    }
+    for (const t of list) {
+      const p = Math.min(1, t.progress(S) / t.target);
+      const el2 = box.querySelector(`[data-id="${t.id}"] .task-bar i`);
+      if (el2) el2.style.width = (p * 100).toFixed(1) + '%';
+    }
+  }
+
+  // ---------- Brian next door ----------
+  const ITEMS = { whoopee: ['💨', 'Whoopee cushion'], glitter: ['✨', 'Glitter'], stink: ['🤢', 'Stink bomb'], ticket: ['🎫', 'Fake parking ticket'] };
+  function giveItem(id, quiet) {
+    S.items[id] = (S.items[id] || 0) + 1;
+    if (!quiet) toast(`${ic(ITEMS[id][0])}<div><b>${ITEMS[id][1]}</b> in your pocket.<br><small>Brian won't like this.</small></div>`);
+  }
+  const useItem = (id) => { if (!S.items[id]) return false; S.items[id]--; return true; };
+  const BRIAN_SECS = 2.7 * 3600; // unhindered, Brian gets there in about 2h40m
+  const brianActive = () => S.lifetime >= 20 && !endingPlaying;
+  const brianMoney = () => Math.pow(10, 12 * Math.max(0, S.brian.p)) - 1;
+  function brianTick(dt) {
+    if (!brianActive()) return;
+    const mine = Math.log10(1 + S.money) / 12;
+    let mult = 1;
+    if (mine > S.brian.p + 0.08) mult = 1.6;      // you're ahead: he tries harder
+    if (mine < S.brian.p - 0.1) mult = 0.6;       // you're behind: he gets complacent
+    if (Date.now() < S.brian.slowUntil) mult *= 0.15;
+    S.brian.p = Math.min(1, S.brian.p + dt / BRIAN_SECS * mult);
+    if (S.brian.p >= 1) { S.brian.p = 1; playEnding('brian'); }
+  }
+  function prank(kind, secs, knock, line) {
+    S.brian.slowUntil = Math.max(Date.now(), S.brian.slowUntil) + secs * 1000;
+    S.brian.p = Math.max(0, S.brian.p - knock);
+    S.stats.pranks = (S.stats.pranks || 0) + 1;
+    S.flags['prank_' + kind] = true;
+    delete S.armed[kind];
+    LC.world.clearPrank(kind);
+    LC.audio.sfx(kind === 'whoopee' ? 'fart' : kind === 'goose' ? 'honk' : 'event');
+    toast(`${ic('😈')}<div><b>Prank!</b> ${line}<br><small>Brian's saving slows right down for ${Math.round(secs / 60)} minutes.</small></div>`, 'gold');
+  }
+  function brianEvent(name) {
+    if (name === 'sit' && S.armed.whoopee) prank('whoopee', 240, 0.02, 'Brian sat on the whoopee cushion. The whole street heard.');
+    if (name === 'enterDoor' && S.armed.glitter) prank('glitter', 180, 0.015, 'Brian opened his door into a cloud of glitter.');
+    if (name === 'passCar' && S.armed.stink) { LC.world.prankFx('stink'); prank('stink', 300, 0.02, 'Brian got in his car. He got straight back out again.'); }
+    if (name === 'passCar' && S.armed.ticket) prank('ticket', 180, 0.015, 'Brian found a parking ticket on his own car. He is phoning the council.');
+  }
+  function brianDoorPrompt() {
+    if (S.items.glitter && !S.armed.glitter) return "Post glitter through Brian's letterbox";
+    if (!S.flags.hasKey) return "Brian's front door<small>Locked</small>";
+    const where = LC.world.brianState();
+    const away = where === 'shops' || where === 'toShops' || where === 'garden' || where === 'toGarden';
+    return (LC.world.playerInBrians() ? 'Open the door' : "Sneak into Brian's house") + `<small>${away ? (where.includes('arden') ? 'Brian is mowing the lawn...' : 'Brian is out!') : 'Brian is at home. Press C to crouch.'}</small>`;
+  }
+  let doorOpen = false;
+  function brianDoor() {
+    if (S.items.glitter && !S.armed.glitter) { useItem('glitter'); S.armed.glitter = true; LC.world.prankFx('glitter'); say('Glitter posted. Now wait for Brian to come home.'); return; }
+    if (!S.flags.hasKey) { LC.audio.sfx('nope'); say(pick(['Locked. Brian has three locks. Two of them are fake.', 'Locked. You can hear a cuckoo clock inside.', "Locked. There's a sticker: NO JUNK MAIL, NO CHILDREN."])); return; }
+    doorOpen = !doorOpen; LC.world.setDoorOpen(doorOpen); LC.audio.sfx('click');
+  }
+  function brianSofaPrompt() {
+    if (S.items.whoopee && !S.armed.whoopee) return "Hide a whoopee cushion on Brian's sofa";
+    return `Rummage down Brian's sofa<small>${LC.world.brianState() === 'home' ? 'Quietly... he might hear you' : 'He is out. Go go go!'}</small>`;
+  }
+  function raidBrianSofa() {
+    if (S.items.whoopee && !S.armed.whoopee) { useItem('whoopee'); S.armed.whoopee = true; LC.world.prankFx('whoopee'); say('Whoopee cushion: hidden. Now wait for Brian to sit down.'); return null; }
+    const v = clickValue() * 4;
+    gain(v); S.stats.brianSofa = (S.stats.brianSofa || 0) + 1;
+    LC.audio.sfx('coin');
+    if (chance(0.05)) say(pick(["Brian's sofa: a receipt for 40 garden gnomes.", "Brian's sofa: a photo of Brian with the gnome. Both smiling.", "Brian's sofa: a moustache comb.", "Brian's sofa: a note. 'BEAT THE KID.'"]));
+    if (LC.world.brianNoise()) say('Brian: "Hello? Is someone in the living room?"');
+    return { value: v };
+  }
+  function fundPrompt() {
+    const w = waitFor('fund');
+    return w ? `Brian's Thing Fund<small>You've taken enough for now (${w}s)</small>` : `Raid Brian's THING FUND jar<small>It sets him back. Mostly it's just fun.</small>`;
+  }
+  function raidFund() {
+    if (!ready('fund', 120)) { LC.audio.sfx('nope'); return; }
+    const n = Math.min(Math.max(lump(120, 5), brianMoney() * 0.02), lump(900, 5));
+    gain(n); floatAt(null, n);
+    S.brian.p = Math.max(0, S.brian.p - 0.012);
+    S.stats.fundRaids = (S.stats.fundRaids || 0) + 1;
+    LC.audio.sfx('coin');
+    say(pick(['You take a handful from the Thing Fund. Brian will never notice. (He will notice.)', 'The jar says THING FUND. Your pocket now says THING FUND.', 'Sorry, Brian.']));
+    LC.world.brianNoise();
+  }
+  function brianComputer() {
+    say(pick([`Brian's spreadsheet. "THING FUND: ${fmt(brianMoney())}. KID: probably about £3."`, 'Brian\'s spreadsheet. Tab 2 is called "WAYS TO STOP THE KID". It is blank. He couldn\'t think of any.', 'Brian\'s spreadsheet. A column called "GNOME BIRTHDAYS".', `Brian's spreadsheet. "Days until The Thing is mine: ${Math.max(1, Math.round((1 - S.brian.p) * 40))}".`]));
+  }
+  function brianCarPrompt() {
+    if (S.items.stink && !S.armed.stink) return "Hide a stink bomb in Brian's car";
+    if (S.items.ticket && !S.armed.ticket) return "Put a fake parking ticket on Brian's car";
+    return S.armed.stink || S.armed.ticket ? 'The trap is set. Wait for Brian to go out.' : "Brian's car<small>It's very clean. Suspiciously clean.</small>";
+  }
+  function brianCar() {
+    if (S.items.stink && !S.armed.stink) { useItem('stink'); S.armed.stink = true; say('Stink bomb under the seat. Wait for Brian to go to the shops.'); return; }
+    if (S.items.ticket && !S.armed.ticket) { useItem('ticket'); S.armed.ticket = true; LC.world.prankFx('ticket'); say('Ticket on the windscreen. Wait for Brian to go out.'); return; }
+    say(pick(["Number plate: BR1 AN. Of course.", 'There is a gnome on the dashboard.', 'A sticker says "MY OTHER CAR IS ALSO VERY CLEAN".']));
+  }
+  function brianLawnPrompt() {
+    if (S.goose.friend && waitFor('goosePrank') === 0) return 'Send your goose onto Brian\'s lawn';
+    return "Brian's perfect lawn<small>KEEP OFF THE GRASS</small>";
+  }
+  function brianLawn() {
+    if (S.goose.friend && ready('goosePrank', 600)) { prank('goose', 300, 0.02, 'Your goose charges across Brian\'s lawn, honking. Brian runs inside.'); return; }
+    say(pick(['Every blade is the same height. Every single one.', 'You step on the lawn. Somewhere, Brian shivers.']));
+  }
+  function caughtByBrian() {
+    S.flags.caught = true;
+    modal({ speaker: 'brian', icon: '😠', title: 'Brian', text: 'OI! What are YOU doing in MY house?!', choices: [
+      { label: '"...looking for the toilet?"', fn: () => { const n = S.money * 0.05; S.money -= n; S.brian.p = Math.min(1, S.brian.p + 0.01); setTimeout(() => LC.world.throwOut(), 50); doorOpen = false; return { text: `"The toilet. Right. I'm keeping ${fmt(n)} for the stress. OUT."` }; } },
+      { label: 'Say nothing and run', fn: () => { setTimeout(() => LC.world.throwOut(), 50); doorOpen = false; if (chance(0.5)) return { text: '"Come back here!" (You got away clean.)' }; const n = S.money * 0.08; S.money -= n; return { text: `He grabs your hood. "That'll be ${fmt(n)}." He throws you out.` }; } },
+    ] });
+  }
+  const BRIAN_CHAT = [
+    () => `"Morning kiddo. Thing Fund's looking healthy. ${fmt(brianMoney())}, if you must know."`,
+    () => '"Your grandad and I had an understanding. The Thing is MINE."',
+    () => '"Lovely day for mowing. Every day is a lovely day for mowing."',
+    () => '"Have you seen my gnome looking at you? He does that."',
+    () => (S.brian.p > Math.log10(1 + S.money) / 12 ? '"Better hurry up. I\'m winning. 🙂"' : '"You\'re doing... well. Suspiciously well."'),
+  ];
+  let brianChatIdx = 0;
+  function chatBrian() {
+    modal({ speaker: 'brian', icon: '👨', title: 'Brian', text: BRIAN_CHAT[brianChatIdx++ % BRIAN_CHAT.length](), choices: [{ label: '"Cool. Bye Brian."' }, { label: '"Mine\'s bigger."', fn: () => ({ text: '"Your WHAT is bigger?" "Hole." "...Mine\'s deeper."' }) }] });
+  }
+  function setSuspicion(v, seeing) {
+    const e = $('#sus');
+    e.classList.toggle('show', v > 0.02 || seeing);
+    e.classList.toggle('seen', seeing);
+    e.querySelector('i').style.width = (v * 100) + '%';
+  }
+
   // ---------- secrets & little earners around town ----------
   function findSecret(id) {
     if (S.secrets.includes(id)) return;
@@ -522,15 +703,26 @@
     findSecret('bench');
     const r = Math.random();
     if (r < 0.65) { const n = lump(25, 0.2); gain(n); floatAt(null, n); LC.audio.sfx('coin'); say(pick(['Loose change under the bench!', 'A pound coin, stuck to some chewing gum. Worth it.', 'Coins. And a sock. You take the coins.'])); }
-    else if (r < 0.8) { S.buttons++; LC.audio.sfx('coin'); say('A button. Of course.'); }
+    else if (r < 0.75) { S.buttons++; LC.audio.sfx('coin'); say('A button. Of course.'); }
+    else if (r < 0.87) { giveItem('glitter'); say("A tube of glitter. Someone's craft project. It's yours now. You know what to do with it."); }
     else say(pick(['Nothing. Just a very old sandwich.', 'A note that says "TOLD YOU - KEN". Grandad was here.', 'An old man is sitting on this bench. He says "no".']));
   }
   function phoneBox() {
     if (!ready('phonebox', 120)) { say(pick(['The coin return is empty.', 'You press the buttons. Nothing happens. It smells of 1994.'])); return; }
     findSecret('phonebox');
     if (chance(0.15)) { LC.audio.sfx('text'); say('The phone rings. You answer. "Hello, is this the sofa?" Click.'); return; }
+    if (chance(0.2)) { giveItem('ticket'); say('Someone left a pad of parking tickets in here. They look VERY official.'); return; }
     const n = lump(60, 0.5); gain(n); floatAt(null, n); LC.audio.sfx('coin');
     say(pick(['The coin return clunks. Coins!', 'Somebody forgot their change. Thanks, somebody.', 'Coins! And a business card for a man who fixes ghosts.']));
+  }
+  function gnomePrompt() { return S.flags.knowsKey && !S.flags.hasKey ? "Look under Brian's gnome" : "Stare at Brian's gnome"; }
+  function gnome() {
+    if (S.flags.knowsKey && !S.flags.hasKey) {
+      S.flags.hasKey = true; LC.audio.sfx('ding');
+      toast(`${ic('🗝️')}<div><b>Brian's spare key!</b><br><small>Now you just need him to be out. Or not looking.</small></div>`, 'gold');
+      return;
+    }
+    gnomeStare();
   }
   let gnomeStares = 0;
   function gnomeStare() {
@@ -560,7 +752,7 @@
   }
   function collect(kind) {
     if (kind === 'golden') { findSecret('golden'); return goldenReward(); }
-    if (kind === 'floor') findSecret('floor');
+    if (kind === 'floor') { findSecret('floor'); S.stats.floor = (S.stats.floor || 0) + 1; }
     if (kind === 'piglet') { const n = lump(60, 1); gain(n); LC.audio.sfx('smash'); return n; }
     const n = kind === 'rain' ? lump(12, 0.05) : lump(8, 0.02);
     gain(n);
@@ -573,7 +765,7 @@
   const pending = [];
   function queueEvent(fn) { pending.push(fn); }
   const EVENTS = [
-    { id: 'seagull', w: 10, run: () => LC.world.visitor('seagull') || modal({ icon: '🐦', title: 'A seagull is eyeing your coins',
+    { id: 'seagull', w: 10, run: () => modal({ speaker: 'seagull', icon: '🐦', title: 'A seagull is eyeing your coins',
       text: 'It has the look of a bird that has done this before.',
       choices: [
         { label: 'Shoo it away', fn: () => { const n = S.money * 0.05; S.money -= n; return { text: `It took ${fmt(n)} on the way out. Classic seagull.` }; } },
@@ -582,41 +774,41 @@
           ? (gain(S.money * 0.25 + 1), { text: 'You win! The seagull drops its stash of stolen coins. +25%!' })
           : (S.money *= 0.85, { text: 'You lose. Badly. It took 15% and your dignity.' }) },
       ] }) },
-    { id: 'nan', w: 10, run: () => LC.world.visitor('nan') || modal({ icon: '👵', title: "Nan's popped round",
+    { id: 'nan', w: 10, run: () => modal({ speaker: 'nan', icon: '👵', title: "Nan's popped round",
       text: 'She has her handbag. The handbag always has something in it.',
       choices: [
         { label: 'Put the kettle on', fn: () => { const n = lump(120, 5); gain(n); return { text: `She gives you ${fmt(n)} and says you look thin.` }; } },
         { label: 'Hide behind the sofa', fn: () => { const n = lump(60, 1); gain(n); return { text: `While hiding you find ${fmt(n)} and three Werther's Originals. She knew you were there.` }; } },
       ] }) },
     { id: 'goose', w: 9, run: () => {
-      if (!S.goose.met) return modal({ icon: '🪿', title: 'A goose has entered the garden',
+      if (!S.goose.met) return modal({ speaker: 'goose', icon: '🪿', title: 'A goose has entered the garden',
         text: 'It is staring at you. It has not blinked.',
         choices: [
           { label: 'Befriend it', fn: () => { S.goose.met = true; if (chance(0.7)) { S.goose.friend = true; LC.audio.sfx('honk'); return { text: 'The goose accepts you. You are now goose friends. (All income +10%)' }; } LC.audio.sfx('honk'); return { text: 'The goose bites you. It is now hunting you. Keep moving.' }; } },
           { label: 'Honk back', fn: () => { S.goose.met = true; LC.audio.sfx('honk'); S.goose.friend = chance(0.4); return { text: S.goose.friend ? 'The goose respects this. You are now goose friends. (All income +10%)' : 'The goose did not like your accent.' }; } },
           { label: 'Run', cls: 'ghost', fn: () => { S.goose.met = true; return { text: 'You run. The goose follows. The goose will always follow.' }; } },
         ] });
-      if (S.goose.friend) { LC.audio.sfx('honk'); const n = lump(240, 5); gain(n); return modal({ icon: '🪿', title: 'Your goose brought you a gift', text: `It's ${fmt(n)}. You decide not to ask where from.` }); }
+      if (S.goose.friend) { LC.audio.sfx('honk'); const n = lump(240, 5); gain(n); return modal({ speaker: 'goose', icon: '🪿', title: 'Your goose brought you a gift', text: `It's ${fmt(n)}. You decide not to ask where from.` }); }
       LC.audio.sfx('honk');
-      return modal({ icon: '🪿', title: 'The goose is back', text: 'It is holding your piggy bank hostage.',
+      return modal({ speaker: 'goose', icon: '🪿', title: 'The goose is back', text: 'It is holding your piggy bank hostage.',
         choices: [
           { label: 'Pay the ransom (8%)', fn: () => { S.money *= 0.92; if (chance(0.5)) { S.goose.friend = true; return { text: 'The goose takes the money, then sits on your lap. You are friends now, apparently. (All income +10%)' }; } return { text: 'The goose takes the money and leaves. Business is business.' }; } },
           { label: 'Honk aggressively', cls: 'danger', fn: () => { LC.audio.sfx('honk'); if (S.pig) S.pig.stored = 0; return { text: 'The goose honks louder. It eats everything in your piggy bank.' }; } },
         ] });
     } },
-    { id: 'badger', w: 7, run: () => LC.world.visitor('badger') || modal({ icon: '🦡', title: 'The Tax Badger has arrived',
+    { id: 'badger', w: 7, run: () => modal({ speaker: 'badger', icon: '🦡', title: 'The Tax Badger has arrived',
       text: 'He is wearing a tiny tie. He would like his cut.',
       choices: [
         { label: 'Pay him (5%)', fn: () => { S.money *= 0.95; return { text: 'The badger nods respectfully and leaves you a receipt. It is a leaf.' }; } },
         { label: 'Hide in the sofa', fn: () => chance(0.55) ? (gain(lump(90, 2)), { text: 'He gives up. While in the sofa you find a load of coins.' }) : (S.money *= 0.85, { text: 'He found you. He always finds you. 15%, plus a late fee.' }) },
       ] }) },
-    { id: 'icecream', w: 8, run: () => LC.world.visitor('icecream') || modal({ icon: '🍦', title: 'The ice cream van is playing its song',
+    { id: 'icecream', w: 8, run: () => modal({ speaker: 'icecream', icon: '🍦', title: 'The ice cream van is playing its song',
       text: 'It is coming down your street. It is not stopping unless you run.',
       choices: [
         { label: 'RUN for a 99', fn: () => { S.money *= 0.98; addBuff({ id: 'brainfreeze', icon: '🍦', label: 'Brain Freeze: clicks x10', click: 10, secs: 30 }); return { text: 'You got one. Brain freeze gives you strange powers. Sofa clicks x10 for 30 seconds!' }; } },
         { label: 'Let it go', cls: 'ghost', fn: () => ({ text: 'You hear the song fading away down the road. A small part of you goes with it.' }) },
       ] }) },
-    { id: 'union', w: 6, cond: () => baseIncome() > 1, run: () => modal({ icon: '🪧', title: 'Your coins have formed a union',
+    { id: 'union', w: 6, cond: () => baseIncome() > 1, run: () => modal({ speaker: 'coin', icon: '🪧', title: 'Your coins have formed a union',
       text: 'They demand better working conditions. One of them is holding a tiny sign.',
       choices: [
         { label: 'Give them a day off', fn: () => { addBuff({ id: 'strike', icon: '🪧', label: 'Coins on strike', income: 0, secs: 10 }); setTimeout(() => addBuff({ id: 'happycoins', icon: '😊', label: 'Happy coins: income x3', income: 3, secs: 45 }), 10000); return { text: 'Income stops for 10 seconds. Then they come back refreshed. Income x3 for 45 seconds.' }; } },
@@ -627,7 +819,7 @@
     { id: 'goblin', w: 4, run: () => { document.body.classList.add('goblin'); addBuff({ id: 'goblin', icon: '🔤', label: 'Font Goblin: clicks x5', click: 5, secs: 30 }); setTimeout(() => document.body.classList.remove('goblin'), 30000); toast(`${ic('👺')}<div><b>The Font Goblin has struck!</b> Everything looks silly. Clicks x5 for 30 seconds.</div>`); } },
     { id: 'piglets', w: 5, run: () => { LC.world.piglets(3); toast(`${ic('🐽')}<div><b>Your piggy bank has had piglets!</b> Catch them before they get away!</div>`); } },
     { id: 'rain', w: 4, run: () => { LC.world.coinRain(30); toast(`${ic('🌧️')}<div><b>It's raining coins!</b> Run around and grab them!</div>`); } },
-    { id: 'fox', w: 6, run: () => LC.world.visitor('fox') || modal({ icon: '🦊', title: 'A fox has got into the bins',
+    { id: 'fox', w: 6, run: () => modal({ speaker: 'fox', icon: '🦊', title: 'A fox has got into the bins',
       text: 'It is making the noise foxes make. You know the one.',
       choices: [
         { label: 'Let it rummage', fn: () => { const n = lump(150, 2); gain(n); return { text: `Foxes are just sofa-checkers with tails. It finds ${fmt(n)} and gives it to you.` }; } },
@@ -639,20 +831,20 @@
         { label: '"Yes."', fn: () => chance(0.6) ? (gain(lump(200, 3)), { text: '"Great, we\'ve found some of your coins." They send them over. Nice.' }) : (S.money *= 0.95, { text: '"Then you owe us 5%." They hang up. How did they do that?' }) },
         { label: '"No."', fn: () => ({ text: '"Sorry, wrong sofa." Click.' }) },
       ] }) },
-    { id: 'derek', w: 3, cond: () => !S.flags.derek && !S.flags.derekGone, run: () => modal({ icon: '🪙', title: 'One of your coins has come to life',
+    { id: 'derek', w: 3, cond: () => !S.flags.derek && !S.flags.derekGone, run: () => modal({ speaker: 'coin', icon: '🪙', title: 'One of your coins has come to life',
       text: 'It says its name is Derek. It would like to stay.',
       choices: [
         { label: 'Keep Derek', fn: () => { S.flags.derek = true; return { text: 'Derek is delighted. Derek helps out. (All income +5%, forever)' }; } },
         { label: 'Spend Derek', cls: 'danger', fn: () => { S.flags.derekGone = true; gain(0.01); return { text: 'You spent Derek. He was 1p. You got a single Haribo. You think about Derek a lot.' }; } },
       ] }) },
     { id: 'meteor', w: 2, run: () => { const n = lump(600, 10); gain(n); modal({ icon: '☄️', title: 'A meteorite has landed in the garden', text: `Scientists rush over. It's a 50p. Well, technically it's worth ${fmt(n)} now because it's from space.` }); } },
-    { id: 'doorbell', w: 5, cond: () => baseIncome() > 0.5, run: () => LC.world.visitor('man') || modal({ icon: '🛎️', title: 'Ding dong',
+    { id: 'doorbell', w: 5, cond: () => baseIncome() > 0.5, run: () => modal({ speaker: 'man', icon: '🛎️', title: 'Ding dong',
       text: 'A man at the door wants to sell you a slightly bigger sofa.',
       choices: [
         { label: 'Buy it (10%)', fn: () => { S.money *= 0.9; const g = [...LC.GENERATORS].reverse().find((x) => (S.gens[x.id] || 0) > 0) || LC.GENERATORS[0]; const free = Math.max(1, Math.ceil((S.gens[g.id] || 0) * 0.1)); S.gens[g.id] = (S.gens[g.id] || 0) + free; return { text: `The sofa comes with ${free} free ${g.name}${free > 1 ? 's' : ''} already inside.` }; } },
         { label: 'No thanks', cls: 'ghost', fn: () => ({ text: 'He leaves. As he goes you notice a goose in the back of his van.' }) },
       ] }) },
-    { id: 'buttonman', w: 50, cond: () => S.buttons >= 100 && !S.flags.buttonmanNo, run: () => LC.world.visitor('buttonman', 30) || modal({ icon: '🔘', title: 'The Button Man is here',
+    { id: 'buttonman', w: 50, cond: () => S.buttons >= 100 && !S.flags.buttonmanNo, run: () => modal({ speaker: 'buttonman', icon: '🔘', title: 'The Button Man is here',
       text: 'A tall man in a coat made entirely of buttons is standing in your garden. "You have 100 buttons," he whispers. "Come with me."',
       choices: [
         { label: 'Go with him', fn: () => { closeModal(); playEnding('buttons'); } },
@@ -735,6 +927,14 @@
     $('#thing-pct').textContent = (p * 100).toFixed(p < 0.01 ? 4 : 2) + '%';
     $('#thing').classList.toggle('ready', p >= 1);
     $('#buttons-count').textContent = fmtInt(S.buttons);
+    const showBrian = brianActive();
+    $('#brian-row').hidden = !showBrian;
+    if (showBrian) {
+      $('#brian-bar').style.width = Math.min(100, brianMoney() / LC.THING_COST * 100).toFixed(3) + '%';
+      $('#brian-pct').textContent = fmt(brianMoney());
+      const st = LC.world.brianState();
+      $('#brian-where').textContent = Date.now() < S.brian.slowUntil ? 'Brian is recovering from a prank 😈' : { home: 'Brian is at home', garden: 'Brian is mowing his lawn', toGarden: 'Brian is going out to mow', gardenHome: 'Brian is going back inside', toShops: 'Brian is walking to the shops', shops: 'Brian is at the shops', goHome: 'Brian is walking home', investigate: 'Brian heard something...' }[st] || '';
+    }
   }
   function renderBuffs() {
     const box = $('#buffs');
@@ -757,8 +957,7 @@
   }
   function digPrompt() {
     if (S.depth >= LC.EARTH_DIAMETER) return 'The hole goes all the way through.';
-    const next = LC.DIG_FINDS.find((f) => !S.finds.includes(f.name));
-    return `Dig the hole: <b>${fmtDepth(S.depth)}</b> deep${next ? `<small>Something is buried at ${fmtDepth(next.at)}</small>` : ''}`;
+    return `Dig the hole: <b>${fmtDepth(S.depth)}</b> deep<small>Who knows what's down there</small>`;
   }
 
   // ---------- screens: the phone, the shed, the corner shop ----------
@@ -932,6 +1131,7 @@
     for (const t of LC.TEXTS) {
       if (S.texts[t.id] || !t.when(S)) continue;
       S.texts[t.id] = { read: false };
+      if (t.flag) S.flags[t.flag] = true;
       LC.audio.sfx('text');
       toast(`${ic('💬')}<div><b>${t.from}</b><br><small>${t.msgs[0]}</small></div>`, 'msg');
       break; // one at a time
@@ -1038,8 +1238,7 @@
   function renderGarden() {
     $('#depth').textContent = fmtDepth(S.depth);
     $('#dig-rate').textContent = fmtDepth(digRate()) + '/s';
-    const next = LC.DIG_FINDS.find((f) => !S.finds.includes(f.name));
-    $('#dig-next').innerHTML = next ? `Something is buried at <b>${fmtDepth(next.at)}</b>` : 'You have found everything. Probably.';
+    $('#dig-next').innerHTML = ['Keep digging. Something is down there. Probably.', 'Grandad always said the garden was "interesting".', 'The deeper you go, the weirder it gets.'][S.finds.length % 3];
     const p = Math.log10(1 + S.depth) / Math.log10(1 + LC.EARTH_DIAMETER);
     $('#shaft-dot').style.top = (p * 100).toFixed(2) + '%';
     LC.DIG_TOOLS.forEach((t, i) => {
@@ -1055,7 +1254,7 @@
     if (gardenDirty) {
       gardenDirty = false;
       $('#finds').innerHTML = S.finds.length
-        ? S.finds.map((n) => { const f = LC.DIG_FINDS.find((x) => x.name === n); return f ? `<li>${ic(f.icon)}<div><b>${f.name}</b><small>${fmtDepth(f.at)}. ${f.text}</small></div></li>` : ''; }).reverse().join('')
+        ? S.finds.map((n) => { const f = LC.DIG_FINDS.find((x) => x.name === n); return f ? `<li>${ic(f.icon)}<div><b>${f.name}</b><small>Found at ${fmtDepth(f.at)}. ${f.text}</small></div></li>` : ''; }).reverse().join('')
         : '<li class="muted">Nothing yet. Get digging.</li>';
     }
   }
@@ -1080,6 +1279,8 @@
       ['Deepest hole', fmtDepth(S.depth)], ['Buttons', fmtInt(S.buttons)], ['Lucky socks', fmtInt(S.socks)], ['Frogs', fmtInt(S.frogs)],
       ['Goose status', S.goose.friend ? 'Best friends' : S.goose.met ? 'Hunting you' : 'Unknown'],
       ['Derek', S.flags.derek ? 'Doing well, thanks' : S.flags.derekGone ? 'Spent :(' : 'Not met yet'],
+      ['Pockets', Object.entries(S.items).filter(([, n]) => n > 0).map(([k, n]) => `${ITEMS[k][1]} x${n}`).join(', ') || 'Fluff'],
+      ['Pranks on Brian', fmtInt(S.stats.pranks || 0)],
       ['Endings bonus', '+' + Math.round((karmaMult() - 1) * 100) + '% to everything'], ['Runs finished', fmtInt(S.runs)],
     ];
     $('#stats').innerHTML = rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
@@ -1121,6 +1322,7 @@
     if (!endingPlaying) {
       gain(income() * dt);
       addDepth(digRate() * dt);
+      brianTick(dt);
       if (S.pig && !S.pig.smashed && !pigType().real) S.pig.stored = Math.min(pigCap(), S.pig.stored + pigFill() * dt);
       if (S.cardRestockAt && now >= S.cardRestockAt) {
         S.cardStock = Math.min(maxStock(), S.cardStock + 1);
@@ -1136,6 +1338,7 @@
     if ((slow += dt) >= 1) {
       slow = 0;
       checkAchievements();
+      checkTasks();
       if (panelVisible('notebook')) renderStats();
       if (panelVisible('bank')) renderBank();
       if (panelVisible('home')) renderHome();
@@ -1199,16 +1402,6 @@
   }
 
   // ---------- boot ----------
-  function offlineProgress() {
-    const away = Math.min(OFFLINE_CAP, (Date.now() - S.lastSave) / 1000);
-    if (away < 60 || baseIncome() <= 0) return;
-    const n = baseIncome() * away * 0.5;
-    gain(n);
-    addDepth(digRate() * away * 0.5);
-    const h = Math.floor(away / 3600), m = Math.floor((away % 3600) / 60);
-    queueEvent(() => modal({ icon: '🐈', title: 'Welcome back',
-      text: `You were away for ${h ? h + 'h ' : ''}${m}m. While you were gone, your helpers found <b>${fmt(n)}</b>.<br><small>The cat would like a treat.</small>` }));
-  }
   function onLockChange(locked) {
     if (locked) { $('#pause').classList.remove('show'); return; }
     if (!screenOpen && !endingPlaying) $('#pause').classList.add('show');
@@ -1220,8 +1413,7 @@
     buildShop(); buildGarden(); buildSettings();
     if (!S.pig || S.pig.smashed) newPig(); else showPig();
     renderCard();
-    if (loaded) offlineProgress();
-    else queueEvent(() => modal({ icon: '🛋️', title: 'Loose Change',
+    if (!loaded) queueEvent(() => modal({ icon: '🛋️', title: 'Loose Change',
       text: `You're saving up for something. You're not sure what. It's under a sheet in the hall, and it costs <b>${fmt(LC.THING_COST)}</b>.<br><br>You have 0p.<br><br>Better check down the back of the sofa.`,
       choices: [{ label: "Let's go", fn: () => { LC.audio.unlock(); LC.audio.music(S.settings.music); } }] }));
 
@@ -1236,7 +1428,7 @@
     LC.CARDS.forEach((c) => { $(`#buy-${c.id}`).onclick = () => buyCard(c); });
     addEventListener('keydown', (e) => {
       if (modalOpen) {
-        const btns = [...$('#modal').querySelectorAll('.modal-choices button')];
+        const btns = [...$(talking ? '#dialog' : '#modal').querySelectorAll('.modal-choices button')];
         const n = e.code.startsWith('Digit') ? +e.code.slice(5) : (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyE') ? 1 : 0;
         if (n && btns[n - 1]) { e.preventDefault(); btns[n - 1].click(); }
         return;
@@ -1259,6 +1451,8 @@
       rummage, dig, hitPig, nextPig, collect, gooseBite, tryBuyThing, say, floatAt, setPrompt, setCompass,
       sofaPrompt, digPrompt, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
+      gnomePrompt, gnome, brianEvent, brianDoorPrompt, brianDoor, brianSofaPrompt, raidBrianSofa, fundPrompt, raidFund,
+      brianComputer, brianCarPrompt, brianCar, brianLawnPrompt, brianLawn, caughtByBrian, chatBrian, setSuspicion,
       tip: (secs, secret) => { const n = lump(secs, 0.05); gain(n); floatAt(null, n); if (secret) findSecret(secret); },
       depth: () => S.depth,
       toolTier: (kind) => (S.tools && S.tools[kind]) || 0,
@@ -1270,6 +1464,6 @@
     LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden() };
   }
   // the world module needs LC.game before its first frame, so set a stub early
-  LC.game = { toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };
+  LC.game = { setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };
   addEventListener('load', boot);
 })();

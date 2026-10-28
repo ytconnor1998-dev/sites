@@ -420,11 +420,12 @@ export function signPlane(text, w, h, { bg = '#2d6a4f', color = '#fffaf0', font 
 }
 const triShape = (w, h) => new THREE.Shape([new THREE.Vector2(-w / 2, 0), new THREE.Vector2(w / 2, 0), new THREE.Vector2(0, h)]);
 // a two-storey British terraced/semi house, front facing +z. Origin at the middle of the front wall, on the ground.
-export function townHouse({ w = 9, d = 9, wallTex = null, wallColor = 0xb5573b, door = 0x3b6ea5, roof = M_ROOF, trim = 0xf3eee4, number = null, lit = true } = {}) {
+export function townHouse({ w = 9, d = 9, wallTex = null, wallColor = 0xb5573b, door = 0x3b6ea5, roof = M_ROOF, trim = 0xf3eee4, number = null, lit = true, hollow = false } = {}) {
   const g = new THREE.Group();
   const H = 5.4;
-  const walls = box(w, H, d, wallTex || wallColor, 0, H / 2, -d / 2, { sharp: true });
-  g.add(walls);
+  // a hollow house (one you can go inside) gets its walls built separately; this adds the upstairs, roof and windows
+  if (hollow) g.add(box(w, H - 2.9, d, wallTex || wallColor, 0, 2.9 + (H - 2.9) / 2, -d / 2, { sharp: true }));
+  else g.add(box(w, H, d, wallTex || wallColor, 0, H / 2, -d / 2, { sharp: true }));
   // pitched roof along x, gables at the sides
   for (const s of [-1, 1]) g.add(box(w + 0.5, 0.18, d / 2 / Math.cos(0.6) + 0.4, roof, 0, H + 1.55, -d / 2 + s * d / 4, { rot: [s * -0.6 * -1, 0, 0], sharp: true }));
   const gable = new THREE.ExtrudeGeometry(triShape(d, 3.0), { depth: w - 0.02, bevelEnabled: false });
@@ -432,7 +433,8 @@ export function townHouse({ w = 9, d = 9, wallTex = null, wallColor = 0xb5573b, 
   g.add(gm);
   g.add(box(0.7, 1.6, 0.7, 0x8a4a35, w / 2 - 1.2, H + 2.2, -d / 2 - 1, { sharp: true }), cyl(0.12, 0.12, 0.4, 0x9a6a50, w / 2 - 1.2, H + 3.1, -d / 2 - 1));
   // door, step, windows
-  g.add(box(1.1, 2.1, 0.12, door, -w / 4, 1.12, 0.03, { sharp: true }), ball(0.05, M_GOLD, -w / 4 + 0.38, 1.1, 0.12), box(1.5, 0.15, 0.6, 0xbab3a6, -w / 4, 0.075, 0.3, { sharp: true }));
+  if (!hollow) g.add(box(1.1, 2.1, 0.12, door, -w / 4, 1.12, 0.03, { sharp: true }), ball(0.05, M_GOLD, -w / 4 + 0.38, 1.1, 0.12));
+  g.add(box(1.5, 0.15, 0.6, 0xbab3a6, -w / 4, 0.075, 0.3, { sharp: true }));
   g.add(box(1.3, 0.4, 0.06, 0xd9eef7, -w / 4, 2.42, 0.05, { mat: { emissive: lit ? 0xffb860 : 0, emissiveIntensity: lit ? 0.6 : 0 }, sharp: true }));
   const win = (x, y, ww = 1.9, hh = 1.4) => {
     g.add(box(ww + 0.25, hh + 0.25, 0.1, trim, x, y, 0.02, { sharp: true }));
@@ -517,3 +519,14 @@ export function dog(color = 0xb07a4a) {
   return g;
 }
 export function pram() { return group(ball(0.4, 0x3b6ea5, 0, 0.75, 0, { scale: [0.8, 0.7, 1.1] }), cyl(0.1, 0.1, 0.05, 0x222222, -0.3, 0.12, 0.35, { rot: [0, 0, Math.PI / 2] }), cyl(0.1, 0.1, 0.05, 0x222222, 0.3, 0.12, 0.35, { rot: [0, 0, Math.PI / 2] }), cyl(0.1, 0.1, 0.05, 0x222222, -0.3, 0.12, -0.35, { rot: [0, 0, Math.PI / 2] }), cyl(0.1, 0.1, 0.05, 0x222222, 0.3, 0.12, -0.35, { rot: [0, 0, Math.PI / 2] }), cyl(0.02, 0.02, 0.7, 0x333333, 0, 0.95, -0.55, { rot: [Math.PI / 2, 0, 0] })); }
+
+export function moustache() { return box(0.2, 0.05, 0.06, 0x4a3a2a, 0, 1.52, 0.16); }
+export function lawnmower() { return group(box(0.5, 0.25, 0.6, 0xd9534f, 0, 0.2, 0), cyl(0.02, 0.02, 0.9, 0x333333, 0, 0.6, -0.45, { rot: [0.7, 0, 0] }), box(0.4, 0.04, 0.04, 0x333333, 0, 0.92, -0.75)); }
+export function jar(label = 'THING FUND') {
+  const g = group(cyl(0.22, 0.22, 0.5, 0xcfe8f5, 0, 0.25, 0, { seg: 16, mat: { transparent: true, opacity: 0.35, roughness: 0.05, map: null } }), cyl(0.2, 0.2, 0.06, 0x8a6a4a, 0, 0.52, 0, { seg: 16 }));
+  for (let i = 0; i < 14; i++) g.add(coin(0.06, false).translateX(Math.random() * 0.24 - 0.12).translateY(0.05 + i * 0.02).translateZ(Math.random() * 0.24 - 0.12));
+  const l = signPlane(label, 0.36, 0.12, { bg: '#f3eee4', color: '#2d2118' }); l.position.set(0, 0.3, 0.225); g.add(l);
+  return g;
+}
+export function desk() { return group(box(1.4, 0.06, 0.7, C.wood, 0, 0.75, 0), box(0.06, 0.75, 0.66, C.woodDark, -0.65, 0.37, 0), box(0.06, 0.75, 0.66, C.woodDark, 0.65, 0.37, 0)); }
+export function monitor(text) { const g = group(box(0.7, 0.45, 0.05, 0x222222, 0, 1.08, 0), box(0.08, 0.3, 0.08, 0x333333, 0, 0.85, -0.02)); const sc = signPlane(text, 0.64, 0.38, { bg: '#1f4a2f', color: '#9be38a', glow: true }); sc.position.set(0, 1.08, 0.03); g.add(sc); return g; }

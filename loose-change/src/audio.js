@@ -71,7 +71,14 @@
     text: (t) => { tone(t, { freq: 1175, type: 'sine', dur: 0.12, gain: 0.15 }); tone(t + 0.13, { freq: 1568, type: 'sine', dur: 0.2, gain: 0.15 }); },
     splash: (t) => { noise(t, { dur: 0.35, gain: 0.25, freq: 1200, q: 0.5 }); noise(t + 0.08, { dur: 0.25, gain: 0.15, freq: 3000, q: 1 }); },
     woof: (t) => { tone(t, { freq: 260, type: 'sawtooth', dur: 0.12, gain: 0.18, slideTo: 150, filter: 900 }); tone(t + 0.18, { freq: 240, type: 'sawtooth', dur: 0.12, gain: 0.15, slideTo: 140, filter: 900 }); },
+    babbleHigh: (t) => { const base = 380 + Math.random() * 80; for (let i = 0; i < 7; i++) tone(t + i * 0.085, { freq: base * (0.85 + Math.random() * 0.35), type: 'triangle', dur: 0.07, gain: 0.11, filter: 2200 }); },
+    babbleLow: (t) => { const base = 110 + Math.random() * 40; for (let i = 0; i < 6; i++) tone(t + i * 0.08, { freq: base * (0.85 + Math.random() * 0.4), type: 'sawtooth', dur: 0.07, gain: 0.08, filter: 800 }); },
+    babbleTiny: (t) => { const base = 700 + Math.random() * 200; for (let i = 0; i < 8; i++) tone(t + i * 0.05, { freq: base * (0.8 + Math.random() * 0.5), type: 'square', dur: 0.04, gain: 0.05, filter: 3500 }); },
+    squawk: (t) => { tone(t, { freq: 1300, type: 'sawtooth', dur: 0.18, gain: 0.12, slideTo: 800, filter: 2500 }); tone(t + 0.22, { freq: 1200, type: 'sawtooth', dur: 0.25, gain: 0.12, slideTo: 700, filter: 2500 }); },
+    fox: (t) => { tone(t, { freq: 900, type: 'sawtooth', dur: 0.5, gain: 0.1, slideTo: 1500, filter: 2400 }); },
     babble: (t) => { const base = 180 + Math.random() * 160; for (let i = 0; i < 6; i++) tone(t + i * 0.07, { freq: base * (0.85 + Math.random() * 0.4), type: 'triangle', dur: 0.06, gain: 0.12, filter: 1500 }); },
+    fart: (t) => { tone(t, { freq: 90, type: 'sawtooth', dur: 0.7, gain: 0.25, slideTo: 55, filter: 500 }); noise(t, { dur: 0.6, gain: 0.12, freq: 200, q: 2 }); },
+    mower: (t) => { tone(t, { freq: 70 + Math.random() * 10, type: 'sawtooth', dur: 0.4, gain: 0.03, filter: 400 }); },
     ribbit: (t) => { for (let i = 0; i < 3; i++) tone(t + i * 0.05, { freq: 180, type: 'square', dur: 0.04, gain: 0.12, slideTo: 320, filter: 1500 }); },
   };
   function sfx(name) {

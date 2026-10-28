@@ -88,6 +88,7 @@ LC.DIG_FINDS = [
   { at: 1, icon: '🪙', name: 'A 2p from 1971', text: "Still smells of 1971.", reward: { cash: 30 } },
   { at: 2.5, icon: '🏛️', name: 'A Roman coin', text: 'Someone in 43 AD also lost money in this garden.', reward: { mult: 0.05 } },
   { at: 6, icon: '📼', name: 'A 1994 time capsule', text: 'Contains a Tamagotchi. It is still alive. It is hungry.', reward: { cash: 120 } },
+  { at: 3.5, icon: '💨', name: 'A stink bomb from 1989', text: 'Still sealed. Still potent. You know exactly whose car this is for.', reward: { item: 'stink' } },
   { at: 15, icon: '🏴‍☠️', name: "A pirate's chest", text: 'Long way inland for a pirate. Good for him.', reward: { cash: 600 } },
   { at: 40, icon: '🚽', name: "Next door's sewer pipe", text: 'Sorry, Brian.', reward: { buttons: 3 } },
   { at: 100, icon: '🦖', name: 'A fossilised £1 coin', text: 'Dinosaurs had money. That is how they could afford to be so big.', reward: { mult: 0.1 } },
@@ -118,6 +119,7 @@ LC.SOFA_FINDS = [
   { text: 'three buttons in a trench coat.', buttons: 3 },
   { text: 'your old phone. It has 4% battery and 400 notifications.', cash: 30 },
   { text: 'a jam sandwich. Do not eat the jam sandwich.', cash: 0 },
+  { text: 'a whoopee cushion! This could be useful...', item: 'whoopee', weight: 2 },
 ];
 
 // ---- Piggy bank personalities ----
@@ -243,6 +245,13 @@ LC.ENDINGS = [
     'Your subjects are buttons. They do not do anything.',
     'You are very happy.' ] },
 ];
+LC.ENDINGS.push({ id: 'brian', title: 'Brian Got It', icon: '😤', lines: [
+  'Brian knocks on your door.',
+  'He is holding a cheque for £1,000,000,000,000.',
+  '"Your grandad said whoever pays first gets it," he says.',
+  'He wheels The Thing out of your hall.',
+  'He looks under the sheet. His face goes white.',
+  'He wheels it back in and leaves without a word. You never find out why.' ] });
 LC.RANDOM_ENDINGS = ['mealdeal', 'moon', 'scratch', 'piggy', 'goose', 'dev', 'dream'];
 
 // ---- Achievements. API names match what you set up in Steamworks. ----
@@ -266,7 +275,11 @@ LC.ACHIEVEMENTS = [
   { id: 'GOLDEN', name: 'Shiny!', desc: 'Catch a golden coin.', test: (s) => s.stats.golden >= 1 },
   { id: 'EVENTS_25', name: 'What Is Even Happening', desc: 'Witness 25 random events.', test: (s) => s.stats.events >= 25 },
   { id: 'UPSIDE', name: 'Which Way Is Up', desc: 'Get flipped by a cursed penny.', test: (s) => s.flags.flipped },
-  ...['mealdeal', 'moon', 'scratch', 'piggy', 'goose', 'dev', 'dream', 'australia', 'buttons'].map((e) => ({
+  { id: 'PRANK_1', name: 'Gotcha', desc: 'Prank Brian.', test: (s) => (s.stats.pranks || 0) >= 1 },
+  { id: 'PRANK_ALL', name: 'Neighbour From Hell', desc: 'Pull every kind of prank on Brian.', test: (s) => ['whoopee', 'glitter', 'stink', 'ticket', 'goose'].every((k) => (s.flags['prank_' + k])) },
+  { id: 'SNEAKY', name: 'Sneaky', desc: "Raid Brian's sofa 25 times.", test: (s) => (s.stats.brianSofa || 0) >= 25 },
+  { id: 'CAUGHT', name: 'Busted', desc: 'Get caught in Brian\'s house.', test: (s) => s.flags.caught },
+  ...['mealdeal', 'moon', 'scratch', 'piggy', 'goose', 'dev', 'dream', 'australia', 'buttons', 'brian'].map((e) => ({
     id: 'END_' + e.toUpperCase(), name: 'Ending: ' + e, desc: 'See this ending.', ending: e, test: (s) => s.endings.includes(e),
   })),
   { id: 'ALL_ENDINGS', name: 'Seen It All', desc: 'See every ending.', test: (s) => LC.ENDINGS.every((e) => s.endings.includes(e.id)) },
@@ -408,6 +421,16 @@ LC.TEXTS = [
   { id: 'mate1', from: 'Jamal (school)', when: (s) => s.lifetime >= 120, msgs: ['yo r u coming to the park', 'someone said u can get money out the fountain??', 'i got 30p and a duck bit me'] },
   { id: 'mum4', from: 'Mum', when: (s) => s.lifetime >= 400, msgs: ["If you're going to the park, take a bag for the litter under the benches.", 'You would not BELIEVE what people drop.'] },
   { id: 'brian4', from: 'Brian (next door)', when: (s) => s.lifetime >= 2000, msgs: ['Stop staring at my gnome.', 'He has been in the family for 40 years.', 'He sees EVERYTHING.'] },
+  { id: 'mumkey', from: 'Mum', when: (s) => s.lifetime >= 250, flag: 'knowsKey', msgs: ["Brian's asked me to water his plants while he's at the shops again.", 'He keeps his spare key under that ugly gnome. Do NOT go in there.', 'I mean it.'] },
+  { id: 'brianW', from: 'Brian (next door)', when: (s) => s.flags.prank_whoopee, msgs: ['WHO PUT A WHOOPEE CUSHION ON MY SOFA', 'I had GUESTS round', 'This means war.'] },
+  { id: 'brianG', from: 'Brian (next door)', when: (s) => s.flags.prank_glitter, msgs: ['There is GLITTER in my HALLWAY', 'It is in the CARPET', 'It is in my MOUSTACHE'] },
+  { id: 'brianS', from: 'Brian (next door)', when: (s) => s.flags.prank_stink, msgs: ['My car smells like a dead badger', 'The Tax Badger says it was not him', 'I know it was you'] },
+  { id: 'brianT', from: 'Brian (next door)', when: (s) => s.flags.prank_ticket, msgs: ['I paid an £80 parking ticket.', 'On my own drive.', 'The council says they have "no record of it".'] },
+  { id: 'brianGo', from: 'Brian (next door)', when: (s) => s.flags.prank_goose, msgs: ['There is a GOOSE on my lawn', 'It ate my gnome\'s hat', 'Call it off. CALL IT OFF.'] },
+  { id: 'brianFund', from: 'Brian (next door)', when: (s) => (s.stats.fundRaids || 0) >= 1, msgs: ['Has someone been in my Thing Fund jar?', 'The coins have been... rearranged.'] },
+  { id: 'brianCaught', from: 'Brian (next door)', when: (s) => s.flags.caught, msgs: ['Stay. Out. Of. My. House.', "I've told your mum.", 'I have also told the gnome.'] },
+  { id: 'brian50', from: 'Brian (next door)', when: (s) => (s.brian && s.brian.p >= 0.5), msgs: ["Halfway there, kiddo. How's the sofa going? 🙂"] },
+  { id: 'brian85', from: 'Brian (next door)', when: (s) => (s.brian && s.brian.p >= 0.85), msgs: ['Getting close now.', "I've measured my hall. The Thing will fit perfectly."] },
   { id: 'moon1', from: 'NASA (probably)', when: (s) => (s.gens.moon || 0) >= 1, msgs: ['Hi. Could you please stop checking the Moon sofa.', 'The astronauts were going to check it.'] },
 ];
 
@@ -447,3 +470,39 @@ LC.CHAT = {
   kid: ['"I\'m saving up too. I have 4p."', '"The fountain is magic. My mate got 50p out of it."', '"Brian shouted at me for touching his gnome."', '"Do you want to swap a Lego for a button?"'],
   lady: ['"Ooh, you\'re Ken\'s grandchild aren\'t you! Lovely man. Hid money everywhere."', '"I put 20p in the phone box in 1994 and it never gave it back."', '"The pigeons round here are organised, dear. Be careful."', '"Have you tried the benches in the park?"'],
 };
+
+// ---- Tasks: a guided checklist (separate from secrets). Three show at a time, top-left. ----
+// progress(s) returns a number compared against `target`. reward: { secs } = seconds of income,
+// { cash } = flat £, { gen: [id, n] } = free helpers, { up: id } = free upgrade, { tool: [id, n] } = free diggers, { buttons }.
+LC.TASKS = [
+  { id: 't1', text: 'Rummage down the sofa 10 times', target: 10, progress: (s) => s.stats.clicks, reward: { cash: 1 }, rewardText: '£1' },
+  { id: 't2', text: 'Find £1 in total', target: 1, progress: (s) => s.lifetime, reward: { gen: ['cat', 1] }, rewardText: 'A free Nosy Cat' },
+  { id: 't3', text: 'Open your phone (Tab) and hire your Little Brother', target: 1, progress: (s) => s.gens.brother || 0, reward: { cash: 5 }, rewardText: '£5' },
+  { id: 't4', text: 'Smash the piggy bank on the mantelpiece', target: 1, progress: (s) => s.stats.pigs, reward: { up: 'gloves' }, rewardText: 'Free Rubber Gloves' },
+  { id: 't5', text: 'Dig the hole in the back garden to 1 m', target: 1, progress: (s) => s.depth, reward: { secs: 60, min: 8 }, rewardText: 'A minute of income' },
+  { id: 't6', text: 'Pick up 5 coins off the floor', target: 5, progress: (s) => s.stats.floor || 0, reward: { up: 'magnet1' }, rewardText: 'Free Magnetic Trousers' },
+  { id: 't7', text: 'Read a message on your phone', target: 1, progress: (s) => Object.values(s.texts).filter((t) => t.read).length, reward: { cash: 15 }, rewardText: '£15' },
+  { id: 't8', text: 'Find £100 in total', target: 100, progress: (s) => s.lifetime, reward: { gen: ['detectorist', 1] }, rewardText: 'A free Metal Detectorist' },
+  { id: 't9', text: 'Buy a scratch card at the corner shop', target: 1, progress: (s) => s.stats.cards, reward: { secs: 120, min: 20 }, rewardText: 'Two minutes of income' },
+  { id: 'b1', text: "Find out where Brian hides his spare key", target: 1, progress: (s) => (s.flags.hasKey ? 1 : 0), reward: { secs: 120, min: 15 }, rewardText: 'Two minutes of income' },
+  { id: 'b2', text: "Sneak into Brian's house and raid his sofa 10 times", target: 10, progress: (s) => s.stats.brianSofa || 0, reward: { secs: 240 }, rewardText: 'Four minutes of income' },
+  { id: 't10', text: 'Own 10 Nosy Cats', target: 10, progress: (s) => s.gens.cat || 0, reward: { secs: 180 }, rewardText: 'Three minutes of income' },
+  { id: 't11', text: 'Dig to 5 m', target: 5, progress: (s) => s.depth, reward: { tool: ['gnome', 1] }, rewardText: 'A free Garden Gnome digger' },
+  { id: 't12', text: 'Catch a golden coin', target: 1, progress: (s) => s.stats.golden, reward: { secs: 300 }, rewardText: 'Five minutes of income' },
+  { id: 't13', text: 'Find a secret somewhere in town', target: 1, progress: (s) => s.secrets.length, reward: { buttons: 5, secs: 120 }, rewardText: '5 buttons + two minutes of income' },
+  { id: 'b3', text: 'Pull a prank on Brian (find something to prank him with first)', target: 1, progress: (s) => s.stats.pranks || 0, reward: { secs: 300, buttons: 5 }, rewardText: 'Five minutes of income + 5 buttons' },
+  { id: 't14', text: 'Find £10,000 in total', target: 1e4, progress: (s) => s.lifetime, reward: { gen: ['well', 1] }, rewardText: 'A free Wishing Well' },
+  { id: 't15', text: 'Smash 10 piggy banks', target: 10, progress: (s) => s.stats.pigs, reward: { up: 'hammer' }, rewardText: 'Free Proper Hammer' },
+  { id: 't16', text: 'Hire a Coin Pusher', target: 1, progress: (s) => s.gens.pusher || 0, reward: { secs: 600 }, rewardText: 'Ten minutes of income' },
+  { id: 't17', text: 'Dig to 100 m', target: 100, progress: (s) => s.depth, reward: { secs: 600 }, rewardText: 'Ten minutes of income' },
+  { id: 'b4', text: "Raid Brian's Thing Fund jar 3 times", target: 3, progress: (s) => s.stats.fundRaids || 0, reward: { secs: 900 }, rewardText: '15 minutes of income' },
+  { id: 't18', text: 'Find 3 secrets', target: 3, progress: (s) => s.secrets.length, reward: { buttons: 10, secs: 900 }, rewardText: '10 buttons + 15 minutes of income' },
+  { id: 't19', text: 'Find £1 million in total', target: 1e6, progress: (s) => s.lifetime, reward: { gen: ['pigeons', 2] }, rewardText: 'Two free Pigeon Syndicates' },
+  { id: 't20', text: 'Scratch 10 scratch cards', target: 10, progress: (s) => s.stats.cards, reward: { up: 'luckypen' }, rewardText: 'Free Lucky Scratching Coin' },
+  { id: 't21', text: 'Dig to 1 km and meet the Mole King', target: 1000, progress: (s) => s.depth, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
+  { id: 'b5', text: 'Prank Brian 5 times', target: 5, progress: (s) => s.stats.pranks || 0, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
+  { id: 't22', text: 'Survive 25 random events', target: 25, progress: (s) => s.stats.events, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
+  { id: 't23', text: 'Find £1 billion in total', target: 1e9, progress: (s) => s.lifetime, reward: { gen: ['factory', 1] }, rewardText: 'A free Sofa Factory' },
+  { id: 't24', text: 'Reach the centre of the Earth', target: 6371000, progress: (s) => s.depth, reward: { secs: 1800 }, rewardText: '30 minutes of income' },
+  { id: 't25', text: 'Save up £1 trillion for The Thing', target: 1e12, progress: (s) => s.money, reward: { cash: 0 }, rewardText: 'Find out what it is' },
+];

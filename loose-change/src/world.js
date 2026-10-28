@@ -14,7 +14,7 @@ const LC = globalThis.LC;
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-const EYE = 1.25, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
+const EYE = 1.25, CROUCH_EYE = 0.72, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
 const BOUNDS = { x0: -62, x1: 62, z0: -26, z1: 56 };
 
 let renderer, scene, camera, sun, canvas, composer = null, clouds = null, grainPass = null;
@@ -25,12 +25,13 @@ const pickups = [];
 const particles = [];
 const keys = new Set();
 const player = { pos: new THREE.Vector3(-3.5, 0, 0.6), vy: 0, yaw: Math.PI, pitch: -0.12, bob: 0, stepT: 0 };
+let crouching = false, eye = EYE;
 let locked = false, flip = 0, flipTarget = 0, holdTimer = 0, holding = false, focus = null, shake = 0;
 let sensitivity = 1;
 
 // ---------- building helpers ----------
 function add(obj, x = 0, y = 0, z = 0, ry = 0) { obj.position.set(x, y, z); obj.rotation.y = ry; scene.add(obj); return obj; }
-function collide(x0, z0, x1, z1) { colliders.push({ x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }); }
+function collide(x0, z0, x1, z1) { const c = { x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1) }; colliders.push(c); return c; }
 function collideObj(obj, pad = 0) {
   const b = new THREE.Box3().setFromObject(obj);
   collide(b.min.x - pad, b.min.z - pad, b.max.x + pad, b.max.z + pad);
@@ -240,9 +241,10 @@ function buildTown() {
     { x: 54, w: 10, door: 0x2d2118, n: 17, color: 0xc8d8e0 },
   ];
   for (const h of houses) {
-    const o = add(M.townHouse({ w: h.w, d: 10, wallTex: h.tex, wallColor: h.color, door: h.door, number: h.n }), h.x, 0, 5);
-    void o;
-    collide(h.x - h.w / 2, -5, h.x + h.w / 2, 5);
+    if (h.brian) { buildBrianHouse(h); } else {
+      add(M.townHouse({ w: h.w, d: 10, wallTex: h.tex, wallColor: h.color, door: h.door, number: h.n }), h.x, 0, 5);
+      collide(h.x - h.w / 2, -5, h.x + h.w / 2, 5);
+    }
     // front garden: low wall with a gap for the path, bins, a hedge or a gnome
     const gw = h.w;
     add(M.lowWall(gw / 2 - 1, h.brian ? 0xf3eee4 : 0xb5573b), h.x - gw / 4 - 0.5, 0, 7.9);
@@ -254,12 +256,15 @@ function buildTown() {
       // Brian's lawn is perfect. There is a gnome. The gnome is watching.
       floor(h.x - gw / 2 + 0.3, 5.2, h.x + gw / 2 - 0.3, 7.7, 0x86c964, 0.016);
       const gn = add(M.gnome(), h.x + 2.5, 0, 6.6, Math.PI * 0.1);
-      interact(gn, { range: 2.5, prompt: () => "Stare at Brian's gnome", use: () => LC.game.gnomeStare() });
+      interact(gn, { range: 3.4, prompt: () => LC.game.gnomePrompt(), use: () => LC.game.gnome() });
       const sign = M.signPlane('KEEP OFF THE GRASS', 1.4, 0.35, { bg: '#f3eee4', color: '#c8231f' }); sign.position.set(h.x - 2.5, 0.9, 7.6); scene.add(sign);
+      const lawn = new THREE.Mesh(new THREE.BoxGeometry(5, 0.6, 2.2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+      lawn.position.set(h.x - 3.2, 0.3, 6.6); lawn.userData.noAO = true; scene.add(lawn);
+      interact(lawn, { range: 3, prompt: () => LC.game.brianLawnPrompt(), use: () => LC.game.brianLawn() });
     } else add(M.hedge(gw / 2 - 1.6), h.x + gw / 4 - 0.2, 0, 5.8);
   }
   // nobody goes round the back of the other houses
-  collide(-62, -26, -12, 5); collide(12, -26, 62, 5);
+  collide(-62, -26, -24.1, 5); collide(-24.1, -26, -11.9, -5.1); collide(12, -26, 62, 5);
   // street furniture
   for (let x = -54; x <= 54; x += 12) {
     add(M.lampPost(), x, 0, 9.6, Math.PI / 2); collide(x - 0.15, 9.45, x + 0.15, 9.75); lightCone(x, 3.85, 9.1, 3.2, 1.3, 0xffd9a0, 0.035);
@@ -275,6 +280,13 @@ function buildTown() {
     car.children.filter((k) => k.isGroup).forEach((k) => (k.visible = false)); // parked cars, no car-boot table
     collideObj(car);
   }
+  const bcar = add(M.car(0xb8c0c8), -18, 0, 11, Math.PI / 2);
+  bcar.children.filter((k) => k.isGroup).forEach((k) => (k.visible = false));
+  collideObj(bcar);
+  const plate = M.signPlane('BR1 AN', 0.7, 0.18, { bg: '#f2d23a', color: '#111' }); plate.position.set(-16.1, 0.55, 11); plate.rotation.y = Math.PI / 2; scene.add(plate);
+  interact(bcar, { range: 3, prompt: () => LC.game.brianCarPrompt(), use: () => LC.game.brianCar() });
+  spots.brianCar = bcar;
+
   // the high street (across the road). Fronts face our side.
   const shops = [
     { x: -54, w: 12, name: 'THE RUSTY ANCHOR', kind: 'pub', bg: '#3a2a1a', wall: brick(0.8), awning: [0x2d4a2d, 0xe8dcc8], line: 'The pub. You are not allowed in. You are nine.' },
@@ -351,6 +363,184 @@ function buildTown() {
   }
 }
 
+// ---------- Brian's house (you can go inside) ----------
+const brianSpots = {};
+function buildBrianHouse(h) {
+  const x0 = h.x - h.w / 2, x1 = h.x + h.w / 2, mid = h.x; // -24, -12, -18
+  add(M.townHouse({ w: h.w, d: 10, wallColor: 0xf3eee4, door: h.door, number: h.n, hollow: true }), h.x, 0, 5.12);
+  const doorX = h.x - h.w / 4; // -21
+  floor(x0, -5, x1, 5, 0xc9a27a);
+  const wcB = 0xe8d9f0;
+  wall(x0, 5, doorX - 0.6, 5, wcB); wall(doorX + 0.6, 5, x1, 5, wcB);
+  wall(x0, -5, x1, -5, wcB); wall(x0, -5, x0, 5, wcB); wall(x1, -5, x1, 5, wcB);
+  wall(mid, -5, mid, -1, wcB); wall(mid, 1, mid, 5, wcB);
+  scene.add(M.box(1.2, 0.6, 0.22, 0xf3eee4, doorX, 2.5, 5, { shadow: false }));
+  // outside skin
+  for (const [a, b, c, d2, ox, oz] of [[x0 - 0.1, 5, doorX - 0.6, 5, 0, 0.12], [doorX + 0.6, 5, x1 + 0.1, 5, 0, 0.12], [x0, -5.1, x0, 5.1, -0.12, 0], [x1, -5.1, x1, 5.1, 0.12, 0]]) {
+    const w = Math.abs(c - a) || 0.04, d = Math.abs(d2 - b) || 0.04;
+    scene.add(M.box(w, 2.9, d, 0xf3eee4, (a + c) / 2 + ox, 1.45, (b + d2) / 2 + oz, { shadow: false, sharp: true }));
+  }
+  scene.add(M.box(h.w, 0.1, 10, new THREE.MeshStandardMaterial({ color: 0xf3ece0 }), mid, 2.85, 0, { sharp: true }));
+  const l = new THREE.PointLight(0xffd29a, 12, 10, 1.8); l.position.set(mid - 3, 2.5, 0); scene.add(l);
+  const l2 = new THREE.PointLight(0xffd29a, 10, 9, 1.8); l2.position.set(mid + 3, 2.5, 0); scene.add(l2);
+  // the front door: locked until you find the spare key
+  const door = new THREE.Group();
+  door.add(M.box(1.1, 2.1, 0.1, h.door, 0.55, 1.05, 0, { sharp: true }), M.ball(0.05, 0xf2b631, 0.95, 1.05, 0.08), M.box(0.3, 0.06, 0.04, 0x9a8a5a, 0.55, 1.35, 0.07));
+  door.position.set(doorX - 0.55, 0, 5.02); scene.add(door);
+  brianSpots.door = door;
+  brianSpots.doorCol = collide(doorX - 0.6, 4.85, doorX + 0.6, 5.15);
+  interact(door, { range: 2.8, prompt: () => LC.game.brianDoorPrompt(), use: () => LC.game.brianDoor() });
+  // living room: Brian's leather sofa, telly, and the Thing Fund jar
+  const sofa = add(M.sofa(0xd8c4a0, 0xb49a78, 2.3), x0 + 0.75, 0, -0.2, Math.PI / 2); collideObj(sofa, 0.05);
+  interact(sofa, { range: 3.2, hold: true, tool: 'sofa', prompt: () => LC.game.brianSofaPrompt(), use: () => { const r = LC.game.raidBrianSofa(); if (r) { burstAt(sofa.position.clone().setY(0.8), 4); LC.game.floatAt(project(sofa.position.clone().setY(0.9)), r.value); } } });
+  brianSpots.sofa = sofa;
+  brianSpots.seat = new THREE.Vector3(x0 + 0.95, 0, -0.2);
+  const tv = add(M.tv(), mid - 0.4, 0, -0.2, -Math.PI / 2); collideObj(tv);
+  add(M.rug(texMat('carpet', 1, 1)), x0 + 3, 0, -0.2);
+  const side = add(M.box(0.7, 0.7, 0.5, M.C.woodDark, 0, 0, 0), x0 + 0.6, 0.35, -3.6); collideObj(side);
+  const jar = add(M.jar('THING FUND'), x0 + 0.6, 0.7, -3.6, Math.PI / 2);
+  interact(jar, { range: 2.6, prompt: () => LC.game.fundPrompt(), use: () => LC.game.raidFund() });
+  brianSpots.jar = jar;
+  const photo = M.signPlane('ME & GNORMAN', 0.9, 0.6, { bg: '#d8c8a8', color: '#5a4a3a' }); photo.position.set(x0 + 0.12, 1.7, 2.2); photo.rotation.y = Math.PI / 2; scene.add(photo);
+  // the other room: his desk and the spreadsheet, the fridge, his gnome collection
+  const desk = add(M.desk(), x1 - 0.6, 0, -3.4, -Math.PI / 2); collideObj(desk);
+  const mon = add(M.monitor('BEAT THE KID.xls'), x1 - 0.75, 0, -3.4, -Math.PI / 2);
+  interact(mon, { range: 2.6, prompt: () => "Read Brian's spreadsheet", use: () => LC.game.brianComputer() });
+  const fr = add(M.fridge(), x1 - 0.45, 0, 4.4, -Math.PI / 2); collideObj(fr);
+  const shelf = add(M.box(0.4, 0.06, 2.4, M.C.wood, 0, 0, 0), mid + 0.25, 1.4, 3.2); void shelf;
+  for (let i = 0; i < 5; i++) { const g = add(M.gnome(), mid + 0.25, 1.43, 2.2 + i * 0.5, Math.PI / 2); g.scale.setScalar(0.35); }
+  brianSpots.inside = { x0, x1, z0: -5, z1: 5, mid };
+  brianSpots.doorX = doorX;
+  // Brian himself
+  buildBrian();
+}
+
+// Brian's day: at home (sofa, desk, fridge), out mowing the front lawn, then off to the shops and back.
+const brian = { obj: null, state: 'home', t: 0, path: [], speed: 1.6, sitting: false, suspicion: 0, mower: null, busy: false };
+function buildBrian() {
+  const o = M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08 });
+  o.add(M.moustache());
+  o.position.set(brianSpots.seat.x + 1.5, 0, 0);
+  scene.add(o);
+  brian.obj = o;
+  brian.mower = M.lawnmower(); brian.mower.visible = false; scene.add(brian.mower);
+  interact(o, { range: 2.5, prompt: () => 'Say hello to Brian', use: () => LC.game.chatBrian() });
+  brian.homeSpots = [brianSpots.seat, new THREE.Vector3(brianSpots.inside.x1 - 1.4, 0, -3.4), new THREE.Vector3(brianSpots.inside.x1 - 1.3, 0, 3.6), new THREE.Vector3(brianSpots.inside.x0 + 3, 0, 2)];
+  setBrianState('home');
+  agents.push({ obj: o, update: brianUpdate });
+}
+function doorPath(outwards) {
+  const dx = brianSpots.doorX;
+  const inside = [new THREE.Vector3(dx, 0, 2.5), new THREE.Vector3(dx, 0, 4.4)];
+  const outside = [new THREE.Vector3(dx, 0, 5.8), new THREE.Vector3(dx, 0, 8.6)];
+  return outwards ? [...inside, ...outside] : [...outside.reverse(), ...inside.reverse()];
+}
+function setBrianState(st) {
+  brian.state = st; brian.t = 0; brian.sitting = false; brian.mower.visible = false;
+  const o = brian.obj;
+  if (st === 'home') { brian.path = []; brian.dwell = 0; }
+  if (st === 'toGarden') brian.path = doorPath(true).slice(0, 3);
+  if (st === 'garden') { brian.path = []; brian.mower.visible = true; }
+  if (st === 'toShops') brian.path = [...doorPath(true), new THREE.Vector3(-14, 0, 8.9), new THREE.Vector3(26, 0, 8.9)];
+  if (st === 'shops') brian.path = [];
+  if (st === 'goHome') brian.path = [new THREE.Vector3(-14, 0, 8.9), ...doorPath(false)];
+  if (st === 'gardenHome') brian.path = doorPath(false).slice(2);
+  void o;
+}
+const BRIAN_TIMES = { home: 150, garden: 60, shops: 110 };
+function brianUpdate(dt, t) {
+  const o = brian.obj;
+  if (talker && talker.obj === o) return; // talking to you
+  brian.t += dt;
+  // follow the current path
+  if (brian.path.length) {
+    const tgt = brian.path[0];
+    const d = new THREE.Vector3(tgt.x - o.position.x, 0, tgt.z - o.position.z);
+    if (d.length() < 0.15) {
+      brian.path.shift();
+      if (brian.state === 'toShops' && brian.path.length === 2) LC.game.brianEvent('passCar');
+      if (brian.state === 'goHome' && brian.path.length === 2) LC.game.brianEvent('enterDoor');
+      if (!brian.path.length) {
+        if (brian.state === 'toGarden') setBrianState('garden');
+        else if (brian.state === 'toShops') setBrianState('shops');
+        else if (brian.state === 'goHome' || brian.state === 'gardenHome') setBrianState('home');
+        else if (brian.state === 'investigate') { brian.state = 'home'; brian.dwell = 3; }
+      }
+    } else {
+      d.normalize();
+      o.position.x += d.x * brian.speed * dt; o.position.z += d.z * brian.speed * dt;
+      o.rotation.y = Math.atan2(d.x, d.z);
+      o.position.y = 0;
+      limbs(o, Math.sin(t * 9));
+    }
+  } else if (brian.state === 'home') {
+    brian.dwell -= dt;
+    if (brian.dwell <= 0) {
+      const spot = pick(brian.homeSpots);
+      brian.path = [spot.clone()];
+      brian.dwell = 12 + Math.random() * 14;
+      brian.sitting = false;
+    } else if (brian.homeSpots[0].distanceTo(o.position) < 0.3) {
+      // sitting on the sofa watching telly
+      if (!brian.sitting) { brian.sitting = true; LC.game.brianEvent('sit'); }
+      o.rotation.y = Math.PI / 2; o.position.y = -0.25; limbs(o, 0);
+    } else limbs(o, 0);
+    if (brian.t > BRIAN_TIMES.home) setBrianState(Math.random() < 0.4 ? 'toGarden' : 'toShops');
+  } else if (brian.state === 'garden') {
+    // mowing stripes into the perfect lawn
+    const x = -18 + Math.sin(brian.t * 0.4) * 4.5, z = 6.4 + Math.sin(brian.t * 0.13) * 0.9;
+    const d = new THREE.Vector3(x - o.position.x, 0, z - o.position.z);
+    if (d.length() > 0.02) o.rotation.y = Math.atan2(d.x, d.z);
+    o.position.set(x, 0, z); limbs(o, Math.sin(t * 8));
+    brian.mower.position.copy(o.position).add(new THREE.Vector3(Math.sin(o.rotation.y) * 0.8, 0, Math.cos(o.rotation.y) * 0.8));
+    brian.mower.rotation.y = o.rotation.y + Math.PI;
+    if (Math.random() < dt * 0.6) LC.audio.sfx('mower');
+    if (brian.t > BRIAN_TIMES.garden) setBrianState('gardenHome');
+  } else if (brian.state === 'shops') {
+    limbs(o, 0);
+    if (brian.t > BRIAN_TIMES.shops) setBrianState('goHome');
+  }
+  // does Brian spot you inside his house?
+  const I = brianSpots.inside;
+  const p = player.pos;
+  const playerInside = p.x > I.x0 && p.x < I.x1 && p.z > I.z0 && p.z < I.z1;
+  const brianInside = o.position.x > I.x0 && o.position.x < I.x1 && o.position.z > I.z0 && o.position.z < I.z1;
+  let seeing = false;
+  if (playerInside && brianInside && !LC.game.isBlocked()) {
+    const to = new THREE.Vector3(p.x - o.position.x, 0, p.z - o.position.z);
+    const dist = to.length();
+    const facing = new THREE.Vector3(Math.sin(o.rotation.y), 0, Math.cos(o.rotation.y));
+    const sameRoom = (p.x < I.mid) === (o.position.x < I.mid) || Math.abs(p.x - I.mid) < 1.2 && Math.abs(p.z) < 1;
+    const range = crouching ? 3.2 : 6.5;
+    const angle = to.clone().normalize().dot(facing);
+    seeing = sameRoom && dist < range && (angle > 0.35 || dist < 1.4) && !(brian.sitting && crouching && dist > 1.6);
+  }
+  brian.suspicion = Math.max(0, Math.min(1, brian.suspicion + (seeing ? dt * (crouching ? 0.9 : 1.8) : -dt * 0.5)));
+  LC.game.setSuspicion(playerInside ? brian.suspicion : 0, seeing);
+  if (brian.suspicion >= 1) { brian.suspicion = 0; caught(); }
+}
+function caught() {
+  brian.sitting = false; brian.obj.position.y = 0;
+  LC.game.caughtByBrian();
+}
+// rummaging is noisy: Brian might come and look
+function brianNoise() {
+  const I = brianSpots.inside, o = brian.obj;
+  const home = o.position.x > I.x0 && o.position.x < I.x1 && o.position.z > I.z0 && o.position.z < I.z1;
+  if (!home || brian.state !== 'home' || Math.random() > 0.12) return false;
+  brian.state = 'investigate'; brian.sitting = false; o.position.y = 0;
+  brian.path = [new THREE.Vector3(player.pos.x, 0, player.pos.z)];
+  return true;
+}
+function setDoorOpen(open) {
+  brianSpots.door.rotation.y = open ? -1.6 : 0;
+  brianSpots.doorCol.off = open;
+}
+function throwOut() {
+  player.pos.set(brianSpots.doorX, 0, 9.2); player.yaw = 0; player.pitch = 0;
+  setDoorOpen(false);
+}
+
 // ---------- characters & helpers that appear as you buy them ----------
 const helpers = {}; // gen id -> array of objects
 const ZONES = {
@@ -358,7 +548,7 @@ const ZONES = {
   garden: [{ x0: -11, x1: 11, z0: -25, z1: -6.5 }],
 };
 function randomIn(zone) { const r = pick(zone); return new THREE.Vector3(rand(r.x0, r.x1), 0, rand(r.z0, r.z1)); }
-function blocked(x, z, r = RADIUS) { return colliders.some((c) => x > c.x0 - r && x < c.x1 + r && z > c.z0 - r && z < c.z1 + r); }
+function blocked(x, z, r = RADIUS) { return colliders.some((c) => !c.off && x > c.x0 - r && x < c.x1 + r && z > c.z0 - r && z < c.z1 + r); }
 
 function walker(obj, zone, speed, opts = {}) {
   const a = { obj, zone, speed, target: randomIn(zone), wait: rand(0, 2), t: Math.random() * 10, ...opts };
@@ -527,24 +717,95 @@ function gooseUpdate(dt, t) {
 }
 
 // ---------- visitors for random events ----------
-function visitor(kind, secs = 14) {
-  let o;
-  if (kind === 'nan') o = M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92 });
-  else if (kind === 'badger') { o = M.badger(); o.scale.setScalar(1.4); }
-  else if (kind === 'fox') { o = M.cat(0xe0662a); o.scale.setScalar(1.6); }
-  else if (kind === 'seagull') { o = M.pigeon(); o.scale.setScalar(3); o.traverse((m) => { if (m.material && m.material.color.getHex() === 0x8d93a3) m.material = M.mat(0xffffff); }); }
-  else if (kind === 'buttonman') o = M.person({ shirt: 0x333355, legs: 0x333355, height: 1.25, hat: 'cap' });
-  else if (kind === 'icecream') o = M.person({ shirt: 0xffffff, legs: 0xf7a8bd, hat: 'cap' });
-  else o = M.person({ shirt: 0x7a7a7a, legs: 0x333333, hat: 'beanie' });
+// Characters that come and talk to you: they walk (or fly) up, chat in a speech bubble, then leave.
+const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow' };
+function makeVisitor(kind) {
+  if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92 });
+  if (kind === 'badger') { const o = M.badger(); o.scale.setScalar(1.4); const tie = M.box(0.06, 0.18, 0.02, 0xc8231f, 0, 0.28, 0.62); o.add(tie); return o; }
+  if (kind === 'fox') { const o = M.cat(0xe0662a); o.scale.setScalar(1.6); return o; }
+  if (kind === 'seagull') { const o = M.pigeon(); o.scale.setScalar(3.2); o.traverse((m) => { if (m.material && m.material.color && m.material.color.getHex() === 0x8d93a3) m.material = M.mat(0xffffff); }); return o; }
+  if (kind === 'goose') return M.goose();
+  if (kind === 'buttonman') return M.person({ shirt: 0x333355, legs: 0x333355, height: 1.25, hat: 'cap' });
+  if (kind === 'icecream') return M.person({ shirt: 0xffffff, legs: 0xf7a8bd, hat: 'cap' });
+  if (kind === 'brian') return M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08 });
+  if (kind === 'coin') { const g = new THREE.Group(); const c = M.coin(0.35); c.rotation.x = Math.PI / 2; c.position.y = 0.5; g.add(c, M.ball(0.05, 0x2d2118, -0.1, 0.58, 0.07), M.ball(0.05, 0x2d2118, 0.1, 0.58, 0.07)); return g; }
+  return M.person({ shirt: 0x7a7a7a, legs: 0x333333, hat: 'beanie' });
+}
+let talker = null;
+function talkStart(kind) {
+  talkEnd(true);
+  if (kind === 'brian' && brian.obj) {
+    // Brian is already in the world: he just turns to face you
+    const o = brian.obj;
+    talker = { kind, obj: o, persistent: true, head: 1.95 * 1.08, state: 'talk' };
+    talker.update = () => {
+      if (!talker || talker.obj !== o) return;
+      o.rotation.y = Math.atan2(player.pos.x - o.position.x, player.pos.z - o.position.z);
+      const p = project(o.position.clone().setY(o.position.y + talker.head));
+      const b = document.getElementById('bubble');
+      if (p && b.classList.contains('show')) b.style.transform = `translate(${Math.max(160, Math.min(innerWidth - 160, p.x))}px, ${Math.max(90, Math.min(innerHeight - 260, p.y))}px) translate(-50%, -100%)`;
+    };
+    agents.push(talker);
+    return;
+  }
+  const o = makeVisitor(kind);
+  const flying = kind === 'seagull';
   const fwd = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
-  let p = player.pos.clone().addScaledVector(fwd, 3);
-  for (let i = 0; i < 8 && blocked(p.x, p.z, 0.4); i++) p = player.pos.clone().addScaledVector(fwd.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.8), 2.5);
-  o.position.set(p.x, 0, p.z);
-  o.rotation.y = Math.atan2(player.pos.x - p.x, player.pos.z - p.z);
+  // stand about 2.2 m in front of the player, arriving from further away
+  let stand = player.pos.clone().addScaledVector(fwd, 2.2);
+  if (blocked(stand.x, stand.z, 0.3)) stand = player.pos.clone().addScaledVector(fwd, 1.4);
+  const side = new THREE.Vector3(fwd.z, 0, -fwd.x).multiplyScalar(Math.random() < 0.5 ? 1 : -1);
+  const from = stand.clone().addScaledVector(fwd, 5).addScaledVector(side, 4);
+  o.position.set(from.x, flying ? 7 : 0, from.z);
   scene.add(o);
-  const a = { update: (dt, t) => { o.rotation.y = Math.atan2(player.pos.x - o.position.x, player.pos.z - o.position.z); const al = o.getObjectByName('armR'); if (al) al.rotation.z = Math.sin(t * 6) * 0.4 + 2.6; } };
-  agents.push(a);
-  setTimeout(() => { scene.remove(o); agents.splice(agents.indexOf(a), 1); }, secs * 1000);
+  talker = { kind, obj: o, stand, flying, state: 'arrive', t: 0, head: kind === 'nan' || kind === 'icecream' || kind === 'man' || kind === 'buttonman' || kind === 'brian' ? 1.95 : kind === 'goose' ? 1.15 : 1.0 };
+  talker.update = (dt, t) => {
+    const T = talker; if (!T || T.obj !== o) return;
+    T.t += dt;
+    const target = T.state === 'leave' ? T.exit : T.stand;
+    const d = new THREE.Vector3(target.x - o.position.x, 0, target.z - o.position.z);
+    const dist = d.length();
+    if (dist > 0.15) {
+      d.normalize();
+      const sp = T.state === 'leave' ? 3.5 : 3;
+      o.position.x += d.x * sp * dt; o.position.z += d.z * sp * dt;
+      o.rotation.y = Math.atan2(d.x, d.z);
+      limbs(o, Math.sin(t * 10));
+    } else {
+      if (T.state === 'leave') { scene.remove(o); talker = null; bubble(false); return; }
+      o.rotation.y = Math.atan2(player.pos.x - o.position.x, player.pos.z - o.position.z);
+      limbs(o, 0);
+      const arm = o.getObjectByName('armR'); if (arm) arm.rotation.x = -0.4 + Math.sin(t * 5) * 0.25;
+    }
+    if (T.flying) o.position.y += ((T.state === 'leave' ? 9 : 0.9 + Math.sin(t * 6) * 0.15) - o.position.y) * Math.min(1, dt * 2.5);
+    if (kind === 'coin') o.position.y = Math.abs(Math.sin(t * 6)) * 0.3;
+    // keep the speech bubble over their head
+    const p = project(o.position.clone().setY(o.position.y + T.head));
+    const b = document.getElementById('bubble');
+    if (p && b.classList.contains('show')) {
+      const x = Math.max(160, Math.min(innerWidth - 160, p.x)), y = Math.max(90, Math.min(innerHeight - 260, p.y));
+      b.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+    }
+  };
+  agents.push(talker);
+}
+function talkSay(text, name) {
+  if (!talker) return;
+  const b = document.getElementById('bubble');
+  b.querySelector('.who').textContent = name || '';
+  b.querySelector('.line').innerHTML = text;
+  bubble(true);
+  LC.audio.sfx(VOICES[talker.kind] || 'babble');
+}
+function bubble(on) { document.getElementById('bubble').classList.toggle('show', on); }
+function talkEnd(now) {
+  if (!talker) return;
+  bubble(false);
+  if (talker.persistent) { agents.splice(agents.indexOf(talker), 1); talker = null; return; }
+  if (now) { scene.remove(talker.obj); agents.splice(agents.indexOf(talker), 1); talker = null; return; }
+  const away = talker.obj.position.clone().sub(player.pos).setY(0).normalize();
+  talker.exit = talker.obj.position.clone().addScaledVector(away, 25);
+  talker.state = 'leave';
 }
 
 // ---------- pickups (coins on the floor, golden coins, coin rain, piglets) ----------
@@ -748,6 +1009,19 @@ function updateViewModel(dt, moving) {
   m.rotation.set(base[0] - sw * 1.1, base[1], base[2]);
 }
 
+// ---------- prank effects you can see ----------
+const prankBits = {};
+function prankFx(kind) {
+  if (prankBits[kind]) { scene.remove(prankBits[kind]); prankBits[kind] = null; }
+  if (kind === 'whoopee') { const c = M.ball(0.22, 0xf7a8bd, 0, 0, 0, { scale: [1, 0.25, 1] }); c.position.copy(brianSpots.seat).setY(0.62); scene.add(c); prankBits[kind] = c; }
+  if (kind === 'ticket') { const t = M.signPlane('PENALTY £80', 0.5, 0.3, { bg: '#f2d23a', color: '#111' }); t.position.set(-18.9, 1.45, 11); t.rotation.set(-0.9, -Math.PI / 2, 0); scene.add(t); prankBits[kind] = t; }
+  if (kind === 'stink' || kind === 'glitter') {
+    const at = kind === 'stink' ? spots.brianCar.position.clone().setY(1.2) : new THREE.Vector3(brianSpots.doorX, 1.2, 5.6);
+    burstAt(at, 30, kind === 'stink' ? 0x8ab84a : 0xffd0f0);
+  }
+}
+function clearPrank(kind) { if (prankBits[kind]) { scene.remove(prankBits[kind]); prankBits[kind] = null; } }
+
 // ---------- player movement ----------
 function tryMove(dx, dz) {
   const nx = player.pos.x + dx, nz = player.pos.z + dz;
@@ -766,7 +1040,7 @@ function updatePlayer(dt) {
   const moving = fx || fz;
   if (moving) {
     const len = Math.hypot(fx, fz); fx /= len; fz /= len;
-    const sp = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? RUN : WALK) * dt;
+    const sp = (crouching ? WALK * 0.45 : keys.has('ShiftLeft') || keys.has('ShiftRight') ? RUN : WALK) * dt;
     const s = Math.sin(player.yaw), c = Math.cos(player.yaw);
     tryMove((fx * c + fz * s) * sp, (-fx * s + fz * c) * sp);
     player.bob += dt * (sp / dt) * 2.2;
@@ -776,10 +1050,11 @@ function updatePlayer(dt) {
   // jumping
   if (player.pos.y > 0 || player.vy > 0) { player.vy -= GRAVITY * dt; player.pos.y = Math.max(0, player.pos.y + player.vy * dt); if (player.pos.y === 0) player.vy = 0; }
   flip += (flipTarget - flip) * Math.min(1, dt * 3);
+  eye += ((crouching ? CROUCH_EYE : EYE) - eye) * Math.min(1, dt * 10);
   shake = Math.max(0, shake - dt);
   camera.position.set(
     player.pos.x + (shake ? rand(-shake, shake) * 0.3 : 0),
-    player.pos.y + EYE + (moving ? Math.sin(player.bob) * 0.04 : 0) + (shake ? rand(-shake, shake) * 0.3 : 0),
+    player.pos.y + eye + (moving ? Math.sin(player.bob) * 0.04 : 0) + (shake ? rand(-shake, shake) * 0.3 : 0),
     player.pos.z);
   camera.rotation.set(player.pitch, player.yaw, flip * Math.PI, 'YXZ');
   sun.position.set(player.pos.x - 30, 15, player.pos.z + 20);
@@ -842,7 +1117,8 @@ function setupInput() {
     if (!locked) return;
     keys.add(e.code);
     if (e.code === 'KeyE' && !e.repeat) { holding = true; holdTimer = 0.25; useFocus(); }
-    if (e.code === 'Space' && player.pos.y === 0 && !LC.game.isBlocked()) player.vy = 6;
+    if (e.code === 'Space' && player.pos.y === 0 && !LC.game.isBlocked() && !crouching) player.vy = 6;
+    if ((e.code === 'KeyC' || e.code === 'ControlLeft') && !e.repeat) crouching = !crouching;
   });
   addEventListener('keyup', (e) => { keys.delete(e.code); if (e.code === 'KeyE') holding = false; });
   addEventListener('blur', () => { keys.clear(); holding = false; });
@@ -1001,7 +1277,15 @@ LC.world = {
   syncHelpers,
   setPig,
   setGoose,
-  visitor,
+  talkStart, talkSay, talkEnd,
+  brianState: () => brian.state,
+  brianSitting: () => brian.sitting,
+  brianNoise, setDoorOpen, throwOut,
+  brianNear: (r = 4) => brian.obj && brian.obj.position.distanceTo(player.pos) < r,
+  playerInBrians: () => { const I = brianSpots.inside; const p = player.pos; return p.x > I.x0 && p.x < I.x1 && p.z > I.z0 && p.z < I.z1; },
+  prankFx: (kind) => prankFx(kind),
+  clearPrank,
+  isCrouching: () => crouching,
   setFlip: (on) => { flipTarget = on ? 1 : 0; },
   setSensitivity: (s) => { sensitivity = s; },
   setQuality: (high) => { setQuality(high); resize(); },
@@ -1030,6 +1314,10 @@ LC.world = {
     player.pos.set(-3.5, 0, 0.6); player.yaw = Math.PI; player.pitch = -0.12;
   },
   // for testing: put the camera somewhere and use whatever is in front of it
-  debug: { view: (x, z, yaw, pitch = -0.1) => { player.pos.set(x, 0, z); player.yaw = yaw; player.pitch = pitch; }, use: () => useFocus(), focus: () => focus && focus.prompt() },
+  debug: {
+    view: (x, z, yaw, pitch = -0.1) => { player.pos.set(x, 0, z); player.yaw = yaw; player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); },
+    use: () => { camera.updateMatrixWorld(); updateFocus(); useFocus(); },
+    focus: () => { camera.updateMatrixWorld(); updateFocus(); return focus && focus.prompt(); },
+  },
   teleportHome: () => { player.pos.set(-3.5, 0, 0.6); player.yaw = Math.PI; player.pitch = -0.12; },
 };
