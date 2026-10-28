@@ -5,6 +5,9 @@ import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
 
 // The app shows the DART web app for one role (customer or courier), full screen.
 const { site, screen } = Constants.expoConfig.extra;
@@ -37,7 +40,34 @@ export default function App() {
     })();
   }, []);
 
-  const onMessage = (e) => { if (e.nativeEvent.data === 'back:exit') BackHandler.exitApp(); };
+  // Files from the page (invoices, statements, templates): make a PDF or a file, then open the share sheet
+  // so the person can save it to Files or Drive, or send it.
+  const saveFile = async (m) => {
+    try {
+      const safe = String(m.name || 'DART').replace(/[^\w .-]/g, '').slice(0, 80) || 'DART';
+      let file;
+      if (m.html) {
+        const out = await Print.printToFileAsync({ html: m.html });
+        file = new File(Paths.cache, safe + '.pdf');
+        if (file.exists) file.delete();
+        await new File(out.uri).move(file);
+      } else {
+        file = new File(Paths.cache, safe + '.' + (m.ext || 'txt'));
+        if (file.exists) file.delete();
+        file.create();
+        await file.write(String(m.text || ''));
+      }
+      await Sharing.shareAsync(file.uri, { mimeType: m.html ? 'application/pdf' : (m.mime || 'text/plain'), dialogTitle: safe });
+    } catch (err) {
+      web.current && web.current.injectJavaScript("window.DART_TOAST && window.DART_TOAST(\"That couldn't be saved here.\"); true;");
+    }
+  };
+
+  const onMessage = (e) => {
+    const data = e.nativeEvent.data;
+    if (data === 'back:exit') return BackHandler.exitApp();
+    if (data && data[0] === '{') { try { const m = JSON.parse(data); if (m.type === 'file') saveFile(m); } catch (err) {} }
+  };
 
   // Links that leave DART (maps, phone, email, WhatsApp) open in their own apps.
   const keepInside = (req) => {

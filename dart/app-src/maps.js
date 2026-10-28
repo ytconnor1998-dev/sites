@@ -186,10 +186,13 @@ function gmapCreate(ph, opt) {
   });
   // Frame the points. A map made while its box is still opening (the offer pop-up) has no size yet,
   // so frame it again the first time it gets one.
+  // Only a full-screen map (the home screens) leaves room for the sheet over its lower part;
+  // small maps (offer pop-up, job and delivery cards) frame the route in the whole box.
   var frame = function () {
-    if (n > 1) map.fitBounds(bounds, opt.vb ? { top: 90, bottom: 320, left: 40, right: 40 } : 36);
-    else if (n === 1) { map.setCenter(bounds.getCenter()); map.setZoom(14); if (opt.vb) map.panBy(0, 150); }
-    else { map.setCenter({ lat: 41.9, lng: 12.49 }); map.setZoom(12); if (opt.vb) map.panBy(0, 150); }
+    var tall = el.clientHeight > 450, pad = tall ? { top: 90, bottom: 320, left: 40, right: 40 } : { top: 46, bottom: 18, left: 28, right: 28 }; // room for the 42px address pin
+    if (n > 1) map.fitBounds(bounds, pad);
+    else if (n === 1) { map.setCenter(bounds.getCenter()); map.setZoom(14); if (tall) map.panBy(0, 150); }
+    else { map.setCenter({ lat: 41.9, lng: 12.49 }); map.setZoom(12); if (tall) map.panBy(0, 150); }
   };
   frame();
   if (typeof ResizeObserver !== "undefined") {
@@ -205,7 +208,7 @@ function gmapMove(e, opt) {
   if (e.me && mp) {
     var was = e.me.getPosition(), moved = was && (Math.abs(was.lat() - mp.lat) > .002 || Math.abs(was.lng() - mp.lng) > .002);
     e.me.setPosition(mp); if (e.halo) e.halo.setCenter(mp);
-    if (moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(mp); e.map.panBy(0, 150); }
+    if (moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(mp); if (e.el.clientHeight > 450) e.map.panBy(0, 150); }
   }
   (opt.pins || []).forEach(function (p, i) {
     var m = e.pins[i], at = llOf(p.area, p.ll); if (!m || !at) return;

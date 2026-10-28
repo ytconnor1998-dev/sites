@@ -634,6 +634,23 @@ function check(bind, on, label) { return '<label class="check"><input type="chec
 function sw(act, on, label, extra) { return '<button type="button" class="switch ' + (on ? "on" : "") + '" role="switch" aria-checked="' + !!on + '" aria-label="' + esc(label) + '" data-act="' + act + '" ' + (extra || "") + "></button>"; }
 function vIcon(id) { var two = ["bicycle", "scooter", "motorcycle"].indexOf(id) >= 0, big = ["van", "largevan", "cargovan"].indexOf(id) >= 0; return '<svg class="vic" aria-hidden="true"><use href="#i-' + (two ? "scooter" : big ? "van" : "car") + '"/></svg>'; }
 function photoStrip(list) { return (list || []).map(safeImg).filter(Boolean).map(function (p) { return '<img class="ph" src="' + p + '" alt="Item photo">'; }).join(""); }
+// What a delivery cost the customer after any discount (credit and card together),
+// and the price card for a booked delivery: price, discount, credit used, card charge.
+function paidOf(o) { var b = o.billing || {}; return b.method === "subscription" ? num(b.amount, 0) : r2(num(o.price && o.price.total, 0) - num(b.discount && b.discount.amount, 0)); }
+function orderPrice(o) {
+  var b = o.billing || {};
+  if (b.method === "subscription") return breakdown(o.price, b);
+  var h = breakdown(o.price, null), extra = "";
+  if (b.discount && b.discount.amount) extra += "<dt>Discount " + esc(b.discount.code || "") + '</dt><dd class="num">−' + eur(b.discount.amount) + "</dd>";
+  if (b.discount && b.discount.amount) extra += '<dt class="tot">Your price</dt><dd class="tot num">' + eur(paidOf(o)) + "</dd>";
+  if (b.credit) extra += '<dt>Paid with DART credit</dt><dd class="num">' + eur(b.credit) + "</dd>";
+  if (b.credit || (b.discount && b.discount.amount)) extra += "<dt>Paid by " + esc(WALLETS && WALLETS[b.method] ? WALLETS[b.method] : "card") + '</dt><dd class="num">' + eur(num(b.amount, 0)) + "</dd>";
+  if (!extra) return h;
+  // VAT is included in what was actually paid, so it goes last and follows the discounted price.
+  var paid = paidOf(o), rate = num(o.price.vatRate, 22);
+  h = h.replace(/<dt class="muted">Includes VAT[\s\S]*?<\/dd>(?=<\/dl>)/, "");
+  return h.replace("</dl>", extra + '<dt class="muted">Includes VAT ' + rate + '%</dt><dd class="muted num">' + eur(r2(paid - paid / (1 + rate / 100))) + "</dd></dl>");
+}
 function breakdown(q, billing) {
   var h = '<dl class="kv">' + q.lines.map(function (l) { return "<dt>" + esc(l.label) + '</dt><dd class="num">' + eur(l.amount) + "</dd>"; }).join("");
   h += '<dt class="tot">Delivery price</dt><dd class="tot num">' + eur(q.total) + "</dd>";
@@ -668,11 +685,27 @@ function invoiceModal(inv) {
     '<button class="btn" data-act="inv-download" data-v="' + esc(inv.id) + '">Download invoice</button>');
 }
 var Caps = { downloads: null, sample: null, sampleImages: false };
-function downloadInvoice(inv) {
-  var html = translateHTML(invoiceHTML(inv));
-  if (!Caps.downloads) { toast("Downloads aren't available in this view."); return; }
-  Caps.downloads.save({ filename: inv.number + ".html", data: html }).then(function () { toast("Invoice saved"); }, function (e) { if (e && e.code !== "declined") toast("The invoice couldn't be saved here."); });
+// Save a file for the person: in the phone apps the app makes a PDF (or the file) and opens the share
+// sheet; on the website a document opens ready to save as PDF or print, and data files download.
+function saveFile(o) {
+  // o: { name: "file name without extension", html: page to save as PDF } or { name, text, ext: "csv", mime }
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: "file", name: o.name, html: o.html || null, text: o.text || null, ext: o.ext || (o.html ? "pdf" : "txt"), mime: o.mime || null }));
+    toast(o.html ? "Making the PDF…" : "Saving…"); return;
+  }
+  if (Caps.downloads && !LIVE) {
+    return Caps.downloads.save({ filename: o.name + "." + (o.html ? "html" : o.ext), data: o.html || o.text }).then(function () { toast("Saved"); }, function (e) { if (e && e.code !== "declined") toast("That couldn't be saved here."); });
+  }
+  if (o.html) {
+    var w = window.open("", "_blank");
+    if (w) { w.document.open(); w.document.write(o.html.replace("</body>", "<script>setTimeout(function(){print()},400)<\/script></body>")); w.document.close(); return; }
+  }
+  try {
+    var blob = new Blob([o.html || o.text], { type: o.html ? "text/html" : (o.mime || "text/plain") }), url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = o.name + "." + (o.html ? "html" : o.ext); document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  } catch (e) { toast("That couldn't be saved here."); }
 }
+function downloadInvoice(inv) { saveFile({ name: "DART " + inv.number, html: translateHTML(invoiceHTML(inv)) }); }
 
 // ---------- Chat (messenger) ----------
 var Chat = { orderId: null, msgs: [], un: null, draftPhoto: null };

@@ -16,7 +16,7 @@ function liveTable(path) {
   if (m) return { table: "messages", order: m[1] };
   return { table: path === "courierDocs" ? "courier_docs" : path };
 }
-function liveErr(e) { return e && (e.message || e.code) ? { code: e.code || "error", message: e.message } : e; }
+function liveErr(e) { return e && (e.message || e.code) ? { code: e.code || "error", message: e.message, show: e.code === "P0001" } : e; }
 
 // Coming back to the app or getting signal again: refresh the login, then reload everything on screen.
 if (LIVE && typeof document !== "undefined") {

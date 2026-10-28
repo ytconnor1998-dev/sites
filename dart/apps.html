@@ -1411,6 +1411,23 @@ function check(bind, on, label) { return '<label class="check"><input type="chec
 function sw(act, on, label, extra) { return '<button type="button" class="switch ' + (on ? "on" : "") + '" role="switch" aria-checked="' + !!on + '" aria-label="' + esc(label) + '" data-act="' + act + '" ' + (extra || "") + "></button>"; }
 function vIcon(id) { var two = ["bicycle", "scooter", "motorcycle"].indexOf(id) >= 0, big = ["van", "largevan", "cargovan"].indexOf(id) >= 0; return '<svg class="vic" aria-hidden="true"><use href="#i-' + (two ? "scooter" : big ? "van" : "car") + '"/></svg>'; }
 function photoStrip(list) { return (list || []).map(safeImg).filter(Boolean).map(function (p) { return '<img class="ph" src="' + p + '" alt="Item photo">'; }).join(""); }
+// What a delivery cost the customer after any discount (credit and card together),
+// and the price card for a booked delivery: price, discount, credit used, card charge.
+function paidOf(o) { var b = o.billing || {}; return b.method === "subscription" ? num(b.amount, 0) : r2(num(o.price && o.price.total, 0) - num(b.discount && b.discount.amount, 0)); }
+function orderPrice(o) {
+  var b = o.billing || {};
+  if (b.method === "subscription") return breakdown(o.price, b);
+  var h = breakdown(o.price, null), extra = "";
+  if (b.discount && b.discount.amount) extra += "<dt>Discount " + esc(b.discount.code || "") + '</dt><dd class="num">−' + eur(b.discount.amount) + "</dd>";
+  if (b.discount && b.discount.amount) extra += '<dt class="tot">Your price</dt><dd class="tot num">' + eur(paidOf(o)) + "</dd>";
+  if (b.credit) extra += '<dt>Paid with DART credit</dt><dd class="num">' + eur(b.credit) + "</dd>";
+  if (b.credit || (b.discount && b.discount.amount)) extra += "<dt>Paid by " + esc(WALLETS && WALLETS[b.method] ? WALLETS[b.method] : "card") + '</dt><dd class="num">' + eur(num(b.amount, 0)) + "</dd>";
+  if (!extra) return h;
+  // VAT is included in what was actually paid, so it goes last and follows the discounted price.
+  var paid = paidOf(o), rate = num(o.price.vatRate, 22);
+  h = h.replace(/<dt class="muted">Includes VAT[\s\S]*?<\/dd>(?=<\/dl>)/, "");
+  return h.replace("</dl>", extra + '<dt class="muted">Includes VAT ' + rate + '%</dt><dd class="muted num">' + eur(r2(paid - paid / (1 + rate / 100))) + "</dd></dl>");
+}
 function breakdown(q, billing) {
   var h = '<dl class="kv">' + q.lines.map(function (l) { return "<dt>" + esc(l.label) + '</dt><dd class="num">' + eur(l.amount) + "</dd>"; }).join("");
   h += '<dt class="tot">Delivery price</dt><dd class="tot num">' + eur(q.total) + "</dd>";
@@ -1445,11 +1462,27 @@ function invoiceModal(inv) {
     '<button class="btn" data-act="inv-download" data-v="' + esc(inv.id) + '">Download invoice</button>');
 }
 var Caps = { downloads: null, sample: null, sampleImages: false };
-function downloadInvoice(inv) {
-  var html = translateHTML(invoiceHTML(inv));
-  if (!Caps.downloads) { toast("Downloads aren't available in this view."); return; }
-  Caps.downloads.save({ filename: inv.number + ".html", data: html }).then(function () { toast("Invoice saved"); }, function (e) { if (e && e.code !== "declined") toast("The invoice couldn't be saved here."); });
+// Save a file for the person: in the phone apps the app makes a PDF (or the file) and opens the share
+// sheet; on the website a document opens ready to save as PDF or print, and data files download.
+function saveFile(o) {
+  // o: { name: "file name without extension", html: page to save as PDF } or { name, text, ext: "csv", mime }
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: "file", name: o.name, html: o.html || null, text: o.text || null, ext: o.ext || (o.html ? "pdf" : "txt"), mime: o.mime || null }));
+    toast(o.html ? "Making the PDF…" : "Saving…"); return;
+  }
+  if (Caps.downloads && !LIVE) {
+    return Caps.downloads.save({ filename: o.name + "." + (o.html ? "html" : o.ext), data: o.html || o.text }).then(function () { toast("Saved"); }, function (e) { if (e && e.code !== "declined") toast("That couldn't be saved here."); });
+  }
+  if (o.html) {
+    var w = window.open("", "_blank");
+    if (w) { w.document.open(); w.document.write(o.html.replace("</body>", "<script>setTimeout(function(){print()},400)<\/script></body>")); w.document.close(); return; }
+  }
+  try {
+    var blob = new Blob([o.html || o.text], { type: o.html ? "text/html" : (o.mime || "text/plain") }), url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = o.name + "." + (o.html ? "html" : o.ext); document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  } catch (e) { toast("That couldn't be saved here."); }
 }
+function downloadInvoice(inv) { saveFile({ name: "DART " + inv.number, html: translateHTML(invoiceHTML(inv)) }); }
 
 // ---------- Chat (messenger) ----------
 var Chat = { orderId: null, msgs: [], un: null, draftPhoto: null };
@@ -1814,7 +1847,7 @@ Object.assign(IT, {
   "Problem reported. DART support will get back to you.": "Problema segnalato. L'assistenza DART ti ricontatterà.", "Profile saved": "Profilo salvato", "Refund recorded": "Rimborso registrato", "Reply sent": "Risposta inviata", "Request updated": "Richiesta aggiornata", "Rules saved and live": "Regole salvate e attive", "Sent to DART for approval": "Inviato a DART per l'approvazione", "Sent to DART support": "Inviato all'assistenza DART",
   "Sent. DART support will reply here.": "Inviato. L'assistenza DART risponderà qui.", "Settings saved and live": "Impostazioni salvate e attive", "Thanks for rating your courier": "Grazie per aver valutato il corriere", "Your plan will renew as normal": "Il tuo piano si rinnoverà normalmente", "Courier approved": "Corriere approvato", "Application rejected": "Candidatura rifiutata", "Courier suspended": "Corriere sospeso",
   "Vehicle change approved": "Cambio veicolo approvato", "Vehicle change declined": "Cambio veicolo non approvato", "Account reactivated": "Account riattivato", "Account suspended": "Account sospeso", "Order cancelled": "Ordine annullato", "Name saved": "Nome salvato", "Delivery cancelled and refunded": "Consegna annullata e rimborsata", "It was already taken.": "Era già stata presa.",
-  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "Today": "Oggi", "This week": "Questa settimana", "Last week": "Settimana scorsa", "This month": "Questo mese", "Last month": "Mese scorso", "Total earnings": "Guadagni totali", "Delivery": "Consegna", "Deliveries": "Consegne", "Delivery fees": "Compensi consegne", "Tips": "Mance", "Late fees": "Penali ritardo", "No deliveries in this period.": "Nessuna consegna in questo periodo.", "Show less": "Mostra meno", "Statements": "Estratti conto", "Current balance": "Saldo attuale", "Nothing waiting to be paid": "Niente in attesa di pagamento", "Previous payments": "Pagamenti precedenti", "None yet": "Ancora nessuno", "Request an invoice": "Richiedi una fattura", "For a month, sent to you by DART": "Per un mese, inviata da DART", "You earn the amount shown on each delivery. Payments go out every Monday.": "Guadagni l'importo mostrato su ogni consegna. I pagamenti partono ogni lunedì.", "No payments yet": "Ancora nessun pagamento", "Each Monday's payment shows up here with the deliveries it covers.": "Qui compare il pagamento di ogni lunedì con le consegne incluse.", "Paid": "Pagato", "Month": "Mese", "Anything to add? (optional)": "Qualcosa da aggiungere? (facoltativo)", "e.g. My Partita IVA, or a different email": "es. La mia Partita IVA o un'altra email", "Send request": "Invia richiesta", "Request sent. DART will email your invoice.": "Richiesta inviata. DART ti invierà la fattura via email.", "This delivery is finished": "Questa consegna è conclusa", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Vai su Aiuto e segnala un problema.", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Contatta DART da Account → Aiuto.", "Finding your location…": "Ricerca della tua posizione…", "Turn on location for DART Courier.": "Attiva la posizione per DART Courier.", "Location check: testing": "Controllo posizione: test", "Give this delivery back?": "Restituire questa consegna?", "Add both addresses to see the price": "Aggiungi i due indirizzi per vedere il prezzo", "Put a pin on the map": "Metti un segnaposto sulla mappa", "Pinned on the map. Change the pin": "Segnato sulla mappa. Cambia il segnaposto", "Pin on the map": "Segnaposto sulla mappa", "Put the pin on the address": "Metti il segnaposto sull'indirizzo", "Use this address": "Usa questo indirizzo", "Finding the address…": "Ricerca dell'indirizzo…", "Move the map to put the pin on the door": "Sposta la mappa per mettere il segnaposto sulla porta", "No street here. Move the pin onto a building.": "Qui non c'è una via. Sposta il segnaposto su un edificio.", "That's outside the area DART covers.": "È fuori dalla zona servita da DART.", "Couldn't look up this spot. Try again.": "Impossibile trovare questo punto. Riprova.", "Loading the map…": "Caricamento della mappa…", "Log in to book": "Accedi per prenotare", "Every delivery is booked from a free DART account, so you can track it, message your courier and keep your receipts in one place. Your delivery details are kept while you sign in.": "Ogni consegna si prenota da un account DART gratuito, così puoi seguirla, scrivere al corriere e tenere le ricevute in un unico posto. I dettagli della consegna restano salvati mentre accedi.", "Your delivery details are saved. You'll go straight back to them.": "I dettagli della consegna sono salvati. Ci tornerai subito dopo.", "Get a price now. Booking needs a free DART account, and you can create one at the last step.": "Scopri subito il prezzo. Per prenotare serve un account DART gratuito, che puoi creare all'ultimo passaggio.", "a kilometre. VAT included. Book with a free DART account.": "al chilometro. IVA inclusa. Prenota con un account DART gratuito.", "No contract, just a free account, and you see the full price before you book.": "Nessun contratto, solo un account gratuito, e vedi il prezzo completo prima di prenotare.", "Log in or create a free account, then pay by card. Businesses on a plan use their monthly allowance.": "Accedi o crea un account gratuito, poi paga con carta. Le aziende con un piano usano la quota mensile.", "Yes, a free one. It takes a minute: your name, email and a password. It keeps your deliveries, tracking, saved addresses and invoices together, and businesses can add a plan.": "Sì, uno gratuito. Basta un minuto: nome, email e una password. Tiene insieme consegne, tracciamento, indirizzi salvati e fatture, e le aziende possono aggiungere un piano.", "Sign in with Apple is coming soon. Use your email for now.": "L'accesso con Apple arriva presto. Per ora usa la tua email.", "Sign in with Google is coming soon. Use your email for now.": "L'accesso con Google arriva presto. Per ora usa la tua email.", "Add the street and house number.": "Aggiungi via e numero civico.", "Pick the street from the suggestions, or put a pin on the map.": "Scegli la via dai suggerimenti o metti un segnaposto sulla mappa.", "Add the house number.": "Aggiungi il numero civico.", "Pickup address:": "Indirizzo di ritiro:", "Delivery address:": "Indirizzo di consegna:", "Start again": "Ricomincia", "Tap a step to go back and change it.": "Tocca un passaggio per tornare indietro e modificarlo.", "Your details are kept until you book.": "I tuoi dati restano salvati finché non prenoti.", "Cleared. Start with where it's coming from.": "Cancellato. Inizia dal punto di ritiro.", "Addresses": "Indirizzi", "Edit": "Modifica", "You logged in on another device, so you've been logged out here.": "Hai effettuato l'accesso su un altro dispositivo, quindi sei stato disconnesso qui.", "Help the courier": "Aiuta il corriere", "Use this when the courier can't finish a step in the app. The reason is saved on the delivery.": "Usalo quando il corriere non riesce a completare un passaggio nell'app. Il motivo viene salvato sulla consegna.", "Reason": "Motivo", "e.g. Camera not working, confirmed by phone": "es. Fotocamera non funzionante, confermato per telefono", "Mark delivered": "Segna come consegnata", "Add the reason first.": "Aggiungi prima il motivo.", "Marked delivered": "Segnata come consegnata", "Confirmed by DART": "Confermato da DART", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
+  "That email and password don't match. First time? Tap Create password.": "Email e password non corrispondono. Prima volta? Tocca Crea password.", "Too many tries. Wait a minute and try again.": "Troppi tentativi. Attendi un minuto e riprova.", "Can't reach DART right now. It reconnects by itself when you have signal.": "Impossibile raggiungere DART ora. Si riconnette da solo quando c'è campo.", "Today": "Oggi", "This week": "Questa settimana", "Last week": "Settimana scorsa", "This month": "Questo mese", "Last month": "Mese scorso", "Total earnings": "Guadagni totali", "Delivery": "Consegna", "Deliveries": "Consegne", "Delivery fees": "Compensi consegne", "Tips": "Mance", "Late fees": "Penali ritardo", "No deliveries in this period.": "Nessuna consegna in questo periodo.", "Show less": "Mostra meno", "Statements": "Estratti conto", "Current balance": "Saldo attuale", "Nothing waiting to be paid": "Niente in attesa di pagamento", "Previous payments": "Pagamenti precedenti", "None yet": "Ancora nessuno", "Request an invoice": "Richiedi una fattura", "For a month, sent to you by DART": "Per un mese, inviata da DART", "You earn the amount shown on each delivery. Payments go out every Monday.": "Guadagni l'importo mostrato su ogni consegna. I pagamenti partono ogni lunedì.", "No payments yet": "Ancora nessun pagamento", "Each Monday's payment shows up here with the deliveries it covers.": "Qui compare il pagamento di ogni lunedì con le consegne incluse.", "Paid": "Pagato", "Month": "Mese", "Anything to add? (optional)": "Qualcosa da aggiungere? (facoltativo)", "e.g. My Partita IVA, or a different email": "es. La mia Partita IVA o un'altra email", "Send request": "Invia richiesta", "Request sent. DART will email your invoice.": "Richiesta inviata. DART ti invierà la fattura via email.", "This delivery is finished": "Questa consegna è conclusa", "Messages close when a delivery ends. Need help with it? Go to Help and report a problem.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Vai su Aiuto e segnala un problema.", "Messages close when a delivery ends. Need help? Contact DART from Account → Help.": "I messaggi si chiudono quando la consegna finisce. Serve aiuto? Contatta DART da Account → Aiuto.", "Finding your location…": "Ricerca della tua posizione…", "Turn on location for DART Courier.": "Attiva la posizione per DART Courier.", "Location check: testing": "Controllo posizione: test", "Give this delivery back?": "Restituire questa consegna?", "Add both addresses to see the price": "Aggiungi i due indirizzi per vedere il prezzo", "Put a pin on the map": "Metti un segnaposto sulla mappa", "Pinned on the map. Change the pin": "Segnato sulla mappa. Cambia il segnaposto", "Pin on the map": "Segnaposto sulla mappa", "Put the pin on the address": "Metti il segnaposto sull'indirizzo", "Use this address": "Usa questo indirizzo", "Finding the address…": "Ricerca dell'indirizzo…", "Move the map to put the pin on the door": "Sposta la mappa per mettere il segnaposto sulla porta", "No street here. Move the pin onto a building.": "Qui non c'è una via. Sposta il segnaposto su un edificio.", "That's outside the area DART covers.": "È fuori dalla zona servita da DART.", "Couldn't look up this spot. Try again.": "Impossibile trovare questo punto. Riprova.", "Loading the map…": "Caricamento della mappa…", "Log in to book": "Accedi per prenotare", "Every delivery is booked from a free DART account, so you can track it, message your courier and keep your receipts in one place. Your delivery details are kept while you sign in.": "Ogni consegna si prenota da un account DART gratuito, così puoi seguirla, scrivere al corriere e tenere le ricevute in un unico posto. I dettagli della consegna restano salvati mentre accedi.", "Your delivery details are saved. You'll go straight back to them.": "I dettagli della consegna sono salvati. Ci tornerai subito dopo.", "Get a price now. Booking needs a free DART account, and you can create one at the last step.": "Scopri subito il prezzo. Per prenotare serve un account DART gratuito, che puoi creare all'ultimo passaggio.", "a kilometre. VAT included. Book with a free DART account.": "al chilometro. IVA inclusa. Prenota con un account DART gratuito.", "No contract, just a free account, and you see the full price before you book.": "Nessun contratto, solo un account gratuito, e vedi il prezzo completo prima di prenotare.", "Log in or create a free account, then pay by card. Businesses on a plan use their monthly allowance.": "Accedi o crea un account gratuito, poi paga con carta. Le aziende con un piano usano la quota mensile.", "Yes, a free one. It takes a minute: your name, email and a password. It keeps your deliveries, tracking, saved addresses and invoices together, and businesses can add a plan.": "Sì, uno gratuito. Basta un minuto: nome, email e una password. Tiene insieme consegne, tracciamento, indirizzi salvati e fatture, e le aziende possono aggiungere un piano.", "Sign in with Apple is coming soon. Use your email for now.": "L'accesso con Apple arriva presto. Per ora usa la tua email.", "Sign in with Google is coming soon. Use your email for now.": "L'accesso con Google arriva presto. Per ora usa la tua email.", "Add the street and house number.": "Aggiungi via e numero civico.", "Pick the street from the suggestions, or put a pin on the map.": "Scegli la via dai suggerimenti o metti un segnaposto sulla mappa.", "Add the house number.": "Aggiungi il numero civico.", "Pickup address:": "Indirizzo di ritiro:", "Delivery address:": "Indirizzo di consegna:", "Start again": "Ricomincia", "Tap a step to go back and change it.": "Tocca un passaggio per tornare indietro e modificarlo.", "Your details are kept until you book.": "I tuoi dati restano salvati finché non prenoti.", "Cleared. Start with where it's coming from.": "Cancellato. Inizia dal punto di ritiro.", "Addresses": "Indirizzi", "Edit": "Modifica", "You logged in on another device, so you've been logged out here.": "Hai effettuato l'accesso su un altro dispositivo, quindi sei stato disconnesso qui.", "Help the courier": "Aiuta il corriere", "Use this when the courier can't finish a step in the app. The reason is saved on the delivery.": "Usalo quando il corriere non riesce a completare un passaggio nell'app. Il motivo viene salvato sulla consegna.", "Reason": "Motivo", "e.g. Camera not working, confirmed by phone": "es. Fotocamera non funzionante, confermato per telefono", "Mark delivered": "Segna come consegnata", "Add the reason first.": "Aggiungi prima il motivo.", "Marked delivered": "Segnata come consegnata", "Confirmed by DART": "Confermato da DART", "This delivery is already under way. Contact DART to change the courier.": "Questa consegna è già in corso. Contatta DART per cambiare corriere.", "This delivery is already under way. Contact DART.": "Questa consegna è già in corso. Contatta DART.", "This delivery is finished.": "Questa consegna è conclusa.", "Your price": "Il tuo prezzo", "Paid with DART credit": "Pagato con credito DART", "Making the PDF…": "Creazione del PDF…", "Saving…": "Salvataggio…", "Saved": "Salvato", "That couldn't be saved here.": "Non è stato possibile salvarlo qui.", "Courier payouts": "Pagamenti corrieri", "Download list for the bank": "Scarica l'elenco per la banca", "Couriers are paid every Monday by bank transfer. Make the transfers at your bank, then mark each courier as paid here so their app shows it.": "I corrieri vengono pagati ogni lunedì con bonifico. Fai i bonifici dalla tua banca, poi segna qui ogni corriere come pagato così lo vede nell'app.", "To pay": "Da pagare", "Next payday": "Prossimo pagamento", "Monday": "Lunedì", "Paid this month": "Pagato questo mese", "Courier": "Corriere", "Bank details": "Dati bancari", "Fees": "Compensi", "No IBAN yet": "IBAN mancante", "Mark paid": "Segna pagato", "Nothing to pay": "Niente da pagare", "Delivered jobs that haven't been paid yet show up here, per courier.": "Qui compaiono, per corriere, le consegne completate non ancora pagate.", "Paid on": "Pagato il", "Amount": "Importo", "No payouts yet": "Ancora nessun pagamento", "Payouts you mark as paid are listed here.": "Qui compaiono i pagamenti che segni come pagati.", "Yes, mark paid": "Sì, segna pagato", "You don't have permission to change this.": "Non hai il permesso di modificarlo.", "The test database is full. Clear old orders in the admin portal.": "Il database di prova è pieno. Rimuovi i vecchi ordini nel portale admin.", "That didn't save. Check your connection and try again.": "Non è stato salvato. Controlla la connessione e riprova.",
   "Booked. We're finding you a courier.": "Prenotato. Stiamo cercando un corriere.", "Business features are on": "Funzioni aziendali attive", "Business details saved": "Dati aziendali salvati", "You're now a business account. Choose a plan below.": "Ora hai un account aziendale. Scegli un piano qui sotto.", "Your plan will renew as normal.": "Il tuo piano si rinnoverà normalmente.",
   "Photo estimates aren't available. Enter the measurements instead.": "Le stime dalle foto non sono disponibili. Inserisci le misure.", "The photo estimate didn't work this time. Enter the measurements instead.": "La stima dalla foto non ha funzionato. Inserisci le misure.", "We couldn't tell the size from these photos. Please measure the item.": "Non riusciamo a capire le misure da queste foto. Misura l'oggetto.",
   "Start with where it's going.": "Inizia da dove deve andare.", "Add the street addresses to continue.": "Aggiungi le vie per continuare.", "Connecting to DART…": "Connessione a DART…", "Loading DART…": "Caricamento di DART…", "Problem reported.": "Problema segnalato.",
@@ -1840,7 +1873,7 @@ IT_PATTERNS.push(
   [/^(\d+) deliveries a month$/, "$1 consegne al mese"], [/^(\d+) deliveries · over: (.+)$/, "$1 consegne · oltre: $2"], [/^(\d+) deliveries booked$/, "$1 consegne prenotate"], [/^(\d+) of (\d+) rows ready$/, "$1 di $2 righe pronte"],
   [/^Book (\d+) deliveries$/, "Prenota $1 consegne"], [/^Deliveries \((\d+)\)$/, "Consegne ($1)"], [/^Invoices \((\d+)\)$/, "Fatture ($1)"], [/^Order (\d+)$/, "Ordine $1"], [/^Mark (\d+) deliveries as paid$/, "Segna $1 consegne come pagate"],
   [/^(\d+) deliveries removed$/, "$1 consegne rimosse"], [/^(\d+) deliveries · paid every Monday$/, "$1 consegne · pagate ogni lunedì"], [/^(\d+) deliveries included each month$/, "$1 consegne incluse ogni mese"], [/^(\d+) deliveries included$/, "$1 consegne incluse"],
-  [/^Mark: (.+)$/, function (m, s) { return "Segna: " + tr(s); }], [/^Moved on: (.+)$/, function (m, s) { return "Avanzata: " + tr(s); }], [/^(.+) km trip · about (\d+) min$/, "viaggio di $1 km · circa $2 min"], [/^(.+) km away$/, "a $1 km"], [/^(.+) km trip$/, "viaggio di $1 km"], [/^(.+) km · about (\d+) min$/, "$1 km · circa $2 min"], [/^About (.+) km by road$/, "Circa $1 km su strada"],
+  [/^Discount (.*)$/, "Sconto $1"], [/^Paid by (.+)$/, function (m, w) { return "Pagato con " + (w === "card" ? "carta" : w); }], [/^Mark (.+) as paid\?$/, "Segnare $1 come pagato?"], [/^Confirm you've sent (.+) to (.+) for (\d+) deliver(?:y|ies)\. Their app will show the payment\.$/, function (m, a, w, n) { return "Conferma di aver inviato " + a + " a " + w + " per " + n + (n === "1" ? " consegna" : " consegne") + ". La sua app mostrerà il pagamento."; }], [/^(\d+) payouts?$/, function (m, n) { return n + (n === "1" ? " pagamento" : " pagamenti"); }], [/^(\d+) couriers?$/, function (m, n) { return n + (n === "1" ? " corriere" : " corrieri"); }], [/^Mark: (.+)$/, function (m, s) { return "Segna: " + tr(s); }], [/^Moved on: (.+)$/, function (m, s) { return "Avanzata: " + tr(s); }], [/^(.+) km trip · about (\d+) min$/, "viaggio di $1 km · circa $2 min"], [/^(.+) km away$/, "a $1 km"], [/^(.+) km trip$/, "viaggio di $1 km"], [/^(.+) km · about (\d+) min$/, "$1 km · circa $2 min"], [/^About (.+) km by road$/, "Circa $1 km su strada"],
   [/^(.+) km by road, (.+), about (\d+) min$/, function (m, k, v, n) { return k + " km su strada, " + trItem(v) + ", circa " + n + " min"; }],
   [/^(\d+)%, included$/, "$1%, inclusa"], [/^(\d+)% of the price$/, "$1% del prezzo"], [/^Includes VAT (\d+)%$/, "IVA $1% inclusa"], [/^VAT (\d+)%$/, "IVA $1%"], [/^VAT (\d+)% \(included\)$/, "IVA $1% (inclusa)"],
   [/^Added to this month's invoice: (.+)$/, "Aggiunta alla fattura del mese: $1"], [/^Billed to (.+)$/, "Intestata a $1"], [/^Booked\. Your tracking code is (.+)\.$/, "Prenotato. Il tuo codice di tracciamento è $1."],
@@ -2305,7 +2338,7 @@ function usageBar(used, total) {
 }
 function orderRow(o) {
   return '<button class="item" data-act="c-order" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + "</b>" + chip(o.status) +
-    "<small>" + esc(cLabel(o.cls.category)) + " · " + when(o.createdAt) + '</small><small class="num">' + eur(o.billing ? o.billing.amount : o.price.total) + (unread(o, "customer") ? ' · <b class="dot-new">new message</b>' : "") + "</small></button>";
+    "<small>" + esc(cLabel(o.cls.category)) + " · " + when(o.createdAt) + '</small><small class="num">' + eur(paidOf(o)) + (unread(o, "customer") ? ' · <b class="dot-new">new message</b>' : "") + "</small></button>";
 }
 
 // ---------- New delivery ----------
@@ -2605,7 +2638,7 @@ function cOrder(acc) {
     a += reviewCard(o);
   }
   var b = '<div class="stack"><div class="card">' + legs(o) + "<span>" + itemSummary(o) + "</span>" + (o.item.photos && o.item.photos.length ? '<div class="phs">' + photoStrip(o.item.photos) + "</div>" : "") + "</div>" +
-    '<div class="card"><b>Price</b>' + breakdown(o.price, o.billing && o.billing.method === "subscription" ? o.billing : null) + '<span class="muted">Payment: ' + esc(payLabel(o.billing)) + "</span></div>" +
+    '<div class="card"><b>Price</b>' + orderPrice(o) + '<span class="muted">Payment: ' + esc(payLabel(o.billing)) + "</span></div>" +
     '<div class="card"><b>Status history</b>' + timelineList(o) + "</div>";
   var inv = o.invoiceId ? byId(S.invoices, o.invoiceId) : null;
   var actions = '<div class="row wrap">' + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">View invoice</button>' : "") +
@@ -2910,8 +2943,7 @@ ACT["c-bulk-sample"] = function () {
   render();
 };
 ACT["c-bulk-template"] = function () {
-  if (!Caps.downloads) return toast(LIVE ? "Downloads aren't available in this view." : "Downloads aren't available in this view. Use 'Fill with sample rows' instead.");
-  Caps.downloads.save({ filename: "dart-bulk-template.csv", data: BULK_COLS.join(",") + "\nMonti,Via Panisperna 41,Prati,Via Cola di Rienzo 212,parcel,Box of books,40,30,30,8,1,Buzzer 4\n" }).catch(function (e) { if (e && e.code !== "declined") toast("The template couldn't be saved here."); });
+  saveFile({ name: "dart-bulk-template", ext: "csv", mime: "text/csv", text: BULK_COLS.join(",") + "\nMonti,Via Panisperna 41,Prati,Via Cola di Rienzo 212,parcel,Box of books,40,30,30,8,1,Buzzer 4\n" });
 };
 FILES["bulk"] = function (file) {
   if (/\.xlsx?$/i.test(file.name)) {
@@ -4009,7 +4041,7 @@ function dMapHome(c) {
 
 // ===== DART admin portal =====
 S.a = { tab: "dash", q: "", status: "active", invKind: "all", invStatus: "all", tStatus: "open", rulesDraft: null, pricingDraft: null, settingsDraft: null, plan: null, preview: { from: "Monti", to: "Prati", cat: "medium" }, docs: {}, reply: "", decision: "", confirmClear: false };
-var A_NAV = [["dash", "Dashboard"], ["deliveries", "Deliveries"], ["customers", "Customers"], ["couriers", "Couriers"], ["rules", "Vehicles and items"], ["pricing", "Pricing"], ["plans", "Plans"], ["discounts", "Discounts"], ["invoices", "Invoices"], ["payments", "Payments"], ["support", "Support"], ["reports", "Reports"], ["settings", "Settings"]];
+var A_NAV = [["dash", "Dashboard"], ["deliveries", "Deliveries"], ["customers", "Customers"], ["couriers", "Couriers"], ["rules", "Vehicles and items"], ["pricing", "Pricing"], ["plans", "Plans"], ["discounts", "Discounts"], ["invoices", "Invoices"], ["payments", "Payments"], ["payouts", "Courier payouts"], ["support", "Support"], ["reports", "Reports"], ["settings", "Settings"]];
 
 function aCounts() {
   return {
@@ -4030,6 +4062,7 @@ function adminApp() {
     case "plans": main = aPlans(); break;
     case "invoices": main = aInvoices(); break;
     case "payments": main = aPayments(); break;
+    case "payouts": main = aPayouts(); break;
     case "discounts": main = aDiscounts(); break;
     case "support": main = aSupport(); break;
     case "reports": main = aReports(); break;
@@ -4159,7 +4192,7 @@ function aOrderModal(m) {
       (dec.length ? '<span class="muted sm">Declined or missed: ' + esc(dec.join(", ")) + "</span>" : "") +
       (el.length ? el.map(function (c) { var free = freeCourier(c), mine = f && f.to === c.id; return '<div class="row between"><span>' + esc(c.name) + ' <span class="muted sm">' + esc(vLabel(c.vehicle.type)) + (c.online ? (free || mine ? " · online" : " · busy") : " · offline") + (c.area ? " · " + esc(c.area) : "") + '</span></span>' + (mine ? '<span class="chip s-warn">Deciding</span>' : '<button class="btn sm ghost" data-act="a-assign" data-v="' + esc(c.id) + '"' + (free ? "" : " disabled") + ">Offer now</button>") + "</div>"; }).join("") : '<span class="muted">No approved courier has a vehicle that fits this item.</span>') + "</div>";
   }
-  h += '<div class="card"><b>Price and payment</b>' + breakdown(o.price, o.billing && o.billing.method === "subscription" ? o.billing : null) + '<span class="muted sm">' + esc(payLabel(o.billing)) + " · " + esc(o.billing ? o.billing.status : "") + "</span>" + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">Invoice ' + esc(inv.number) + "</button>" : "") + "</div>";
+  h += '<div class="card"><b>Price and payment</b>' + orderPrice(o) + '<span class="muted sm">' + esc(payLabel(o.billing)) + " · " + esc(o.billing ? o.billing.status : "") + "</span>" + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">Invoice ' + esc(inv.number) + "</button>" : "") + "</div>";
   if (o.issue && (o.issue.open || o.status === "issue")) h += '<div class="card warn"><b>Issue reported by ' + esc(o.issue.by) + "</b><span>" + esc(o.issue.reason) + ": " + esc(o.issue.text) + '</span><div class="row wrap"><button class="btn sm" data-act="a-resolve" data-v="' + esc(o.id) + '">Mark resolved</button></div></div>';
   if (o.courier && ACTIVE.indexOf(o.status) >= 0 && o.status !== "awaiting") h += helpCourierCard(o, m);
   if (o.code && ACTIVE.indexOf(o.status) >= 0) h += '<div class="card"><b>Delivery code</b><span class="code-big">' + esc(o.code) + '</span><span class="muted sm">Give it to the courier only if the customer has confirmed by phone.</span></div>';
@@ -4313,7 +4346,7 @@ function aCourierModal(m) {
   if (c.vehicleStatus === "pending" && pv) h += '<div class="card warn"><b>Requested change: ' + esc(vLabel(pv.type)) + "</b><span>" + esc(pv.model || "") + (pv.plate ? " · " + esc(pv.plate) : "") + " · " + pv.l + "×" + pv.w + "×" + pv.h + " cm · " + pv.kg + ' kg</span><div class="row wrap"><button class="btn sm" data-act="a-veh" data-v="approve">Approve change</button><button class="btn danger sm" data-act="a-veh" data-v="decline">Decline</button></div></div>';
   h += '</div><div class="stack"><div class="card"><b>Documents</b>' + (docs ? docsFor(v.type).concat(pv && pv.type !== v.type ? docsFor(pv.type) : []).filter(function (k, i, arr) { return arr.indexOf(k) === i; }).map(function (k) { var img = safeImg(docs[k]); return '<div class="doc-view"><span>' + DOCS[k] + "</span>" + (img ? '<img src="' + img + '" alt="' + DOCS[k] + '">' : '<span class="warn-t">Missing</span>') + "</div>"; }).join("") : '<span class="muted">Loading documents…</span>') + "</div>" +
     '<div class="card"><b>Rating</b><span>' + esc(ratingText(c.id)) + "</span></div>" +
-    '<div class="card"><b>Earnings</b><span>' + done.length + " deliveries · " + eur(done.reduce(function (s, o) { return s + earnOf(o); }, 0)) + " earned, tips included</span><span>Pending payout: <b>" + eur(pend.reduce(function (s, o) { return s + earnOf(o); }, 0)) + "</b></span>" + (pend.length ? '<button class="btn sm" data-act="a-payout" data-v="' + esc(c.id) + '">Mark ' + pend.length + " deliveries as paid</button>" : "") + "</div>" +
+    '<div class="card"><b>Earnings</b><span>' + done.length + " deliveries · " + eur(done.reduce(function (s, o) { return s + earnOf(o); }, 0)) + " earned, tips included</span><span>Pending payout: <b>" + eur(pend.reduce(function (s, o) { return s + earnOf(o); }, 0)) + "</b></span>" + (pend.length ? '<button class="btn sm" data-act="a-payout-ask" data-v="' + esc(c.id) + '">Mark ' + pend.length + " deliveries as paid</button>" : "") + "</div>" +
     field("Note to the courier (optional)", inp("a.decision", S.a.decision, 'placeholder="Shown if you reject, suspend or decline a vehicle"')) + "</div></div>";
   var foot = c.status === "pending" ? '<button class="btn danger" data-act="a-cour-status" data-v="rejected">Reject</button><button class="btn" data-act="a-cour-status" data-v="approved">Approve courier</button>' :
     c.status === "approved" ? '<button class="btn danger" data-act="a-cour-status" data-v="suspended">Suspend</button>' : '<button class="btn" data-act="a-cour-status" data-v="approved">Approve</button>';
@@ -4329,7 +4362,51 @@ ACT["a-veh"] = function (d) {
   var patch = ok ? { vehicle: c.pendingVehicle, pendingVehicle: null, vehicleStatus: "approved", vehicleDecidedAt: Date.now() } : { pendingVehicle: null, vehicleStatus: "declined", vehicleNote: clip(S.a.decision, 200) || "Contact support for details", vehicleDecidedAt: Date.now() };
   run(Store.update("couriers", c.id, patch), ok ? "Vehicle change approved" : "Vehicle change declined");
 };
+// ---------- Courier payouts ----------
+// What each courier is owed (delivered jobs not yet paid: fee + tip − late fee), the bank details to
+// pay them, and every payout DART has recorded. Paying happens at the bank; this records it.
+function courierOwed(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && o.status === "delivered" && !o.courierPaid; }); }
+function sumEarn(list) { return r2(list.reduce(function (s, o) { return s + earnOf(o); }, 0)); }
+function payoutRunsAll() {
+  var runs = {};
+  S.orders.filter(function (o) { return o.courierPaid && o.courier; }).forEach(function (o) {
+    var k = o.courierPayout || o.courier.id + "-" + dmy(o.courierPaidAt);
+    runs[k] = runs[k] || { id: k, at: o.courierPaidAt, courier: o.courier, jobs: [] }; runs[k].jobs.push(o);
+  });
+  return Object.keys(runs).map(function (k) { return runs[k]; }).sort(function (a, b) { return b.at - a.at; });
+}
+function aPayouts() {
+  var owed = S.couriers.map(function (c) { var l = courierOwed(c.id); return { c: c, jobs: l, total: sumEarn(l) }; }).filter(function (x) { return x.jobs.length; }).sort(function (a, b) { return b.total - a.total; });
+  var runs = payoutRunsAll(), month = new Date(); month.setDate(1); month.setHours(0, 0, 0, 0);
+  var paidMonth = runs.filter(function (r) { return r.at >= month.getTime(); }), next = nextMonday(Date.now());
+  var h = aHead("Courier payouts", owed.length ? '<button class="btn ghost" data-act="a-payout-csv">Download list for the bank</button>' : "") +
+    '<p class="muted">Couriers are paid every Monday by bank transfer. Make the transfers at your bank, then mark each courier as paid here so their app shows it.</p>' +
+    '<div class="kpis">' + kpi("To pay", eur(r2(owed.reduce(function (s, x) { return s + x.total; }, 0))), owed.length + (owed.length === 1 ? " courier" : " couriers")) + kpi("Next payday", dmy(next), "Monday") +
+    kpi("Paid this month", eur(r2(paidMonth.reduce(function (s, r) { return s + sumEarn(r.jobs); }, 0))), paidMonth.length + (paidMonth.length === 1 ? " payout" : " payouts")) + "</div>";
+  h += '<div class="panel"><div class="panel-h">To pay</div>' + (owed.length ? '<div class="tbl"><table><thead><tr><th>Courier</th><th>Bank details</th><th>Deliveries</th><th>Fees</th><th>Tips</th><th>Late fees</th><th>To pay</th><th></th></tr></thead><tbody>' +
+    owed.map(function (x) { var c = x.c, p = c.payout || {};
+      return "<tr><td><button class=\"link left\" data-act=\"a-courier\" data-v=\"" + esc(c.id) + "\">" + esc(c.name) + "</button></td><td>" + (p.iban ? '<span class="mono sm">' + esc(p.iban) + "</span><br><span class=\"muted sm\">" + esc(p.holder || c.name) + "</span>" : '<span class="bad-t sm">No IBAN yet</span>') + "</td><td>" + x.jobs.length +
+        '</td><td class="num">' + eur(r2(x.jobs.reduce(function (s, o) { return s + payOf(o); }, 0))) + '</td><td class="num">' + eur(r2(x.jobs.reduce(function (s, o) { return s + tipOf(o); }, 0))) + '</td><td class="num">' + (x.jobs.some(lateFee) ? "−" + eur(r2(x.jobs.reduce(function (s, o) { return s + lateFee(o); }, 0))) : "—") +
+        '</td><td class="num"><b>' + eur(x.total) + '</b></td><td><button class="btn sm" data-act="a-payout-ask" data-v="' + esc(c.id) + '"' + (p.iban ? "" : " disabled") + ">Mark paid</button></td></tr>"; }).join("") + "</tbody></table></div>"
+    : emptyState("Nothing to pay", "Delivered jobs that haven't been paid yet show up here, per courier.")) + "</div>";
+  h += '<div class="panel"><div class="panel-h">Paid</div>' + (runs.length ? '<div class="tbl"><table><thead><tr><th>Paid on</th><th>Courier</th><th>Deliveries</th><th>Amount</th></tr></thead><tbody>' +
+    runs.slice(0, 50).map(function (r) { return "<tr><td>" + dmy(r.at) + "</td><td>" + esc(r.courier.name) + "</td><td>" + r.jobs.length + '</td><td class="num">' + eur(sumEarn(r.jobs)) + "</td></tr>"; }).join("") + "</tbody></table></div>"
+    : emptyState("No payouts yet", "Payouts you mark as paid are listed here.")) + "</div>";
+  return h;
+}
+ACT["a-payout-ask"] = function (d) {
+  var c = byId(S.couriers, d.v), l = courierOwed(d.v); if (!c || !l.length) return;
+  S.modal = { kind: "confirm", title: "Mark " + c.name + " as paid?", body: "Confirm you've sent " + eur(sumEarn(l)) + " to " + ((c.payout && c.payout.iban) || "their bank") + " for " + l.length + (l.length === 1 ? " delivery" : " deliveries") + ". Their app will show the payment.", yes: "Yes, mark paid", act: "a-payout", v: c.id };
+  render();
+};
+ACT["a-payout-csv"] = function () {
+  var q = function (v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var rows = [["Name", "Account holder", "IBAN", "Amount EUR", "Deliveries", "Reference"]];
+  S.couriers.forEach(function (c) { var l = courierOwed(c.id); if (l.length) rows.push([c.name, (c.payout && c.payout.holder) || c.name, (c.payout && c.payout.iban) || "", sumEarn(l).toFixed(2), l.length, "DART payout " + dmy(nextMonday(Date.now()))]); });
+  saveFile({ name: "dart-courier-payouts-" + new Date().toISOString().slice(0, 10), ext: "csv", mime: "text/csv", text: rows.map(function (r) { return r.map(q).join(","); }).join("\n") + "\n" });
+};
 ACT["a-payout"] = function (d) {
+  S.modal = null;
   var ids = S.orders.filter(function (o) { return o.courier && o.courier.id === d.v && o.status === "delivered" && !o.courierPaid; }).map(function (o) { return o.id; }), now = Date.now(), pid = "P-" + rid(5);
   run(ids.reduce(function (p, id) { return p.then(function () { return Store.update("orders", id, { courierPaid: true, courierPaidAt: now, courierPayout: pid }); }); }, Promise.resolve()), "Payout recorded");
 };
@@ -4553,7 +4630,7 @@ function liveTable(path) {
   if (m) return { table: "messages", order: m[1] };
   return { table: path === "courierDocs" ? "courier_docs" : path };
 }
-function liveErr(e) { return e && (e.message || e.code) ? { code: e.code || "error", message: e.message } : e; }
+function liveErr(e) { return e && (e.message || e.code) ? { code: e.code || "error", message: e.message, show: e.code === "P0001" } : e; }
 
 // Coming back to the app or getting signal again: refresh the login, then reload everything on screen.
 if (LIVE && typeof document !== "undefined") {
@@ -5004,10 +5081,13 @@ function gmapCreate(ph, opt) {
   });
   // Frame the points. A map made while its box is still opening (the offer pop-up) has no size yet,
   // so frame it again the first time it gets one.
+  // Only a full-screen map (the home screens) leaves room for the sheet over its lower part;
+  // small maps (offer pop-up, job and delivery cards) frame the route in the whole box.
   var frame = function () {
-    if (n > 1) map.fitBounds(bounds, opt.vb ? { top: 90, bottom: 320, left: 40, right: 40 } : 36);
-    else if (n === 1) { map.setCenter(bounds.getCenter()); map.setZoom(14); if (opt.vb) map.panBy(0, 150); }
-    else { map.setCenter({ lat: 41.9, lng: 12.49 }); map.setZoom(12); if (opt.vb) map.panBy(0, 150); }
+    var tall = el.clientHeight > 450, pad = tall ? { top: 90, bottom: 320, left: 40, right: 40 } : { top: 46, bottom: 18, left: 28, right: 28 }; // room for the 42px address pin
+    if (n > 1) map.fitBounds(bounds, pad);
+    else if (n === 1) { map.setCenter(bounds.getCenter()); map.setZoom(14); if (tall) map.panBy(0, 150); }
+    else { map.setCenter({ lat: 41.9, lng: 12.49 }); map.setZoom(12); if (tall) map.panBy(0, 150); }
   };
   frame();
   if (typeof ResizeObserver !== "undefined") {
@@ -5023,7 +5103,7 @@ function gmapMove(e, opt) {
   if (e.me && mp) {
     var was = e.me.getPosition(), moved = was && (Math.abs(was.lat() - mp.lat) > .002 || Math.abs(was.lng() - mp.lng) > .002);
     e.me.setPosition(mp); if (e.halo) e.halo.setCenter(mp);
-    if (moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(mp); e.map.panBy(0, 150); }
+    if (moved && e.follow && Date.now() - e.dragged > 60000 && !(opt.routes || []).length) { e.map.setCenter(mp); if (e.el.clientHeight > 450) e.map.panBy(0, 150); }
   }
   (opt.pins || []).forEach(function (p, i) {
     var m = e.pins[i], at = llOf(p.area, p.ll); if (!m || !at) return;
@@ -5269,6 +5349,8 @@ function subscribeAll() {
 
 // Phone back button and back swipe (called by the apps): close what's open, or go back one screen.
 // Returns false on a main screen, so the app closes as phone apps normally do.
+// Lets the phone apps show a message in the page.
+window.DART_TOAST = function (m) { toast(String(m || "")); };
 window.DART_BACK = function () {
   var bg = document.querySelector(".modal-bg"); if (bg) { bg.click(); return true; }
   if (S.d.offerMore) { S.d.offerMore = null; render(); return true; }

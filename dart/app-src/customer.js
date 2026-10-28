@@ -202,7 +202,7 @@ function usageBar(used, total) {
 }
 function orderRow(o) {
   return '<button class="item" data-act="c-order" data-v="' + esc(o.id) + '"><b>' + esc(o.pickup.area) + " → " + esc(o.dropoff.area) + "</b>" + chip(o.status) +
-    "<small>" + esc(cLabel(o.cls.category)) + " · " + when(o.createdAt) + '</small><small class="num">' + eur(o.billing ? o.billing.amount : o.price.total) + (unread(o, "customer") ? ' · <b class="dot-new">new message</b>' : "") + "</small></button>";
+    "<small>" + esc(cLabel(o.cls.category)) + " · " + when(o.createdAt) + '</small><small class="num">' + eur(paidOf(o)) + (unread(o, "customer") ? ' · <b class="dot-new">new message</b>' : "") + "</small></button>";
 }
 
 // ---------- New delivery ----------
@@ -502,7 +502,7 @@ function cOrder(acc) {
     a += reviewCard(o);
   }
   var b = '<div class="stack"><div class="card">' + legs(o) + "<span>" + itemSummary(o) + "</span>" + (o.item.photos && o.item.photos.length ? '<div class="phs">' + photoStrip(o.item.photos) + "</div>" : "") + "</div>" +
-    '<div class="card"><b>Price</b>' + breakdown(o.price, o.billing && o.billing.method === "subscription" ? o.billing : null) + '<span class="muted">Payment: ' + esc(payLabel(o.billing)) + "</span></div>" +
+    '<div class="card"><b>Price</b>' + orderPrice(o) + '<span class="muted">Payment: ' + esc(payLabel(o.billing)) + "</span></div>" +
     '<div class="card"><b>Status history</b>' + timelineList(o) + "</div>";
   var inv = o.invoiceId ? byId(S.invoices, o.invoiceId) : null;
   var actions = '<div class="row wrap">' + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">View invoice</button>' : "") +
@@ -807,8 +807,7 @@ ACT["c-bulk-sample"] = function () {
   render();
 };
 ACT["c-bulk-template"] = function () {
-  if (!Caps.downloads) return toast(LIVE ? "Downloads aren't available in this view." : "Downloads aren't available in this view. Use 'Fill with sample rows' instead.");
-  Caps.downloads.save({ filename: "dart-bulk-template.csv", data: BULK_COLS.join(",") + "\nMonti,Via Panisperna 41,Prati,Via Cola di Rienzo 212,parcel,Box of books,40,30,30,8,1,Buzzer 4\n" }).catch(function (e) { if (e && e.code !== "declined") toast("The template couldn't be saved here."); });
+  saveFile({ name: "dart-bulk-template", ext: "csv", mime: "text/csv", text: BULK_COLS.join(",") + "\nMonti,Via Panisperna 41,Prati,Via Cola di Rienzo 212,parcel,Box of books,40,30,30,8,1,Buzzer 4\n" });
 };
 FILES["bulk"] = function (file) {
   if (/\.xlsx?$/i.test(file.name)) {

@@ -147,6 +147,8 @@ function subscribeAll() {
 
 // Phone back button and back swipe (called by the apps): close what's open, or go back one screen.
 // Returns false on a main screen, so the app closes as phone apps normally do.
+// Lets the phone apps show a message in the page.
+window.DART_TOAST = function (m) { toast(String(m || "")); };
 window.DART_BACK = function () {
   var bg = document.querySelector(".modal-bg"); if (bg) { bg.click(); return true; }
   if (S.d.offerMore) { S.d.offerMore = null; render(); return true; }

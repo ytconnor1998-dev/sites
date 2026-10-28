@@ -1,6 +1,6 @@
 // ===== DART admin portal =====
 S.a = { tab: "dash", q: "", status: "active", invKind: "all", invStatus: "all", tStatus: "open", rulesDraft: null, pricingDraft: null, settingsDraft: null, plan: null, preview: { from: "Monti", to: "Prati", cat: "medium" }, docs: {}, reply: "", decision: "", confirmClear: false };
-var A_NAV = [["dash", "Dashboard"], ["deliveries", "Deliveries"], ["customers", "Customers"], ["couriers", "Couriers"], ["rules", "Vehicles and items"], ["pricing", "Pricing"], ["plans", "Plans"], ["discounts", "Discounts"], ["invoices", "Invoices"], ["payments", "Payments"], ["support", "Support"], ["reports", "Reports"], ["settings", "Settings"]];
+var A_NAV = [["dash", "Dashboard"], ["deliveries", "Deliveries"], ["customers", "Customers"], ["couriers", "Couriers"], ["rules", "Vehicles and items"], ["pricing", "Pricing"], ["plans", "Plans"], ["discounts", "Discounts"], ["invoices", "Invoices"], ["payments", "Payments"], ["payouts", "Courier payouts"], ["support", "Support"], ["reports", "Reports"], ["settings", "Settings"]];
 
 function aCounts() {
   return {
@@ -21,6 +21,7 @@ function adminApp() {
     case "plans": main = aPlans(); break;
     case "invoices": main = aInvoices(); break;
     case "payments": main = aPayments(); break;
+    case "payouts": main = aPayouts(); break;
     case "discounts": main = aDiscounts(); break;
     case "support": main = aSupport(); break;
     case "reports": main = aReports(); break;
@@ -150,7 +151,7 @@ function aOrderModal(m) {
       (dec.length ? '<span class="muted sm">Declined or missed: ' + esc(dec.join(", ")) + "</span>" : "") +
       (el.length ? el.map(function (c) { var free = freeCourier(c), mine = f && f.to === c.id; return '<div class="row between"><span>' + esc(c.name) + ' <span class="muted sm">' + esc(vLabel(c.vehicle.type)) + (c.online ? (free || mine ? " · online" : " · busy") : " · offline") + (c.area ? " · " + esc(c.area) : "") + '</span></span>' + (mine ? '<span class="chip s-warn">Deciding</span>' : '<button class="btn sm ghost" data-act="a-assign" data-v="' + esc(c.id) + '"' + (free ? "" : " disabled") + ">Offer now</button>") + "</div>"; }).join("") : '<span class="muted">No approved courier has a vehicle that fits this item.</span>') + "</div>";
   }
-  h += '<div class="card"><b>Price and payment</b>' + breakdown(o.price, o.billing && o.billing.method === "subscription" ? o.billing : null) + '<span class="muted sm">' + esc(payLabel(o.billing)) + " · " + esc(o.billing ? o.billing.status : "") + "</span>" + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">Invoice ' + esc(inv.number) + "</button>" : "") + "</div>";
+  h += '<div class="card"><b>Price and payment</b>' + orderPrice(o) + '<span class="muted sm">' + esc(payLabel(o.billing)) + " · " + esc(o.billing ? o.billing.status : "") + "</span>" + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">Invoice ' + esc(inv.number) + "</button>" : "") + "</div>";
   if (o.issue && (o.issue.open || o.status === "issue")) h += '<div class="card warn"><b>Issue reported by ' + esc(o.issue.by) + "</b><span>" + esc(o.issue.reason) + ": " + esc(o.issue.text) + '</span><div class="row wrap"><button class="btn sm" data-act="a-resolve" data-v="' + esc(o.id) + '">Mark resolved</button></div></div>';
   if (o.courier && ACTIVE.indexOf(o.status) >= 0 && o.status !== "awaiting") h += helpCourierCard(o, m);
   if (o.code && ACTIVE.indexOf(o.status) >= 0) h += '<div class="card"><b>Delivery code</b><span class="code-big">' + esc(o.code) + '</span><span class="muted sm">Give it to the courier only if the customer has confirmed by phone.</span></div>';
@@ -304,7 +305,7 @@ function aCourierModal(m) {
   if (c.vehicleStatus === "pending" && pv) h += '<div class="card warn"><b>Requested change: ' + esc(vLabel(pv.type)) + "</b><span>" + esc(pv.model || "") + (pv.plate ? " · " + esc(pv.plate) : "") + " · " + pv.l + "×" + pv.w + "×" + pv.h + " cm · " + pv.kg + ' kg</span><div class="row wrap"><button class="btn sm" data-act="a-veh" data-v="approve">Approve change</button><button class="btn danger sm" data-act="a-veh" data-v="decline">Decline</button></div></div>';
   h += '</div><div class="stack"><div class="card"><b>Documents</b>' + (docs ? docsFor(v.type).concat(pv && pv.type !== v.type ? docsFor(pv.type) : []).filter(function (k, i, arr) { return arr.indexOf(k) === i; }).map(function (k) { var img = safeImg(docs[k]); return '<div class="doc-view"><span>' + DOCS[k] + "</span>" + (img ? '<img src="' + img + '" alt="' + DOCS[k] + '">' : '<span class="warn-t">Missing</span>') + "</div>"; }).join("") : '<span class="muted">Loading documents…</span>') + "</div>" +
     '<div class="card"><b>Rating</b><span>' + esc(ratingText(c.id)) + "</span></div>" +
-    '<div class="card"><b>Earnings</b><span>' + done.length + " deliveries · " + eur(done.reduce(function (s, o) { return s + earnOf(o); }, 0)) + " earned, tips included</span><span>Pending payout: <b>" + eur(pend.reduce(function (s, o) { return s + earnOf(o); }, 0)) + "</b></span>" + (pend.length ? '<button class="btn sm" data-act="a-payout" data-v="' + esc(c.id) + '">Mark ' + pend.length + " deliveries as paid</button>" : "") + "</div>" +
+    '<div class="card"><b>Earnings</b><span>' + done.length + " deliveries · " + eur(done.reduce(function (s, o) { return s + earnOf(o); }, 0)) + " earned, tips included</span><span>Pending payout: <b>" + eur(pend.reduce(function (s, o) { return s + earnOf(o); }, 0)) + "</b></span>" + (pend.length ? '<button class="btn sm" data-act="a-payout-ask" data-v="' + esc(c.id) + '">Mark ' + pend.length + " deliveries as paid</button>" : "") + "</div>" +
     field("Note to the courier (optional)", inp("a.decision", S.a.decision, 'placeholder="Shown if you reject, suspend or decline a vehicle"')) + "</div></div>";
   var foot = c.status === "pending" ? '<button class="btn danger" data-act="a-cour-status" data-v="rejected">Reject</button><button class="btn" data-act="a-cour-status" data-v="approved">Approve courier</button>' :
     c.status === "approved" ? '<button class="btn danger" data-act="a-cour-status" data-v="suspended">Suspend</button>' : '<button class="btn" data-act="a-cour-status" data-v="approved">Approve</button>';
@@ -320,7 +321,51 @@ ACT["a-veh"] = function (d) {
   var patch = ok ? { vehicle: c.pendingVehicle, pendingVehicle: null, vehicleStatus: "approved", vehicleDecidedAt: Date.now() } : { pendingVehicle: null, vehicleStatus: "declined", vehicleNote: clip(S.a.decision, 200) || "Contact support for details", vehicleDecidedAt: Date.now() };
   run(Store.update("couriers", c.id, patch), ok ? "Vehicle change approved" : "Vehicle change declined");
 };
+// ---------- Courier payouts ----------
+// What each courier is owed (delivered jobs not yet paid: fee + tip − late fee), the bank details to
+// pay them, and every payout DART has recorded. Paying happens at the bank; this records it.
+function courierOwed(cid) { return S.orders.filter(function (o) { return o.courier && o.courier.id === cid && o.status === "delivered" && !o.courierPaid; }); }
+function sumEarn(list) { return r2(list.reduce(function (s, o) { return s + earnOf(o); }, 0)); }
+function payoutRunsAll() {
+  var runs = {};
+  S.orders.filter(function (o) { return o.courierPaid && o.courier; }).forEach(function (o) {
+    var k = o.courierPayout || o.courier.id + "-" + dmy(o.courierPaidAt);
+    runs[k] = runs[k] || { id: k, at: o.courierPaidAt, courier: o.courier, jobs: [] }; runs[k].jobs.push(o);
+  });
+  return Object.keys(runs).map(function (k) { return runs[k]; }).sort(function (a, b) { return b.at - a.at; });
+}
+function aPayouts() {
+  var owed = S.couriers.map(function (c) { var l = courierOwed(c.id); return { c: c, jobs: l, total: sumEarn(l) }; }).filter(function (x) { return x.jobs.length; }).sort(function (a, b) { return b.total - a.total; });
+  var runs = payoutRunsAll(), month = new Date(); month.setDate(1); month.setHours(0, 0, 0, 0);
+  var paidMonth = runs.filter(function (r) { return r.at >= month.getTime(); }), next = nextMonday(Date.now());
+  var h = aHead("Courier payouts", owed.length ? '<button class="btn ghost" data-act="a-payout-csv">Download list for the bank</button>' : "") +
+    '<p class="muted">Couriers are paid every Monday by bank transfer. Make the transfers at your bank, then mark each courier as paid here so their app shows it.</p>' +
+    '<div class="kpis">' + kpi("To pay", eur(r2(owed.reduce(function (s, x) { return s + x.total; }, 0))), owed.length + (owed.length === 1 ? " courier" : " couriers")) + kpi("Next payday", dmy(next), "Monday") +
+    kpi("Paid this month", eur(r2(paidMonth.reduce(function (s, r) { return s + sumEarn(r.jobs); }, 0))), paidMonth.length + (paidMonth.length === 1 ? " payout" : " payouts")) + "</div>";
+  h += '<div class="panel"><div class="panel-h">To pay</div>' + (owed.length ? '<div class="tbl"><table><thead><tr><th>Courier</th><th>Bank details</th><th>Deliveries</th><th>Fees</th><th>Tips</th><th>Late fees</th><th>To pay</th><th></th></tr></thead><tbody>' +
+    owed.map(function (x) { var c = x.c, p = c.payout || {};
+      return "<tr><td><button class=\"link left\" data-act=\"a-courier\" data-v=\"" + esc(c.id) + "\">" + esc(c.name) + "</button></td><td>" + (p.iban ? '<span class="mono sm">' + esc(p.iban) + "</span><br><span class=\"muted sm\">" + esc(p.holder || c.name) + "</span>" : '<span class="bad-t sm">No IBAN yet</span>') + "</td><td>" + x.jobs.length +
+        '</td><td class="num">' + eur(r2(x.jobs.reduce(function (s, o) { return s + payOf(o); }, 0))) + '</td><td class="num">' + eur(r2(x.jobs.reduce(function (s, o) { return s + tipOf(o); }, 0))) + '</td><td class="num">' + (x.jobs.some(lateFee) ? "−" + eur(r2(x.jobs.reduce(function (s, o) { return s + lateFee(o); }, 0))) : "—") +
+        '</td><td class="num"><b>' + eur(x.total) + '</b></td><td><button class="btn sm" data-act="a-payout-ask" data-v="' + esc(c.id) + '"' + (p.iban ? "" : " disabled") + ">Mark paid</button></td></tr>"; }).join("") + "</tbody></table></div>"
+    : emptyState("Nothing to pay", "Delivered jobs that haven't been paid yet show up here, per courier.")) + "</div>";
+  h += '<div class="panel"><div class="panel-h">Paid</div>' + (runs.length ? '<div class="tbl"><table><thead><tr><th>Paid on</th><th>Courier</th><th>Deliveries</th><th>Amount</th></tr></thead><tbody>' +
+    runs.slice(0, 50).map(function (r) { return "<tr><td>" + dmy(r.at) + "</td><td>" + esc(r.courier.name) + "</td><td>" + r.jobs.length + '</td><td class="num">' + eur(sumEarn(r.jobs)) + "</td></tr>"; }).join("") + "</tbody></table></div>"
+    : emptyState("No payouts yet", "Payouts you mark as paid are listed here.")) + "</div>";
+  return h;
+}
+ACT["a-payout-ask"] = function (d) {
+  var c = byId(S.couriers, d.v), l = courierOwed(d.v); if (!c || !l.length) return;
+  S.modal = { kind: "confirm", title: "Mark " + c.name + " as paid?", body: "Confirm you've sent " + eur(sumEarn(l)) + " to " + ((c.payout && c.payout.iban) || "their bank") + " for " + l.length + (l.length === 1 ? " delivery" : " deliveries") + ". Their app will show the payment.", yes: "Yes, mark paid", act: "a-payout", v: c.id };
+  render();
+};
+ACT["a-payout-csv"] = function () {
+  var q = function (v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var rows = [["Name", "Account holder", "IBAN", "Amount EUR", "Deliveries", "Reference"]];
+  S.couriers.forEach(function (c) { var l = courierOwed(c.id); if (l.length) rows.push([c.name, (c.payout && c.payout.holder) || c.name, (c.payout && c.payout.iban) || "", sumEarn(l).toFixed(2), l.length, "DART payout " + dmy(nextMonday(Date.now()))]); });
+  saveFile({ name: "dart-courier-payouts-" + new Date().toISOString().slice(0, 10), ext: "csv", mime: "text/csv", text: rows.map(function (r) { return r.map(q).join(","); }).join("\n") + "\n" });
+};
 ACT["a-payout"] = function (d) {
+  S.modal = null;
   var ids = S.orders.filter(function (o) { return o.courier && o.courier.id === d.v && o.status === "delivered" && !o.courierPaid; }).map(function (o) { return o.id; }), now = Date.now(), pid = "P-" + rid(5);
   run(ids.reduce(function (p, id) { return p.then(function () { return Store.update("orders", id, { courierPaid: true, courierPaidAt: now, courierPayout: pid }); }); }, Promise.resolve()), "Payout recorded");
 };
