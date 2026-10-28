@@ -373,7 +373,7 @@ function spawnCustomer(kind) {
   let end = new THREE.Vector3(fromLeft ? 45 : -45, 0, 8.9);
   o.position.copy(start); scene.add(o);
   let stage = 'walk', wait = 0, label = null, speed = 1.7, loot = null;
-  const say = (text) => { speak(o, text, kind === 'collector' ? 'Collector' : ''); LC.audio.sfx('babble'); };
+  const say = (text) => { speak(o, text, kind === 'collector' ? 'Collector' : ''); if (o.position.distanceTo(player.pos) < SPEECH_RANGE) LC.audio.sfx('babble'); };
   const done = () => { scene.remove(o); agents.splice(agents.indexOf(a), 1); if (stallWaiter === a) stallWaiter = null; };
   const a = { obj: o, update: (dt, t) => {
     if (talker && talker.obj === o) return;
@@ -1872,7 +1872,7 @@ function useFocus(auto) { if (focus && !LC.game.isBlocked()) { view.swing = 1; f
 
 // ---------- projection for floating text ----------
 // ---------- speech bubbles over anyone who says something ----------
-const speech = [];
+const speech = [], SPEECH_RANGE = 7;
 const _hb = new THREE.Box3(), _hp = new THREE.Vector3();
 function headOf(obj) {
   if (obj.userData.head == null) { _hb.setFromObject(obj); obj.updateMatrixWorld(); obj.userData.head = Math.max(0.4, _hb.max.y - obj.getWorldPosition(_hp).y) + 0.2; }
@@ -1897,12 +1897,11 @@ function updateSpeech() {
     const s2 = speech[i];
     if (time > s2.until || !s2.obj.parent) { s2.el.remove(); speech.splice(i, 1); continue; }
     s2.obj.getWorldPosition(_hp); _hp.y += headOf(s2.obj);
-    const dist = _hp.distanceTo(camera.position), p = dist > 30 ? null : project(_hp);
+    // only readable when you're close to them and looking their way
+    const dist = _hp.distanceTo(camera.position), p = dist > SPEECH_RANGE ? null : project(_hp);
     const onScreen = p && p.x > 40 && p.x < innerWidth - 40 && p.y > 60 && p.y < innerHeight - 40;
-    s2.el.classList.add('show');
-    // off screen (behind you, or round a corner): show it at the bottom so you still hear them
-    s2.el.classList.toggle('edge', !onScreen);
-    s2.el.style.transform = onScreen ? `translate(${Math.max(150, Math.min(innerWidth - 150, p.x))}px, ${p.y}px) translate(-50%, -100%)` : `translate(${innerWidth / 2}px, ${innerHeight - 150 - i * 70}px) translate(-50%, -100%)`;
+    s2.el.classList.toggle('show', !!onScreen);
+    if (onScreen) s2.el.style.transform = `translate(${Math.max(150, Math.min(innerWidth - 150, p.x))}px, ${p.y}px) translate(-50%, -100%)`;
   }
 }
 function project(v) {
