@@ -105,6 +105,39 @@ function curvePts(a, b) {
   for (var i = 0; i <= 24; i++) { var t = i / 24, u = 1 - t; out.push({ lat: u * u * a.lat + 2 * u * t * c.lat + t * t * b.lat, lng: u * u * a.lng + 2 * u * t * c.lng + t * t * b.lng }); }
   return out;
 }
+// ---------- Real street routes (Google Routes API) ----------
+// One request per pickup and drop-off pair, remembered for the session and on this device.
+var ROUTE_CACHE = {};
+try { ROUTE_CACHE = JSON.parse(localStorage.getItem("dart-routes") || "{}"); } catch (e) {}
+var ROUTE_OFF = false;
+function decodePolyline(s) {
+  var pts = [], i = 0, lat = 0, lng = 0;
+  while (i < s.length) {
+    var r = 0, sh = 0, b; do { b = s.charCodeAt(i++) - 63; r |= (b & 31) << sh; sh += 5; } while (b >= 32); lat += r & 1 ? ~(r >> 1) : r >> 1;
+    r = 0; sh = 0; do { b = s.charCodeAt(i++) - 63; r |= (b & 31) << sh; sh += 5; } while (b >= 32); lng += r & 1 ? ~(r >> 1) : r >> 1;
+    pts.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return pts;
+}
+function roadRoute(a, b, vehicle, done) {
+  if (ROUTE_OFF || !GMAP.cfg || !GMAP.cfg.key || typeof fetch === "undefined") return;
+  var mode = vehKind(vehicle) === "bike" ? "BICYCLE" : vehKind(vehicle) === "scooter" ? "TWO_WHEELER" : "DRIVE";
+  var key = [a.lat.toFixed(4), a.lng.toFixed(4), b.lat.toFixed(4), b.lng.toFixed(4), mode].join(",");
+  if (ROUTE_CACHE[key]) return done(decodePolyline(ROUTE_CACHE[key]));
+  var ask = function (m) {
+    return fetch("https://routes.googleapis.com/directions/v2:computeRoutes", { method: "POST", headers: { "Content-Type": "application/json", "X-Goog-Api-Key": GMAP.cfg.key, "X-Goog-FieldMask": "routes.polyline.encodedPolyline" },
+      body: JSON.stringify({ origin: { location: { latLng: { latitude: a.lat, longitude: a.lng } } }, destination: { location: { latLng: { latitude: b.lat, longitude: b.lng } } }, travelMode: m }) })
+      .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, j: j, status: res.status }; }); });
+  };
+  ask(mode).then(function (r) { return r.ok && r.j.routes && r.j.routes.length || mode === "DRIVE" ? r : ask("DRIVE"); }).then(function (r) {
+    if (r.status === 403) { ROUTE_OFF = true; return; } // Routes API not switched on for this key: keep curves
+    var enc = r.ok && r.j.routes && r.j.routes[0] && r.j.routes[0].polyline && r.j.routes[0].polyline.encodedPolyline; if (!enc) return;
+    ROUTE_CACHE[key] = enc;
+    try { var ks = Object.keys(ROUTE_CACHE); if (ks.length > 150) delete ROUTE_CACHE[ks[0]]; localStorage.setItem("dart-routes", JSON.stringify(ROUTE_CACHE)); } catch (e) {}
+    done(decodePolyline(enc));
+  }, function () {});
+}
+
 // A placeholder in the page; the map itself lives in the cache and is moved in after each render,
 // so maps don't flicker or reload when the page redraws every second.
 function realMap(opt) {
@@ -125,11 +158,14 @@ function gmapCreate(ph, opt) {
   (opt.routes || []).forEach(function (r) {
     var a = llOf(r.from, r.fromLL), b = llOf(r.to, r.toLL); if (!a || !b) return;
     var pts = curvePts(a, b);
-    new g.Polyline({ map: map, path: pts, strokeColor: GMAP_PURPLE, strokeOpacity: r.dashed ? 0 : .9, strokeWeight: r.thin ? 3 : 5, icons: r.dashed ? [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: GMAP_PURPLE, scale: 3 }, offset: "0", repeat: "12px" }] : null });
+    var line = new g.Polyline({ map: map, path: pts, strokeColor: GMAP_PURPLE, strokeOpacity: r.dashed ? 0 : .9, strokeWeight: r.thin ? 3 : 5, icons: r.dashed ? [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: GMAP_PURPLE, scale: 3 }, offset: "0", repeat: "12px" }] : null });
     new g.Marker({ map: map, position: a, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 7, fillColor: "#FFFFFF", fillOpacity: 1, strokeColor: GMAP_PURPLE, strokeWeight: 4 } });
     new g.Marker({ map: map, position: b, clickable: false, zIndex: 5, icon: addrPin() });
     add(a); add(b);
-    if (r.t != null) e.movers.push({ r: r, pts: pts, a: a, m: new g.Marker({ map: map, position: a, clickable: false, zIndex: 9, icon: vehIcon(r.vehicle) }) });
+    var mv = r.t != null ? { r: r, pts: pts, a: a, m: new g.Marker({ map: map, position: a, clickable: false, zIndex: 9, icon: vehIcon(r.vehicle) }) } : null;
+    if (mv) e.movers.push(mv);
+    // Swap the curve for the real streets once Google answers (kept as a curve if it can't).
+    roadRoute(a, b, r.vehicle, function (path) { line.setPath(path); if (mv) mv.pts = path; });
   });
   e.dots = []; e.pins = [];
   (opt.dots || []).forEach(function (d) { var p = llOf(d.area, d.ll); if (!p) return; e.dots.push(new g.Marker({ map: map, position: p, clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 6, fillColor: d.color && d.color.indexOf("ok") >= 0 ? "#1F9D57" : "#B79BFF", fillOpacity: 1, strokeColor: "#FFFFFF", strokeWeight: 2.5 } })); add(p); });
@@ -148,9 +184,20 @@ function gmapCreate(ph, opt) {
     e.pins.push(new g.Marker({ map: map, position: at, clickable: false, zIndex: 8, label: { text: tr(String(p.text)), color: "#FFFFFF", fontSize: "11px", fontWeight: "700" }, icon: { path: "M -24,-30 24,-30 24,-12 4,-12 0,-6 -4,-12 -24,-12 z", scale: 1, fillColor: col, fillOpacity: 1, strokeColor: col, strokeWeight: 1, labelOrigin: new g.Point(0, -21) } }));
     add(at);
   });
-  if (n > 1) map.fitBounds(bounds, opt.vb ? { top: 90, bottom: 320, left: 40, right: 40 } : 36);
-  else if (n === 1) { map.setCenter(bounds.getCenter()); map.setZoom(14); if (opt.vb) map.panBy(0, 150); }
-  else if (opt.vb) map.panBy(0, 150);
+  // Frame the points. A map made while its box is still opening (the offer pop-up) has no size yet,
+  // so frame it again the first time it gets one.
+  var frame = function () {
+    if (n > 1) map.fitBounds(bounds, opt.vb ? { top: 90, bottom: 320, left: 40, right: 40 } : 36);
+    else if (n === 1) { map.setCenter(bounds.getCenter()); map.setZoom(14); if (opt.vb) map.panBy(0, 150); }
+    else { map.setCenter({ lat: 41.9, lng: 12.49 }); map.setZoom(12); if (opt.vb) map.panBy(0, 150); }
+  };
+  frame();
+  if (typeof ResizeObserver !== "undefined") {
+    var sized = el.clientWidth > 0 && el.clientHeight > 0, ro = new ResizeObserver(function () {
+      if (el.clientWidth > 0 && el.clientHeight > 0 && (!sized || !e.framedOnce)) { sized = true; e.framedOnce = true; frame(); }
+    });
+    ro.observe(el);
+  }
   return e;
 }
 function gmapMove(e, opt) {
@@ -169,7 +216,8 @@ function gmapMove(e, opt) {
   e.movers.forEach(function (mv, i) {
     var r = (opt.routes || []).filter(function (x) { return x.t != null; })[i]; if (!r) return;
     var p;
-    if (r.approach != null) p = { lat: mv.a.lat + .006 * (1 - r.approach), lng: mv.a.lng - .006 * (1 - r.approach) };
+    if (r.live && isFinite(r.live[0])) p = { lat: +r.live[0], lng: +r.live[1] };
+    else if (r.approach != null) p = { lat: mv.a.lat + .006 * (1 - r.approach), lng: mv.a.lng - .006 * (1 - r.approach) };
     else p = mv.pts[Math.max(0, Math.min(mv.pts.length - 1, Math.round(r.t * (mv.pts.length - 1))))];
     mv.m.setPosition(p);
   });
@@ -210,7 +258,7 @@ ACT["c-pin-open"] = function (d) {
 };
 ACT["c-pin-use"] = function () {
   var m = S.modal, a = m && getPath(S, m.k); if (!a || !m.street || !m.area) return;
-  a.street = m.street; a.area = m.area; a.ll = [+m.lat.toFixed(6), +m.lng.toFixed(6)]; a.areaOpen = false; a.areaManual = true;
+  a.street = m.street; a.pinStreet = m.street.replace(/\s+\d+\w*$/, ""); a.area = m.area; a.ll = [+m.lat.toFixed(6), +m.lng.toFixed(6)]; a.areaOpen = false; a.areaManual = true;
   S.modal = null; render();
 };
 var pinTimer = null;

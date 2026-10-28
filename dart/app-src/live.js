@@ -140,6 +140,17 @@ function liveAuth(mode, email, pw) {
     return liveSession().then(function () { return r.data.user; });
   });
 }
+// One account, one device: logging in records this device on the account and ends the
+// account's sessions everywhere else; a device that sees another device recorded signs itself out.
+function liveDevice() {
+  var k = "dart-device-" + liveRole();
+  try { var v = localStorage.getItem(k); if (!v) { v = rid(12); localStorage.setItem(k, v); } return v; } catch (e) { return "no-storage"; }
+}
+function claimDevice(col, id) {
+  S.live.claimAt = Date.now();
+  return Store.update(col, id, { activeDevice: liveDevice() }).catch(function () {})
+    .then(function () { return SB.auth.signOut({ scope: "others" }).catch(function () {}); });
+}
 function liveSignOut() { return SB.auth.signOut().then(function () { S.live.uid = null; S.live.admin = false; }); }
 
 if (LIVE) {
@@ -150,8 +161,8 @@ if (LIVE) {
     if (a.mode === "register" && !clip(a.name, 60)) return toast("Enter your name.");
     run(liveAuth(a.mode, email, a.pw).then(function (u) {
       a.pw = "";
-      if (a.mode === "register") return Store.set("accounts", u.id, newAccountDoc({ name: clip(a.name, 60), email: email, phone: clip(a.phone, 30), provider: "email", type: "individual" })).then(function () { S.c.view = "home"; toast("Welcome to DART"); });
-      S.c.view = "home"; toast("Welcome back");
+      if (a.mode === "register") return Store.set("accounts", u.id, Object.assign(newAccountDoc({ name: clip(a.name, 60), email: email, phone: clip(a.phone, 30), provider: "email", type: "individual" }), { activeDevice: liveDevice() })).then(function () { S.c.view = "home"; toast("Welcome to DART"); });
+      S.c.view = "home"; toast("Welcome back"); return claimDevice("accounts", u.id);
     }));
   };
   createAccount = function (o) {
@@ -192,7 +203,7 @@ if (LIVE) {
   FORMS["d-login"] = function () {
     var e = slugEmail(S.d.login.email);
     if (!emailOk(e)) return toast("Enter a valid email.");
-    run(liveAuth("login", e, S.d.login.pw).then(function () { S.d.login.pw = ""; S.d.view = "home"; }));
+    run(liveAuth("login", e, S.d.login.pw).then(function (u) { S.d.login.pw = ""; S.d.view = "home"; return claimDevice("couriers", u.id); }));
   };
   FORMS["d-reg-1"] = function () {
     var r = S.d.reg; if (!emailOk(slugEmail(r.email))) return toast("Enter a valid email.");
@@ -206,11 +217,20 @@ if (LIVE) {
     run(liveAuth("register", slugEmail(r.email), r.pw).then(function (u) {
       var flags = {}; Object.keys(r.docs).forEach(function (k) { flags[k] = true; });
       var courier = { name: clip(r.name, 60), email: slugEmail(r.email), phone: clip(r.phone, 30), address: clip(r.address, 140), vehicle: cleanVehicle(r.vehicle), vehicleStatus: "approved", docs: flags,
-        payout: { iban: clip(r.iban, 40).toUpperCase(), holder: clip(r.holder || r.name, 60) }, status: "pending", online: false, createdAt: Date.now() };
+        payout: { iban: clip(r.iban, 40).toUpperCase(), holder: clip(r.holder || r.name, 60) }, status: "pending", online: false, createdAt: Date.now(), activeDevice: liveDevice() };
       return Store.set("couriers", u.id, courier).then(function () { return Store.set("courierDocs", u.id, r.docs); }).then(function () { S.me.courierId = u.id; S.d.reg = null; S.d.mode = "login"; S.d.view = "home"; });
     }), "Application sent");
   };
   var dLogout = ACT["d-logout"]; ACT["d-logout"] = function (d) { dLogout(d); liveSignOut().then(render); };
+  // Signed in somewhere else since: sign out here and say why.
+  AFTER.push(function () {
+    if (S.live.kicked || !S.live.uid || Date.now() - (S.live.claimAt || 0) < 15000) return;
+    var r = liveRole(), doc = r === "customer" ? byId(S.accounts, S.live.uid) : r === "courier" ? byId(S.couriers, S.live.uid) : null;
+    if (!doc || !doc.activeDevice || doc.activeDevice === liveDevice()) return;
+    S.live.kicked = true;
+    var out = r === "customer" ? ACT["c-logout"] : ACT["d-logout"];
+    setTimeout(function () { out({}); setTimeout(function () { S.live.kicked = false; toast("You logged in on another device, so you've been logged out here."); }, 600); }, 0);
+  });
 
   // Referral rewards and credit are given by the server.
   rewardReferral = function (oid) { return SB.rpc("reward_referral", { p_order: oid }).then(function () { }); };

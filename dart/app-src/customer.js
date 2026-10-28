@@ -213,6 +213,7 @@ function cNew(acc) {
   var title = acc ? "New delivery" : "Send something";
   var h = (web ? '<h1 class="w-title">' + (acc ? "New delivery" : "Send something across Rome") + "</h1>" + (acc ? "" : '<p class="muted">Get a price now. Booking needs a free DART account, and you can create one at the last step.</p>') : '<div class="app-head">' + back + "<h2>" + title + "</h2>" + (acc ? "" : '<button class="btn ghost sm" data-act="c-auth-open" data-v="login">Log in</button>') + "</div>") + '<div class="pad">';
   if (st.open === false) return h + '<div class="banner bad">DART is closed right now. Bookings open again soon.</div></div>';
+  if (draftStarted(d)) h += '<div class="restart"><span class="muted sm">' + (d.step > 1 ? "Tap a step to go back and change it." : "Your details are kept until you book.") + '</span><button type="button" class="link" data-act="c-new-reset">Start again</button></div>';
   h += '<ol class="stepper">' + steps.map(function (s, i) { return '<li class="' + (d.step === i + 1 ? "on" : d.step > i + 1 ? "done" : "") + '"><button data-act="c-step" data-v="' + (i + 1) + '"' + (i + 1 > d.step ? " disabled" : "") + ">" + (i + 1) + ". " + s + "</button></li>"; }).join("") + "</ol>";
   var main = d.step === 1 ? newWhere(acc) : d.step === 2 ? newWhat(acc) : newReview(acc);
   if (web) return h + '<div class="w-cols wide-left"><div class="stack">' + main + '</div><aside class="stack sticky">' + newSummary(acc) + "</aside></div></div>";
@@ -289,7 +290,9 @@ function newReview(acc) {
   if (d.billing === "subscription" && !x.sub) d.billing = "card";
   if (d.billing === "invoice" && !biz) d.billing = "card";
   var h = '<div class="card">' + '<div class="map map-sm">' + mapSVG({ labels: false, routes: [{ from: d.pickup.area, to: d.dropoff.area, fromLL: d.pickup.ll, toLL: d.dropoff.ll }] }) + "</div>" +
-    legs({ pickup: d.pickup, dropoff: d.dropoff }) + "<span>" + esc(x.cls.label) + (d.item.desc ? " · " + esc(d.item.desc) : "") + "</span>" + (d.item.photos.length ? '<div class="phs">' + photoStrip(d.item.photos) + "</div>" : "") +
+    '<div class="edit-row"><b>Addresses</b><button type="button" class="link" data-act="c-step" data-v="1">Edit</button></div>' +
+    legs({ pickup: d.pickup, dropoff: d.dropoff }) +
+    '<div class="edit-row"><span>' + esc(x.cls.label) + (d.item.desc ? " · " + esc(d.item.desc) : "") + '</span><button type="button" class="link" data-act="c-step" data-v="2">Edit</button></div>' + (d.item.photos.length ? '<div class="phs">' + photoStrip(d.item.photos) + "</div>" : "") +
     '<div class="row between when-row"><span>Arrives</span><b>' + (d.when && d.when.mode === "set" && +d.when.by ? byLabel(+d.when.by) : "As soon as possible · by about " + hhmm(deliverByOf(d, x.q.mins))) + '</b><button type="button" class="link" data-act="c-step" data-v="1">Change</button></div></div>';
   h += clsCard(x.cls);
   h += '<div class="card"><b>Price</b>' + breakdown(x.q, d.billing === "subscription" ? x.sub : null) + '<small class="hint">Prices are set by distance with a minimum fee of ' + eur(pricing().minFee) + ", plus size, weight, vehicle and extra services.</small></div>";
@@ -340,9 +343,11 @@ ACT["c-go"] = function (d) {
   if (v === "notes") { S.c.view = "notes"; render(); S.me.seen.customer = Date.now(); saveMe(); return; }
   S.c.view = v; render();
 };
+function draftStarted(d) { return !!(clip(d.pickup.street, 80) || clip(d.dropoff.street, 80) || d.item.desc || d.item.photos.length || d.step > 1); }
+ACT["c-new-reset"] = function () { S.c.draft = newDraft(); render(); var b = document.querySelector(".app-body"); if (b) b.scrollTop = 0; toast("Cleared. Start with where it's coming from."); };
 ACT["c-step"] = function (d) {
   var dr = S.c.draft, to = +d.v;
-  if (to >= 2 && !(dr.pickup.area && dr.dropoff.area && clip(dr.pickup.street, 80) && clip(dr.dropoff.street, 80))) { dr.step = 1; render(); return toast(!clip(dr.pickup.street, 80) || !clip(dr.dropoff.street, 80) ? "Add both addresses." : "Choose the area for each address."); }
+  if (to >= 2) { var bad = addrProblem(dr.pickup) ? ["Pickup", addrProblem(dr.pickup)] : addrProblem(dr.dropoff) ? ["Delivery", addrProblem(dr.dropoff)] : null; if (bad) { dr.step = 1; render(); return toast(tr(bad[0] + " address:") + " " + tr(bad[1])); } }
   if (to >= 3) { var cls = classify(dr.item); if (!cls.ok) { dr.step = 2; render(); return toast(cls.msg); } }
   dr.step = to; render(); var b = document.querySelector(".app-body"); if (b) b.scrollTop = 0; window.scrollTo(0, 0);
 };
@@ -358,25 +363,27 @@ function addressField(base, a, label) {
     : typed.length > 4 || a.areaOpen ? '<div class="addr-ask"><span>' + (guess.length > 1 ? "This postcode covers more than one area. Which is it?" : a.areaOpen ? "Which area of Rome is it in?" : "We couldn't place this street. Which area of Rome is it in?") + "</span>" +
       (guess.length > 1 ? '<div class="chips">' + guess.map(function (g) { return '<button type="button" class="chipbtn" data-act="c-area-set" data-k="' + base + '" data-v="' + esc(g) + '">' + esc(g) + "</button>"; }).join("") + "</div>" : "") +
       sel(base + ".area", a.area || "", [["", "Choose area"]].concat(AREA_NAMES), 'data-onchange="c-area-chosen" data-k="' + base + '"') + "</div>" : "";
-  return '<div class="field addr"><span>' + (label || "Address") + '</span><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"' + (gmapWanted() ? ' style="padding-right:46px"' : "") + '>' +
-    (gmapWanted() ? '<button type="button" class="pin-in' + (a.ll ? " on" : "") + '" data-act="c-pin-open" data-k="' + base + '" aria-label="' + (a.ll ? "Pinned on the map. Change the pin" : "Put a pin on the map") + '" title="Pin on the map"><i aria-hidden="true"></i></button>' : "") + '<ul class="addr-sug" hidden></ul></div>' + areaLine;
+  return '<div class="field addr"><span>' + (label || "Address") + '</span><div class="addr-in"><input class="input" data-bind="' + base + '.street" data-addr="' + base + '" value="' + esc(a.street || "") + '" placeholder="Start typing, e.g. Via Cola di Rienzo 212" autocomplete="off" aria-autocomplete="list"' + (gmapWanted() ? ' style="padding-right:46px"' : "") + '>' +
+    (gmapWanted() ? '<button type="button" class="pin-in' + (a.ll ? " on" : "") + '" data-act="c-pin-open" data-k="' + base + '" aria-label="' + (a.ll ? "Pinned on the map. Change the pin" : "Put a pin on the map") + '" title="Pin on the map"><i aria-hidden="true"></i></button>' : "") + '</div><ul class="addr-sug" hidden></ul></div>' + areaLine;
 }
 ACT["c-area-open"] = function (d) { var a = getPath(S, d.k); if (a) { a.areaOpen = true; render(); } };
 ACT["c-area-set"] = function (d) { var a = getPath(S, d.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
 ACT["c-area-chosen"] = function (d, el) { var a = getPath(S, el.dataset.k); if (a) { a.area = d.v; a.areaOpen = false; a.areaManual = true; render(); } };
 ACT["c-addr-pick"] = function (d) {
   var a = getPath(S, d.k); if (!a) return;
-  var no = houseNumber(a.street); a.street = d.v + (no ? " " + no : " "); a.area = d.a; a.areaOpen = false; a.areaManual = false; render();
+  var no = houseNumber(a.street); a.street = d.v + (no ? " " + no : " "); a.area = d.a; a.areaOpen = false; a.areaManual = false; a.ll = null;
+  var box = document.querySelector('[data-addr="' + d.k + '"]'); if (box) { box.value = a.street; box.blur(); }
+  render();
   // Back into the box so they can add the house number.
   setTimeout(function () { var el = document.querySelector('[data-addr="' + d.k + '"]'); if (el) { el.focus(); var n = el.value.length; el.setSelectionRange(n, n); } }, 0);
 };
 // Live suggestions and area guessing while typing, without redrawing the page.
 AFTER.push(function (root) {
   root.querySelectorAll("[data-addr]").forEach(function (el) {
-    var list = el.parentNode.querySelector(".addr-sug"), base = el.dataset.addr;
+    var list = el.closest(".field").querySelector(".addr-sug"), base = el.dataset.addr;
     var show = function () {
       var m = el.value.trim().length >= 3 ? streetMatches(el.value, 6) : [], a = getPath(S, base);
-      if (a && a.ll && el.value !== a.street) { a.ll = null; a.areaManual = false; }
+      if (a && a.ll && el.value !== a.street && fold(el.value).indexOf(fold(a.pinStreet || a.street)) !== 0) { a.ll = null; a.areaManual = false; }
       if (a && !a.areaManual) { var g = findArea(el.value); var was = a.area; a.area = g.length === 1 ? g[0] : ""; if (was !== a.area) render(); }
       if (!m.length || (m.length === 1 && fold(el.value).indexOf(m[0].key) === 0)) { list.hidden = true; list.innerHTML = ""; return; }
       list.innerHTML = m.map(function (s) { return '<li><button type="button" data-act="c-addr-pick" data-k="' + esc(base) + '" data-v="' + esc(s.street) + '" data-a="' + esc(s.area) + '"><b>' + esc(s.street) + "</b><span>" + esc(s.area) + "</span></button></li>"; }).join("");
@@ -384,6 +391,9 @@ AFTER.push(function (root) {
     };
     el.addEventListener("input", show);
     el.addEventListener("focus", show);
+    // Tapping a suggestion must not take focus from the box first, or the list is gone before the tap lands.
+    list.addEventListener("pointerdown", function (e) { e.preventDefault(); });
+    list.addEventListener("mousedown", function (e) { e.preventDefault(); });
     // Leaving the box redraws, so an unknown street shows the area question straight away.
     // If focus moves to another text field, wait for that one, so the redraw doesn't replace it mid-tap.
     el.addEventListener("blur", function (e) {
@@ -392,7 +402,7 @@ AFTER.push(function (root) {
     });
   });
 });
-ACT["c-use-addr"] = function (d) { var acc = me(), a = byId(acc.addresses || [], d.v); if (a) { S.c.draft[d.k] = { area: a.area, street: a.street, notes: a.notes || "" }; render(); } };
+ACT["c-use-addr"] = function (d) { var acc = me(), a = byId(acc.addresses || [], d.v); if (a) { S.c.draft[d.k] = { area: a.area, street: a.street, notes: a.notes || "", ll: a.ll || null, pinStreet: a.pinStreet || null }; render(); } };
 FILES["item"] = function (file) {
   shrinkImage(file, 520, 36000).then(function (src) { S.c.draft.item.photos.push(src); S.c.draft.item._blobs = (S.c.draft.item._blobs || []).concat([file]); render(); }, function () { toast("That photo couldn't be read. Try another one."); });
 };
@@ -422,6 +432,7 @@ ACT["c-book"] = function () {
   var acc = me(), d = S.c.draft, x = draftQuote(acc);
   if (!x || busy || settings().open === false) return;
   if (!acc) return ACT["c-book-auth"]({ v: "register" });
+  if (addrProblem(d.pickup) || addrProblem(d.dropoff)) { d.step = 1; render(); return toast(addrProblem(d.pickup) || addrProblem(d.dropoff)); }
 
   var now = Date.now(), id = "DRT-" + rid(3) + "-" + rid(3), method = d.billing;
   var k = checkout(acc, d, x), amount = k.charge;
@@ -637,11 +648,11 @@ FORMS["c-profile"] = function () {
 function cAddresses(acc) {
   var a = S.c.newAddr, list = acc.addresses || [];
   return head("Saved addresses", "account") + '<div class="pad">' + (list.length ? '<div class="list">' + list.map(function (x) { return '<div class="item"><b>' + esc(x.label || "Address") + '</b><button class="btn ghost sm" data-act="c-addr-del" data-v="' + esc(x.id) + '">Remove</button><small>' + esc(x.street) + ", " + esc(x.area) + "</small><small></small></div>"; }).join("") + "</div>" : '<p class="muted">Save places you use often, like home or the office.</p>') +
-    '<form class="card" data-form="c-addr"><b>Add an address</b>' + field("Name", inp("c.newAddr.label", a.label, 'placeholder="Home, Office, Mum\'s"')) + '<div class="grid2">' + addressField("c.newAddr", a) + "</div>" + field("Instructions", inp("c.newAddr.notes", a.notes, 'placeholder="Buzzer, floor"')) + '<button class="btn">Save address</button></form></div>';
+    '<form class="card" data-form="c-addr"><b>Add an address</b>' + field("Name", inp("c.newAddr.label", a.label, 'placeholder="Home, Office, Mum\'s"')) + addressField("c.newAddr", a) + field("Instructions", inp("c.newAddr.notes", a.notes, 'placeholder="Buzzer, floor"')) + '<button class="btn">Save address</button></form></div>';
 }
 FORMS["c-addr"] = function () {
-  var a = S.c.newAddr, acc = me(); if (!clip(a.street, 80)) return toast("Add the address."); if (!a.area) return toast("Choose which area of Rome it's in.");
-  var list = (acc.addresses || []).concat([{ id: rid(6), label: clip(a.label, 30), area: a.area, street: clip(a.street, 80), notes: clip(a.notes, 120) }]);
+  var a = S.c.newAddr, acc = me(); if (addrProblem(a)) return toast(addrProblem(a));
+  var list = (acc.addresses || []).concat([{ id: rid(6), label: clip(a.label, 30), area: a.area, street: clip(a.street, 80), notes: clip(a.notes, 120), ll: a.ll || null, pinStreet: a.pinStreet || null }]);
   S.c.newAddr = { label: "", area: "", street: "", notes: "" };
   run(Store.update("accounts", acc.id, { addresses: list }), "Address saved");
 };

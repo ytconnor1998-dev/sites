@@ -57,7 +57,7 @@ ACT["w-hq-book"] = function () {
   var hq = S.c.hq, dr = newDraft(), t = TYPICAL[hq.type];
   dr.pickup.area = hq.from; dr.dropoff.area = hq.to; dr.item.type = t.item.type;
   // The app's home screen collects full addresses; carry them over.
-  ["pickup", "dropoff"].forEach(function (k) { var a = hq[k]; if (a && a.street) { dr[k].street = a.street; dr[k].area = a.area; dr[k].ll = a.ll || null; dr[k].areaManual = a.areaManual; } });
+  ["pickup", "dropoff"].forEach(function (k) { var a = hq[k]; if (a && a.street) { dr[k].street = a.street; dr[k].area = a.area; dr[k].ll = a.ll || null; dr[k].pinStreet = a.pinStreet; dr[k].areaManual = a.areaManual; } });
   S.c.draft = dr; S.c.view = "new"; S.c.navOpen = false; render(); window.scrollTo(0, 0);
   if (!(dr.pickup.street && dr.dropoff.street)) toast(dr.pickup.area && dr.dropoff.area ? "Add the street addresses to continue." : "Start with where it's going.");
 };
@@ -118,7 +118,7 @@ function costLine(what, from, to, price, extra) { return '<li><span class="ws-c-
 // ---------- Home ----------
 function siteHome(acc) {
   var P = pricing(), plans = S.plans.filter(function (p) { return p.active !== false; }).sort(function (a, b) { return a.price - b.price; });
-  var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><p class="ws-kicker">Delivered within ' + hoursText() + ' inside Rome\'s GRA</p><h1>Get it across Rome.</h1>' + heroQuote() +
+  var h = '<section class="ws-hero">' + heroRoute() + '<div class="ws-wrap"><h1>Get it across Rome.</h1>' + heroQuote() +
     '<p class="ws-hero-facts"><span>Minimum</span> <b>' + eur(P.minFee) + '</b><span>, then</span> <b>' + eur(P.perKm) + '</b> <span>a kilometre. VAT included. Book with a free DART account.</span></p></div></section>';
   h += '<div class="ws-wrap ws-read">';
   h += sec("Why DART exists", '<p class="ws-intro">Sometimes you need to get something across Rome, but you don\'t have a car, the time, or an easy way to do it.</p>' +

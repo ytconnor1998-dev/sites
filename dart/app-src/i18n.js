@@ -3,6 +3,8 @@
 // Exact strings live in IT, strings with numbers or names in IT_PATTERNS.
 function lang() {
   if (S.me.lang === "it" || S.me.lang === "en") return S.me.lang;
+  // Most couriers are Italian: the courier app starts in Italian until they choose English.
+  if (typeof route === "function" && route() === "courier") return "it";
   return /^it\b/i.test((navigator.language || "") + "") ? "it" : "en";
 }
 function locale() { return lang() === "it" ? "it-IT" : "en-GB"; }

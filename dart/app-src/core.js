@@ -189,6 +189,9 @@ var STREET_LIST = []; Object.keys(STREETS).forEach(function (a) { STREETS[a].for
 var ALIAS_LIST = Object.keys(AREA_ALIASES).map(function (n) { return { name: n, area: AREA_ALIASES[n], key: fold(n) }; });
 // Suggestions while typing: streets whose name contains every word typed (house numbers ignored).
 function streetMatches(text, max) {
+  // A postcode on its own lists the streets in its area(s), to pick from.
+  var cap = (String(text || "").match(/\b(00\d{3})\b/) || [])[1], rest = fold(text).replace(/\b00\d{3}\b|,/g, " ").trim();
+  if (cap && CAPS[cap] && !/[a-z]{3}/.test(rest)) return STREET_LIST.filter(function (s) { return CAPS[cap].indexOf(s.area) >= 0; }).slice(0, max || 6);
   var words = fold(text).replace(/\b\d+[a-z]?\b|,|\b00\d{3}\b/g, " ").split(" ").filter(function (w) { return w.length > 1 && ["via", "viale", "piazza", "largo", "vicolo", "corso", "lungotevere", "piazzale", "circonvallazione"].indexOf(w) < 0; });
   if (!words.length) return [];
   return STREET_LIST.filter(function (s) { return words.every(function (w) { return s.key.indexOf(w) >= 0; }); })
@@ -204,7 +207,18 @@ function findArea(text) {
   var named = ALIAS_LIST.concat(AREA_NAMES.map(function (n) { return { area: n, key: fold(n) }; })).filter(function (a) { return (" " + t + " ").indexOf(" " + a.key + " ") >= 0 || t.indexOf(a.key + ",") >= 0; }).sort(function (a, b) { return b.key.length - a.key.length; })[0];
   return named ? [named.area] : [];
 }
-function houseNumber(text) { var m = String(text || "").match(/(?:^|[\s,])(\d+[a-zA-Z]?(?:\/[a-zA-Z0-9]+)?)\s*(?:,|$)/); return m ? m[1] : ""; }
+// A bookable address: a street DART knows (or a pin dropped on the map), plus a house number.
+// Returns "" when fine, else what's missing.
+function addrProblem(a) {
+  var t = clip(a && a.street, 80); if (!t) return "Add the street and house number.";
+  var known = a.ll || STREET_LIST.some(function (s) { var f = fold(t); return f.indexOf(s.key) === 0 || f.indexOf(s.key + " ") >= 0; });
+  if (!known) return "Pick the street from the suggestions, or put a pin on the map.";
+  if (!houseNumber(t)) return "Add the house number.";
+  if (!a.area) return "Choose the area for each address.";
+  return "";
+}
+// The house number in a typed address; a Rome postcode (00xxx) is never taken for one.
+function houseNumber(text) { var t = String(text || "").replace(/\b00\d{3}\b/g, " ").replace(/\s+,/g, ",").replace(/[\s,]+$/, ""); var m = t.match(/(?:^|[\s,])(\d+[a-zA-Z]?(?:\/[a-zA-Z0-9]+)?)\s*(?:,|$)/); return m ? m[1] : ""; }
 
 // ---------- Delivery times ----------
 // ASAP promises the trip time plus a buffer; a set time must be at least that far ahead.
@@ -576,8 +590,13 @@ function drawnMap(opt) {
   });
   return s + "</svg>";
 }
-// Simulated courier position from the order's timestamps (the test build has no GPS).
 function courierPos(o) {
+  // The courier's real position when their phone sent one in the last 3 minutes, else an estimate from the timeline.
+  var p = courierPosEst(o), at = o.courierAt;
+  if (at && Date.now() - at.at < 180000 && isFinite(at.lat) && p.t != null) p.live = [at.lat, at.lng];
+  return p;
+}
+function courierPosEst(o) {
   var now = Date.now(), t = o.timeline || {}, legMin = Math.max(5, (o.price && o.price.mins || 20) - 10);
   if (o.status === "assigned") return { t: 0, approach: 0 };
   if (o.status === "to_pickup") return { t: 0, approach: Math.min(.95, (now - (t.to_pickup || now)) / 300000) };

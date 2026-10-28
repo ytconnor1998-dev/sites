@@ -375,6 +375,11 @@ function gpsStart() {
       GPS.savedAt = Date.now();
       Store.update("couriers", c.id, { area: n.area, pos: { lat: +GPS.fix.lat.toFixed(5), lng: +GPS.fix.lng.toFixed(5), at: GPS.fix.at }, updatedAt: Date.now() }).catch(function () {});
     }
+    // Live tracking: active deliveries carry the courier's position for the customer's map.
+    if (Date.now() - (GPS.jobAt || 0) > 20000) {
+      GPS.jobAt = Date.now();
+      jobsOf(c.id).forEach(function (o) { if (["assigned", "to_pickup", "at_pickup", "collected", "in_transit", "at_dest"].indexOf(o.status) >= 0) Store.update("orders", o.id, { courierAt: { lat: +GPS.fix.lat.toFixed(5), lng: +GPS.fix.lng.toFixed(5), at: GPS.fix.at } }).catch(function () {}); });
+    }
     if (moved) render();
   }, function (e) { GPS.err = e && e.code === 1 ? "denied" : "unavailable"; render(); }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 });
 }
@@ -456,14 +461,20 @@ FORMS["d-deliver"] = function () {
   if (!clip(p.receiver, 60)) return toast("Add who received it.");
   if (!p.photo) return toast("Take a photo of the delivered item.");
   if (o.item.options && o.item.options.signature && !p.sig) return toast("Ask the person receiving it to sign.");
+  var proof = { receiver: clip(p.receiver, 60), at: Date.now(), photo: p.photo, codeOk: !!o.code }; if (p.sig) proof.sig = p.sig;
+  run(finishDelivery(o, proof).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
+};
+
+// Marks a delivery delivered: lateness, invoice and any referral reward. Used by the courier and by DART admin.
+function finishDelivery(o, proof) {
   var now = Date.now(), acc = byId(S.accounts, o.customer.id) || { id: o.customer.id, name: o.customer.name, email: "" };
-  var proof = { receiver: clip(p.receiver, 60), at: now, photo: p.photo, codeOk: !!o.code }; if (p.sig) proof.sig = p.sig;
   var late = o.deliverBy && now > o.deliverBy ? { mins: Math.round((now - o.deliverBy) / 60000), penalty: 0 } : null;
   var done = Object.assign({}, o, { timeline: Object.assign({}, o.timeline, { delivered: now }) });
   var invStatus = o.billing && o.billing.status === "to_invoice" ? "outstanding" : "paid";
   var invId = "I-" + rid(8), inv = deliveryInvoice(done, acc, invStatus);
-  run(Store.update("orders", o.id, { status: "delivered", proof: proof, late: late, timeline: { delivered: now }, invoiceId: invId }).then(function () { return Store.set("invoices", invId, inv); }).then(function () { return rewardReferral(o.id); }).then(function () { S.d.proof = { photo: null, receiver: "", code: "", sig: null }; }), "Delivered. Nice work.");
-};
+  return Store.update("orders", o.id, { status: "delivered", proof: proof, late: late, timeline: { delivered: now }, invoiceId: invId })
+    .then(function () { return Store.set("invoices", invId, inv); }).then(function () { return rewardReferral(o.id); });
+}
 
 // ---------- Messages, history, earnings ----------
 function dMessages() {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Linking, PermissionsAndroid, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
@@ -28,9 +28,13 @@ export default function App() {
     return () => sub.remove();
   }, [failed]);
 
-  // Ask for location once: couriers need it for nearby jobs and arrival checks, customers to open the map where they are.
+  // Ask once, one after the other: location (nearby jobs, arrival checks, the map opening where you are),
+  // then the camera, so photo buttons can open it (pickup and drop-off photos, item photos, documents).
   useEffect(() => {
-    Location.requestForegroundPermissionsAsync().catch(() => {});
+    (async () => {
+      try { await Location.requestForegroundPermissionsAsync(); } catch (e) {}
+      if (Platform.OS === 'android') { try { await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA); } catch (e) {} }
+    })();
   }, []);
 
   const onMessage = (e) => { if (e.nativeEvent.data === 'back:exit') BackHandler.exitApp(); };

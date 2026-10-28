@@ -107,6 +107,29 @@ ACT["a-clear-yes"] = function () {
   run(ids.reduce(function (p, id) { return p.then(function () { return Store.del("orders", id); }); }, Promise.resolve()), ids.length + " deliveries removed");
 };
 ACT["a-order"] = function (d) { S.modal = { kind: "a-order", id: d.v, chat: false }; closeChat(); render(); };
+// When a courier is stuck (camera won't open, no signal, customer can't find the code), DART moves the job on.
+// Every override is recorded on the delivery with the reason.
+function helpCourierCard(o, m) {
+  var next = NEXT[o.status], h = '<div class="card"><b>Help the courier</b><span class="muted sm">Use this when the courier can\'t finish a step in the app. The reason is saved on the delivery.</span>' +
+    field("Reason", inp("modal.helpReason", m.helpReason || "", 'placeholder="e.g. Camera not working, confirmed by phone"'));
+  h += '<div class="row wrap">' + (next ? '<button class="btn ghost sm" data-act="a-help-next" data-v="' + esc(o.id) + '">Mark: ' + esc(STATUS[next[0]]) + "</button>" : "") +
+    '<button class="btn sm" data-act="a-help-done" data-v="' + esc(o.id) + '">Mark delivered</button></div>';
+  if ((o.overrides || []).length) h += '<span class="muted sm">Earlier: ' + o.overrides.map(function (x) { return esc(STATUS[x.to] || x.to) + " (" + esc(x.reason) + ", " + hhmm(x.at) + ")"; }).join(" · ") + "</span>";
+  return h + "</div>";
+}
+function helpReason() { var r = clip(S.modal && S.modal.helpReason, 140); if (!r) toast("Add the reason first."); return r; }
+ACT["a-help-next"] = function (d) {
+  var o = byId(S.orders, d.v), next = o && NEXT[o.status], r = helpReason(); if (!next || !r) return;
+  var patch = { status: next[0], timeline: {}, overrides: (o.overrides || []).concat([{ at: Date.now(), from: o.status, to: next[0], reason: r, by: "admin" }]) }; patch.timeline[next[0]] = Date.now();
+  if (o.status === "at_pickup" && !o.pickupProof) patch.pickupProof = { photo: null, at: Date.now(), override: r };
+  S.modal.helpReason = ""; run(Store.update("orders", o.id, patch), "Moved on: " + STATUS[next[0]]);
+};
+ACT["a-help-done"] = function (d) {
+  var o = byId(S.orders, d.v), r = helpReason(); if (!o || !r) return;
+  var proof = { receiver: "Confirmed by DART", at: Date.now(), photo: null, codeOk: false, override: r };
+  S.modal.helpReason = "";
+  run(Store.update("orders", o.id, { overrides: (o.overrides || []).concat([{ at: Date.now(), from: o.status, to: "delivered", reason: r, by: "admin" }]) }).then(function () { return finishDelivery(byId(S.orders, o.id) || o, proof); }), "Marked delivered");
+};
 function aOrderModal(m) {
   var o = byId(S.orders, m.id); if (!o) return modalShell("Delivery", emptyState("Delivery not found", ""));
   var acc = byId(S.accounts, o.customer.id), inv = o.invoiceId ? byId(S.invoices, o.invoiceId) : null;
@@ -129,6 +152,7 @@ function aOrderModal(m) {
   }
   h += '<div class="card"><b>Price and payment</b>' + breakdown(o.price, o.billing && o.billing.method === "subscription" ? o.billing : null) + '<span class="muted sm">' + esc(payLabel(o.billing)) + " · " + esc(o.billing ? o.billing.status : "") + "</span>" + (inv ? '<button class="btn ghost sm" data-act="c-inv" data-v="' + esc(inv.id) + '">Invoice ' + esc(inv.number) + "</button>" : "") + "</div>";
   if (o.issue && (o.issue.open || o.status === "issue")) h += '<div class="card warn"><b>Issue reported by ' + esc(o.issue.by) + "</b><span>" + esc(o.issue.reason) + ": " + esc(o.issue.text) + '</span><div class="row wrap"><button class="btn sm" data-act="a-resolve" data-v="' + esc(o.id) + '">Mark resolved</button></div></div>';
+  if (o.courier && ACTIVE.indexOf(o.status) >= 0 && o.status !== "awaiting") h += helpCourierCard(o, m);
   if (o.code && ACTIVE.indexOf(o.status) >= 0) h += '<div class="card"><b>Delivery code</b><span class="code-big">' + esc(o.code) + '</span><span class="muted sm">Give it to the courier only if the customer has confirmed by phone.</span></div>';
   if (o.pickupProof) h += '<div class="card"><b>Pickup photo</b>' + (safeImg(o.pickupProof.photo) ? '<img class="proof" src="' + safeImg(o.pickupProof.photo) + '" alt="Photo taken by the courier at pickup">' : "") + '<span class="muted sm">' + when(o.pickupProof.at) + "</span></div>";
   if (o.status === "delivered" && o.proof) h += '<div class="card"><b>Proof of delivery</b>' + (safeImg(o.proof.photo) ? '<img class="proof" src="' + safeImg(o.proof.photo) + '" alt="Delivery photo">' : "") + '<span class="muted sm">Received by ' + esc(o.proof.receiver) + (o.proof.codeOk ? " · code confirmed" : "") + "</span>" +
