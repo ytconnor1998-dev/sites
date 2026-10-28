@@ -2420,5 +2420,5 @@
   }
   // the world module needs LC.game before its first frame, so set a stub early
   LC.game = { setPulse: () => {}, setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {}, speedMult: () => 1, timeOfDay: () => 0.3 };
-  addEventListener('load', boot);
+  addEventListener('load', () => Promise.resolve(LC.worldReady).then(boot));
 })();

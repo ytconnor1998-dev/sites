@@ -9,6 +9,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import * as M from './models.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { tex } from './textures.js';
 
 const LC = globalThis.LC;
@@ -2292,6 +2293,18 @@ function init() {
   setupInput();
   requestAnimationFrame(frame);
 }
+
+// load any real models listed in assets/models/manifest.json before the world is built
+LC.worldReady = (async () => {
+  try {
+    const res = await fetch('assets/models/manifest.json');
+    if (!res.ok) return;
+    const manifest = await res.json(), loader = new GLTFLoader();
+    await Promise.all(Object.entries(manifest).flatMap(([kind, files]) => files.map(async (f) => {
+      try { const g = await loader.loadAsync('assets/models/' + f); (M.lib[kind] = M.lib[kind] || []).push(g.scene); } catch (e) { console.warn('model failed', f, e.message); }
+    })));
+  } catch (e) { /* no models: everything is built in code */ }
+})();
 
 LC.world = {
   init,

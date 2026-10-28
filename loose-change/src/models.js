@@ -50,6 +50,25 @@ export const ball = (r, color, x, y, z, opts = {}) => part(new THREE.SphereGeome
 export const cone = (r, h, color, x, y, z, opts = {}) => part(new THREE.ConeGeometry(r, h, opts.seg || 8), color, x, y, z, opts);
 const group = (...kids) => { const g = new THREE.Group(); kids.forEach((k) => k && g.add(k)); return g; };
 
+// ---------- real 3D models (glTF), loaded at start from assets/models/manifest.json ----------
+// lib.tree, lib.bush, lib.rock, lib.car... each an array of loaded scenes. Anything not supplied
+// falls back to the shapes built in code below.
+export const lib = {};
+let libPick = 0;
+export function libModel(kind, height = null, index = null) {
+  const list = lib[kind];
+  if (!list || !list.length) return null;
+  const src = list[index != null ? index % list.length : (libPick++ * 7) % list.length];
+  const m = src.clone(true);
+  m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  if (height) {
+    const b = new THREE.Box3().setFromObject(m), h = b.max.y - b.min.y;
+    if (h > 0) m.scale.multiplyScalar(height / h);
+  }
+  const g = new THREE.Group(); g.add(m);
+  return g;
+}
+
 export const C = {
   sofa: 0x6aa84f, sofaDark: 0x4d8a2c, wood: 0x9b6a3f, woodDark: 0x6e4a2a, pig: 0xf7a8bd, pigDark: 0xe07d9a,
   gold: 0xf2b631, white: 0xf7f3ea, ink: 0x2d2118, skin: 0xf1c39b, skin2: 0xc68863, orange: 0xf08a24,
@@ -238,12 +257,13 @@ export function gnome() { return person({ shirt: 0x3a7bd5, legs: 0x5a3a22, hat: 
 // ---------- garden & street ----------
 // chunky, bright summer trees: a few overlapping blobs of leaves
 export function tree(h = 3) {
+  const real = libModel('tree', h * 1.3); if (real) { real.rotation.y = Math.random() * 6; return real; }
   const leaf = { seg: 8, mat: { flatShading: true } };
   return group(cyl(0.15, 0.24, h * 0.55, 0x7a5434, 0, h * 0.27, 0, { seg: 7 }),
     ball(h * 0.34, 0x4fae32, 0, h * 0.66, 0, leaf), ball(h * 0.24, 0x66c23e, h * 0.2, h * 0.86, 0.12, leaf),
     ball(h * 0.22, 0x5ab838, -h * 0.2, h * 0.78, -0.1, leaf), ball(h * 0.18, 0x7ad44a, 0.05, h * 0.98, -0.05, leaf));
 }
-export function bush() { return group(ball(0.5, 0x4fae32, 0, 0.35, 0, { seg: 7, scale: [1.3, 0.8, 1], mat: { flatShading: true } }), ball(0.35, 0x6ac840, 0.35, 0.45, 0.1, { seg: 7, mat: { flatShading: true } })); }
+export function bush() { const real = libModel('bush', 0.9); if (real) { real.rotation.y = Math.random() * 6; return real; } return group(ball(0.5, 0x4fae32, 0, 0.35, 0, { seg: 7, scale: [1.3, 0.8, 1], mat: { flatShading: true } }), ball(0.35, 0x6ac840, 0.35, 0.45, 0.1, { seg: 7, mat: { flatShading: true } })); }
 export function fence(len, color = 0xb08050) {
   const g = group(box(len, 0.1, 0.06, color, 0, 0.9, 0), box(len, 0.1, 0.06, color, 0, 0.4, 0));
   for (let x = -len / 2; x <= len / 2 + 0.01; x += 0.5) g.add(box(0.12, 1.2, 0.05, color, x, 0.6, 0.04));
@@ -269,6 +289,7 @@ export function coinPusher() {
   return g;
 }
 export function car(color = 0x3b6ea5) {
+  const real = libModel('car', 1.45); if (real) return real;
   const g = group(box(1.7, 0.6, 3.6, color, 0, 0.55, 0), box(1.5, 0.55, 1.8, color, 0, 1.12, -0.2), box(1.45, 0.45, 1.7, 0xbfe0f0, 0, 1.13, -0.2),
     ...[[-0.85, 1.1], [0.85, 1.1], [-0.85, -1.1], [0.85, -1.1]].map(([x, z]) => cyl(0.3, 0.3, 0.2, 0x222222, x, 0.3, z, { rot: [0, 0, Math.PI / 2] })));
   g.add(box(1.6, 0.06, 1.0, color, 0, 1.5, -1.9, { rot: [-0.9, 0, 0] }));
