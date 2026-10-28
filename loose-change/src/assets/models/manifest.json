@@ -1,0 +1,47 @@
+{
+ "tree": [
+  "nature/CommonTree_1.gltf",
+  "nature/CommonTree_2.gltf",
+  "nature/CommonTree_3.gltf",
+  "nature/CommonTree_4.gltf",
+  "nature/CommonTree_5.gltf"
+ ],
+ "bush": [
+  "nature/Bush_Common.gltf",
+  "nature/Bush_Common_Flowers.gltf"
+ ],
+ "rock": [
+  "nature/Rock_Medium_1.gltf",
+  "nature/Rock_Medium_2.gltf",
+  "nature/Rock_Medium_3.gltf"
+ ],
+ "pebble": [
+  "nature/Pebble_Round_1.gltf",
+  "nature/Pebble_Round_2.gltf",
+  "nature/Pebble_Round_3.gltf",
+  "nature/Pebble_Square_1.gltf",
+  "nature/Pebble_Square_2.gltf"
+ ],
+ "grass": [
+  "nature/Grass_Common_Short.gltf",
+  "nature/Grass_Common_Tall.gltf",
+  "nature/Grass_Wispy_Short.gltf",
+  "nature/Grass_Wispy_Tall.gltf"
+ ],
+ "flower": [
+  "nature/Flower_3_Group.gltf",
+  "nature/Flower_4_Group.gltf",
+  "nature/Clover_1.gltf",
+  "nature/Clover_2.gltf"
+ ],
+ "plant": [
+  "nature/Fern_1.gltf",
+  "nature/Plant_1.gltf",
+  "nature/Plant_7.gltf",
+  "nature/Plant_1_Big.gltf"
+ ],
+ "mushroom": [
+  "nature/Mushroom_Common.gltf",
+  "nature/Mushroom_Laetiporus.gltf"
+ ]
+}

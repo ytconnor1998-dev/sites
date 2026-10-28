@@ -292,8 +292,52 @@ function buildStall() {
   const bell = M.cone(0.08, 0.12, 0xf2b631, -0.85, 0.82, 0.2, { seg: 12 }); bell.visible = false; t.add(bell); stall.ups.bell = [bell];
 }
 const TAG_COLORS = { cheap: '#6aa84f', fair: '#f2b631', cheeky: '#d9534f' };
+// one mesh out of a loaded model, scaled to a height, ready for instancing
+function instSource(kind, i, height) {
+  const list = M.lib[kind]; if (!list || !list[i % list.length]) return null;
+  let found = null;
+  list[i % list.length].updateMatrixWorld(true);
+  list[i % list.length].traverse((o) => { if (o.isMesh && !found) found = o; });
+  if (!found) return null;
+  const geo = found.geometry.clone(); geo.applyMatrix4(found.matrixWorld);
+  geo.computeBoundingBox(); const h = geo.boundingBox.max.y - geo.boundingBox.min.y;
+  if (h > 0) geo.scale(height / h, height / h, height / h);
+  geo.computeBoundingBox(); geo.translate(0, -geo.boundingBox.min.y, 0);
+  return { geo, mat: found.material };
+}
+// scatter real models (grass clumps, flowers) as instanced meshes
+function scatterReal(kind, height, zones, count, spread = 0.35) {
+  const n = (M.lib[kind] || []).length; if (!n) return false;
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), p = new THREE.Vector3(), e = new THREE.Euler();
+  for (let i = 0; i < n; i++) {
+    const src = instSource(kind, i, height); if (!src) continue;
+    const per = Math.ceil(count / n), im = new THREE.InstancedMesh(src.geo, src.mat, per);
+    let k = 0;
+    for (let t = 0; t < per * 3 && k < per; t++) {
+      const z = zones[Math.floor(Math.random() * zones.length)], x = rand(z.x0, z.x1), zz = rand(z.z0, z.z1);
+      if (blocked(x, zz, 0.15) || Math.hypot(x + 2, zz + 14) < 2.4) continue;
+      e.set(0, rand(0, 6.3), 0); q.setFromEuler(e); const s2 = rand(1 - spread, 1 + spread); sc.set(s2, s2, s2); p.set(x, 0, zz);
+      m.compose(p, q, sc); im.setMatrixAt(k++, m);
+    }
+    im.count = k; im.receiveShadow = true; im.castShadow = false; im.userData.noAO = true;
+    scene.add(im);
+  }
+  return true;
+}
+
 // ---------- lush bits: thousands of grass tufts and flowers, drawn in one go ----------
 function buildFoliage() {
+  if (M.lib.grass) {
+    const zones = [{ x0: -11.5, x1: 11.5, z0: -25.5, z1: -6 }, { x0: 31, x1: 61, z0: 20, z1: 55 }, { x0: -70, x1: 70, z0: -40, z1: -27 }, { x0: 62, x1: 75, z0: 18, z1: 60 }];
+    scatterReal('grass', 0.38, zones, 3600);
+    scatterReal('flower', 0.28, zones, 700);
+    // ferns and plants along the garden fences and in the park
+    const edges = [{ x0: -11.6, x1: -10.2, z0: -25.5, z1: -6.5 }, { x0: 10.2, x1: 11.6, z0: -25.5, z1: -6.5 }, { x0: -11.5, x1: 11.5, z0: -25.6, z1: -24.4 }, { x0: 31, x1: 33, z0: 20, z1: 55 }, { x0: 59, x1: 61, z0: 20, z1: 55 }];
+    scatterReal('plant', 0.7, edges, 70, 0.3);
+    for (const [x, z] of [[35, 30], [55, 46], [47, 22], [38, 50]]) { const r = M.libModel('rock', rand(0.5, 0.9)); if (r) { r.rotation.y = rand(0, 6); add(r, x, 0, z); collide(x - 0.5, z - 0.5, x + 0.5, z + 0.5); } }
+    for (let i = 0; i < 10; i++) { const mu = M.libModel('mushroom', rand(0.15, 0.3)); if (mu) add(mu, rand(32, 60), 0, rand(21, 54)); }
+    return;
+  }
   const zones = [{ x0: -11.5, x1: 11.5, z0: -25.5, z1: -6, n: 2200 }, { x0: 31, x1: 61, z0: 20, z1: 55, n: 3000 }, { x0: -70, x1: 70, z0: -40, z1: -27, n: 1600 }, { x0: 62, x1: 75, z0: 18, z1: 60, n: 500 }];
   // a tuft = three thin blades leaning out
   const blade = (a) => { const g = new THREE.ConeGeometry(0.025, 0.24, 3); g.translate(0, 0.12, 0); g.rotateZ(0.35); g.rotateY(a); return g; };

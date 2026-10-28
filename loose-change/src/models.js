@@ -341,7 +341,7 @@ export function hole(soilMap) {
   // lumpy dirt rim
   const rim = new THREE.Group(); rim.name = 'ring';
   for (let i = 0; i < 22; i++) { const a = (i / 22) * Math.PI * 2; const r = HOLE_R + 0.05 + Math.random() * 0.15; const lump = ball(0.22 + Math.random() * 0.18, [0x9a6238, 0x8a5530, 0xa86c3e][i % 3], Math.cos(a) * r, 0.02, Math.sin(a) * r, { seg: 7, scale: [1.4, 0.45, 1], mat: { flatShading: true } }); rim.add(lump); }
-  for (let i = 0; i < 9; i++) { const a = Math.random() * Math.PI * 2, r = HOLE_R + 0.25 + Math.random() * 0.8; const rock = part(new THREE.DodecahedronGeometry(0.08 + Math.random() * 0.12, 0), [0xb8b0a4, 0xd8cfc0, 0xc8784a][i % 3], Math.cos(a) * r, 0.05, Math.sin(a) * r, { rot: [Math.random() * 3, Math.random() * 3, 0], mat: { flatShading: true } }); rim.add(rock); }
+  for (let i = 0; i < 9; i++) { const a = Math.random() * Math.PI * 2, r = HOLE_R + 0.25 + Math.random() * 0.8; const real = libModel('pebble', 0.06 + Math.random() * 0.08); if (real) { real.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); real.rotation.y = Math.random() * 6; rim.add(real); continue; } const rock = part(new THREE.DodecahedronGeometry(0.08 + Math.random() * 0.12, 0), [0xb8b0a4, 0xd8cfc0, 0xc8784a][i % 3], Math.cos(a) * r, 0.05, Math.sin(a) * r, { rot: [Math.random() * 3, Math.random() * 3, 0], mat: { flatShading: true } }); rim.add(rock); }
   g.add(rim);
   const pile = group(ball(0.75, 0x9a6238, 0, 0.1, 0, { seg: 9, scale: [1.2, 0.55, 1], mat: { flatShading: true } }), ball(0.5, 0xa86c3e, 0.45, 0.25, 0.25, { seg: 8, scale: [1, 0.6, 1], mat: { flatShading: true } }), ball(0.42, 0x8a5530, -0.4, 0.2, -0.3, { seg: 8, scale: [1, 0.6, 1], mat: { flatShading: true } }));
   pile.position.set(2.7, 0, 0.8); pile.name = 'pile';
