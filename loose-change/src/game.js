@@ -25,7 +25,7 @@
     return list.map((c) => c.toString(16)).join('-');
   }
   const ic = (emoji, cls = '') =>
-    `<img class="ic ${cls}" src="assets/icons/${emojiFile(emoji)}.svg" alt="${emoji}" draggable="false">`;
+    `<img class="ic ${cls}" src="${LC.icon(emojiFile(emoji))}" alt="${emoji}" draggable="false">`;
   LC.ic = ic;
 
   const SUFFIX = ['', 'k', 'm', 'bn', 'tn', 'qd', 'qn', 'sx', 'sp', 'oc', 'no', 'dc'];

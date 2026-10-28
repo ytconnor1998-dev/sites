@@ -1,6 +1,8 @@
 // Loose Change — game content. Everything you can buy, find, scratch or witness.
 // Plain script (no modules) so it runs from file:// in Electron and in a browser.
 const LC = (globalThis.LC = globalThis.LC || {});
+// icon images: the web build bundles them into one file (LC_ICONS); otherwise each is its own SVG
+LC.icon = (name) => (globalThis.LC_ICONS && globalThis.LC_ICONS[name]) || `assets/icons/${name}.svg`;
 
 LC.THING_COST = 1e12;
 LC.COST_GROWTH = 1.15;

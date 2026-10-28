@@ -740,7 +740,7 @@ export function iconSprite(emoji, size = 0.32) {
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
     const img = new Image();
     img.onload = () => { c.getContext('2d').drawImage(img, 4, 4, 120, 120); tex.needsUpdate = true; };
-    img.src = `assets/icons/${emojiFile(emoji)}.svg`;
+    img.src = LC.icon(emojiFile(emoji));
     iconTexCache[emoji] = tex;
   }
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: iconTexCache[emoji] }));

@@ -3,7 +3,7 @@
 Each model becomes a .glb.txt holding the same bytes as base64. The game's loader
 decodes these, so the manifest just points at the new names. Run: python3 tools/build-web.py
 """
-import base64, json, os, shutil, sys
+import base64, json, os, re, shutil, sys
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src, out = os.path.join(root, 'src'), os.path.join(root, 'dist', 'web')
@@ -25,6 +25,16 @@ m = json.load(open(mp))
 m = {k: [f + '.txt' if f.endswith('.glb') else f for f in v] for k, v in m.items()}
 json.dump(m, open(mp, 'w'), indent=1)
 files = sorted(os.path.relpath(os.path.join(d, f), out) for d, _, fs in os.walk(out) for f in fs)
+# bundle the icons into one script (hosts limit how many files a page can have)
+icons = os.path.join(out, 'assets', 'icons'); bundle = {}
+for f in sorted(os.listdir(icons)):
+    bundle[f[:-4]] = 'data:image/svg+xml;base64,' + base64.b64encode(open(os.path.join(icons, f), 'rb').read()).decode()
+open(os.path.join(out, 'icons.js'), 'w').write('globalThis.LC_ICONS = ' + json.dumps(bundle, separators=(',', ':')) + ';\n')
+shutil.rmtree(icons)
+idx = os.path.join(out, 'index.html'); html = open(idx, encoding='utf-8').read()
+html = re.sub(r'assets/icons/([0-9a-f-]+)\.svg', lambda m: bundle[m.group(1)], html)
+html = html.replace('<script src="data.js"></script>', '<script src="icons.js"></script>\n  <script src="data.js"></script>')
+open(idx, 'w', encoding='utf-8').write(html)
 # the page body for an artifact host (which adds its own <html>/<body> wrapper)
 import re
 html = open(os.path.join(out, 'index.html'), encoding='utf-8').read()

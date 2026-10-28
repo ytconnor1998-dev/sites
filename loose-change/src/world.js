@@ -1964,7 +1964,7 @@ function iconImg(emoji) {
   if (!iconImgs[emoji]) {
     const cps = [...emoji].map((c) => c.codePointAt(0));
     const list = cps.includes(0x200d) ? cps : cps.filter((c) => c !== 0xfe0f);
-    const img = new Image(); img.src = `assets/icons/${list.map((c) => c.toString(16)).join('-')}.svg`;
+    const img = new Image(); img.src = LC.icon(list.map((c) => c.toString(16)).join('-'));
     iconImgs[emoji] = img;
   }
   return iconImgs[emoji];
