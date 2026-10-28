@@ -1471,6 +1471,7 @@
     LC.world.guide(st.guide || null);
     st.start();
     taskKey = '';
+    renderTasks();
   }
   function tutorialEnd() {
     S.flags.tutorialDone = true; tut = null; LC.world.guide(null); taskKey = ''; S.mumAt = 'work';
@@ -1991,7 +1992,7 @@
     LC.audio.unlock(); LC.audio.music(S.settings.music);
     LC.world.lock();
     if (isNew || (!S.flags.tutorialDone && S.runs === 0)) {
-      LC.world.playScene(LC.INTRO_SCENE, () => { LC.world.endScene(); LC.world.debug.view(-2.2, 1.4, -1.2, -0.05); tutorialStart(); });
+      LC.world.playScene(LC.INTRO_SCENE, () => { LC.world.endScene(); LC.world.debug.view(-2.4, 0.9, -1.2, -0.02); tutorialStart(); });
     }
   }
   let shopOpen = null;
