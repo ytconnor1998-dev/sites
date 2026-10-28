@@ -470,6 +470,8 @@ LC.SECRETS = [
 
 // ---- What townsfolk say when you say hello. The first lines often hide a hint. ----
 LC.CHAT = {
+  jamal: ['"Kickflip attempt number 4,000. Watch this. ...Don\'t watch this."', '"Daz and that lot are by the benches again. Avoid. Or don\'t. Your funeral, bruv."', '"If you get The Thing can I sit on it? Even if it\'s a sofa? ESPECIALLY if it\'s a sofa."', '"My mum says I can\'t come round yours because of \'the hole\'. I respect her position."'],
+  priya: ['"Did you know the Romans had public toilets with no walls? Imagine. IMAGINE."', '"Daz is all talk. You just need a good comeback. He hates a good comeback."', '"I\'m cataloguing every pigeon in the park. There\'s one called Kevin. He\'s the boss."', '"Captain Pete says there\'s treasure on the beach. Pete also says he once punched a shark."'],
   jogger: ['"Alright la! Can\'t stop! Personal best, this!"', '"Found a quid on me run once. By the phone box. Best day of me life, that."', '"D\'ya ever just... run? Ya should. Clears the head, la."', '"Been runnin\' for nine years. Me legs don\'t know how to stop. Send help."', '"That drain on Acacia Road jingles, by the way. Just sayin\'. Proper jingles."'],
   oldman: ['"Ooh arr. Back in my day you\'d find a pound under every park bench, and a pickled egg."', '"That fountain\'s full of wishes, my lover. Shame to waste \'em."', '"Your grandad and I went metal detectin\'. He never told me what he found. Proper secretive, he were."', '"The dog\'s called Biscuit. Biscuit is cleverer than I. Biscuit does my taxes."', '"Moles under the park, there are. Big molehill by the swings. They\'m up to summat."'],
   postman: ['"Ow do! Lot of post for your grandad lately. Big parcels. Heavy. Rattly."', '"That drain cover on Acacia Road jingles when I walk over it. Jingles! Drains shouldn\'t jingle. Not my department though, bab."', '"That goose had me on Tuesday. And Wednesday. Thursday I took the long way round."', '"Brian at number 7 gets a parcel from SPADES R US every week. What\'s he DOING?"'],
@@ -792,6 +794,22 @@ LC.FRIENDS = {
       'Brian shouted at me for touching his gnome. I touched it again when he wasn\'t looking.',
       'Can I work on your stall? I\'ll guard it! Nobody nicks stuff when I\'m there. (No more thieves.)',
     ], perks: { 3: 'Stall customers +25%', 5: 'Alfie guards your stall: no thieves' } },
+  jamal: { name: 'Jamal (your mate)', icon: '🛹', likes: ['toycar', 'phone', 'soldier', 'tamagotchi'], likeText: 'Likes: gadgets, toys, anything that beeps.',
+    hearts: [
+      'Bruv! Where\'ve you BEEN? Oh. Down the back of a sofa. Course you have.',
+      'Priya reckons The Thing is a jet ski. I reckon it\'s a time machine. Either way I\'m having a go.',
+      'Tip: junk sells better to collectors if it\'s rare. Don\'t flog a Roman coin to some bloke for a quid, you muppet. (Rare junk sells for 25% more.)',
+      'Daz used to be alright, y\'know. Before his brother got a moped. Power went to his head.',
+      'You\'re my best mate, you know that? Here, I\'ll do your stall rounds after school. (Your stall sells faster.)',
+    ], perks: { 3: 'Rare junk sells for 25% more', 5: 'Jamal helps on the stall: customers come faster' } },
+  priya: { name: 'Priya (your mate)', icon: '📸', likes: ['fossil', 'medal', 'pipe', 'bottle'], likeText: 'Likes: old stuff. She\'s going to be an archaeologist. "Or a pirate."',
+    hearts: [
+      'Oh hi! Jamal said you\'d be here. Have you found anything OLD? I need old. Old is life.',
+      'I found a Roman nail last summer. My mum threw it away. I\'ve not forgiven her.',
+      'Psst. Dig near the park benches. Things drop down the gaps. (Bench finds ×2.)',
+      'Your grandad came to our school once and did a talk about the war. He mostly talked about biscuits.',
+      'Here, I made you a map of everywhere I\'ve found coins. Don\'t tell Jamal. (Golden coins turn up more often.)',
+    ], perks: { 3: 'Park benches pay double', 5: 'Golden coins appear more often' } },
   lady: { name: 'Mrs Higgins', icon: '👵', likes: ['spoon', 'ring', 'bottlecap', 'fossil'], likeText: 'Likes: shiny things and spoons. She collects spoons.',
     hearts: [
       'Och, Ken\'s grandbairn! Come here, let me look at you. You\'re wasting away, hen. Have a biscuit.',
@@ -958,3 +976,15 @@ LC.PIRATE = [
 ];
 LC.CHIPS = ['Salt and vinegar, love? Course you do. You\'re not a monster.', 'Mind the seagulls. They\'re organised. They\'ve got a WhatsApp group.', 'Cod almighty, you look starving. Have a few extra chips. Go on.', 'Mushy peas are extra. Mushy peas are always extra. That\'s the law.'];
 LC.BOTTLE = 'A soggy treasure map, signed "G.B. the 1st, 1962 (and Ken)". There\'s an X on the beach by the big rock, near the park end. Grandad helped bury pirate treasure?!';
+
+// ---------- the bullies: Daz and the Dazzlers hang about by the park benches ----------
+// each round: what Daz says, three comebacks, which one works
+LC.BULLY_ROUNDS = [
+  { daz: 'Oi! Nice trainers. Did your nan knit \'em?', replies: ['Yeah. She knitted your personality too. Out of nothing.', '...no?', 'Please don\'t tell anyone.'], good: 0 },
+  { daz: 'Look who it is. Sofa Boy. So skint you check down the BACK of SOFAS.', replies: ['That\'s... fair, actually.', 'At least I\'ve got a sofa. You sit on a traffic cone.', 'How did you know?!'], good: 1 },
+  { daz: 'Saw your mum in the shop. She was buying you a personality.', replies: ['Rude.', 'Did she get one? Please say she got one.', 'Shame they sold out of yours in 2009.'], good: 2 },
+  { daz: 'You talk to a GOOSE. My cousin saw you.', replies: ['The goose is better company than you, Daz. And it\'s cleverer.', 'It talks back, though.', 'It was a different goose.'], good: 0 },
+  { daz: 'Your hole\'s rubbish. My hole\'s way bigger.', replies: ['You don\'t have a hole.', 'Mine goes to Australia, Daz. Yours goes to "nowhere", like your career.', 'Wanna see?'], good: 1 },
+];
+LC.BULLY_WIN = ['...', 'That\'s actually quite good.', 'Whatever. Come on, lads. We\'ve got... a thing.', 'Bit harsh, but fair.'];
+LC.BULLY_LOSE = ['HAHAHA. Tax time. Pockets.', 'Is that it? Pay up, Sofa Boy.', 'Weak. Hand it over.'];

@@ -82,13 +82,17 @@
     ribbit: (t) => { for (let i = 0; i < 3; i++) tone(t + i * 0.05, { freq: 180, type: 'square', dur: 0.04, gain: 0.12, slideTo: 320, filter: 1500 }); },
   };
   // recorded UI sounds (Kenney UI Audio, CC0) replace the synthesised menu clicks once they've loaded
-  const SAMPLES = { click: ['click1', 'click3'], tap: ['click5'], open: ['switch7'], buy: ['switch33'], hover: ['rollover2'] };
+  const SAMPLES = { click: ['click1', 'click3'], tap: ['click5'], open: ['switch7'], buy: ['switch33'], hover: ['rollover2'],
+    // Kenney Impact Sounds (CC0)
+    'step-grass': ['i/footstep_grass_000', 'i/footstep_grass_001', 'i/footstep_grass_002'], 'step-hard': ['i/footstep_concrete_000', 'i/footstep_concrete_001', 'i/footstep_concrete_002'],
+    'step-wood': ['i/footstep_wood_000', 'i/footstep_wood_001', 'i/footstep_wood_002'], 'step-carpet': ['i/footstep_carpet_000', 'i/footstep_carpet_001', 'i/footstep_carpet_002'],
+    dig: ['i/impactMining_000', 'i/impactMining_001', 'i/impactMining_002'], smash: ['i/impactPlate_heavy_000', 'i/impactPlate_heavy_001'], knock: ['i/impactWood_medium_000'], bell: ['i/impactBell_heavy_000'] };
   const buffers = {};
   function loadSamples() {
     for (const names of Object.values(SAMPLES)) for (const n of names) {
       if (buffers[n]) continue;
       buffers[n] = 'loading';
-      fetch(`assets/sounds/ui/${n}.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b)).then((buf) => { buffers[n] = buf; }).catch(() => { delete buffers[n]; });
+      fetch(n.startsWith('i/') ? `assets/sounds/impact/${n.slice(2)}.ogg` : `assets/sounds/ui/${n}.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b)).then((buf) => { buffers[n] = buf; }).catch(() => { delete buffers[n]; });
     }
   }
   function playSample(name) {
@@ -102,6 +106,7 @@
   function sfx(name, arg) {
     if (!ctx || !sfxOn() || ctx.state !== 'running') return;
     if (!Object.keys(buffers).length) loadSamples();
+    if (name === 'step' && playSample('step-' + (arg || 'hard'))) return;
     if (name !== 'buy' && playSample(name)) return;
     if (name === 'buy' && playSample('buy')) { SFX.buy?.(ctx.currentTime + 0.005, arg); return; }
     SFX[name]?.(ctx.currentTime + 0.005, arg);

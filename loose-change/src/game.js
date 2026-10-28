@@ -606,7 +606,7 @@
   function stallSlots() { while (S.stall.length < 10) S.stall.push(null); return S.stall; }
   const stallItems = () => stallSlots().slice(0, stallSize()).filter(Boolean);
   function syncStall() { LC.world.setStallItems(stallSlots().map((x, i) => (x && i < stallSize() ? { icon: LC.JUNK[x.id].icon, price: x.price || 'fair' } : null))); }
-  const itemPrice = (x) => x.value * LC.STALL_PRICES[x.price || 'fair'].mult * (chal('skinflint') ? 0.7 : 1);
+  const itemPrice = (x) => x.value * LC.STALL_PRICES[x.price || 'fair'].mult * (chal('skinflint') ? 0.7 : 1) * (perk('jamal', 3) && LC.JUNK[x.id].rarity >= 3 ? 1.25 : 1);
   function slotPrompt(i) {
     const x = stallSlots()[i];
     if (x) return `Take back the ${LC.JUNK[x.id].name.toLowerCase()}<small>Price tag: ${LC.STALL_PRICES[x.price || 'fair'].label} (${fmt(itemPrice(x))}) · press R to change</small>`;
@@ -668,7 +668,7 @@
   function stallTick(dt) {
     if (!stallItems().length) return;
     if (S.stallUps.includes('lemonade') && LC.world.nearStall(8)) gain(baseIncome() * 0.1 * dt);
-    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1) * (chal('skinflint') ? 2 : 1) * (S.tod < 0.7 ? 1.2 : S.tod < 0.84 ? 0.9 : S.tod < 1 ? 0.5 : 0.05);
+    let rate = townStallRate() * (perk('kid', 3) ? 1.25 : 1) * (perk('jamal', 5) ? 1.3 : 1) * (chal('skinflint') ? 2 : 1) * (S.tod < 0.7 ? 1.2 : S.tod < 0.84 ? 0.9 : S.tod < 1 ? 0.5 : 0.05);
     if (S.stallUps.includes('sign')) rate *= 1.4;
     if (S.stallUps.includes('parasol')) rate *= 1.3;
     if (S.stallUps.includes('bell')) rate *= 2;
@@ -924,7 +924,7 @@
     if (!ready('bench', 45)) { say(pick(["You've already checked. There's only a crisp packet.", 'A pigeon got here first.'])); return; }
     findSecret('bench');
     const r = Math.random();
-    if (r < 0.65) { const n = lump(25, 0.2) * (perk('oldman', 3) ? 3 : 1); gain(n); floatAt(null, n); LC.audio.sfx('coin'); say(pick(['Loose change under the bench!', 'A pound coin, stuck to some chewing gum. Worth it.', 'Coins. And a sock. You take the coins.'])); }
+    if (r < 0.65) { const n = lump(25, 0.2) * (perk('oldman', 3) ? 3 : 1) * (perk('priya', 3) ? 2 : 1); gain(n); floatAt(null, n); LC.audio.sfx('coin'); say(pick(['Loose change under the bench!', 'A pound coin, stuck to some chewing gum. Worth it.', 'Coins. And a sock. You take the coins.'])); }
     else if (r < 0.75) { S.buttons++; LC.audio.sfx('coin'); say('A button. Of course.'); }
     else if (r < 0.87) { giveItem('glitter'); say("A tube of glitter. Someone's craft project. It's yours now. You know what to do with it."); }
     else say(pick(['Nothing. Just a very old sandwich.', 'A note that says "TOLD YOU - KEN". Grandad was here.', 'An old man is sitting on this bench. He says "no".']));
@@ -1260,7 +1260,7 @@
       LC.audio.sfx('event');
       ev.run();
     }
-    if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000) * (hasPerk('golden') ? 0.5 : 1); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
+    if (now >= nextGoldenAt) { nextGoldenAt = now + rand(90000, 240000) * (hasPerk('golden') ? 0.5 : 1) * (perk('priya', 5) ? 0.7 : 1); if (LC.world.spawnGolden()) { LC.audio.sfx('sparkle'); toast(`${ic('✨')}<div><b>A golden coin has appeared!</b> Follow the arrow.</div>`, 'gold'); } }
   }
 
   // ---------- the day: 07:00 to 22:00 in about 16 minutes, then Mum calls you in ----------
@@ -1496,6 +1496,25 @@
       setTimeout(() => say('You wash up on the beach, coughing up seaweed. Your pockets are lighter.'), 900);
     };
     next(); void npc;
+  }
+
+  // ---------- the bullies ----------
+  function bullyMeet(daz) {
+    if (S.flags.bullyDay === S.day || S.flags.bullyFriend || modalOpen || night()) return;
+    S.flags.bullyDay = S.day;
+    const round = LC.BULLY_ROUNDS[(S.flags.bullyRound || 0) % LC.BULLY_ROUNDS.length];
+    const mates = hearts('jamal') >= 2 || hearts('priya') >= 2;
+    const win = (text) => {
+      S.flags.bullyRound = (S.flags.bullyRound || 0) + 1; S.flags.bullyWins = (S.flags.bullyWins || 0) + 1;
+      LC.audio.sfx('win'); LC.world.bulliesLeave();
+      if (S.flags.bullyWins >= 3) { S.flags.bullyFriend = true; const n = lump(300, 5); gain(n); return { text: `${text}<br><br>Daz looks at his shoes. "Alright. You're alright, you. Here, have your pocket money back. With interest." (${fmt(n)}) The Dazzlers won't bother you again.` }; }
+      return { text: text + ' The Dazzlers slope off. You won\'t see them again today.' };
+    };
+    const pay = (pct, text) => { const n = S.money * pct; S.money -= n; floatAt(null, '-' + fmt(n), 'bad'); LC.audio.sfx('nope'); return { text: `${text} They take ${fmt(n)}. "Pleasure doing business."` }; };
+    const choices = round.replies.map((r, i) => ({ label: `"${r}"`, fn: () => (i === round.good ? win(`"${pick(LC.BULLY_WIN)}"`) : pay(0.04, `"${pick(LC.BULLY_LOSE)}"`)) }));
+    choices.push({ label: 'Leg it!', cls: 'ghost', fn: () => (chance(0.5) ? { text: 'You leg it. They can\'t be bothered to chase you. Too much effort. You win by default.' } : pay(0.05, 'You trip over a pigeon.')) });
+    if (mates) choices.splice(3, 0, { label: 'Shout for Jamal and Priya', fn: () => win('Jamal and Priya turn up. Priya is holding a very large stick for "archaeology". Daz suddenly remembers he has a piano lesson.') });
+    modal({ speaker: 'bully', npc: daz, icon: '😈', title: 'Daz (and the Dazzlers)', text: round.daz + (S.flags.bullyWins ? ` <small>(Daz has lost ${S.flags.bullyWins} of these. He's keeping count.)</small>` : ''), choices: choices.slice(0, 3).concat(choices.slice(3)) });
   }
 
   // ---------- the museum shelf: rare things on display give a permanent bonus this run ----------
@@ -2471,7 +2490,7 @@
       onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,
       pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
-      sitePrompt, siteUse, pete, chips, fishPrompt, fish, bottle, pirates, isNight: () => night(), resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
+      sitePrompt, siteUse, bullyMeet, bullyActive: () => !S.flags.bullyFriend && S.flags.bullyDay !== S.day && !night(), pete, chips, fishPrompt, fish, bottle, pirates, isNight: () => night(), resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
       hookADuck, binPrompt, bin, cheer, filmExtra, iceCream, snowman, mayor, treasureDig, pigeonStrike, saleSofa, bbqSausage, townOn,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),

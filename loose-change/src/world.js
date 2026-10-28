@@ -366,6 +366,42 @@ function buildFoliage() {
   scene.add(tufts, flowers);
 }
 
+// ---------- Daz and the Dazzlers, loitering by the benches ----------
+const bullies = [];
+function buildBullies() {
+  const spots2 = [[37.2, 45.2], [35.8, 47.4], [38.4, 47.6]];
+  spots2.forEach(([x, z], i) => { const k = M.person({ char: ['k', 'j', 'd'][i], height: 0.82 }); add(k, x, 0, z, Math.atan2(36 - x, 40 - z)); bullies.push(k); townsfolk.push(k);
+    interact(k, { range: 3, prompt: () => (i === 0 ? 'Talk to Daz<small>He\'s the one in charge. Apparently.</small>' : 'One of the Dazzlers<small>They don\'t say much. They nod.</small>'), use: () => (i === 0 ? LC.game.bullyMeet(k) : speak(k, pick(['...', 'Yeah.', 'What Daz said.', '*nods menacingly*']), 'A Dazzler')) }); });
+  agents.push({ obj: bullies[0], update: () => {
+    if (!bullies[0].visible || area !== 'town' || cut.active) return;
+    if (LC.game.bullyActive() && bullies[0].position.distanceTo(player.pos) < 6) LC.game.bullyMeet(bullies[0]);
+  } });
+}
+function bulliesLeave() { for (const b of bullies) { b.userData.home = b.userData.home || b.position.clone(); b.visible = false; b.position.y = -60; } setTimeout(() => { for (const b of bullies) if (!isNightNow) { b.position.copy(b.userData.home); b.visible = true; } }, 1000 * 60 * 6); }
+// ---------- passers-by and traffic ----------
+function buildTraffic() {
+  const pave2 = [{ x0: -60, x1: 60, z0: 8.5, z1: 9.4 }, { x0: -60, x1: 60, z0: 16.6, z1: 17.4 }];
+  for (let i = 0; i < 7; i++) { const o = M.person({ shirt: 0x112233 * (i + 3), legs: 0x334455 * (i + 1), hair: i * 7 }); o.position.copy(randomIn(pave2)); scene.add(o); walker(o, pave2, rand(1.1, 1.6), { pause: 3 }); townsfolk.push(o);
+    interact(o, { range: 2.4, prompt: () => 'Say hello', use: () => speak(o, pick(['Alright?', 'Lovely weather. For ducks.', 'Can\'t stop, I\'m late for... something.', 'Mustn\'t grumble.', 'Ooh, you\'re Ken\'s grandkid! I owe him a fiver. Don\'t tell him.', 'Is it me or is it close today?']), '') }); }
+  // cars drive along the road, and brake (and honk) if you're in the way
+  for (let i = 0; i < 4; i++) {
+    const car = M.car([0x3b6ea5, 0xd9534f, 0x6aa84f, 0xf2b631][i]); scene.add(car);
+    const dir = i % 2 ? -1 : 1, z = dir > 0 ? 11.6 : 14.4;
+    car.position.set(rand(-60, 60), 0, z); car.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+    let speed = 7, honked = 0;
+    agents.push({ obj: car, update: (dt) => {
+      if (isNightNow && i > 1) { car.visible = false; return; } car.visible = true;
+      const ahead = (player.pos.x - car.position.x) * dir, inLane = Math.abs(player.pos.z - z) < 1.6 && area === 'town';
+      const blockedAhead = inLane && ahead > 0 && ahead < 6;
+      speed += ((blockedAhead ? 0 : 7) - speed) * Math.min(1, dt * (blockedAhead ? 5 : 1));
+      if (blockedAhead && honked <= 0) { LC.audio.sfx('honk'); honked = 4; }
+      honked -= dt;
+      car.position.x += dir * speed * dt;
+      if (car.position.x > 75) car.position.x = -75; if (car.position.x < -75) car.position.x = 75;
+    } });
+  }
+}
+
 // ---------- the coast: beach, sea, the dock, Captain Pete, and pirates ----------
 const SEA_X = 88, DOCK = { x0: 80, x1: 104, z0: 11.6, z1: 14.4 };
 let sea = null;
@@ -1012,6 +1048,8 @@ function buildTown() {
   for (const [x, z, h] of [[33, 22, 5], [59, 21, 4.5], [32, 52, 6], [58, 52, 5], [42, 40, 4], [60, 40, 5.5], [36, 42, 4.5]]) { add(M.tree(h), x, 0, z); collide(x - 0.3, z - 0.3, x + 0.3, z + 0.3); }
   spots.park = [{ x0: 31, x1: 60, z0: 20, z1: 54 }];
   buildCoast();
+  buildBullies();
+  buildTraffic();
   // a little skate area next to the park, and a rowing boat on the pond
   if (M.lib['skate:half-pipe']) {
     floor(63, 30, 73, 42, 0xbcb3a3, 0.02);
@@ -1019,8 +1057,11 @@ function buildTown() {
     const ramp = M.fit('skate:ramp', { w: 2 }); if (ramp) { add(ramp, 65, 0, 33, Math.PI / 2); collideObj(ramp); }
     const box2 = M.fit('skate:obstacle-box', { w: 2 }); if (box2) { add(box2, 70, 0, 33); collideObj(box2); }
     const rail = M.fit('skate:rail-low', { h: 0.45 }); if (rail) add(rail, 68, 0, 36);
-    const skater = M.person({ char: 'b', height: 0.8 }); add(skater, 66.5, 0, 36.5); walker(skater, [{ x0: 64, x1: 72, z0: 34, z1: 38 }], 2.6, { pause: 1 });
-    interact(skater, { range: 2.6, prompt: () => 'Talk to the skater', use: () => voice(skater, pick(['"Bruv, I\'ve been tryin\' this kickflip since March. MARCH."', '"Skate park\'s better than the actual park. The actual park has a goose in it."', '"Found a quid under the half-pipe once. Bought a Freddo. Life peaked, innit."']), 'Skater') });
+    // your mates hang out here
+    for (const [who, ch, x, z] of [['jamal', 'b', 66.5, 36.5], ['priya', 'f', 70, 36]]) {
+      const kid = M.person({ char: ch, height: 0.78 }); add(kid, x, 0, z); walker(kid, [{ x0: 64, x1: 72, z0: 34, z1: 38 }], 2.2, { pause: 3 }); townsfolk.push(kid);
+      interact(kid, { range: 2.6, slot: true, prompt: () => LC.game.friendPrompt(who), use: () => LC.game.chat(who, kid), alt: () => LC.game.gift(who, kid) });
+    }
   }
   if (M.lib['boat:boat-row-small']) {
     const boat = M.fit('boat:boat-row-small', { w: 1.2 });
@@ -1425,7 +1466,7 @@ function gooseUpdate(dt, t) {
 
 // ---------- visitors for random events ----------
 // Characters that come and talk to you: they walk (or fly) up, chat in a speech bubble, then leave.
-const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk', shopkeeper: 'babble', piggy: 'oink', dev: 'babble', mum: 'babbleHigh', aussie: 'babbleLow', pirate: 'babbleLow' };
+const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk', shopkeeper: 'babble', piggy: 'oink', dev: 'babble', mum: 'babbleHigh', aussie: 'babbleLow', pirate: 'babbleLow', bully: 'babble' };
 function makeVisitor(kind) {
   if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92, char: 'f' });
   if (kind === 'badger') { const o = M.badger(); o.scale.setScalar(1.4); const tie = M.box(0.06, 0.18, 0.02, 0xc8231f, 0, 0.28, 0.62); o.add(tie); return o; }
@@ -1978,6 +2019,17 @@ function prankFx(kind) {
 function clearPrank(kind) { if (prankBits[kind]) { scene.remove(prankBits[kind]); prankBits[kind] = null; } }
 
 // ---------- player movement ----------
+// what you're walking on, for footstep sounds
+function surfaceUnder() {
+  const x = player.pos.x, z = player.pos.z;
+  if (area === 'loft') return 'wood';
+  if (area === 'under') return 'hard';
+  if (onDock(x, z)) return 'wood';
+  if (x > -7 && x < 0 && z > -5 && z < 5) return Math.hypot(x + 3.5, z - 1.4) < 1.4 ? 'carpet' : 'wood';
+  if (x >= 0 && x < 7 && z > -5 && z < 5) return 'hard';
+  if (z > 8 && z < 18 && x < 72) return 'hard';
+  return 'grass';
+}
 function tryMove(dx, dz) {
   const nx = player.pos.x + dx, nz = player.pos.z + dz;
   if (!blocked(nx, player.pos.z)) player.pos.x = nx;
@@ -2002,7 +2054,7 @@ function updatePlayer(dt) {
     tryMove((fx * c + fz * s) * sp, (-fx * s + fz * c) * sp);
     player.bob += dt * (sp / dt) * 2.2;
     player.stepT -= dt;
-    if (player.stepT <= 0 && player.pos.y <= 0.001) { player.stepT = keys.has('ShiftLeft') ? 0.3 : 0.42; LC.audio.sfx('step'); }
+    if (player.stepT <= 0 && player.pos.y <= 0.001) { player.stepT = keys.has('ShiftLeft') ? 0.3 : 0.42; LC.audio.sfx('step', surfaceUnder()); }
   }
   // jumping
   if (player.pos.y > 0 || player.vy > 0) { player.vy -= GRAVITY * dt; player.pos.y = Math.max(0, player.pos.y + player.vy * dt); if (player.pos.y === 0) player.vy = 0; }
@@ -2510,7 +2562,7 @@ LC.world = {
   syncHelpers,
   setPig,
   setGoose,
-  talkStart, talkSay, talkEnd, evolve, speak, voice, washAshore, sitActor, inHouse, sendHome, nearObj: (o, d) => o && o.position.distanceTo(player.pos) < d, showTreasure, inSea: () => inSea(player.pos.x, player.pos.z), guide, near, spawnActor, walkActor, removeActor, setSiteOpen, keeper: () => spots.keeper,
+  talkStart, talkSay, talkEnd, evolve, speak, voice, washAshore, bulliesLeave, sitActor, inHouse, sendHome, nearObj: (o, d) => o && o.position.distanceTo(player.pos) < d, showTreasure, inSea: () => inSea(player.pos.x, player.pos.z), guide, near, spawnActor, walkActor, removeActor, setSiteOpen, keeper: () => spots.keeper,
   townEvent, treasureReveal, treasureSpot: () => ev.spot, eventId: () => ev.id, onFilmMark: () => !!(ev.group && ev.group.userData.xmark && player.pos.distanceTo(ev.group.userData.xmark) < 1.2),
   startCard, cardActive: () => card.active,
   isUnderground: () => area === 'under',
