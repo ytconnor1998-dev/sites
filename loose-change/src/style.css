@@ -352,3 +352,29 @@ textarea { width: 100%; font: 13px monospace; border: var(--line); border-radius
 .sus i { display: block; width: 0; height: 8px; max-width: 80px; background: var(--danger); border-radius: 999px; }
 .sus::after { content: ''; display: block; width: 80px; height: 8px; border: 2px solid var(--ink); border-radius: 999px; margin-left: -88px; }
 .sus.seen { animation: shake .25s infinite; background: #ffd6d6; }
+
+/* stall */
+.stall-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.junk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.junk { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 8px 6px; background: #fff; border: 2px solid var(--paper-2); border-radius: 12px; font-size: 13px; min-height: 92px; }
+.junk .ic { width: 32px; height: 32px; }
+.junk small { color: var(--ink-soft); font-size: 11px; }
+.junk.empty { border-style: dashed; color: var(--ink-soft); place-items: center; }
+.junk.r2 { border-color: #6aa84f; } .junk.r3 { border-color: #3b6ea5; background: #eef4ff; } .junk.r4 { border-color: var(--gold); background: #fff3c4; }
+button.junk:hover { transform: translateY(-2px); }
+.price-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.price-row .btn { display: grid; line-height: 1.1; }
+.price-row small { font-weight: 400; font-size: 11px; }
+
+/* pockets hotbar */
+.hotbar { position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%); display: grid; justify-items: center; gap: 4px; }
+.hotbar:empty { display: none; }
+.hot-name { background: rgba(45, 33, 24, .8); color: #fff; padding: 2px 10px; border-radius: 999px; font-weight: 600; font-size: 13px; }
+.hot-name small { opacity: .75; font-weight: 400; }
+.hot-slots { display: flex; gap: 4px; align-items: center; background: rgba(255, 250, 240, .85); border: var(--line); border-radius: 12px; padding: 4px; }
+.hot { position: relative; width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; border: 2px solid transparent; background: #fff; }
+.hot .ic { width: 26px; height: 26px; }
+.hot i { position: absolute; left: 2px; top: 0; font: 600 10px 'Fredoka', sans-serif; font-style: normal; color: var(--ink-soft); }
+.hot.on { border-color: var(--ink); background: #fff3c4; transform: translateY(-3px); }
+.hot.r3 { box-shadow: inset 0 0 0 2px #3b6ea5; } .hot.r4 { box-shadow: inset 0 0 0 2px var(--gold); }
+.hot-count { font-size: 12px; color: var(--ink-soft); padding: 0 4px; }

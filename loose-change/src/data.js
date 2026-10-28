@@ -86,14 +86,14 @@ LC.EARTH_DIAMETER = 12742000; // metres, sofa to Australia
 LC.DIG_FINDS = [
   { at: 0.3, icon: '🪱', name: 'A worm called Gary', text: 'Gary has seen things.', reward: { cash: 10 } },
   { at: 1, icon: '🪙', name: 'A 2p from 1971', text: "Still smells of 1971.", reward: { cash: 30 } },
-  { at: 2.5, icon: '🏛️', name: 'A Roman coin', text: 'Someone in 43 AD also lost money in this garden.', reward: { mult: 0.05 } },
-  { at: 6, icon: '📼', name: 'A 1994 time capsule', text: 'Contains a Tamagotchi. It is still alive. It is hungry.', reward: { cash: 120 } },
+  { at: 2.5, icon: '🏛️', name: 'A Roman coin', text: 'Someone in 43 AD also lost money in this garden.', reward: { mult: 0.05, junk: 'roman' } },
+  { at: 6, icon: '📼', name: 'A 1994 time capsule', text: 'Contains a Tamagotchi. It is still alive. It is hungry.', reward: { cash: 120, junk: 'tamagotchi' } },
   { at: 3.5, icon: '💨', name: 'A stink bomb from 1989', text: 'Still sealed. Still potent. You know exactly whose car this is for.', reward: { item: 'stink' } },
   { at: 15, icon: '🏴‍☠️', name: "A pirate's chest", text: 'Long way inland for a pirate. Good for him.', reward: { cash: 600 } },
   { at: 40, icon: '🚽', name: "Next door's sewer pipe", text: 'Sorry, Brian.', reward: { buttons: 3 } },
   { at: 100, icon: '🦖', name: 'A fossilised £1 coin', text: 'Dinosaurs had money. That is how they could afford to be so big.', reward: { mult: 0.1 } },
   { at: 350, icon: '🅿️', name: 'An underground car park', text: 'Pay and display. You pay. You display.', reward: { cash: 1800 } },
-  { at: 1000, icon: '👑', name: 'The Mole Kingdom', text: 'The Mole King knights you. Your dig speed is doubled.', reward: { dig: 2 } },
+  { at: 1000, icon: '👑', name: 'The Mole Kingdom', text: 'The Mole King knights you. Your dig speed is doubled. He gives you a tiny crown.', reward: { dig: 2, junk: 'crown' } },
   { at: 5000, icon: '🌊', name: 'An underground lake of 2ps', text: 'You go for a swim. It hurts.', reward: { cash: 3600 } },
   { at: 35000, icon: '🔥', name: 'The bottom of the crust', text: "It's warm down here. Like a sofa.", reward: { mult: 0.15 } },
   { at: 410000, icon: '🧦', name: 'Every sock you ever lost', text: 'The dryer was a portal. Of course it was.', reward: { buttons: 10 } },
@@ -104,22 +104,25 @@ LC.DIG_FINDS = [
 
 // ---- Things found when checking down the sofa ----
 LC.SOFA_FINDS = [
-  { text: 'a TV remote. It was here the whole time.', cash: 20 },
+  { text: 'a TV remote. It was here the whole time.', junk: 'remote' },
   { text: 'a crisp. Prawn cocktail. Vintage.', cash: 0 },
-  { text: 'a bus ticket from 1987.', cash: 5 },
-  { text: 'a Lego brick (stood on it first).', cash: 0 },
+  { text: 'a bus ticket from 1987.', junk: 'ticket' },
+  { text: 'a Lego brick (stood on it first).', junk: 'lego' },
   { text: 'a button.', buttons: 1 },
   { text: 'another button. Where are they coming from?', buttons: 1 },
   { text: 'a fiver! An actual fiver!', flat: 5 },
   { text: "a note that says 'stop looking down here'.", cash: 0 },
   { text: 'a Werther\'s Original. Nan was here.', cash: 10 },
   { text: 'a small, confused hamster.', cash: 15 },
-  { text: 'a foreign coin. Worth 0.0004p. Nice.', flat: 0.000004 },
+  { text: 'a foreign coin. Somebody will want it.', junk: 'foreign' },
   { text: 'a shiny thing! The pigeons will want this.', cash: 60 },
   { text: 'three buttons in a trench coat.', buttons: 3 },
-  { text: 'your old phone. It has 4% battery and 400 notifications.', cash: 30 },
+  { text: 'your old phone. It has 4% battery and 400 notifications.', junk: 'phone' },
   { text: 'a jam sandwich. Do not eat the jam sandwich.', cash: 0 },
   { text: 'a whoopee cushion! This could be useful...', item: 'whoopee', weight: 2 },
+  { text: 'a marble. A good one.', junk: 'marble' },
+  { text: 'a toy car with three wheels.', junk: 'toycar' },
+  { text: 'an odd sock. Its partner is gone.', junk: 'sock' },
 ];
 
 // ---- Piggy bank personalities ----
@@ -481,6 +484,8 @@ LC.TASKS = [
   { id: 't4', text: 'Smash the piggy bank on the mantelpiece', target: 1, progress: (s) => s.stats.pigs, reward: { up: 'gloves' }, rewardText: 'Free Rubber Gloves' },
   { id: 't5', text: 'Dig the hole in the back garden to 1 m', target: 1, progress: (s) => s.depth, reward: { secs: 60, min: 8 }, rewardText: 'A minute of income' },
   { id: 't6', text: 'Pick up 5 coins off the floor', target: 5, progress: (s) => s.stats.floor || 0, reward: { up: 'magnet1' }, rewardText: 'Free Magnetic Trousers' },
+  { id: 's1', text: 'Put some junk out on your stall in the front garden', target: 1, progress: (s) => s.stall.filter(Boolean).length + (s.stats.sold || 0), reward: { cash: 10 }, rewardText: '£10' },
+  { id: 's2', text: 'Sell 3 things at your stall', target: 3, progress: (s) => s.stats.sold || 0, reward: { secs: 90, min: 15 }, rewardText: 'Ninety seconds of income' },
   { id: 't7', text: 'Read a message on your phone', target: 1, progress: (s) => Object.values(s.texts).filter((t) => t.read).length, reward: { cash: 15 }, rewardText: '£15' },
   { id: 't8', text: 'Find £100 in total', target: 100, progress: (s) => s.lifetime, reward: { gen: ['detectorist', 1] }, rewardText: 'A free Metal Detectorist' },
   { id: 't9', text: 'Buy a scratch card at the corner shop', target: 1, progress: (s) => s.stats.cards, reward: { secs: 120, min: 20 }, rewardText: 'Two minutes of income' },
@@ -498,6 +503,7 @@ LC.TASKS = [
   { id: 'b4', text: "Raid Brian's Thing Fund jar 3 times", target: 3, progress: (s) => s.stats.fundRaids || 0, reward: { secs: 900 }, rewardText: '15 minutes of income' },
   { id: 't18', text: 'Find 3 secrets', target: 3, progress: (s) => s.secrets.length, reward: { buttons: 10, secs: 900 }, rewardText: '10 buttons + 15 minutes of income' },
   { id: 't19', text: 'Find £1 million in total', target: 1e6, progress: (s) => s.lifetime, reward: { gen: ['pigeons', 2] }, rewardText: 'Two free Pigeon Syndicates' },
+  { id: 's3', text: 'Sell something to The Collector', target: 1, progress: (s) => s.stats.collector || 0, reward: { secs: 900 }, rewardText: '15 minutes of income' },
   { id: 't20', text: 'Scratch 10 scratch cards', target: 10, progress: (s) => s.stats.cards, reward: { up: 'luckypen' }, rewardText: 'Free Lucky Scratching Coin' },
   { id: 't21', text: 'Dig to 1 km and meet the Mole King', target: 1000, progress: (s) => s.depth, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
   { id: 'b5', text: 'Prank Brian 5 times', target: 5, progress: (s) => s.stats.pranks || 0, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
@@ -506,3 +512,52 @@ LC.TASKS = [
   { id: 't24', text: 'Reach the centre of the Earth', target: 6371000, progress: (s) => s.depth, reward: { secs: 1800 }, rewardText: '30 minutes of income' },
   { id: 't25', text: 'Save up £1 trillion for The Thing', target: 1e12, progress: (s) => s.money, reward: { cash: 0 }, rewardText: 'Find out what it is' },
 ];
+
+// ---- Junk: things you find and sell at your stall. value = seconds of income when found (min £). ----
+// rarity: 1 common, 2 uncommon, 3 rare, 4 legendary (collectors pay more for 3+)
+LC.JUNK = {
+  remote: { icon: '📺', name: 'TV remote', value: 25, min: 0.5, rarity: 1 },
+  lego: { icon: '🧱', name: 'Lego brick', value: 10, min: 0.2, rarity: 1 },
+  phone: { icon: '📱', name: 'Old phone', value: 90, min: 3, rarity: 2 },
+  ticket: { icon: '🎟️', name: 'Bus ticket (1987)', value: 15, min: 0.3, rarity: 1 },
+  foreign: { icon: '🪙', name: 'Foreign coin', value: 20, min: 0.4, rarity: 1 },
+  marble: { icon: '🔮', name: 'Marble', value: 18, min: 0.3, rarity: 1 },
+  toycar: { icon: '🚗', name: 'Toy car', value: 30, min: 0.6, rarity: 1 },
+  sock: { icon: '🧦', name: 'Odd sock', value: 6, min: 0.1, rarity: 1 },
+  bottlecap: { icon: '🍾', name: 'Bottle cap', value: 8, min: 0.1, rarity: 1 },
+  spoon: { icon: '🥄', name: 'Old spoon', value: 22, min: 0.4, rarity: 1 },
+  horseshoe: { icon: '🧲', name: 'Horseshoe', value: 60, min: 1, rarity: 2 },
+  pipe: { icon: '🪈', name: 'Clay pipe', value: 70, min: 1.5, rarity: 2 },
+  soldier: { icon: '💂', name: 'Toy soldier', value: 55, min: 1, rarity: 2 },
+  bottle: { icon: '🫙', name: 'Old glass bottle', value: 80, min: 1.5, rarity: 2 },
+  key: { icon: '🗝️', name: 'Mystery key', value: 150, min: 4, rarity: 3 },
+  roman: { icon: '🏛️', name: 'Roman coin', value: 400, min: 12, rarity: 3 },
+  fossil: { icon: '🐚', name: 'Fossil', value: 300, min: 9, rarity: 3 },
+  tamagotchi: { icon: '🥚', name: 'Tamagotchi (still alive)', value: 600, min: 20, rarity: 3 },
+  medal: { icon: '🎖️', name: "Grandad's old medal", value: 900, min: 30, rarity: 4 },
+  ring: { icon: '💍', name: 'Gold ring', value: 1500, min: 60, rarity: 4 },
+  crown: { icon: '👑', name: 'Tiny mole crown', value: 3000, min: 120, rarity: 4 },
+};
+// junk you can turn up while digging, deeper = better
+LC.DIG_JUNK = [
+  { upTo: 2, ids: ['bottlecap', 'spoon', 'lego', 'marble', 'sock'] },
+  { upTo: 50, ids: ['spoon', 'horseshoe', 'pipe', 'bottle', 'soldier', 'marble'] },
+  { upTo: 5000, ids: ['bottle', 'pipe', 'roman', 'fossil', 'key', 'horseshoe'] },
+  { upTo: Infinity, ids: ['fossil', 'roman', 'key', 'medal', 'ring', 'crown'] },
+];
+LC.STALL_PRICES = { cheap: { mult: 0.7, buy: 0.9, label: 'Cheap', note: 'Sells fast' }, fair: { mult: 1, buy: 0.65, label: 'Fair', note: 'Sells OK' }, cheeky: { mult: 1.7, buy: 0.35, label: 'Cheeky', note: 'Slow, people haggle' } };
+LC.STALL_UPS = [
+  { id: 'sign', icon: '🪧', name: 'Hand-drawn sign', cost: 20, desc: '"BARGINS". More people stop. (+40% customers)' },
+  { id: 'table', icon: '🪑', name: 'Bigger table', cost: 300, desc: 'Room for 10 things instead of 6.' },
+  { id: 'parasol', icon: '⛱️', name: 'Parasol', cost: 2500, desc: 'Looks very professional. (+30% customers)' },
+  { id: 'lemonade', icon: '🍋', name: 'Lemonade jug', cost: 15000, desc: 'Sell lemonade too: earns a little while anyone is at the stall.' },
+  { id: 'bell', icon: '🔔', name: 'Shop bell', cost: 2e5, desc: 'Ding! Customers come twice as often.' },
+  { id: 'rucksack', icon: '🎒', name: 'Bigger rucksack', cost: 800, desc: 'Carry 24 things instead of 12.' },
+  { id: 'wheelbarrow', icon: '🛒', name: 'Wheelbarrow', cost: 5e5, desc: 'Carry 48 things. Very serious.' },
+];
+LC.STALL_LINES = {
+  browse: ['Hmm...', 'Ooh.', 'What\'s this then?', 'How much for the...', 'Interesting.', 'Is this Lego?'],
+  buy: ['Lovely, I\'ll take it!', 'Bargain!', 'My nephew will love this.', 'Sold!', 'Just what I needed. Somehow.'],
+  pass: ['Not today, love.', 'Bit pricey.', 'I\'ve already got one.', 'Maybe next time.', 'Is that a sock?'],
+  collector: ['A RARE one! I collect these!', 'My word. Name your price.', 'This belongs in a museum. My museum.'],
+};

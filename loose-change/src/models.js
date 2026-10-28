@@ -173,6 +173,7 @@ export function person({ shirt = 0x5b8bd9, legs = 0x3a3f58, skin = C.skin, hair 
   if (hat === 'cap') g.add(box(0.38, 0.1, 0.38, 0xd9534f, 0, 1.76, 0), box(0.3, 0.03, 0.2, 0xd9534f, 0, 1.72, 0.2));
   if (hat === 'beanie') g.add(ball(0.19, 0x6aa84f, 0, 1.68, 0, { scale: [1, 0.8, 1] }));
   if (hat === 'gnome') g.add(cone(0.2, 0.5, 0xd9534f, 0, 1.95, 0), ball(0.16, 0xffffff, 0, 1.45, 0.12, { scale: [1, 1.2, 0.7] }));
+  if (hat === 'top') g.add(cyl(0.2, 0.2, 0.4, 0x1a1a1a, 0, 1.92, 0), cyl(0.3, 0.3, 0.03, 0x1a1a1a, 0, 1.73, 0), cyl(0.205, 0.205, 0.06, 0x8a1a1a, 0, 1.78, 0));
   if (hat === 'bun') g.add(ball(0.12, 0xd9d9d9, 0, 1.8, -0.08), box(0.36, 0.12, 0.36, 0xd9d9d9, 0, 1.72, -0.02));
   g.scale.setScalar(s);
   return g;
@@ -530,3 +531,29 @@ export function jar(label = 'THING FUND') {
 }
 export function desk() { return group(box(1.4, 0.06, 0.7, C.wood, 0, 0.75, 0), box(0.06, 0.75, 0.66, C.woodDark, -0.65, 0.37, 0), box(0.06, 0.75, 0.66, C.woodDark, 0.65, 0.37, 0)); }
 export function monitor(text) { const g = group(box(0.7, 0.45, 0.05, 0x222222, 0, 1.08, 0), box(0.08, 0.3, 0.08, 0x333333, 0, 0.85, -0.02)); const sc = signPlane(text, 0.64, 0.38, { bg: '#1f4a2f', color: '#9be38a', glow: true }); sc.position.set(0, 1.08, 0.03); g.add(sc); return g; }
+
+// an emoji icon as a little standing picture (uses the bundled Twemoji SVGs)
+const iconTexCache = {};
+function emojiFile(emoji) {
+  const cps = [...emoji].map((c) => c.codePointAt(0));
+  const list = cps.includes(0x200d) ? cps : cps.filter((c) => c !== 0xfe0f);
+  return list.map((c) => c.toString(16)).join('-');
+}
+export function iconSprite(emoji, size = 0.32) {
+  if (!iconTexCache[emoji]) {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const img = new Image();
+    img.onload = () => { c.getContext('2d').drawImage(img, 4, 4, 120, 120); tex.needsUpdate = true; };
+    img.src = `assets/icons/${emojiFile(emoji)}.svg`;
+    iconTexCache[emoji] = tex;
+  }
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: iconTexCache[emoji] }));
+  sp.scale.set(size, size, 1);
+  return sp;
+}
+export function stallTable() {
+  const g = group(box(2.2, 0.06, 0.8, 0xe8e2d4, 0, 0.72, 0), box(2.25, 0.5, 0.03, 0xd9534f, 0, 0.47, 0.41), box(0.06, 0.72, 0.06, 0x8a8a8a, -1.0, 0.36, -0.3), box(0.06, 0.72, 0.06, 0x8a8a8a, 1.0, 0.36, -0.3), box(0.06, 0.72, 0.06, 0x8a8a8a, -1.0, 0.36, 0.3), box(0.06, 0.72, 0.06, 0x8a8a8a, 1.0, 0.36, 0.3));
+  const cloth = signPlane('BARGAINS', 2.0, 0.42, { bg: '#d9534f', color: '#fffaf0' }); cloth.position.set(0, 0.47, 0.43); g.add(cloth);
+  return g;
+}

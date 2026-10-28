@@ -189,6 +189,7 @@ function buildLevel() {
 
   // ---- front garden & street (south) ----
   floor(2.6, 5, 3.4, 8, 0xbcb3a3, 0.015); // path
+  buildStall();
   for (const [x0, x1] of [[-12, 2.4], [3.6, 12]]) { const f = M.fence((x1 - x0), 0x7a6a5a); f.scale.y = 0.6; f.position.set((x0 + x1) / 2, 0, 8); scene.add(f); collide(x0, 7.9, x1, 8.1); }
   for (const s of [-1, 1]) { const f = M.fence(3, 0x7a6a5a); f.scale.y = 0.6; f.rotation.y = Math.PI / 2; f.position.set(s * 12, 0, 6.5); scene.add(f); collide(s * 12 - 0.1, 5, s * 12 + 0.1, 8); }
   floor(-70, 8, 70, 10, 0xcfcac0, 0.03);   // near pavement
@@ -224,6 +225,118 @@ function buildLevel() {
   const moon = new THREE.Mesh(new THREE.SphereGeometry(9, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf4f1e4, fog: false }));
   moon.position.set(-70, 60, -110); scene.add(moon);
   spots.moon = moon;
+}
+
+// ---------- your stall in the front garden ----------
+const stall = { pos: new THREE.Vector3(-2.5, 0, 7.15), items: [], ups: {}, group: null };
+function buildStall() {
+  const t = add(M.stallTable(), stall.pos.x, 0, stall.pos.z);
+  collideObj(t);
+  stall.group = t;
+  interact(t, { range: 3.2, prompt: () => LC.game.stallTablePrompt(), use: () => LC.game.stallTableUse() });
+  // ten spots on the table you can put things on (the first six to start with)
+  stall.slots = [];
+  for (let i = 0; i < 10; i++) {
+    const row = Math.floor(i / 5), col = i % 5;
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.35, 0.36), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    hit.position.set(-0.8 + col * 0.4, 0.92, -0.18 + row * 0.36); hit.userData.noAO = true;
+    t.add(hit);
+    interact(hit, { range: 3.2, slot: i, prompt: () => LC.game.slotPrompt(i), use: () => LC.game.slotUse(i), alt: () => LC.game.slotAlt(i) });
+    stall.slots.push(hit);
+  }
+  const board = M.signPlane('STUFF 4 SALE', 1.0, 0.5, { bg: '#fffaf0', color: '#c8231f' });
+  board.position.set(1.4, 0.95, 0.35); board.rotation.y = -0.3; board.visible = false; t.add(board);
+  const leg = M.box(0.05, 0.9, 0.05, M.C.wood, 1.4, 0.45, 0.33); leg.visible = false; t.add(leg);
+  stall.ups.sign = [board, leg];
+  const pole = M.cyl(0.03, 0.03, 2.1, 0xdddddd, -0.9, 1.05, -0.2);
+  const shade = M.cone(1.3, 0.5, 0xf2b631, -0.9, 2.15, -0.2, { seg: 12 });
+  pole.visible = shade.visible = false; t.add(pole, shade); stall.ups.parasol = [pole, shade];
+  const jug = M.cyl(0.1, 0.12, 0.28, 0xfff27a, 0.85, 0.89, -0.15, { mat: { transparent: true, opacity: 0.8 } }); jug.visible = false; t.add(jug); stall.ups.lemonade = [jug];
+  const bell = M.cone(0.08, 0.12, 0xf2b631, -0.85, 0.82, 0.2, { seg: 12 }); bell.visible = false; t.add(bell); stall.ups.bell = [bell];
+}
+const TAG_COLORS = { cheap: '#6aa84f', fair: '#f2b631', cheeky: '#d9534f' };
+function setStallItems(list) {
+  for (const sp of stall.items) stall.group.remove(sp);
+  stall.items = [];
+  list.forEach((it, i) => {
+    const hit = stall.slots[i];
+    if (!hit) return;
+    hit.visible = i < (stall.size || 6);
+    if (!it) return;
+    const sp = M.iconSprite(it.icon, 0.3);
+    sp.position.copy(hit.position).setY(0.92);
+    const tag = M.textSprite({ cheap: '£', fair: '££', cheeky: '£££' }[it.price], { size: 0.1, bg: TAG_COLORS[it.price], color: '#fff', border: '#2d2118' });
+    tag.position.copy(hit.position).add(new THREE.Vector3(0.12, -0.1, 0.12));
+    stall.group.add(sp, tag);
+    stall.items.push(sp, tag);
+  });
+}
+function setStallUps(ups) {
+  for (const [k, parts] of Object.entries(stall.ups)) parts.forEach((p) => (p.visible = ups.includes(k)));
+  stall.size = ups.includes('table') ? 10 : 6;
+  stall.slots.forEach((h, i) => (h.visible = i < stall.size));
+}
+const nearStall = (r) => player.pos.z > 5.2 && player.pos.distanceTo(stall.pos) < r; // outside, not through the wall
+// a passer-by comes to the stall, has a look, buys (or doesn't), and walks on.
+// If you're not there they wait; if you take too long they might grab something and run.
+let stallWaiter = null;
+function spawnCustomer(kind) {
+  const look = kind === 'collector' ? { shirt: 0x2a2a3a, legs: 0x1a1a2a, hat: 'top', height: 1.05 } : pick([
+    { shirt: 0xd27a5a, legs: 0x3a3f58, hair: 0x2a1a0a }, { shirt: 0x6aa84f, legs: 0x5a4a3a, hat: 'beanie' }, { shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92 },
+    { shirt: 0x3b6ea5, legs: 0x222222, hair: 0x8a6a2a }, { shirt: 0xf2b631, legs: 0x3a3a3a, hat: 'cap' }]);
+  const o = M.person(look);
+  if (kind === 'collector') o.add(M.moustache());
+  const fromLeft = Math.random() < 0.5;
+  const start = new THREE.Vector3(fromLeft ? -26 : 26, 0, 8.9), spot = new THREE.Vector3(stall.pos.x + rand(-0.6, 0.6), 0, 8.75);
+  let end = new THREE.Vector3(fromLeft ? 45 : -45, 0, 8.9);
+  o.position.copy(start); scene.add(o);
+  let stage = 'walk', wait = 0, label = null, speed = 1.7, loot = null;
+  const say = (text) => { if (label) o.remove(label); label = M.textSprite(text, { size: 0.32 }); label.position.y = 2.1; o.add(label); setTimeout(() => { if (label) { o.remove(label); label = null; } }, 3500); };
+  const done = () => { scene.remove(o); agents.splice(agents.indexOf(a), 1); if (stallWaiter === a) stallWaiter = null; };
+  const a = { obj: o, update: (dt, t) => {
+    if (talker && talker.obj === o) return;
+    if (stage === 'walk' || stage === 'leave' || stage === 'flee') {
+      const target = stage === 'walk' ? spot : end;
+      const d = new THREE.Vector3(target.x - o.position.x, 0, target.z - o.position.z);
+      if (stage === 'flee' && o.position.distanceTo(player.pos) < 1.3) {
+        // caught!
+        const line = LC.game.thiefCaught();
+        if (loot) { o.remove(loot); loot = null; }
+        say(line || 'Sorry!'); stage = 'leave'; speed = 2.2; end = new THREE.Vector3(o.position.x < 0 ? -45 : 45, 0, 8.9);
+        return;
+      }
+      if (d.length() < 0.3) {
+        if (stage === 'walk') {
+          stage = 'browse'; wait = 2.5; say(pick(LC.STALL_LINES.browse));
+        } else { if (stage === 'flee') LC.game.thiefEscaped(); done(); }
+        return;
+      }
+      d.normalize(); o.position.addScaledVector(d, speed * dt); o.rotation.y = Math.atan2(d.x, d.z); limbs(o, Math.sin(t * (stage === 'flee' ? 16 : 9)));
+      return;
+    }
+    o.rotation.y = Math.PI; limbs(o, 0);
+    wait -= dt;
+    if (stage === 'browse' && wait <= 0) {
+      const r = LC.game.customerArrived(kind, o);
+      if (r && r.wait) { stage = 'waiting'; wait = r.wait; stallWaiter = a; say(pick(['Hello? Anyone?', 'Is this your stall?', '*taps foot*'])); return; }
+      if (r && r.say) say(r.say);
+      stage = 'leave';
+    } else if (stage === 'waiting') {
+      if (Math.random() < dt * 0.15) say(pick(['Helloooo?', '*coughs loudly*', 'I have places to be.', '*looks at watch*']));
+      if (nearStall(4.5)) {
+        const r = LC.game.customerServe(kind, o);
+        if (r && r.say) say(r.say);
+        stage = 'leave'; stallWaiter = null;
+      } else if (wait <= 0) {
+        const r = LC.game.customerGaveUp(kind, o);
+        stallWaiter = null;
+        if (r && r.say) say(r.say);
+        if (r && r.steal) { stage = 'flee'; speed = 4.2; loot = M.iconSprite(r.icon, 0.35); loot.position.set(0.3, 1.2, 0.2); o.add(loot); }
+        else stage = 'leave';
+      }
+    }
+  } };
+  agents.push(a);
 }
 
 // ---------- the town: Acacia Road, the high street and the park ----------
@@ -732,12 +845,12 @@ function makeVisitor(kind) {
   return M.person({ shirt: 0x7a7a7a, legs: 0x333333, hat: 'beanie' });
 }
 let talker = null;
-function talkStart(kind) {
+function talkStart(kind, npc) {
   talkEnd(true);
-  if (kind === 'brian' && brian.obj) {
-    // Brian is already in the world: he just turns to face you
-    const o = brian.obj;
-    talker = { kind, obj: o, persistent: true, head: 1.95 * 1.08, state: 'talk' };
+  if ((kind === 'brian' && brian.obj) || npc) {
+    // someone already in the world: they just turn to face you
+    const o = npc || brian.obj;
+    talker = { kind, obj: o, persistent: true, head: 2.05, state: 'talk' };
     talker.update = () => {
       if (!talker || talker.obj !== o) return;
       o.rotation.y = Math.atan2(player.pos.x - o.position.x, player.pos.z - o.position.z);
@@ -995,8 +1108,16 @@ function viewMesh(kind, tier) {
   }
   return view.meshes[key];
 }
+let heldSprite = null, heldIcon = null;
 function updateViewModel(dt, moving) {
   const kind = focus && focus.tool ? focus.tool : 'hand';
+  // holding something from your pockets while looking at the stall
+  const want = focus && focus.slot != null ? LC.game.heldIcon() : null;
+  if (want !== heldIcon) {
+    if (heldSprite) { view.group.remove(heldSprite); heldSprite = null; }
+    heldIcon = want;
+    if (want) { heldSprite = M.iconSprite(want, 0.12); heldSprite.position.set(-0.02, 0.06, -0.08); view.group.add(heldSprite); }
+  }
   const tier = kind === 'hand' ? 0 : LC.game.toolTier(kind);
   const m = viewMesh(kind, tier);
   if (view.current !== m) { if (view.current) view.current.visible = false; m.visible = true; view.current = m; view.swing = 0; }
@@ -1090,10 +1211,11 @@ function project(v) {
 // ---------- golden coin compass ----------
 function goldenBearing() {
   const g = pickups.find((p) => p.kind === 'golden');
-  if (!g) return null;
-  const dx = g.obj.position.x - player.pos.x, dz = g.obj.position.z - player.pos.z;
+  const target = g ? g.obj.position : stallWaiter ? stall.pos : null;
+  if (!target) return null;
+  const dx = target.x - player.pos.x, dz = target.z - player.pos.z;
   const ang = Math.atan2(-dx, -dz) - player.yaw;
-  return { angle: -ang, dist: Math.hypot(dx, dz) };
+  return { angle: -ang, dist: Math.hypot(dx, dz), kind: g ? 'golden' : 'stall' };
 }
 
 // ---------- input ----------
@@ -1112,6 +1234,7 @@ function setupInput() {
   });
   document.addEventListener('mousedown', (e) => { if (locked && e.button === 0) { holding = true; holdTimer = 0.25; useFocus(); } });
   document.addEventListener('mouseup', (e) => { if (e.button === 0) holding = false; });
+  document.addEventListener('wheel', (e) => { if (locked && !LC.game.isBlocked()) LC.game.cycleHeld(e.deltaY > 0 ? 1 : -1); }, { passive: true });
   addEventListener('keydown', (e) => {
     if (e.code === 'Tab') { e.preventDefault(); LC.game.togglePhone(); return; }
     if (!locked) return;
@@ -1119,6 +1242,8 @@ function setupInput() {
     if (e.code === 'KeyE' && !e.repeat) { holding = true; holdTimer = 0.25; useFocus(); }
     if (e.code === 'Space' && player.pos.y === 0 && !LC.game.isBlocked() && !crouching) player.vy = 6;
     if ((e.code === 'KeyC' || e.code === 'ControlLeft') && !e.repeat) crouching = !crouching;
+    if (e.code === 'KeyR' && !e.repeat && focus && focus.alt && !LC.game.isBlocked()) focus.alt();
+    if (/^Digit[1-9]$/.test(e.code) && !LC.game.isBlocked()) LC.game.selectHeld(+e.code.slice(5) - 1);
   });
   addEventListener('keyup', (e) => { keys.delete(e.code); if (e.code === 'KeyE') holding = false; });
   addEventListener('blur', () => { keys.clear(); holding = false; });
@@ -1278,6 +1403,9 @@ LC.world = {
   setPig,
   setGoose,
   talkStart, talkSay, talkEnd,
+  setStallItems, setStallUps, nearStall, spawnCustomer,
+  stallScreenPos: () => project(stall.pos.clone().setY(1.2)),
+  stallWaiting: () => !!stallWaiter,
   brianState: () => brian.state,
   brianSitting: () => brian.sitting,
   brianNoise, setDoorOpen, throwOut,

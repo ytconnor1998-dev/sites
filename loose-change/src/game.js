@@ -56,6 +56,7 @@
       goose: { met: false, friend: false },
       texts: {}, notesSeen: [], openedNotes: [], cooldowns: {}, chatted: [], tasksDone: [],
       brian: { p: 0, slowUntil: 0 }, items: {}, armed: {},
+      pockets: [], stall: [], stallPrice: 'fair', stallUps: [],
       buffs: [], flags: {},
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0, floor: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
@@ -82,6 +83,7 @@
       S.goose = Object.assign({ met: false, friend: false }, data.goose);
       S.buffs = []; // buffs don't survive a reload
       S.brian = Object.assign({ p: 0, slowUntil: 0 }, data.brian); S.items = data.items || {}; S.armed = data.armed || {};
+      S.pockets = data.pockets || []; S.stall = data.stall || []; S.stallUps = data.stallUps || [];
       return true;
     } catch (e) { return false; }
   }
@@ -214,13 +216,13 @@
   let modalOpen = false, talking = false;
   // Character events become in-world conversations: they walk up and talk in a speech bubble,
   // and your replies show at the bottom of the screen (keys 1-3). Everything else uses the card.
-  function modal({ icon, title, text, choices = [{ label: 'OK' }], cls = '', speaker = null }) {
+  function modal({ icon, title, text, choices = [{ label: 'OK' }], cls = '', speaker = null, npc = null }) {
     modalOpen = true;
     talking = !!speaker;
     const box = talking ? $('#dialog') : $('#modal');
     const name = speaker ? title : '';
     if (talking) {
-      LC.world.talkStart(speaker);
+      LC.world.talkStart(speaker, npc);
       setTimeout(() => LC.world.talkSay(text, name), 900);
       box.innerHTML = `<div class="dialog-title">${ic(icon)} ${title}</div><div class="modal-choices"></div>`;
       box.classList.add('show');
@@ -285,6 +287,7 @@
     if (f.flat) { gain(f.flat); reward = ` <b>+${fmt(f.flat)}</b>`; }
     if (f.buttons) { S.buttons += f.buttons; reward = ` <b>+${f.buttons} ${ic('🔘')}</b>`; }
     if (f.item) giveItem(f.item);
+    if (f.junk) { giveJunk(f.junk, true); reward = ` <b>(in your pockets)</b>`; }
     toast(`${ic('🛋️')}<div>You found ${f.text}${reward}</div>`, 'find');
   }
 
@@ -317,6 +320,7 @@
     addDepth(m);
     LC.audio.sfx('dig');
     if (chance(0.03)) { const n = lump(20, 0.2); gain(n); toast(`${ic('🪙')}<div>Your spade hit a coin. <b>+${fmt(n)}</b></div>`); }
+    else if (chance(0.06)) { const tier = LC.DIG_JUNK.find((t) => S.depth <= t.upTo); giveJunk(pick(tier.ids)); }
     return { text: '+' + fmtDepth(m) };
   }
   function addDepth(m) {
@@ -333,6 +337,7 @@
         if (r.dig) what = `Dig speed x${r.dig}`;
         if (r.buttons) { S.buttons += r.buttons; what = `+${r.buttons} buttons`; }
         if (r.item) { giveItem(r.item, true); what = '(in your pocket)'; }
+        if (r.junk) giveJunk(r.junk, true);
         LC.audio.sfx('ding');
         toast(`${ic(f.icon)}<div><b>Dug up: ${f.name}</b><br><small>${f.text} ${what}</small></div>`, 'find');
         gardenDirty = true;
@@ -516,7 +521,7 @@
     if (r.tool) S.digTools[r.tool[0]] = (S.digTools[r.tool[0]] || 0) + r.tool[1];
     if (r.up && !has(r.up)) S.upgrades.push(r.up);
   }
-  function activeTasks() { return LC.TASKS.filter((t) => !S.tasksDone.includes(t.id)).slice(0, 3); }
+  function activeTasks() { return LC.TASKS.filter((t) => !S.tasksDone.includes(t.id)).slice(0, 1); }
   function checkTasks() {
     for (const t of activeTasks()) {
       if (t.progress(S) < t.target) continue;
@@ -536,7 +541,7 @@
     const box = $('#tasks');
     if (key !== taskKey) {
       taskKey = key;
-      box.innerHTML = `<div class="tasks-head">${ic('📋')} To do <span>${S.tasksDone.length}/${LC.TASKS.length}</span></div>` +
+      box.innerHTML = `<div class="tasks-head">${ic('📋')} Task ${S.tasksDone.length + 1} <span>of ${LC.TASKS.length}</span></div>` +
         list.map((t) => `<div class="task" data-id="${t.id}"><div class="task-text">${t.text}</div><div class="task-bar"><i></i></div><div class="task-reward">${ic('🎁', 'tiny')} ${t.rewardText}</div></div>`).join('');
     }
     for (const t of list) {
@@ -544,6 +549,174 @@
       const el2 = box.querySelector(`[data-id="${t.id}"] .task-bar i`);
       if (el2) el2.style.width = (p * 100).toFixed(1) + '%';
     }
+  }
+
+  // ---------- junk, pockets and your stall ----------
+  const pocketSize = () => (S.stallUps.includes('wheelbarrow') ? 48 : S.stallUps.includes('rucksack') ? 24 : 12);
+  const stallSize = () => (S.stallUps.includes('table') ? 10 : 6);
+  function giveJunk(id, quiet) {
+    const j = LC.JUNK[id];
+    if (S.pockets.length >= pocketSize()) { if (!quiet) toast(`${ic('🎒')}<div><b>Your pockets are full!</b><br><small>Put things out on your stall to sell them.</small></div>`); return false; }
+    const value = Math.max(j.min, baseIncome() * j.value) * (0.85 + Math.random() * 0.3);
+    S.pockets.push({ id, value });
+    setTimeout(renderHotbar, 0);
+    if (!quiet) toast(`${ic(j.icon)}<div>Found: <b>${j.name}</b><br><small>Worth about ${fmt(value)} at your stall</small></div>`, j.rarity >= 3 ? 'gold' : 'find');
+    return true;
+  }
+  // ---------- the stall is used in the world: hold something, look at a spot, press E ----------
+  const PRICE_ORDER = ['cheap', 'fair', 'cheeky'];
+  let held = 0; // index into pockets
+  function stallSlots() { while (S.stall.length < 10) S.stall.push(null); return S.stall; }
+  const stallItems = () => stallSlots().slice(0, stallSize()).filter(Boolean);
+  function syncStall() { LC.world.setStallItems(stallSlots().map((x, i) => (x && i < stallSize() ? { icon: LC.JUNK[x.id].icon, price: x.price || 'fair' } : null))); }
+  const itemPrice = (x) => x.value * LC.STALL_PRICES[x.price || 'fair'].mult;
+  function slotPrompt(i) {
+    const x = stallSlots()[i];
+    if (x) return `Take back the ${LC.JUNK[x.id].name.toLowerCase()}<small>Price tag: ${LC.STALL_PRICES[x.price || 'fair'].label} (${fmt(itemPrice(x))}) · press R to change</small>`;
+    const h = S.pockets[held];
+    return h ? `Put the ${LC.JUNK[h.id].name.toLowerCase()} on your stall<small>Scroll to choose something else</small>` : 'An empty spot<small>Find some junk to sell</small>';
+  }
+  function slotUse(i) {
+    const slots = stallSlots();
+    if (slots[i]) {
+      if (S.pockets.length >= pocketSize()) { LC.audio.sfx('nope'); say('Your pockets are full.'); return; }
+      S.pockets.push(slots[i]); slots[i] = null;
+    } else {
+      if (!S.pockets[held]) { LC.audio.sfx('nope'); return; }
+      slots[i] = Object.assign(S.pockets.splice(held, 1)[0], { price: S.lastPrice || 'fair' });
+      held = Math.min(held, Math.max(0, S.pockets.length - 1));
+    }
+    LC.audio.sfx('click'); syncStall(); renderHotbar();
+  }
+  function slotAlt(i) {
+    const x = stallSlots()[i];
+    if (!x) return;
+    x.price = PRICE_ORDER[(PRICE_ORDER.indexOf(x.price || 'fair') + 1) % 3];
+    S.lastPrice = x.price;
+    LC.audio.sfx('click'); syncStall();
+    say(`Price tag: <b>${LC.STALL_PRICES[x.price].label}</b> (${fmt(itemPrice(x))}). ${LC.STALL_PRICES[x.price].note}.`);
+  }
+  // the table itself: upgrades for the stall
+  const nextStallUp = () => LC.STALL_UPS.find((u) => !S.stallUps.includes(u.id));
+  function stallTablePrompt() {
+    const u = nextStallUp();
+    const n = stallItems().length;
+    return u ? `${u.name} for your stall: <b>${fmt(u.cost)}</b><small>${u.desc}</small>` : `Your stall<small>${n} things for sale</small>`;
+  }
+  function stallTableUse() {
+    const u = nextStallUp();
+    if (!u) return;
+    if (!spend(u.cost)) { LC.audio.sfx('nope'); say(`You need ${fmt(u.cost)} for the ${u.name.toLowerCase()}.`); return; }
+    S.stallUps.push(u.id); LC.audio.sfx('buy'); LC.world.setStallUps(S.stallUps); syncStall();
+    toast(`${ic(u.icon)}<div><b>${u.name}</b><br><small>${u.desc}</small></div>`);
+  }
+  // pockets hotbar at the bottom of the screen
+  let hotKey = '';
+  function renderHotbar() {
+    const bar = $('#hotbar');
+    if (!S.pockets.length) { bar.innerHTML = ''; hotKey = ''; return; }
+    held = Math.max(0, Math.min(held, S.pockets.length - 1));
+    const key = S.pockets.map((p) => p.id).join() + '|' + held + '|' + pocketSize();
+    if (key === hotKey) return;
+    hotKey = key;
+    const h = S.pockets[held];
+    bar.innerHTML = `<div class="hot-name">${LC.JUNK[h.id].name} <small>~${fmt(h.value)}</small></div><div class="hot-slots">` +
+      S.pockets.map((p, i) => `<div class="hot ${i === held ? 'on' : ''} r${LC.JUNK[p.id].rarity}">${ic(LC.JUNK[p.id].icon)}${i < 9 ? `<i>${i + 1}</i>` : ''}</div>`).join('') +
+      `<div class="hot-count">${S.pockets.length}/${pocketSize()}</div></div>`;
+  }
+  function cycleHeld(dir) { if (!S.pockets.length) return; held = (held + dir + S.pockets.length) % S.pockets.length; renderHotbar(); LC.audio.sfx('click'); }
+  function selectHeld(i) { if (i < S.pockets.length) { held = i; renderHotbar(); LC.audio.sfx('click'); } }
+  // customers turn up while there's something on the stall
+  let customerTimer = 20;
+  function stallTick(dt) {
+    if (!stallItems().length) return;
+    if (S.stallUps.includes('lemonade') && LC.world.nearStall(8)) gain(baseIncome() * 0.1 * dt);
+    let rate = 1;
+    if (S.stallUps.includes('sign')) rate *= 1.4;
+    if (S.stallUps.includes('parasol')) rate *= 1.3;
+    if (S.stallUps.includes('bell')) rate *= 2;
+    if (LC.world.nearStall(7)) rate *= 1.5;
+    customerTimer -= dt * rate;
+    if (customerTimer > 0) return;
+    customerTimer = rand(18, 34);
+    const rare = stallItems().some((x) => LC.JUNK[x.id].rarity >= 3);
+    LC.world.spawnCustomer(rare && chance(0.35) ? 'collector' : 'person');
+  }
+  // A customer has arrived. If you're not there they wait (and you get a ping); if you take too long they might steal.
+  let waiting = 0;
+  function customerArrived(kind, npc) {
+    if (LC.world.nearStall(7)) return customerAtStall(kind, npc);
+    waiting++;
+    LC.audio.sfx('text');
+    toast(`${ic('🛎️')}<div><b>Someone's waiting at your stall!</b><br><small>Don't leave them too long...</small></div>`, 'msg');
+    return { wait: kind === 'collector' ? 45 : 28 };
+  }
+  function customerGaveUp(kind) {
+    waiting = Math.max(0, waiting - 1);
+    const live = stallSlots().map((x, i) => (x && i < stallSize() ? i : -1)).filter((i) => i >= 0);
+    if (!live.length || chance(0.45)) return { say: pick(['Nobody here? Fine.', 'I waited AGES.', "I'll come back. (They won't.)"]) };
+    const idx = kind === 'collector' ? (live.find((i) => LC.JUNK[stallSlots()[i].id].rarity >= 3) ?? pick(live)) : pick(live);
+    const it = stallSlots()[idx];
+    stallSlots()[idx] = null;
+    syncStall();
+    stolen = it;
+    LC.audio.sfx('event');
+    toast(`${ic('🏃')}<div><b>THIEF!</b> Someone nicked your ${LC.JUNK[it.id].name.toLowerCase()}!<br><small>Chase them down the street!</small></div>`, 'gold');
+    return { steal: true, icon: LC.JUNK[it.id].icon, say: pick(['Finders keepers!', 'Bye!', 'It was FREE, right?']) };
+  }
+  let stolen = null;
+  function thiefCaught() {
+    if (!stolen) return null;
+    S.pockets.push(stolen); renderHotbar();
+    const bonus = chance(0.5) ? lump(30, 1) : 0;
+    if (bonus) gain(bonus);
+    S.stats.thieves = (S.stats.thieves || 0) + 1;
+    LC.audio.sfx('fanfare');
+    toast(`${ic('🫵')}<div><b>Caught them!</b> You got your ${LC.JUNK[stolen.id].name.toLowerCase()} back.${bonus ? `<br><small>They gave you ${fmt(bonus)} to keep it quiet.</small>` : ''}</div>`, 'gold');
+    stolen = null;
+    return pick(['Sorry! SORRY!', "Alright, alright, here's your stuff!", 'Please don\'t tell my mum.', "I was just... borrowing it!"]);
+  }
+  function thiefEscaped() { if (stolen) { say(`They got away with your ${LC.JUNK[stolen.id].name.toLowerCase()}. Gone forever.`); stolen = null; } }
+  function customerServe(kind, npc) { waiting = Math.max(0, waiting - 1); return customerAtStall(kind, npc); }
+  // called by the world when a customer has had a browse (and you're there)
+  function customerAtStall(kind, npc) {
+    const slots = stallSlots(), live = [];
+    slots.forEach((x, i) => { if (x && i < stallSize()) live.push(i); });
+    if (!live.length) return { say: pick(['Oh. It\'s all gone.', 'Nothing left? Shame.']) };
+    const collector = kind === 'collector';
+    let idx = pick(live);
+    if (collector) { const r = live.find((i) => LC.JUNK[slots[i].id].rarity >= 3); if (r != null) idx = r; }
+    const it = slots[idx], j = LC.JUNK[it.id];
+    const pr = it.price || 'fair';
+    const price = itemPrice(it) * (collector ? 3 : 1);
+    const near = LC.world.nearStall(7) && !modalOpen && !screenOpen;
+    // haggling (only if you're there to haggle back)
+    if (near && (pr === 'cheeky' || chance(0.25)) && !collector) {
+      const offer = price * rand(0.55, 0.8);
+      modal({ speaker: 'customer', npc, icon: j.icon, title: 'A customer', text: `I'll give you ${fmt(offer)} for the ${j.name.toLowerCase()}.`, choices: [
+        { label: `Deal (${fmt(offer)})`, fn: () => { sell(idx, offer); return { text: 'Pleasure doing business!' }; } },
+        { label: `"${fmt(price)}, final offer"`, fn: () => chance(0.5) ? (sell(idx, price), { text: 'Oh go on then. You drive a hard bargain.' }) : { text: 'Hmph. No thank you.' } },
+        { label: 'No deal', cls: 'ghost', fn: () => ({ text: 'Suit yourself.' }) },
+      ] });
+      return null;
+    }
+    const buy = collector || chance(LC.STALL_PRICES[pr].buy * (near ? 1.2 : 1));
+    if (!buy) return { say: pick(LC.STALL_LINES.pass) };
+    sell(idx, price);
+    if (collector) S.stats.collector = (S.stats.collector || 0) + 1;
+    return { say: collector ? pick(LC.STALL_LINES.collector) : pick(LC.STALL_LINES.buy), sold: price };
+  }
+  function sell(idx, price) {
+    const slots = stallSlots();
+    const it = slots[idx];
+    if (!it) return;
+    slots[idx] = null;
+    gain(price);
+    S.stats.sold = (S.stats.sold || 0) + 1;
+    S.stats.soldFor = (S.stats.soldFor || 0) + price;
+    LC.audio.sfx('buy');
+    syncStall();
+    floatAt(LC.world.stallScreenPos(), price);
   }
 
   // ---------- Brian next door ----------
@@ -927,14 +1100,6 @@
     $('#thing-pct').textContent = (p * 100).toFixed(p < 0.01 ? 4 : 2) + '%';
     $('#thing').classList.toggle('ready', p >= 1);
     $('#buttons-count').textContent = fmtInt(S.buttons);
-    const showBrian = brianActive();
-    $('#brian-row').hidden = !showBrian;
-    if (showBrian) {
-      $('#brian-bar').style.width = Math.min(100, brianMoney() / LC.THING_COST * 100).toFixed(3) + '%';
-      $('#brian-pct').textContent = fmt(brianMoney());
-      const st = LC.world.brianState();
-      $('#brian-where').textContent = Date.now() < S.brian.slowUntil ? 'Brian is recovering from a prank 😈' : { home: 'Brian is at home', garden: 'Brian is mowing his lawn', toGarden: 'Brian is going out to mow', gardenHome: 'Brian is going back inside', toShops: 'Brian is walking to the shops', shops: 'Brian is at the shops', goHome: 'Brian is walking home', investigate: 'Brian heard something...' }[st] || '';
-    }
   }
   function renderBuffs() {
     const box = $('#buffs');
@@ -1281,6 +1446,7 @@
       ['Derek', S.flags.derek ? 'Doing well, thanks' : S.flags.derekGone ? 'Spent :(' : 'Not met yet'],
       ['Pockets', Object.entries(S.items).filter(([, n]) => n > 0).map(([k, n]) => `${ITEMS[k][1]} x${n}`).join(', ') || 'Fluff'],
       ['Pranks on Brian', fmtInt(S.stats.pranks || 0)],
+      ['Things sold at your stall', `${fmtInt(S.stats.sold || 0)} for ${fmt(S.stats.soldFor || 0)}`],
       ['Endings bonus', '+' + Math.round((karmaMult() - 1) * 100) + '% to everything'], ['Runs finished', fmtInt(S.runs)],
     ];
     $('#stats').innerHTML = rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
@@ -1323,6 +1489,7 @@
       gain(income() * dt);
       addDepth(digRate() * dt);
       brianTick(dt);
+      stallTick(dt);
       if (S.pig && !S.pig.smashed && !pigType().real) S.pig.stored = Math.min(pigCap(), S.pig.stored + pigFill() * dt);
       if (S.cardRestockAt && now >= S.cardRestockAt) {
         S.cardStock = Math.min(maxStock(), S.cardStock + 1);
@@ -1412,6 +1579,7 @@
     const loaded = load();
     buildShop(); buildGarden(); buildSettings();
     if (!S.pig || S.pig.smashed) newPig(); else showPig();
+    syncStall(); LC.world.setStallUps(S.stallUps); renderHotbar();
     renderCard();
     if (!loaded) queueEvent(() => modal({ icon: '🛋️', title: 'Loose Change',
       text: `You're saving up for something. You're not sure what. It's under a sheet in the hall, and it costs <b>${fmt(LC.THING_COST)}</b>.<br><br>You have 0p.<br><br>Better check down the back of the sofa.`,
@@ -1451,6 +1619,8 @@
       rummage, dig, hitPig, nextPig, collect, gooseBite, tryBuyThing, say, floatAt, setPrompt, setCompass,
       sofaPrompt, digPrompt, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
+      customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
+      heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),
       gnomePrompt, gnome, brianEvent, brianDoorPrompt, brianDoor, brianSofaPrompt, raidBrianSofa, fundPrompt, raidFund,
       brianComputer, brianCarPrompt, brianCar, brianLawnPrompt, brianLawn, caughtByBrian, chatBrian, setSuspicion,
       tip: (secs, secret) => { const n = lump(secs, 0.05); gain(n); floatAt(null, n); if (secret) findSecret(secret); },
