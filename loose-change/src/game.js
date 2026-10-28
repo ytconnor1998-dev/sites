@@ -2434,6 +2434,10 @@
     LC.world.setSensitivity(s.sens);
     $('#set-music').onchange = (e) => { s.music = e.target.checked; LC.audio.unlock(); LC.audio.music(s.music); save(); };
     $('#set-sfx').onchange = (e) => { s.sfx = e.target.checked; save(); };
+    if (!s.gfx) s.gfx = 'auto';
+    $('#set-gfx').value = s.gfx;
+    LC.world.setQuality(s.gfx);
+    $('#set-gfx').onchange = (e) => { s.gfx = e.target.value; LC.world.setQuality(s.gfx); save(); };
     $('#set-timer').checked = !!s.timer;
     $('#set-timer').onchange = (e) => { s.timer = e.target.checked; save(); };
     $('#set-volume').oninput = (e) => { s.volume = +e.target.value; LC.audio.volume(s.volume); };
@@ -2519,6 +2523,7 @@
     addEventListener('resize', () => { if (card && !card.done && panelVisible('scratch')) renderCard(); });
 
     LC.game = {
+      onAutoQuality: (level, fps) => { $('#set-gfx').value = 'auto'; toast(`${ic('⚙️')}<div><b>Graphics set to ${level}</b><br><small>It was running at ${fps} fps. Change it in Settings on your phone.</small></div>`); },
       rummage, dig, hitPig, nextPig, collect, gooseBite, tryBuyThing, say, floatAt, setPrompt, setCompass,
       sofaPrompt, digPrompt, setPulse, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
       onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,

@@ -19,6 +19,7 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const EYE = 1.25, CROUCH_EYE = 0.72, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
 const BOUNDS = { x0: -62, x1: 62, z0: -26, z1: 56 };
 
+let mixTick = 0; const _mp = new THREE.Vector3();
 let renderer, scene, camera, sun, hemi, canvas, composer = null, clouds = null, grainPass = null, paintPass = null;
 const colliders = [];
 const interactables = [];
@@ -255,7 +256,7 @@ function buildLevel() {
   shopSign.position.set(0, 3.9, sz0 - 0.2); scene.add(shopSign);
   for (const s of [-1, 1]) add(M.box(2.6, 1.4, 0.05, M.displayMat('charity'), 0, 0, 0, { shadow: false, sharp: true }), s * 3, 1.6, sz0 - 0.12, Math.PI);
   const counter = add(M.counter(4), 0, 0, 23.6); collideObj(counter);
-  const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222, char: 'b' }), 0, 0, 24.6, Math.PI); spots.keeper = keeper;
+  const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222, char: 'b', q: 'Casual_Bald', tone: 0x8a5a3a }), 0, 0, 24.6, Math.PI); spots.keeper = keeper;
   agents.push({ obj: keeper, update: (dt, t) => { keeper.rotation.y = Math.PI + Math.sin(t * 0.7) * 0.3; } });
   interact(counter, { range: 3, prompt: () => 'Shop counter<small>Treats for helpers and scratch cards</small>', use: () => LC.game.openScreen('corner') });
   interact(keeper, { range: 3.5, prompt: () => 'Talk to the shopkeeper', use: () => LC.game.openScreen('corner') });
@@ -375,7 +376,7 @@ function buildFoliage() {
 const bullies = [];
 function buildBullies() {
   const spots2 = [[37.2, 45.2], [35.8, 47.4], [38.4, 47.6]];
-  spots2.forEach(([x, z], i) => { const k = M.person({ char: ['k', 'j', 'd'][i], height: 0.82 }); add(k, x, 0, z, Math.atan2(36 - x, 40 - z)); bullies.push(k); townsfolk.push(k);
+  spots2.forEach(([x, z], i) => { const k = M.person({ char: ['k', 'j', 'd'][i], height: 0.82, q: ['Casual3_Male', 'Casual_Male', 'Casual2_Male'][i], tone: [0xf1c39b, 0x8a5a3a, 0xd39a6e][i], shirt: [0x2a2a2a, 0x3a3a5a, 0x5a2a2a][i], tint: true }); add(k, x, 0, z, Math.atan2(36 - x, 40 - z)); bullies.push(k); townsfolk.push(k);
     interact(k, { range: 3, prompt: () => (i === 0 ? 'Talk to Daz<small>He\'s the one in charge. Apparently.</small>' : 'One of the Dazzlers<small>They don\'t say much. They nod.</small>'), use: () => (i === 0 ? LC.game.bullyMeet(k) : speak(k, pick(['...', 'Yeah.', 'What Daz said.', '*nods menacingly*']), 'A Dazzler')) }); });
   agents.push({ obj: bullies[0], update: () => {
     if (!bullies[0].visible || area !== 'town' || cut.active) return;
@@ -435,10 +436,10 @@ function buildCoast() {
   const sign = M.signPlane('COD ALMIGHTY · FISH & CHIPS', 2.9, 0.4, { bg: '#fffaf0', color: '#1d4a7a' }); sign.position.set(0, 2.85, 0.9); hut.add(sign);
   collide(76.4, 7.4, 79.6, 9.8);
   for (const [k, x, z] of [['kk:crate_potatoes', 76.2, 10.1], ['kk:crate', 76.3, 11], ['kk:crate_potatoes', 79.8, 10.2]]) { const c = M.fit(k, { w: 0.6 }); if (c) add(c, x, 0, z, Math.random()); }
-  const chippy = M.person({ shirt: 0xffffff, legs: 0x333333, char: 'i' }); add(chippy, 78, 0, 10.2, 0);
+  const chippy = M.person({ shirt: 0xffffff, legs: 0x333333, char: 'i', q: 'Chef_Male', tone: 0xe8b48a }); add(chippy, 78, 0, 10.2, 0);
   interact(chippy, { range: 3, prompt: () => 'Buy chips<small>Salt and vinegar, obviously</small>', use: () => LC.game.chips(chippy) });
   // Captain Pete, fishing off the end of the dock
-  const pete = M.person({ char: 'p', shirt: 0x1d3a6a }); add(pete, DOCK.x1 - 1.5, 0.12, 13, -Math.PI / 2);
+  const pete = M.person({ char: 'p', shirt: 0x1d3a6a, q: 'Pirate_Male', tone: 0xd39a6e }); add(pete, DOCK.x1 - 1.5, 0.12, 13, -Math.PI / 2);
   spots.pete = pete;
   interact(pete, { range: 3, prompt: () => 'Talk to Captain Pete', use: () => LC.game.pete(pete) });
   const rod = M.cyl(0.02, 0.02, 2.2, 0x3a2a1a, 0, 0, 0, { rot: [0, 0, -1.1] }); rod.position.set(DOCK.x1 - 0.6, 1.3, 13.4); scene.add(rod);
@@ -605,7 +606,7 @@ function buildUnderground() {
   const ground = (x0, z0, x1, z1, color) => { const m = M.box(x1 - x0, 0.1, z1 - z0, color, (x0 + x1) / 2, -0.05, (z0 + z1) / 2, { sharp: true }); m.receiveShadow = true; scene.add(m); };
   const roof = (x0, z0, x1, z1) => scene.add(M.box(x1 - x0, 0.3, z1 - z0, 0x3a2818, (x0 + x1) / 2, 3.45, (z0 + z1) / 2, { sharp: true }));
   const light = (x, z, color = 0xffa050, i = 9, d = 11) => { const l = new THREE.PointLight(color, i * 2.4, d * 1.5, 1.5); l.position.set(x, 2.6, z); l.userData.area = 'under'; l.visible = false; scene.add(l); };
-  const torchAt = (x, z, ry = 0) => { const t = add(M.torch(), x, 1.2, z, ry); t.rotation.z = 0.3; };
+  const torchAt = (x, z, ry = 0) => { const t = add(M.torch(), x, 1.2, z, ry); if (!t.userData.wall) t.rotation.z = 0.3; };
   // arrival chamber + tunnels
   ground(UX - 6, -6, UX + 40, 6, 0x4a3420); roof(UX - 6, -6, UX + 40, 6);
   dirt(UX - 6, -6, UX - 6, 6); dirt(UX - 6, -6, UX + 40, -6); dirt(UX - 6, 6, UX + 40, 6);
@@ -679,6 +680,76 @@ function buildUnderground() {
   }
   light(UX + 115, 14, 0x9a7aff, 8, 14); light(UX + 132, -14, 0x7ad0ff, 8, 14);
   for (const [x, z] of [[UX + 115, -19.6], [UX + 128, 19.6], [UX + 142, -19.6]]) torchAt(x, z, z > 0 ? Math.PI : 0);
+}
+// the Quaternius props that dress the town, the house and the underground
+const QM_SCALE = 0.0273, QT_SCALE = 0.021;
+function qput(kind, opts, x, y, z, ry = 0, solid = false) { const o = M.fit(kind, opts); if (!o) return null; add(o, x, y, z, ry); if (solid) collideObj(o); return o; }
+function nativeH(kind) { const src = M.lib[kind] && M.lib[kind][0]; if (!src) return 1; return new THREE.Box3().setFromObject(src).getSize(new THREE.Vector3()).y; }
+// terraces and flats behind our back fence
+// the modular buildings are coloured by a tiny palette texture: swap palettes for a street of different houses
+const palMats = {};
+function paletteMat(name) {
+  if (!palMats[name]) {
+    const t = new THREE.TextureLoader().load('assets/models/quaternius/modular/palettes/Texture_' + name + '.png');
+    t.colorSpace = THREE.SRGBColorSpace; t.flipY = true; t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
+    palMats[name] = new THREE.MeshStandardMaterial({ map: t, roughness: 0.92 });
+  }
+  return palMats[name];
+}
+function backRow() {
+  const kinds = ['qm:2Story_Base', 'qm:2Story_GableRoof_Base', 'qm:3Story_Base', 'qm:2Story_Columns_Base', 'qm:2Story_Wide_Base', 'qm:3Story_Slim_Base', 'qm:2Story_Sidehouse_Base', 'qm:2Story_Center_Base', 'qm:2Story_Slim_Base', 'qm:1Story_GableRoof_Base'];
+  const pals = ['Red', 'Light2', 'Blue', 'Red', 'Light', 'Blue', 'Light2', 'Red', 'Grey'];
+  let x = -46, i = 0;
+  while (x < 46) {
+    const k = kinds[i % kinds.length], o = M.fit(k, { h: nativeH(k) * QM_SCALE }); if (!o) break;
+    const mat = paletteMat(pals[i++ % pals.length]);
+    o.traverse((m) => { if (m.isMesh) m.material = mat; });
+    const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
+    add(o, x + sz.x / 2, 0, -30 - sz.z / 2, 0);
+    x += sz.x + 0.4;
+  }
+}
+// the tall old buildings above the high street shops
+function skyline() {
+  const kinds = ['qt:Building2_Large', 'qt:Building3_Small', 'qt:Building4', 'qt:Building2_Small', 'qt:Building3_Big'];
+  let x = -62, i = 0;
+  while (x < 27) {
+    const k = kinds[i++ % kinds.length], o = M.fit(k, { h: nativeH(k) * QT_SCALE }); if (!o) break;
+    const sz = new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
+    add(o, x + sz.x / 2, 0, 27.6 + sz.z / 2, Math.PI);
+    x += sz.x + 0.2;
+  }
+}
+function dressWorld() {
+  // living room and kitchen
+  qput('qi:Houseplant_1', { h: 0.7 }, 6.4, 0, 4.4);
+  qput('qi:Houseplant_2', { h: 0.35 }, 2.8, 0.92, -4.6);
+  qput('qf:Bread', { w: 0.32 }, 4.6, 0.92, -4.6, 0.4);
+  qput('qf:CookingPot', { w: 0.42 }, 5.4, 0.92, -4.55);
+  qput('qf:Apple', { h: 0.09 }, 3.6, 0.92, -4.5); qput('qf:Banana', { h: 0.12 }, 3.75, 0.92, -4.6, 1);
+  // the park statue: a horse. The Duke it belonged to was never found
+  const horse = qput('qd:Statue_Horse', { h: 4.2 }, 34, 0, 51, Math.PI / 2, true);
+  if (horse) interact(horse, { range: 4, prompt: () => 'Read the plaque', use: () => LC.game.say(pick(['"THE DUKE\'S HORSE. 1815." The Duke was never found. The horse looks like it knows something.', '"PLEASE DO NOT CLIMB THE HORSE." Somebody has climbed the horse. There\'s a traffic cone on its head in your memory.', 'A pigeon is sat on the horse. The pigeon looks more important than the horse.'])) });
+  // the coast: fish and chips on the kiosk counter
+  if (M.lib['qf:Fish']) {
+    scene.add(M.box(1.2, 0.08, 0.4, 0xf3eee4, 76.9, 0.98, 9.92, { sharp: true }));
+    qput('qf:Fish', { w: 0.4 }, 76.7, 1.02, 9.9, 0.3); qput('qf:Fries', { h: 0.16 }, 77.2, 1.02, 9.9); qput('qf:KetchupBottle', { h: 0.2 }, 77.45, 1.02, 9.95);
+  }
+  // underground: the tunnels, the sewer, the Roman bit and the Mole Kingdom
+  const U = UX;
+  for (const [k, x, z, h] of [['qd:Barrel', U + 4, -4.6, 0.9], ['qd:Crate', U + 5.2, -4.8, 0.8], ['qd:Bucket', U + 13.5, -4.3, 0.4], ['qd:Skull', U + 23, 4.2, 0.25], ['qd:Crate', U + 30, 4.8, 0.8], ['qd:Barrel', U + 38, -4.6, 0.9],
+    ['qd:Barrel', U + 44, -4.8, 0.9], ['qd:Crate', U + 60, 4.8, 0.8], ['qd:Bucket', U + 68, -4.6, 0.4],
+    ['qr:Pot1', U + 79, -6.6, 0.8], ['qr:Pot2', U + 80, -6.9, 0.55], ['qr:Pot1_Broken', U + 93, 6.4, 0.55], ['qr:Pot2', U + 75, 6.6, 0.55],
+    ['qd:Coin_Pile', U + 144, -1.6, 0.25], ['qd:Coin_Pile', U + 144, 1.7, 0.3], ['qd:Bag_Coins', U + 143.2, 1.2, 0.2], ['qd:Vase', U + 143.5, -2.2, 0.4], ['qd:Barrel', U + 120, -9, 0.9], ['qr:Cart', U + 132, 9, 1.6]])
+    qput(k, { h }, x, 0, z, (x * 7) % 6, h > 0.6);
+  for (const [x, z, ry] of [[U - 5.4, -5.4, 0.8], [U + 70.6, 5.4, -2.4], [U + 99, -7.4, 0], [U + 148.8, 19, -2.2]]) qput('qd:Cobweb', { w: 1.2 }, x, 2.6, z, ry);
+  qput('qr:Statue_Fox', { h: 2.6 }, U + 98, 0, -6, -Math.PI / 2, true);
+  qput('qr:Statue_Stag', { h: 3.0 }, U + 98, 0, 6, -Math.PI / 2, true);
+  qput('qr:Wall_ArchRound_Broken', { h: 3.3 }, U + 86, 0, -7.7, 0);
+  qput('qr:Bookcase_Full', { h: 2.2 }, U + 88.5, 0, 7.6, Math.PI);
+  for (const [x, z] of [[U + 112, -19.6], [U + 124, 19.6], [U + 138, -19.6]]) qput('qd:Banner_wall', { h: 2.6 }, x, 0.3, z, z > 0 ? Math.PI : 0);
+  const fire = qput('qd:Woodfire', { h: 0.7 }, U + 118, 0, 0, 0, true);
+  if (fire) { const l = new THREE.PointLight(0xff8a30, 18, 12, 1.6); l.position.set(U + 118, 1.2, 0); l.userData.area = 'under'; l.visible = false; scene.add(l); }
 }
 // solid rock between the parts of the underground: each part has its own way in from the surface
 function gate(x) {
@@ -896,7 +967,7 @@ function townEvent(id, on) {
     const bx = brianSpots.doorX + 2.2;
     const grill = put(M.group ? M.group() : new THREE.Group(), bx, 0, 6.6);
     grill.add(M.cyl(0.35, 0.3, 0.3, 0x222222, 0, 0.85, 0), M.cyl(0.03, 0.03, 0.7, 0x333333, 0, 0.35, 0), M.box(0.6, 0.02, 0.6, 0x888888, 0, 1.0, 0));
-    for (let i = 0; i < 4; i++) { const sg = M.fit('food:sausage', { w: 0.3, yaw: Math.PI / 2 }); if (sg) { sg.position.set(-0.18 + i * 0.12, 1.01, 0); grill.add(sg); } else grill.add(M.cyl(0.035, 0.035, 0.35, 0xb5573b, -0.18 + i * 0.12, 1.03, 0, { rot: [Math.PI / 2, 0, 0] })); }
+    for (let i = 0; i < 4; i++) { const sg = (M.fit('qf:Sausage_Cooked', { w: 0.3, yaw: Math.PI / 2 }) || M.fit('food:sausage', { w: 0.3, yaw: Math.PI / 2 })); if (sg) { sg.position.set(-0.18 + i * 0.12, 1.01, 0); grill.add(sg); } else grill.add(M.cyl(0.035, 0.035, 0.35, 0xb5573b, -0.18 + i * 0.12, 1.03, 0, { rot: [Math.PI / 2, 0, 0] })); }
     interact(grill, { range: 2.6, prompt: () => 'Pinch a sausage<small>Brian\'s BBQ. Everyone\'s here. Even you, apparently</small>', use: () => LC.game.bbqSausage() });
     crowd(6, [{ x0: bx - 3, x1: bx + 3, z0: 5.8, z1: 8.2 }], 0.6);
   }
@@ -1026,7 +1097,8 @@ function buildTown() {
   }
   collide(-62, 26, 28, 56); collide(-62, 18, -60, 26); collide(-5.5, 18, -5, 26); collide(5, 18, 6, 26);
   // houses peeking over the back fences, and a church spire on the skyline
-  for (let x = -40; x <= 40; x += 11) add(M.townHouse({ w: 10, d: 8, wallColor: pick([0xd9c2a8, 0xe8dcc8, 0xc8b8a0]), lit: false }), x, 0, -32, Math.PI);
+  if (M.lib['qm:all']) backRow(); else for (let x = -40; x <= 40; x += 11) add(M.townHouse({ w: 10, d: 8, wallColor: pick([0xd9c2a8, 0xe8dcc8, 0xc8b8a0]), lit: false }), x, 0, -32, Math.PI);
+  if (M.lib['qt:all']) skyline();
   const spire = add(new THREE.Group(), -35, 0, 70);
   spire.add(M.box(5, 12, 5, 0xbab3a6, 0, 6, 0, { sharp: true }), M.cone(3.2, 9, 0x6a6a72, 0, 16.5, 0, { seg: 8 }), M.ball(0.3, 0xf2b631, 0, 21.2, 0));
 
@@ -1063,8 +1135,8 @@ function buildTown() {
     const box2 = M.fit('skate:obstacle-box', { w: 2 }); if (box2) { add(box2, 70, 0, 33); collideObj(box2); }
     const rail = M.fit('skate:rail-low', { h: 0.45 }); if (rail) add(rail, 68, 0, 36);
     // your mates hang out here
-    for (const [who, ch, x, z] of [['jamal', 'b', 66.5, 36.5], ['priya', 'f', 70, 36]]) {
-      const kid = M.person({ char: ch, height: 0.78 }); add(kid, x, 0, z); walker(kid, [{ x0: 64, x1: 72, z0: 34, z1: 38 }], 2.2, { pause: 3 }); townsfolk.push(kid);
+    for (const [who, ch, x, z, q, tone] of [['jamal', 'b', 66.5, 36.5, 'Casual3_Male', 0x6a4028], ['priya', 'f', 70, 36, 'Casual_Female', 0xb07850]]) {
+      const kid = M.person({ char: ch, height: 0.78, q, tone }); add(kid, x, 0, z); walker(kid, [{ x0: 64, x1: 72, z0: 34, z1: 38 }], 2.2, { pause: 3 }); townsfolk.push(kid);
       interact(kid, { range: 2.6, slot: true, prompt: () => LC.game.friendPrompt(who), use: () => LC.game.chat(who, kid), alt: () => LC.game.gift(who, kid) });
     }
   }
@@ -1078,11 +1150,11 @@ function buildTown() {
   // ---- townsfolk, wandering about ----
   const pave = [{ x0: -60, x1: 60, z0: 8.5, z1: 9.4 }, { x0: -60, x1: 60, z0: 16.6, z1: 17.4 }];
   const folk = [
-    { look: { shirt: 0xd9534f, legs: 0x222222, hat: 'cap', char: 'b' }, speed: 3.2, zone: pave, lines: 'jogger' },
-    { look: { shirt: 0x6a8a4a, legs: 0x5a4a3a, hair: 0xcccccc, char: 'a' }, speed: 0.9, zone: spots.park, lines: 'oldman', dog: true },
-    { look: { shirt: 0xc8231f, legs: 0x2a3a5a, hat: 'cap', char: 'm' }, speed: 1.6, zone: pave, lines: 'postman' },
-    { look: { shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a, char: 'f' }, speed: 1.1, zone: pave, lines: 'mum', pram: true },
-    { look: { shirt: 0x3a7bd5, legs: 0x3a3f58, hair: 0x222222, height: 0.7, char: 'c' }, speed: 1.8, zone: spots.park, lines: 'kid' },
+    { look: { shirt: 0xd9534f, legs: 0x222222, hat: 'cap', char: 'b', q: 'Casual3_Female', tone: 0x6a4028 }, speed: 3.2, zone: pave, lines: 'jogger' },
+    { look: { shirt: 0x6a8a4a, legs: 0x5a4a3a, hair: 0xcccccc, char: 'a', q: 'OldClassy_Male', tone: 0xf1c39b }, speed: 0.9, zone: spots.park, lines: 'oldman', dog: true },
+    { look: { shirt: 0xc8231f, legs: 0x2a3a5a, hat: 'cap', char: 'm', q: 'Casual2_Male', tint: true, tone: 0xb07850 }, speed: 1.6, zone: pave, lines: 'postman' },
+    { look: { shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a, char: 'f', q: 'Casual_Female', tone: 0xf6d2b4 }, speed: 1.1, zone: pave, lines: 'mum', pram: true },
+    { look: { shirt: 0x3a7bd5, legs: 0x3a3f58, hair: 0x222222, height: 0.7, char: 'c', q: 'Casual2_Male', tone: 0xd39a6e }, speed: 1.8, zone: spots.park, lines: 'kid' },
     { look: { shirt: 0x9b59b6, legs: 0x5a4a6a, hat: 'bun', height: 0.92 }, speed: 0.7, zone: pave, lines: 'lady' },
   ];
   for (const f of folk) {
@@ -1152,6 +1224,7 @@ function buildBrianHouse(h) {
   for (let i = 0; i < 5; i++) { const g = add(M.gnome(), mid + 0.25, 1.43, 2.2 + i * 0.5, Math.PI / 2); g.scale.setScalar(0.35); }
   brianSpots.inside = { x0, x1, z0: -5, z1: 5, mid };
   brianSpots.doorX = doorX;
+  const chair = M.fit('qfu:OfficeChair', { h: 1.0 }); if (chair) { add(chair, x1 - 1.35, 0, -3.4, Math.PI / 2); collideObj(chair); }
   // Brian himself
   buildBrian();
 }
@@ -1159,7 +1232,7 @@ function buildBrianHouse(h) {
 // Brian's day: at home (sofa, desk, fridge), out mowing the front lawn, then off to the shops and back.
 const brian = { obj: null, state: 'home', t: 0, path: [], speed: 1.6, sitting: false, suspicion: 0, mower: null, busy: false };
 function buildBrian() {
-  const o = M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08, char: 'k' });
+  const o = M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08, char: 'k', q: 'Suit_Male', tone: 0xf1c39b });
   o.add(M.moustache());
   o.position.set(brianSpots.seat.x + 1.5, 0, 0);
   scene.add(o);
@@ -1473,14 +1546,14 @@ function gooseUpdate(dt, t) {
 // Characters that come and talk to you: they walk (or fly) up, chat in a speech bubble, then leave.
 const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk', shopkeeper: 'babble', piggy: 'oink', dev: 'babble', mum: 'babbleHigh', aussie: 'babbleLow', pirate: 'babbleLow', bully: 'babble' };
 function makeVisitor(kind) {
-  if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92, char: 'nan' });
+  if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92, char: 'nan', q: 'OldClassy_Female', tone: 0xe8b48a });
   if (kind === 'badger') { const o = M.badger(); o.scale.setScalar(1.4); const tie = M.box(0.06, 0.18, 0.02, 0xc8231f, 0, 0.28, 0.62); o.add(tie); return o; }
   if (kind === 'fox') { const o = M.cat(0xe0662a); o.scale.setScalar(1.6); return o; }
   if (kind === 'seagull') { const o = M.pigeon(); o.scale.setScalar(3.2); o.traverse((m) => { if (m.material && m.material.color && m.material.color.getHex() === 0x8d93a3) m.material = M.mat(0xffffff); }); return o; }
   if (kind === 'goose') return M.goose();
-  if (kind === 'buttonman') return M.person({ shirt: 0x333355, legs: 0x333355, height: 1.25, hat: 'cap' });
-  if (kind === 'icecream') return M.person({ shirt: 0xffffff, legs: 0xf7a8bd, hat: 'cap' });
-  if (kind === 'brian') return M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08, char: 'k' });
+  if (kind === 'buttonman') return M.person({ shirt: 0x333355, legs: 0x333355, height: 1.25, hat: 'cap', q: 'OldClassy_Male', tone: 0xd39a6e });
+  if (kind === 'icecream') return M.person({ shirt: 0xffffff, legs: 0xf7a8bd, hat: 'cap', q: 'Chef_Female', tone: 0xf1c39b });
+  if (kind === 'brian') return M.person({ shirt: 0x8a9a6a, legs: 0x5a5a6a, hair: 0x6a5a4a, height: 1.08, char: 'k', q: 'Suit_Male', tone: 0xf1c39b });
   if (kind === 'coin') { const g = new THREE.Group(); const c = M.coin(0.35); c.rotation.x = Math.PI / 2; c.position.y = 0.5; g.add(c, M.ball(0.05, 0x2d2118, -0.1, 0.58, 0.07), M.ball(0.05, 0x2d2118, 0.1, 0.58, 0.07)); return g; }
   return M.person({ shirt: 0x7a7a7a, legs: 0x333333, hat: 'beanie' });
 }
@@ -1661,10 +1734,10 @@ function subtitle(text) {
 }
 function cutActor(kind) {
   let o;
-  if (kind === 'shopkeeper') { o = M.person({ shirt: 0x3a6ea5, legs: 0x333333, hair: 0x333333, height: 1.05 }); o.add(M.box(0.36, 0.5, 0.04, 0xffffff, 0, 0.95, 0.15)); }
-  else if (kind === 'dev') { o = M.person({ shirt: 0x2a2a2a, legs: 0x3a3f58, hat: 'beanie' }); }
-  else if (kind === 'mum') o = M.person({ shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a, char: 'e' });
-  else if (kind === 'aussie') { o = M.person({ shirt: 0xc8a050, legs: 0x6a5a3a, hat: 'cap', hair: 0xd8b060 }); }
+  if (kind === 'shopkeeper') { o = M.person({ shirt: 0x3a6ea5, legs: 0x333333, hair: 0x333333, height: 1.05, q: 'Casual_Bald', tone: 0x8a5a3a }); }
+  else if (kind === 'dev') { o = M.person({ shirt: 0x2a2a2a, legs: 0x3a3f58, hat: 'beanie', q: 'Casual_Male', tone: 0xe8b48a }); }
+  else if (kind === 'mum') o = M.person({ shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a, char: 'e', q: 'Casual2_Female', tone: 0xe8b48a });
+  else if (kind === 'aussie') { o = M.person({ shirt: 0xc8a050, legs: 0x6a5a3a, hat: 'cap', hair: 0xd8b060, q: 'Cowboy_Male', tone: 0xd39a6e }); }
   else if (kind === 'goose') { o = M.goose(); o.scale.setScalar(1.8); }
   else o = makeVisitor(kind);
   return o;
@@ -2309,11 +2382,40 @@ function resize() {
   if (composer) composer.setSize(innerWidth, innerHeight);
   if (paintPass) paintPass.uniforms.res.value.set(innerWidth, innerHeight);
 }
-// high quality adds ambient occlusion (soft contact shadows); low skips it for slower PCs
-function setQuality(high) {
-  if (!high) { composer = null; return; }
+// graphics quality. high: ambient occlusion + painted filter + glow at full sharpness.
+// medium: no ambient occlusion, a bit softer. low: no painted filter or glow, fewer pixels: for laptops.
+let quality = 'high';
+const QUALITY = { high: { ratio: 2, shadow: 2048, ao: true, paint: true, bloom: true }, medium: { ratio: 1, shadow: 1024, ao: false, paint: true, bloom: true }, low: { ratio: 0.7, shadow: 1024, ao: false, paint: false, bloom: false } };
+function setQuality(level) {
+  if (level === true) level = 'high'; else if (level === false) level = 'low';
+  quality = QUALITY[level] ? level : 'high';
+  const q = QUALITY[quality];
+  renderer.setPixelRatio(Math.min(devicePixelRatio, q.ratio));
+  if (sun.shadow.mapSize.x !== q.shadow) { sun.shadow.mapSize.set(q.shadow, q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+  if (composer) composer.dispose();
+  paintPass = null; grainPass = null;
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
+  if (q.ao) addAO();
+  if (q.paint) addPaint();
+  if (q.bloom) composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.5, 0.5, 1.0));
+  composer.addPass(new OutputPass());
+  addGrade();
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(innerWidth, innerHeight);
+  fpsWatch.t = 0; fpsWatch.n = 0;
+}
+// Auto: watch the frame rate while you play, and step down a level if the computer is struggling
+const fpsWatch = { auto: false, t: 0, n: 0, warm: 0 };
+function watchFps(dt) {
+  if (!fpsWatch.auto || !locked || quality === 'low') return;
+  if ((fpsWatch.warm += dt) < 3) return;   // let it settle after loading or changing level
+  fpsWatch.t += dt; fpsWatch.n++;
+  if (fpsWatch.t < 4) return;
+  const fps = fpsWatch.n / fpsWatch.t; fpsWatch.t = 0; fpsWatch.n = 0;
+  if (fps < 42) { const next = quality === 'high' ? 'medium' : 'low'; setQuality(next); fpsWatch.warm = 0; if (LC.game.onAutoQuality) LC.game.onAutoQuality(next, Math.round(fps)); }
+}
+function addAO() {
   const ao = new GTAOPass(scene, camera, innerWidth, innerHeight);
   ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.2, scale: 1.1, samples: 12 });
   ao.blendIntensity = 1.0;
@@ -2325,6 +2427,8 @@ function setQuality(high) {
     });
   };
   composer.addPass(ao);
+}
+function addPaint() {
   // painted look: a Kuwahara filter turns smooth shading into soft brush strokes
   paintPass = new ShaderPass({
     uniforms: { tDiffuse: { value: null }, res: { value: new THREE.Vector2(innerWidth, innerHeight) }, radius: { value: 3.0 } },
@@ -2352,8 +2456,9 @@ function setQuality(high) {
       }`,
   });
   composer.addPass(paintPass);
-  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.5, 1.0));
-  composer.addPass(new OutputPass());
+  paintPass.uniforms.res.value.set(innerWidth, innerHeight);
+}
+function addGrade() {
   // vignette and film grain, after tone mapping
   grainPass = new ShaderPass({
     uniforms: { tDiffuse: { value: null }, time: { value: 0 }, vig: { value: 0.55 }, grain: { value: 0.045 }, sat: { value: 1.0 } },
@@ -2371,7 +2476,6 @@ function setQuality(high) {
       }`,
   });
   composer.addPass(grainPass);
-  composer.setSize(innerWidth, innerHeight);
 }
 // ---------- time of day: bright summer day, golden evening, dusk, then Mum calls you in ----------
 // keyframes: t, sun power, sun colour, sun height, hemi power, hemi sky, hemi ground, sky top, sky bottom, fog, cloud, cloud glow, exposure, vignette, grain, saturation, street lamps
@@ -2474,7 +2578,15 @@ function frame(now) {
   updateCut();
   updateSpeech();
   pirateCheck();
-  for (const m of M.mixers) if (m.parent && m.parent.parent) m.userData.anim.mixer.update(dt);
+  // animate people near you every frame, far-off ones a few times a second (they're tiny at that distance)
+  mixTick = (mixTick + 1) % 4;
+  for (const m of M.mixers) {
+    if (!m.parent || !m.parent.parent || !m.parent.visible) continue;
+    const a = m.userData.anim; a.acc = (a.acc || 0) + dt;
+    m.getWorldPosition(_mp);
+    if (_mp.distanceToSquared(camera.position) > 900 && (a.slot = a.slot ?? (Math.random() * 4) | 0) !== mixTick) continue;
+    a.mixer.update(a.acc); a.acc = 0;
+  }
   if (pig) {
     pigWobble = Math.max(0, pigWobble - dt * 4);
     pig.rotation.z = Math.sin(time * 40) * 0.15 * pigWobble;
@@ -2496,6 +2608,7 @@ function frame(now) {
   if (dust) { dust.rotation.y += dt * 0.01; dust.position.y = Math.sin(time * 0.2) * 0.05; }
   scene.userData.sky.position.copy(camera.position);
   if (composer) composer.render(dt); else renderer.render(scene, camera);
+  watchFps(dt);
   if (wantShot) { wantShot = false; savePhoto(); }
 }
 
@@ -2538,6 +2651,7 @@ function init() {
   buildLevel();
   buildFoliage();
   buildUnderground();
+  dressWorld();
   buildLoft();
   buildViewModel();
   buildCard();
@@ -2563,9 +2677,13 @@ LC.worldReady = (async () => {
       for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
       return loader.parseAsync(buf.buffer, url.slice(0, url.lastIndexOf('/') + 1));
     };
-    const load = (f) => (seen[f] = seen[f] || get(f).then((g) => { g.scene.userData.anims = g.animations; return g.scene; }));
+    const load = (f) => (seen[f] = seen[f] || get(f).then((g) => {
+      g.scene.userData.anims = g.animations;
+      g.scene.traverse((o) => { if (o.isSkinnedMesh) g.scene.userData.skinned = true; });
+      return g.scene;
+    }));
     await Promise.all(Object.entries(manifest).flatMap(([kind, files]) => files.map(async (f) => {
-      try { const sc = await load(f); (M.lib[kind] = M.lib[kind] || []).push(sc); } catch (e) { console.warn('model failed', f, e.message); }
+      try { const sc = await load(f); if (kind.startsWith('qc:')) sc.userData.qchar = true; (M.lib[kind] = M.lib[kind] || []).push(sc); } catch (e) { console.warn('model failed', f, e.message); }
     })));
   } catch (e) { /* no models: everything is built in code */ }
 })();
@@ -2601,7 +2719,8 @@ LC.world = {
   isCrouching: () => crouching,
   setFlip: (on) => { flipTarget = on ? 1 : 0; },
   setSensitivity: (s) => { sensitivity = s; },
-  setQuality: (high) => { setQuality(high); resize(); },
+  setQuality: (level) => { fpsWatch.auto = level === 'auto'; fpsWatch.warm = 0; setQuality(level === 'auto' ? 'high' : level); resize(); },
+  quality: () => quality,
   setDepthText: (t) => spots.depthSign && spots.depthSign.userData.setText(t),
   setThingText: (t) => spots.thingLabel && spots.thingLabel.userData.setText(t),
   spawnGolden: () => { const p = randomWalkable(10, 32); if (p) { p.y = 1; spawnPickup('golden', p, { life: 45, ground: 1 }); return true; } return false; },

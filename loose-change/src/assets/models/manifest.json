@@ -524,5 +524,330 @@
  ],
  "char:nan": [
   "kenney/people/character-nan.glb"
+ ],
+ "qanim": [
+  "quaternius/people/Anims.glb"
+ ],
+ "qc:Casual2_Female": [
+  "quaternius/people/Casual2_Female.glb"
+ ],
+ "qc:Casual2_Male": [
+  "quaternius/people/Casual2_Male.glb"
+ ],
+ "qc:Casual3_Female": [
+  "quaternius/people/Casual3_Female.glb"
+ ],
+ "qc:Casual3_Male": [
+  "quaternius/people/Casual3_Male.glb"
+ ],
+ "qc:Casual_Bald": [
+  "quaternius/people/Casual_Bald.glb"
+ ],
+ "qc:Casual_Female": [
+  "quaternius/people/Casual_Female.glb"
+ ],
+ "qc:Casual_Male": [
+  "quaternius/people/Casual_Male.glb"
+ ],
+ "qc:Chef_Female": [
+  "quaternius/people/Chef_Female.glb"
+ ],
+ "qc:Chef_Male": [
+  "quaternius/people/Chef_Male.glb"
+ ],
+ "qc:Cowboy_Male": [
+  "quaternius/people/Cowboy_Male.glb"
+ ],
+ "qc:Doctor_Female_Young": [
+  "quaternius/people/Doctor_Female_Young.glb"
+ ],
+ "qc:Doctor_Male_Old": [
+  "quaternius/people/Doctor_Male_Old.glb"
+ ],
+ "qc:OldClassy_Female": [
+  "quaternius/people/OldClassy_Female.glb"
+ ],
+ "qc:OldClassy_Male": [
+  "quaternius/people/OldClassy_Male.glb"
+ ],
+ "qc:Pirate_Female": [
+  "quaternius/people/Pirate_Female.glb"
+ ],
+ "qc:Pirate_Male": [
+  "quaternius/people/Pirate_Male.glb"
+ ],
+ "qc:Suit_Female": [
+  "quaternius/people/Suit_Female.glb"
+ ],
+ "qc:Suit_Male": [
+  "quaternius/people/Suit_Male.glb"
+ ],
+ "qc:Worker_Female": [
+  "quaternius/people/Worker_Female.glb"
+ ],
+ "qc:Worker_Male": [
+  "quaternius/people/Worker_Male.glb"
+ ],
+ "qt:Building2_Large": [
+  "quaternius/town/Building2_Large.glb"
+ ],
+ "qt:Building2_Small": [
+  "quaternius/town/Building2_Small.glb"
+ ],
+ "qt:Building3_Big": [
+  "quaternius/town/Building3_Big.glb"
+ ],
+ "qt:Building3_Small": [
+  "quaternius/town/Building3_Small.glb"
+ ],
+ "qt:Building4": [
+  "quaternius/town/Building4.glb"
+ ],
+ "qt:all": [
+  "quaternius/town/Building2_Large.glb",
+  "quaternius/town/Building2_Small.glb",
+  "quaternius/town/Building3_Big.glb",
+  "quaternius/town/Building3_Small.glb",
+  "quaternius/town/Building4.glb"
+ ],
+ "qd:Bag_Coins": [
+  "quaternius/dungeon/Bag_Coins.glb"
+ ],
+ "qd:Banner_wall": [
+  "quaternius/dungeon/Banner_wall.glb"
+ ],
+ "qd:Barrel": [
+  "quaternius/dungeon/Barrel.glb"
+ ],
+ "qd:Bucket": [
+  "quaternius/dungeon/Bucket.glb"
+ ],
+ "qd:Cobweb": [
+  "quaternius/dungeon/Cobweb.glb"
+ ],
+ "qd:Cobweb2": [
+  "quaternius/dungeon/Cobweb2.glb"
+ ],
+ "qd:Coin_Pile": [
+  "quaternius/dungeon/Coin_Pile.glb"
+ ],
+ "qd:Column": [
+  "quaternius/dungeon/Column.glb"
+ ],
+ "qd:Crate": [
+  "quaternius/dungeon/Crate.glb"
+ ],
+ "qd:Skull": [
+  "quaternius/dungeon/Skull.glb"
+ ],
+ "qd:Statue_Horse": [
+  "quaternius/dungeon/Statue_Horse.glb"
+ ],
+ "qd:Torch": [
+  "quaternius/dungeon/Torch.glb"
+ ],
+ "qd:Vase": [
+  "quaternius/dungeon/Vase.glb"
+ ],
+ "qd:Woodfire": [
+  "quaternius/dungeon/Woodfire.glb"
+ ],
+ "qr:Arch_Round": [
+  "quaternius/ruins/Arch_Round.glb"
+ ],
+ "qr:Bookcase_Full": [
+  "quaternius/ruins/Bookcase_Full.glb"
+ ],
+ "qr:Cart": [
+  "quaternius/ruins/Cart.glb"
+ ],
+ "qr:Column_Round": [
+  "quaternius/ruins/Column_Round.glb"
+ ],
+ "qr:Column_Round_Short": [
+  "quaternius/ruins/Column_Round_Short.glb"
+ ],
+ "qr:Pot1": [
+  "quaternius/ruins/Pot1.glb"
+ ],
+ "qr:Pot1_Broken": [
+  "quaternius/ruins/Pot1_Broken.glb"
+ ],
+ "qr:Pot2": [
+  "quaternius/ruins/Pot2.glb"
+ ],
+ "qr:Statue_Fox": [
+  "quaternius/ruins/Statue_Fox.glb"
+ ],
+ "qr:Statue_Stag": [
+  "quaternius/ruins/Statue_Stag.glb"
+ ],
+ "qr:Wall_ArchRound_Broken": [
+  "quaternius/ruins/Wall_ArchRound_Broken.glb"
+ ],
+ "qr:Wall_Broken": [
+  "quaternius/ruins/Wall_Broken.glb"
+ ],
+ "qf:Apple": [
+  "quaternius/food/Apple.glb"
+ ],
+ "qf:Banana": [
+  "quaternius/food/Banana.glb"
+ ],
+ "qf:Bread": [
+  "quaternius/food/Bread.glb"
+ ],
+ "qf:Burger": [
+  "quaternius/food/Burger.glb"
+ ],
+ "qf:Carrot": [
+  "quaternius/food/Carrot.glb"
+ ],
+ "qf:CookingPot": [
+  "quaternius/food/CookingPot.glb"
+ ],
+ "qf:Croissant": [
+  "quaternius/food/Croissant.glb"
+ ],
+ "qf:Cupcake": [
+  "quaternius/food/Cupcake.glb"
+ ],
+ "qf:Donut1": [
+  "quaternius/food/Donut1.glb"
+ ],
+ "qf:Egg_Fried": [
+  "quaternius/food/Egg_Fried.glb"
+ ],
+ "qf:Fish": [
+  "quaternius/food/Fish.glb"
+ ],
+ "qf:Fries": [
+  "quaternius/food/Fries.glb"
+ ],
+ "qf:FryingPan": [
+  "quaternius/food/FryingPan.glb"
+ ],
+ "qf:Hotdog": [
+  "quaternius/food/Hotdog.glb"
+ ],
+ "qf:IceCream_Cone": [
+  "quaternius/food/IceCream_Cone.glb"
+ ],
+ "qf:KetchupBottle": [
+  "quaternius/food/KetchupBottle.glb"
+ ],
+ "qf:Pancakes_Stack": [
+  "quaternius/food/Pancakes_Stack.glb"
+ ],
+ "qf:Pizza": [
+  "quaternius/food/Pizza.glb"
+ ],
+ "qf:Sausage_Cooked": [
+  "quaternius/food/Sausage_Cooked.glb"
+ ],
+ "qf:Soda": [
+  "quaternius/food/Soda.glb"
+ ],
+ "qf:Steak": [
+  "quaternius/food/Steak.glb"
+ ],
+ "qf:Tomato": [
+  "quaternius/food/Tomato.glb"
+ ],
+ "qi:Bathroom_Toilet": [
+  "quaternius/interior/Bathroom_Toilet.glb"
+ ],
+ "qi:Carpet_1": [
+  "quaternius/interior/Carpet_1.glb"
+ ],
+ "qi:Curtains_Double": [
+  "quaternius/interior/Curtains_Double.glb"
+ ],
+ "qi:Door_1": [
+  "quaternius/interior/Door_1.glb"
+ ],
+ "qi:Fireplace": [
+  "quaternius/interior/Fireplace.glb"
+ ],
+ "qi:Houseplant_1": [
+  "quaternius/interior/Houseplant_1.glb"
+ ],
+ "qi:Houseplant_2": [
+  "quaternius/interior/Houseplant_2.glb"
+ ],
+ "qi:Houseplant_4": [
+  "quaternius/interior/Houseplant_4.glb"
+ ],
+ "qi:Kitchen_Fridge": [
+  "quaternius/interior/Kitchen_Fridge.glb"
+ ],
+ "qi:Light_Floor1": [
+  "quaternius/interior/Light_Floor1.glb"
+ ],
+ "qi:Plate_1": [
+  "quaternius/interior/Plate_1.glb"
+ ],
+ "qi:Shelf_Small1": [
+  "quaternius/interior/Shelf_Small1.glb"
+ ],
+ "qi:Trashcan_Green": [
+  "quaternius/interior/Trashcan_Green.glb"
+ ],
+ "qi:Trashcan_Large": [
+  "quaternius/interior/Trashcan_Large.glb"
+ ],
+ "qfu:BedTwin": [
+  "quaternius/furniture/BedTwin.glb"
+ ],
+ "qfu:Desk": [
+  "quaternius/furniture/Desk.glb"
+ ],
+ "qfu:NightStand": [
+  "quaternius/furniture/NightStand.glb"
+ ],
+ "qfu:OfficeChair": [
+  "quaternius/furniture/OfficeChair.glb"
+ ],
+ "qm:1Story_GableRoof_Base": [
+  "quaternius/modular/1Story_GableRoof_Base.glb"
+ ],
+ "qm:2Story_Base": [
+  "quaternius/modular/2Story_Base.glb"
+ ],
+ "qm:2Story_Center_Base": [
+  "quaternius/modular/2Story_Center_Base.glb"
+ ],
+ "qm:2Story_Columns_Base": [
+  "quaternius/modular/2Story_Columns_Base.glb"
+ ],
+ "qm:2Story_GableRoof_Base": [
+  "quaternius/modular/2Story_GableRoof_Base.glb"
+ ],
+ "qm:2Story_Sidehouse_Base": [
+  "quaternius/modular/2Story_Sidehouse_Base.glb"
+ ],
+ "qm:2Story_Slim_Base": [
+  "quaternius/modular/2Story_Slim_Base.glb"
+ ],
+ "qm:2Story_Wide_Base": [
+  "quaternius/modular/2Story_Wide_Base.glb"
+ ],
+ "qm:3Story_Base": [
+  "quaternius/modular/3Story_Base.glb"
+ ],
+ "qm:3Story_Slim_Base": [
+  "quaternius/modular/3Story_Slim_Base.glb"
+ ],
+ "qm:all": [
+  "quaternius/modular/1Story_GableRoof_Base.glb",
+  "quaternius/modular/2Story_Base.glb",
+  "quaternius/modular/2Story_Center_Base.glb",
+  "quaternius/modular/2Story_Columns_Base.glb",
+  "quaternius/modular/2Story_GableRoof_Base.glb",
+  "quaternius/modular/2Story_Sidehouse_Base.glb",
+  "quaternius/modular/2Story_Slim_Base.glb",
+  "quaternius/modular/2Story_Wide_Base.glb",
+  "quaternius/modular/3Story_Base.glb",
+  "quaternius/modular/3Story_Slim_Base.glb"
  ]
 }

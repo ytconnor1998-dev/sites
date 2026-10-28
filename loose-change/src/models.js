@@ -2,6 +2,7 @@
 // No downloaded models: all original, chunky low-poly style.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 
 // a faint grain on every surface gives the painted look
 let grainTex = null;
@@ -57,10 +58,18 @@ export const lib = {};
 let libPick = 0;
 // animated models (people, pets): one mixer each, updated by the world every frame
 export const mixers = new Set();
+// the people share one skeleton, so their animations live in one file (lib.qanim)
+const ANIM_ALIAS = { Idle: 'idle', Walk: 'walk', Run: 'run', SitDown: 'sit', Victory: 'cheer', Defeat: 'sad', PickUp: 'pickup', Jump: 'jump', Punch: 'punch', RecieveHit: 'hit' };
 function animate(m, clips) {
+  if ((!clips || !clips.length) && m.userData.qchar && lib.qanim) clips = lib.qanim[0].userData.anims;
   if (!clips || !clips.length) return;
   const mixer = new THREE.AnimationMixer(m), actions = {};
-  for (const c of clips) actions[c.name] = mixer.clipAction(c);
+  for (const c of clips) {
+    const a = mixer.clipAction(c); actions[c.name] = a;
+    const alias = ANIM_ALIAS[c.name];
+    if (alias && !actions[alias]) actions[alias] = a;
+    if (alias === 'sit' || alias === 'sad' || alias === 'pickup') { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+  }
   m.userData.anim = { mixer, actions, cur: null };
   mixers.add(m);
   playAnim(m, actions.idle ? 'idle' : clips[0].name);
@@ -77,7 +86,7 @@ export function libModel(kind, height = null, index = null) {
   const list = lib[kind];
   if (!list || !list.length) return null;
   const src = list[index != null ? index % list.length : (libPick++ * 7) % list.length];
-  const m = src.clone(true);
+  const m = src.userData.skinned ? cloneSkinned(src) : src.clone(true);
   animate(m, src.userData.anims);
   m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   if (height) {
@@ -88,8 +97,18 @@ export function libModel(kind, height = null, index = null) {
   return g;
 }
 // a model fitted to a size: centred on x/z, sitting on the floor, optionally recoloured (fabric etc.)
+// flames in the Quaternius models are plain orange: make them glow
+const glowMats = {};
+function glowFire(m) {
+  m.traverse((o) => {
+    if (!o.isMesh) return;
+    const fix = (mt) => { if (!/^(Fire|Light)$/.test(mt.name)) return mt; if (!glowMats[mt.uuid]) { const c = mt.clone(); c.emissive = c.color.clone(); c.emissiveIntensity = mt.name === 'Fire' ? 3 : 1.5; glowMats[mt.uuid] = c; } return glowMats[mt.uuid]; };
+    o.material = Array.isArray(o.material) ? o.material.map(fix) : fix(o.material);
+  });
+}
 export function fit(kind, { w = null, h = null, d = null, tint = null, tintMat = 'carpet', yaw = 0, n = null } = {}) {
   const g = libModel(kind, null, n); if (!g) return null;
+  if (kind.startsWith('q')) glowFire(g);
   const m = g.children[0];
   m.rotation.y = yaw; m.updateMatrixWorld(true);
   let b = new THREE.Box3().setFromObject(m); const sz = b.getSize(new THREE.Vector3());
@@ -144,7 +163,7 @@ export function lamp() {
   return group(cyl(0.18, 0.2, 0.05, C.ink, 0, 0.03, 0), cyl(0.025, 0.025, 1.4, 0xdddddd, 0, 0.72, 0), shade);
 }
 export function plant() {
-  const real = fit('f:pottedPlant', { h: 1.0 }); if (real) return real;
+  const real = fit('qi:Houseplant_4', { h: 1.0 }) || fit('f:pottedPlant', { h: 1.0 }); if (real) return real;
   return group(cyl(0.2, 0.15, 0.35, 0xc4683f, 0, 0.18, 0), ball(0.32, 0x4f9a3a, 0, 0.6, 0, { seg: 6 }), ball(0.22, 0x5fb046, 0.12, 0.85, 0.05, { seg: 6 }));
 }
 export function bookshelf() {
@@ -159,6 +178,7 @@ export function bookshelf() {
   return g;
 }
 export function fireplace() {
+  const real = fit('qi:Fireplace', { w: 1.9 }); if (real) return real;
   return group(box(1.8, 1.1, 0.5, C.brick, 0, 0.55, 0), box(0.9, 0.6, 0.1, 0x241a14, 0, 0.35, 0.22), box(2.1, 0.1, 0.65, C.white, 0, 1.15, 0.03),
     box(0.5, 0.18, 0.12, 0xf08a24, 0, 0.15, 0.2, { mat: { emissive: 0xff6a10, emissiveIntensity: 2.5, map: null } }));
 }
@@ -242,7 +262,32 @@ export function pigeon() {
   return group(ball(0.09, 0x8d93a3, 0, 0.1, 0, { scale: [0.9, 0.9, 1.3], seg: 7 }), ball(0.055, 0x6a7186, 0, 0.2, 0.08, { seg: 7 }),
     cone(0.015, 0.05, 0xd8a24a, 0, 0.2, 0.15, { rot: [Math.PI / 2, 0, 0] }), box(0.09, 0.02, 0.1, 0x6a7186, 0, 0.1, -0.13));
 }
-export function person({ shirt = 0x5b8bd9, legs = 0x3a3f58, skin = C.skin, hair = 0x5a3a22, height = 1, hat = null, bald = false, char = null } = {}) {
+// Quaternius people: who wears what. Anyone not named gets picked from the townsfolk by their clothes.
+const QCAST = { top: 'OldClassy_Male', bun: 'OldClassy_Female', cap: 'Casual2_Male', beanie: 'Casual_Male' };
+const QTOWN = ['Casual_Male', 'Casual_Female', 'Casual2_Male', 'Casual2_Female', 'Casual3_Male', 'Casual3_Female', 'Casual_Bald', 'Worker_Female', 'Suit_Female', 'Doctor_Male_Old', 'Doctor_Female_Young', 'OldClassy_Female', 'OldClassy_Male'];
+const TONES = [0xf1c39b, 0xe8b48a, 0xd39a6e, 0xb07850, 0x8a5a3a, 0x6a4028, 0xf6d2b4];
+const qmats = {};
+function qmat(src, color) { const k = src.uuid + color; if (!qmats[k]) { qmats[k] = src.clone(); qmats[k].color.set(color); } return qmats[k]; }
+export function qperson({ q, tone = null, shirt = null, height = 1, seed = 0 }) {
+  const key = 'qc:' + q; if (!lib[key]) return null;
+  const g = libModel(key), m = g.children[0];
+  const skinTone = tone != null ? tone : TONES[Math.abs(seed) % TONES.length];
+  m.traverse((o) => {
+    if (!o.isMesh) return;
+    const mats = [].concat(o.material).map((mt) => mt.name === 'Skin' ? qmat(mt, skinTone) : mt.name === 'Face' ? qmat(mt, 0x2d2118) : shirt != null && mt.name === 'Shirt' ? qmat(mt, shirt) : mt);
+    o.material = Array.isArray(o.material) ? mats : mats[0];
+  });
+  m.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(m), hh = b.max.y - b.min.y;
+  m.scale.multiplyScalar((1.72 * height) / hh); m.position.y -= b.min.y * (1.72 * height) / hh;
+  g.userData.person = true;
+  return g;
+}
+export function person({ shirt = 0x5b8bd9, legs = 0x3a3f58, skin = C.skin, hair = 0x5a3a22, height = 1, hat = null, bald = false, char = null, q = null, tone = null, tint = false } = {}) {
+  const seed = (shirt * 7 + legs * 3 + hair) % 997;
+  const qname = q || (hat && QCAST[hat]) || QTOWN[seed % QTOWN.length];
+  const qp = qperson({ q: qname, tone, shirt: tint ? shirt : null, height, seed });
+  if (qp) return qp;
   if (lib.person) {
     // a real character: suits for top hats, otherwise picked from their clothes so they stay the same
     const key = char ? 'char:' + char : hat === 'top' ? 'char:q' : null;
@@ -631,7 +676,7 @@ export function busStop() {
   g.add(pole);
   return g;
 }
-export function wheelieBin(color = 0x2d4a2d) { return group(box(0.6, 0.95, 0.7, color, 0, 0.55, 0), box(0.66, 0.08, 0.76, color, 0, 1.05, 0.02), cyl(0.09, 0.09, 0.06, 0x111111, -0.25, 0.09, -0.32, { rot: [0, 0, Math.PI / 2] }), cyl(0.09, 0.09, 0.06, 0x111111, 0.25, 0.09, -0.32, { rot: [0, 0, Math.PI / 2] })); }
+export function wheelieBin(color = 0x2d4a2d) { const real = fit('qi:Trashcan_Green', { h: 1.1, tint: color, tintMat: 'DarkGreen' }); if (real) return real; return group(box(0.6, 0.95, 0.7, color, 0, 0.55, 0), box(0.66, 0.08, 0.76, color, 0, 1.05, 0.02), cyl(0.09, 0.09, 0.06, 0x111111, -0.25, 0.09, -0.32, { rot: [0, 0, Math.PI / 2] }), cyl(0.09, 0.09, 0.06, 0x111111, 0.25, 0.09, -0.32, { rot: [0, 0, Math.PI / 2] })); }
 export function hedge(len) { const g = group(box(len, 1.1, 0.9, 0x3f7a2e, 0, 0.55, 0)); for (let x = -len / 2 + 0.4; x < len / 2; x += 0.8) g.add(ball(0.45, 0x4a8a35, x, 1.1, 0, { seg: 6, mat: { flatShading: true }, scale: [1, 0.6, 1.1] })); return g; }
 export function lowWall(len, color = 0xb5573b) { return group(box(len, 0.6, 0.3, color, 0, 0.3, 0), box(len + 0.05, 0.08, 0.38, 0xd8d0c0, 0, 0.64, 0)); }
 export function bench() { return group(box(1.8, 0.08, 0.5, C.wood, 0, 0.48, 0), box(1.8, 0.45, 0.06, C.wood, 0, 0.8, -0.24, { rot: [-0.15, 0, 0] }), box(0.08, 0.48, 0.5, 0x333333, -0.8, 0.24, 0), box(0.08, 0.48, 0.5, 0x333333, 0.8, 0.24, 0)); }
@@ -710,6 +755,7 @@ export function stallTable() {
 
 // ---------- underground ----------
 export function torch() {
+  const real = fit('qd:Torch', { h: 0.95 }); if (real) { real.userData.wall = true; return real; }
   return group(cyl(0.04, 0.05, 0.6, C.woodDark, 0, 0.3, 0), cone(0.09, 0.22, 0xffa040, 0, 0.7, 0, { seg: 8, mat: { emissive: 0xff7a20, emissiveIntensity: 3, map: null } }));
 }
 export function rat() {
@@ -717,8 +763,8 @@ export function rat() {
     cyl(0.01, 0.015, 0.3, 0xf7a8bd, 0, 0.08, -0.25, { rot: [1.2, 0, 0] }), cyl(0.05, 0.05, 0.06, 0x2d2118, 0, 0.23, 0.15), cyl(0.07, 0.07, 0.01, 0x2d2118, 0, 0.2, 0.15));
   return g;
 }
-export function column(h = 3.2) { return group(cyl(0.38, 0.42, h, 0xe8e0cc, 0, h / 2, 0, { seg: 14 }), box(1, 0.25, 1, 0xd8d0bc, 0, 0.12, 0), box(1, 0.25, 1, 0xd8d0bc, 0, h - 0.12, 0)); }
-export function brokenColumn() { return group(cyl(0.38, 0.42, 1.2, 0xe8e0cc, 0, 0.6, 0, { seg: 14 }), box(1, 0.25, 1, 0xd8d0bc, 0, 0.12, 0), cyl(0.38, 0.38, 1.5, 0xe8e0cc, 0.9, 0.38, 0.4, { seg: 14, rot: [0, 0, Math.PI / 2] })); }
+export function column(h = 3.2) { const real = fit('qr:Column_Round', { h }); if (real) return real; return group(cyl(0.38, 0.42, h, 0xe8e0cc, 0, h / 2, 0, { seg: 14 }), box(1, 0.25, 1, 0xd8d0bc, 0, 0.12, 0), box(1, 0.25, 1, 0xd8d0bc, 0, h - 0.12, 0)); }
+export function brokenColumn() { const real = fit('qr:Column_Round_Short', { h: 1.5 }); if (real) return real; return group(cyl(0.38, 0.42, 1.2, 0xe8e0cc, 0, 0.6, 0, { seg: 14 }), box(1, 0.25, 1, 0xd8d0bc, 0, 0.12, 0), cyl(0.38, 0.38, 1.5, 0xe8e0cc, 0.9, 0.38, 0.4, { seg: 14, rot: [0, 0, Math.PI / 2] })); }
 export function chest() { return group(box(1.0, 0.55, 0.6, 0x8a5a2a, 0, 0.28, 0), box(1.02, 0.25, 0.62, 0x6e4a2a, 0, 0.62, 0), box(0.12, 0.18, 0.05, 0xf2b631, 0, 0.5, 0.31), box(1.04, 0.06, 0.06, 0xf2b631, 0, 0.56, 0.3)); }
 export function junkPile() { return group(ball(0.7, 0x6a4a2a, 0, 0.1, 0, { scale: [1.2, 0.55, 1], seg: 7, mat: { flatShading: true } }), box(0.25, 0.08, 0.15, 0xc8231f, 0.2, 0.42, 0.1, { rot: [0.3, 0.5, 0] }), cyl(0.05, 0.05, 0.25, 0x5bb0e0, -0.3, 0.38, 0, { rot: [0, 0, 1.2] }), coin(0.07, false).translateY(0.45).translateX(0.05)); }
 export function moleHouse(color = 0x8a5a3a) {

@@ -487,3 +487,4 @@ body.cutscene .hud, body.cutscene .news { opacity: 0; transition: opacity .6s; p
 .pause-save { margin: 6px 0 0; font-size: 13px; opacity: .75; }
 .pause-btns { display: flex; gap: 8px; justify-content: center; margin: 10px 0 14px; flex-wrap: wrap; }
 .modal-choices .btn small { opacity: .7; }
+.set select { font: inherit; padding: 4px 8px; border-radius: 10px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); margin-left: 8px; }
