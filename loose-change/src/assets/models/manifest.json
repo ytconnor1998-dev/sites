@@ -418,5 +418,59 @@
  ],
  "road:construction-cone": [
   "kenney/road/construction-cone.glb"
+ ],
+ "kf:pillow_A": [
+  "kaykit/furniture/pillow_A.gltf"
+ ],
+ "kf:table_medium": [
+  "kaykit/furniture/table_medium.gltf"
+ ],
+ "kf:book_set": [
+  "kaykit/furniture/book_set.gltf"
+ ],
+ "kf:pictureframe_large_A": [
+  "kaykit/furniture/pictureframe_large_A.gltf"
+ ],
+ "kf:pictureframe_medium": [
+  "kaykit/furniture/pictureframe_medium.gltf"
+ ],
+ "kf:rug_rectangle_stripes_A": [
+  "kaykit/furniture/rug_rectangle_stripes_A.gltf"
+ ],
+ "kf:shelf_B_large_decorated": [
+  "kaykit/furniture/shelf_B_large_decorated.gltf"
+ ],
+ "kf:cabinet_medium_decorated": [
+  "kaykit/furniture/cabinet_medium_decorated.gltf"
+ ],
+ "kf:chair_A_wood": [
+  "kaykit/furniture/chair_A_wood.gltf"
+ ],
+ "kf:couch_pillows": [
+  "kaykit/furniture/couch_pillows.gltf"
+ ],
+ "kf:pictureframe_small_A": [
+  "kaykit/furniture/pictureframe_small_A.gltf"
+ ],
+ "kf:bed_single_A": [
+  "kaykit/furniture/bed_single_A.gltf"
+ ],
+ "kf:rug_oval_A": [
+  "kaykit/furniture/rug_oval_A.gltf"
+ ],
+ "kf:lamp_standing": [
+  "kaykit/furniture/lamp_standing.gltf"
+ ],
+ "kf:shelf_A_big": [
+  "kaykit/furniture/shelf_A_big.gltf"
+ ],
+ "kf:armchair_pillows": [
+  "kaykit/furniture/armchair_pillows.gltf"
+ ],
+ "kf:table_low": [
+  "kaykit/furniture/table_low.gltf"
+ ],
+ "kf:lamp_table": [
+  "kaykit/furniture/lamp_table.gltf"
  ]
 }

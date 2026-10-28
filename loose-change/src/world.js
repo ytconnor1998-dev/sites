@@ -161,6 +161,11 @@ function buildLevel() {
   const tbl = add(M.coffeeTable(), -3.5, 0, 2.3); collideObj(tbl);
   const tv = add(M.tv(), -3.5, 0, -4.65); collideObj(tv);
   add(M.lamp(), -0.6, 0, 4.4);
+  // family photos on the walls
+  for (const [k, x, y, z, ry, h] of [['kf:pictureframe_large_A', -1.6, 1.7, -4.9, 0, 0.7], ['kf:pictureframe_medium', -5.4, 1.6, -4.9, 0, 0.5], ['kf:pictureframe_small_A', -6.88, 1.5, 0.2, Math.PI / 2, 0.35], ['kf:pictureframe_medium', 5.0, 1.6, 4.88, Math.PI, 0.5]]) {
+    const f = M.fit(k, { h }); if (f) add(f, x, y, z, ry);
+  }
+  const shelfB = M.fit('kf:shelf_B_large_decorated', { w: 1.4 }); if (shelfB) add(shelfB, -3.5, 1.9, -4.85);
   add(M.plant(), -6.4, 0, 4.4);
   const shelf = add(M.bookshelf(), -0.35, 0, -3, -Math.PI / 2); collideObj(shelf);
   const fire = add(M.fireplace(), -6.72, 0, -2, Math.PI / 2); collideObj(fire);
@@ -368,11 +373,14 @@ function onDock(x, z) { return x >= DOCK.x0 - 0.3 && x <= DOCK.x1 && z >= DOCK.z
 function inSea(x, z) { return area === 'town' && x > SEA_X && !onDock(x, z); }
 function buildCoast() {
   // the sea all round the island, and a sandy beach at the east end of town
-  sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: 0x3a8ec0, roughness: 0.2, metalness: 0.05, emissive: 0x0a2a40 }));
-  sea.rotation.x = -Math.PI / 2; sea.position.set(0, -0.25, 0); sea.receiveShadow = true; scene.add(sea);
+  const far = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), new THREE.MeshStandardMaterial({ color: 0x3584b4, roughness: 0.3, emissive: 0x0a2a40 }));
+  far.rotation.x = -Math.PI / 2; far.position.y = -0.45; scene.add(far);
+  // the waves near you are real 3D waves; the sheet follows you around so the sea never ends
+  sea = M.waterSheet(220, 220, { color: 0x3a8ec0, crest: 0x8adcf0, amp: 0.28, len: 10, speed: 0.9 }, 1.1);
+  sea.position.set(SEA_X + 110, -0.25, 0); scene.add(sea);  // starts at the shore so waves never poke through the land
   const sand = M.box(15.5, 0.3, 120, texMat('sand', 4, 28), 81.25, -0.135, 17, { shadow: false, sharp: true }); sand.receiveShadow = true; scene.add(sand);
   const foam = M.box(1.6, 0.02, 120, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }), SEA_X + 1, 0.04, 17, { sharp: true }); foam.userData.noAO = true; scene.add(foam);
-  agents.push({ obj: foam, update: (dt, t) => { foam.position.x = SEA_X + 1 + Math.sin(t * 0.8) * 0.6; foam.material.opacity = 0.35 + Math.sin(t * 0.8) * 0.2; sea.position.y = -0.25 + Math.sin(t * 0.6) * 0.04; } });
+  agents.push({ obj: foam, update: (dt, t) => { foam.position.x = SEA_X + 1 + Math.sin(t * 0.8) * 0.6; foam.material.opacity = 0.35 + Math.sin(t * 0.8) * 0.2; sea.position.z = Math.round(player.pos.z / 8) * 8; } });
   // the dock: planks on posts, with boats tied up
   const plank = M.box(DOCK.x1 - DOCK.x0, 0.12, DOCK.z1 - DOCK.z0, texMat('planks', 10, 1), (DOCK.x0 + DOCK.x1) / 2, 0.06, 13, { sharp: true }); scene.add(plank);
   for (let x = DOCK.x0 + 1; x <= DOCK.x1; x += 3) for (const z of [DOCK.z0, DOCK.z1]) scene.add(M.cyl(0.12, 0.12, 1.4, 0x6e4a2a, x, -0.3, z));
@@ -2367,6 +2375,7 @@ function frame(now) {
   updatePickups(dt);
   updateParticles(dt);
   updateEvent(dt);
+  M.waterTime.value = time;
   updateCut();
   updateSpeech();
   pirateCheck();

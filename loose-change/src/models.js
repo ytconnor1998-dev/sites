@@ -110,6 +110,8 @@ export const C = {
 
 // ---------- furniture ----------
 export function sofa(color = C.sofa, dark = C.sofaDark, width = 2.3) {
+  // our sofa is the cosy KayKit couch; everyone else's is a recoloured Kenney one
+  if (color === C.sofa) { const cosy = fit('kf:couch_pillows', { w: width }); if (cosy) return cosy; }
   const real = fit(width > 1.6 ? 'f:loungeSofaLong' : 'f:loungeSofa', { w: width, tint: color }); if (real) return real;
   const w = width;
   return group(
@@ -123,9 +125,9 @@ export function sofa(color = C.sofa, dark = C.sofaDark, width = 2.3) {
     box(0.45, 0.32, 0.12, 0xf2d16b, -w / 4, 0.82, -0.18, { rot: [0.2, 0.1, 0.12] }),
   );
 }
-export function armchair(color = 0xd27a5a) { return fit('f:loungeChair', { w: 1.05, tint: color }) || sofa(color, 0xa45a40, 1.15); }
+export function armchair(color = 0xd27a5a) { return fit('kf:armchair_pillows', { w: 1.05 }) || fit('f:loungeChair', { w: 1.05, tint: color }) || sofa(color, 0xa45a40, 1.15); }
 export function coffeeTable() {
-  const real = fit('f:tableCoffee', { w: 1.2 }); if (real) return real;
+  const real = fit('kf:table_low', { w: 1.2 }) || fit('f:tableCoffee', { w: 1.2 }); if (real) return real;
   return group(box(1.2, 0.08, 0.6, C.wood, 0, 0.42, 0), ...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => box(0.06, 0.4, 0.06, C.woodDark, a * 0.52, 0.2, b * 0.24)),
     cyl(0.06, 0.05, 0.1, 0xffffff, 0.3, 0.51, 0), box(0.25, 0.03, 0.18, 0xd9534f, -0.25, 0.47, 0.05, { rot: [0, 0.3, 0] }));
 }
@@ -137,7 +139,7 @@ export function tv() {
   return group(box(1.6, 0.5, 0.45, C.woodDark, 0, 0.25, 0), box(1.6, 0.95, 0.06, C.ink, 0, 1.15, 0), screen);
 }
 export function lamp() {
-  const real = fit('f:lampRoundFloor', { h: 1.6 }); if (real) return real;
+  const real = fit('kf:lamp_standing', { h: 1.6 }) || fit('f:lampRoundFloor', { h: 1.6 }); if (real) return real;
   const shade = cone(0.28, 0.35, 0xf8b04a, 0, 1.55, 0, { seg: 16, mat: { emissive: 0xffa040, emissiveIntensity: 1.6, map: null } });
   return group(cyl(0.18, 0.2, 0.05, C.ink, 0, 0.03, 0), cyl(0.025, 0.025, 1.4, 0xdddddd, 0, 0.72, 0), shade);
 }
@@ -146,7 +148,7 @@ export function plant() {
   return group(cyl(0.2, 0.15, 0.35, 0xc4683f, 0, 0.18, 0), ball(0.32, 0x4f9a3a, 0, 0.6, 0, { seg: 6 }), ball(0.22, 0x5fb046, 0.12, 0.85, 0.05, { seg: 6 }));
 }
 export function bookshelf() {
-  const real = fit('f:bookcaseOpen', { w: 1.6 }); if (real) return real;
+  const real = fit('kf:shelf_A_big', { w: 1.4 }) || fit('f:bookcaseOpen', { w: 1.6 }); if (real) return real;
   const g = group(box(1.2, 1.9, 0.35, C.wood, 0, 0.95, 0));
   const cols = [0xd9534f, 0x5b8bd9, 0xf2b631, 0x6aa84f, 0x9b59b6];
   for (let s = 0; s < 4; s++) {
@@ -160,7 +162,7 @@ export function fireplace() {
   return group(box(1.8, 1.1, 0.5, C.brick, 0, 0.55, 0), box(0.9, 0.6, 0.1, 0x241a14, 0, 0.35, 0.22), box(2.1, 0.1, 0.65, C.white, 0, 1.15, 0.03),
     box(0.5, 0.18, 0.12, 0xf08a24, 0, 0.15, 0.2, { mat: { emissive: 0xff6a10, emissiveIntensity: 2.5, map: null } }));
 }
-export function rug(color = 0xc0504d) { return cyl(1.4, 1.4, 0.02, color, 0, 0.011, 0, { seg: 24, shadow: false }); }
+export function rug(color = 0xc0504d) { if (typeof color === 'object') { const r = fit('kf:rug_oval_A', { w: 2.8 }); if (r) return r; } return cyl(1.4, 1.4, 0.02, color, 0, 0.011, 0, { seg: 24, shadow: false }); }
 export function counter(len = 3) {
   if (lib['f:kitchenCabinet']) {
     const g = new THREE.Group(), n = Math.max(1, Math.round(len / 0.75));
@@ -629,7 +631,11 @@ export function fountain() {
   for (let i = 0; i < 18; i++) g.add(coin(0.07, false).translateX(Math.random() * 3 - 1.5).translateY(0.57).translateZ(Math.random() * 3 - 1.5));
   return g;
 }
-export function pond(r = 5) { return group(cyl(r, r, 0.04, 0x3f7aa0, 0, 0.02, 0, { seg: 28, mat: { roughness: 0.08, emissive: 0x0a2236 }, shadow: false }), part(new THREE.TorusGeometry(r, 0.25, 6, 28), 0x8a7a5a, 0, 0.05, 0, { rot: [Math.PI / 2, 0, 0] })); }
+export function pond(r = 5) {
+  const disc = new THREE.Mesh(subdivideDisc(r), waterMaterial({ color: 0x3f8ab0, crest: 0x8ad8e8, amp: 0.03, len: 1.8, speed: 0.8 }));
+  disc.position.y = 0.12; disc.receiveShadow = true; disc.userData.noAO = true;
+  return group(disc, part(new THREE.TorusGeometry(r, 0.25, 6, 28), 0x8a7a5a, 0, 0.14, 0, { rot: [Math.PI / 2, 0, 0] }));
+}
 export function duck() { const real = fit('pet:chick', { h: 0.3 }); if (real) return real; return duckOld(); }
 function duckOld() { return group(ball(0.16, 0x8a6a4a, 0, 0.12, 0, { scale: [0.9, 0.7, 1.3] }), ball(0.09, 0x2a6a3a, 0, 0.28, 0.14), cone(0.03, 0.08, C.orange, 0, 0.27, 0.25, { rot: [Math.PI / 2, 0, 0] })); }
 export function dog(color = 0xb07a4a) {
@@ -714,7 +720,44 @@ export function moleCitizen() {
   return g;
 }
 export function throne() { return group(box(1.6, 0.5, 1.2, 0x8a2a2a, 0, 0.25, 0), box(1.6, 1.8, 0.25, 0x8a2a2a, 0, 1.15, -0.5), box(1.7, 0.2, 0.3, 0xf2b631, 0, 2.1, -0.5)); }
-export function water(w, d) { return part(new THREE.BoxGeometry(w, 0.05, d), 0x3a5a4a, 0, 0, 0, { mat: { roughness: 0.05, emissive: 0x0a1a12, map: null }, shadow: false }); }
+// ---------- water: real moving waves (in world space, so tiles line up), sparkle and foam on the crests ----------
+export const waterTime = { value: 0 };
+// a round disc with lots of vertices so it can ripple
+function subdivideDisc(r, rings = 18, segs = 64) {
+  const g = new THREE.RingGeometry(0.001, r, segs, rings); g.rotateX(-Math.PI / 2); return g;
+}
+export function waterMaterial({ color = 0x3a8ec0, crest = 0x7fd0e8, amp = 0.25, len = 9, speed = 1, rough = 0.18, emissive = 0x0a2a40 } = {}) {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: 0.05, emissive });
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = waterTime; sh.uniforms.uAmp = { value: amp }; sh.uniforms.uLen = { value: len }; sh.uniforms.uSpeed = { value: speed }; sh.uniforms.uCrest = { value: new THREE.Color(crest) };
+    sh.vertexShader = 'uniform float uTime; uniform float uAmp; uniform float uLen; uniform float uSpeed; varying float vH;\n' + sh.vertexShader
+      .replace('#include <beginnormal_vertex>', `
+        vec4 wp0 = modelMatrix * vec4(position, 1.0);
+        float t = uTime * uSpeed;
+        float k1 = 6.2831 / uLen, k2 = 6.2831 / (uLen * 0.63), k3 = 6.2831 / (uLen * 0.37);
+        vec2 d1 = normalize(vec2(1.0, 0.3)), d2 = normalize(vec2(-0.4, 1.0)), d3 = normalize(vec2(0.7, -0.8));
+        float p1 = dot(d1, wp0.xz) * k1 + t * 1.1, p2 = dot(d2, wp0.xz) * k2 + t * 1.4, p3 = dot(d3, wp0.xz) * k3 + t * 1.9;
+        float a1 = uAmp, a2 = uAmp * 0.5, a3 = uAmp * 0.25;
+        float h = a1 * sin(p1) + a2 * sin(p2) + a3 * sin(p3);
+        vec2 grad = a1 * k1 * cos(p1) * d1 + a2 * k2 * cos(p2) * d2 + a3 * k3 * cos(p3) * d3;
+        vec3 objectNormal = normalize(vec3(-grad.x, 1.0, -grad.y));
+        vH = h / (uAmp * 1.75);`)
+      .replace('#include <begin_vertex>', 'vec3 transformed = vec3(position); transformed.y += h;');
+    sh.fragmentShader = 'uniform vec3 uCrest; varying float vH;\n' + sh.fragmentShader
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        diffuseColor.rgb = mix(diffuseColor.rgb * 0.8, uCrest, smoothstep(-0.2, 0.9, vH) * 0.55);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), smoothstep(0.78, 1.0, vH) * 0.75);`);
+  };
+  return mat;
+}
+// a flat sheet of waves (w x d), lying down, ready to place
+export function waterSheet(w, d, opts = {}, density = 3) {
+  const geo = new THREE.PlaneGeometry(w, d, Math.min(256, Math.ceil(w * density)), Math.min(256, Math.ceil(d * density)));
+  geo.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(geo, waterMaterial(opts)); m.receiveShadow = true; m.userData.noAO = true;
+  return m;
+}
+export function water(w, d) { return waterSheet(w, d, { color: 0x4a6a4a, crest: 0x8aa070, amp: 0.035, len: 2.5, speed: 0.6, emissive: 0x0a1a12 }, 4); }
 
 // ---------- kitchen & loft ----------
 export function washingMachine() {
