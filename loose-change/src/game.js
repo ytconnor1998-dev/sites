@@ -58,6 +58,7 @@
       brian: { p: 0, slowUntil: 0 }, items: {}, armed: {},
       pockets: [], stall: [], stallPrice: 'fair', stallUps: [],
       tools: { sofa: 0, pig: 0, dig: 0 }, toolDur: {}, request: null, nextRequestAt: 0, boosts: {}, crafted: [],
+      letters: [], loftPigs: {}, boxes: [], washUntil: 0,
       buffs: [], flags: {},
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0, floor: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
@@ -85,6 +86,7 @@
       S.buffs = []; // buffs don't survive a reload
       S.brian = Object.assign({ p: 0, slowUntil: 0 }, data.brian); S.items = data.items || {}; S.armed = data.armed || {};
       S.pockets = data.pockets || []; S.stall = data.stall || []; S.stallUps = data.stallUps || [];
+      S.letters = data.letters || []; S.loftPigs = data.loftPigs || {}; S.boxes = data.boxes || [];
       S.tools = Object.assign({ sofa: 0, pig: 0, dig: 0 }, data.tools); S.toolDur = data.toolDur || {}; S.boosts = data.boosts || {}; S.crafted = data.crafted || [];
       return true;
     } catch (e) { return false; }
@@ -316,6 +318,7 @@
     if (grade === 'PERFECT!') S.stats.perfects = (S.stats.perfects || 0) + 1;
     LC.audio.sfx('coin', 1 + Math.min(combo, 20) * 0.04);
     if (chance(grade === 'PERFECT!' ? 0.08 : 0.04)) sofaFind();
+    if (S.stats.clicks === 500) giveLetter('l10');
     renderCombo(grade);
     return { value: v, grade, burst: grade === 'PERFECT!' ? 10 : grade ? 5 : 3 };
   }
@@ -393,6 +396,7 @@
         if (r.buttons) { S.buttons += r.buttons; what = `+${r.buttons} buttons`; }
         if (r.item) { giveItem(r.item, true); what = '(in your pocket)'; }
         if (r.junk) giveJunk(r.junk, true);
+        if (r.letter) giveLetter(r.letter);
         LC.audio.sfx('ding');
         toast(`${ic(f.icon)}<div><b>Dug up: ${f.name}</b><br><small>${f.text} ${what}</small></div>`, 'find');
         gardenDirty = true;
@@ -852,7 +856,9 @@
     say(pick(['You take a handful from the Thing Fund. Brian will never notice. (He will notice.)', 'The jar says THING FUND. Your pocket now says THING FUND.', 'Sorry, Brian.']));
     LC.world.brianNoise();
   }
+  let brianReads = 0;
   function brianComputer() {
+    if (++brianReads === 3) { say('In the desk drawer under the computer: an old letter. Brian kept it all these years.'); giveLetter('l6'); return; }
     say(pick([`Brian's spreadsheet. "THING FUND: ${fmt(brianMoney())}. KID: probably about £3."`, 'Brian\'s spreadsheet. Tab 2 is called "WAYS TO STOP THE KID". It is blank. He couldn\'t think of any.', 'Brian\'s spreadsheet. A column called "GNOME BIRTHDAYS".', `Brian's spreadsheet. "Days until The Thing is mine: ${Math.max(1, Math.round((1 - S.brian.p) * 40))}".`]));
   }
   function brianCarPrompt() {
@@ -970,8 +976,83 @@
     if (Object.keys(LC.CHAT).every((k) => S.chatted.includes(k))) findSecret('chatty');
   }
 
+  // ---------- Grandad's letters ----------
+  function giveLetter(id) {
+    if (S.letters.includes(id)) return;
+    const l = LC.LETTERS.find((x) => x.id === id);
+    S.letters.push(id);
+    LC.audio.sfx('ding');
+    toast(`${ic('✉️')}<div><b>Grandad's letter (${S.letters.length}/12)</b><br><small>"${l.title}" · read it in your Notes app</small></div>`, 'gold');
+  }
+  // ---------- the kitchen ----------
+  function jarPrompt() { const w = waitFor('jar'); return w ? `Mum's change jar<small>Empty. She'll top it up later (${w}s)</small>` : "Take some coins from Mum's change jar<small>She won't notice. Probably.</small>"; }
+  function kitchenJar() {
+    if (!ready('jar', 150)) { LC.audio.sfx('nope'); return; }
+    const n = lump(60, 0.8); gain(n); floatAt(null, n); LC.audio.sfx('coin');
+    S.stats.jar = (S.stats.jar || 0) + 1;
+    if (S.stats.jar === 6) { setTimeout(() => { LC.audio.sfx('text'); toast(`${ic('💬')}<div><b>Mum</b><br><small>Has someone been in my change jar?? I know exactly how much was in there.</small></div>`, 'msg'); }, 4000); }
+  }
+  const washing = () => S.washUntil > Date.now();
+  function washPrompt() {
+    if (washing()) return `The washing machine is going<small>${Math.ceil((S.washUntil - Date.now()) / 1000)}s left. It's VERY loud.</small>`;
+    if (S.washUntil) return 'Empty the washing machine<small>Check the pockets...</small>';
+    return 'Put a load of washing on<small>Everyone leaves things in their pockets</small>';
+  }
+  function washer() {
+    if (washing()) { say('Spinning. Something is clanking. Coins, hopefully.'); return; }
+    if (S.washUntil) {
+      S.washUntil = 0; LC.world.washerShake(false);
+      S.stats.washes = (S.stats.washes || 0) + 1;
+      const n = lump(150, 2); gain(n); floatAt(null, n); LC.audio.sfx('coin');
+      const r = Math.random();
+      if (r < 0.2) giveJunk(pick(['sock', 'marble', 'foreign', 'lego', 'bottlecap']));
+      else if (r < 0.3) { S.buttons += 3; say('Clean coins, and three buttons. They are VERY clean.'); }
+      else if (r < 0.38 && !S.items.whoopee) giveItem('whoopee');
+      else say(pick(['Clean coins! Money laundering, but legal.', 'Coins, and one of Dad\'s socks is now pink.', 'A load of warm, clean change.']));
+      return;
+    }
+    S.washUntil = Date.now() + 45000; LC.world.washerShake(true); LC.audio.sfx('click');
+    say('Washing on. 45 seconds. Go and do something else.');
+  }
+  // ---------- the loft ----------
+  function hatchPrompt() { return S.stallUps.includes('loftpole') ? 'Pull down the loft ladder' : "A loft hatch<small>Too high to reach. Something with a hook on the end might help.</small>"; }
+  function hatch() { if (!S.stallUps.includes('loftpole')) { LC.audio.sfx('nope'); say("You jump. You can't reach. Nailed It Hardware might have something."); return; } LC.world.goLoft(); }
+  function boxPrompt(i) { return S.boxes.includes(i) ? "Grandad's box<small>You've been through it</small>" : "Look through Grandad's box"; }
+  function grandadBox(i) {
+    if (S.boxes.includes(i)) { say(pick(['Old photos. Grandad in a very big jumper.', 'Christmas lights. Tangled since 1987.', 'A tin of buttons. You take them all.'])); return; }
+    S.boxes.push(i);
+    giveLetter(['l1', 'l2', 'l3', 'l4'][i]);
+    giveJunk(['medal', 'foreign', 'toycar', 'pipe'][i], true);
+    const n = lump(120, 5); gain(n); floatAt(null, n);
+  }
+  function loftPigPrompt(i) { const h = S.loftPigs[i]; return h === 'done' ? '' : `Smash one of Grandad's old piggy banks<small>${4 - (h || 0)} hits left</small>`; }
+  function loftPig(i) {
+    if (S.loftPigs[i] === 'done') return null;
+    S.loftPigs[i] = (S.loftPigs[i] || 0) + (eff('pig').hits === 0 ? 4 : 1);
+    wear('pig');
+    LC.audio.sfx('tap');
+    if (S.loftPigs[i] < 4) return 'hit';
+    S.loftPigs[i] = 'done';
+    const n = lump(200 + i * 120, 10); gain(n); floatAt(null, n, 'big'); LC.audio.sfx('smash');
+    if (chance(0.4)) giveJunk(pick(['foreign', 'roman', 'medal', 'key']));
+    say(pick(['Old coins. Some of them are shillings.', 'Coins from 1972. Still money!', 'A note inside: "FOR A RAINY DAY". It is a rainy day.']));
+    return 'smash';
+  }
+  function trunkPrompt() { return S.flags.trunk ? 'Grandad\'s trunk (open)' : `A locked trunk<small>${S.pockets.some((p) => p.id === 'key') ? 'You have a mystery key...' : 'It needs a key'}</small>`; }
+  function trunk() {
+    if (S.flags.trunk) { say('Grandad\'s savings book. Every penny he ever found, written down. It adds up to a lot.'); return; }
+    const k = S.pockets.findIndex((p) => p.id === 'key');
+    if (k < 0) { LC.audio.sfx('nope'); say('Locked. There must be a key somewhere. Keys turn up in odd places.'); return; }
+    S.pockets.splice(k, 1); renderHotbar(); S.flags.trunk = true;
+    const n = lump(2400, 200); gain(n); floatAt(null, n, 'big'); LC.audio.sfx('fanfare');
+    giveLetter('l9');
+  }
+
   // ---------- underground ----------
-  function onUnderground(down) { if (down) { S.flags.wentDown = true; say(pick(['It is dark. It smells of soil and 2p coins.', 'You climb down. Your hole has become... a place.', 'Somewhere, something squeaks.'])); } }
+  function onArea(a) {
+    if (a === 'under') { S.flags.wentDown = true; say(pick(['It is dark. It smells of soil and 2p coins.', 'You climb down. Your hole has become... a place.', 'Somewhere, something squeaks.'])); }
+    if (a === 'loft') { S.flags.loft = true; say(pick(['The loft. Dusty. Quiet. Full of Grandad\'s things.', 'It smells of old books and Christmas decorations.'])); }
+  }
   function pilePrompt(i) { const w = waitFor('pile' + i); return w ? `A pile of junk<small>Searched. Give it ${w}s.</small>` : 'Search the junk pile'; }
   function searchPile(i, tier) {
     if (!ready('pile' + i, 60)) { LC.audio.sfx('nope'); return; }
@@ -995,6 +1076,7 @@
     S.flags.chest = true;
     const n = lump(1800, 500); gain(n); floatAt(null, n, 'big');
     giveJunk('helmet', true);
+    giveLetter('l7');
     LC.audio.sfx('fanfare');
     toast(`${ic('🏛️')}<div><b>Roman treasure!</b> +${fmt(n)}<br><small>And a centurion's helmet for your pockets.</small></div>`, 'gold');
   }
@@ -1005,7 +1087,7 @@
       modal({ speaker: 'mole', npc, icon: '👑', title: 'The Mole King', text: '"You bring SHINY THINGS. Three of them! Give them to me, surface child."', choices: [
         { label: 'Hand them over', fn: () => {
           for (let k = 0; k < 3; k++) { const i = S.pockets.findIndex((p) => LC.JUNK[p.id].rarity >= 2); S.pockets.splice(i, 1); }
-          renderHotbar(); S.flags.honoraryMole = true; LC.audio.sfx('fanfare');
+          renderHotbar(); S.flags.honoraryMole = true; LC.audio.sfx('fanfare'); setTimeout(() => giveLetter('l8'), 3000);
           return { text: '"I name you HONORARY MOLE. Your digging is doubled. The Mole Market is open to you."' };
         } },
         { label: 'Not yet', cls: 'ghost' },
@@ -1199,6 +1281,7 @@
     newPig(); card = null; renderCard();
     renderShop(true); gardenDirty = true; buildGarden();
     LC.world.reset();
+    LC.world.setLoftPigs([]);
     gooseShown = '';
     save();
     LC.audio.music(S.settings.music);
@@ -1342,7 +1425,7 @@
         else if (u && owned > 0) out.push({ key: u.id, icon: g.icon, name: u.name, desc: `Needs ${u.at} ${g.name}s (you have ${owned}).`, cost: upCost(u), locked: true });
       }
     }
-    for (const u of LC.UPGRADES.filter((x) => x.shop === shop && !has(x.id) && seen(x))) out.push({ key: u.id, icon: u.icon, name: u.name, desc: u.desc, cost: upCost(u), buy: () => S.upgrades.push(u.id) });
+    for (const u of LC.UPGRADES.filter((x) => x.shop === shop && !has(x.id) && (seen(x) || u.kind === 'letter'))) out.push({ key: u.id, icon: u.icon, name: u.name, desc: u.desc, cost: upCost(u), buy: () => { S.upgrades.push(u.id); if (u.kind === 'letter') giveLetter(u.value); } });
     if (shop === 'hardware') {
       for (const k of ['sofa', 'pig', 'dig']) {
         const t = (S.tools[k] || 0) + 1, def = LC.TOOLS[k][t];
@@ -1490,13 +1573,14 @@
   function renderNotes() {
     const v = $('#notes-view');
     if (openNote) {
-      const n = LC.NOTES.find((x) => x.id === openNote);
+      const n = LC.NOTES.find((x) => x.id === openNote) || (() => { const l = LC.LETTERS.find((x) => 'L' + x.id === openNote); return { id: openNote, title: `Grandad: ${l.title}`, body: l.body }; })();
       if (!S.openedNotes.includes(n.id)) S.openedNotes.push(n.id);
       if (LC.NOTES.every((x) => S.openedNotes.includes(x.id))) findSecret('notes');
       v.innerHTML = `<div class="note-page"><h3>${n.title}</h3><pre>${noteText(n)}</pre></div>`;
       return;
     }
-    const list = unlockedNotes().reverse();
+    const letters = S.letters.map((id) => LC.LETTERS.find((l) => l.id === id)).filter(Boolean).map((l) => ({ id: 'L' + l.id, title: `✉️ Grandad: ${l.title}`, body: l.body }));
+    const list = [...letters.reverse(), ...unlockedNotes().reverse()];
     v.innerHTML = list.map((n) => `<button class="note-row ${S.openedNotes.includes(n.id) ? '' : 'unread'}" data-id="${n.id}"><b>${n.title}</b><small>${noteText(n).split('\n')[0]}</small></button>`).join('') || '<p class="muted">No notes yet.</p>';
     v.querySelectorAll('.note-row').forEach((b) => (b.onclick = () => { openNote = b.dataset.id; $('#screen-close').innerHTML = '‹ Back'; renderNotes(); }));
   }
@@ -1735,6 +1819,9 @@
       slow = 0;
       checkAchievements();
       checkTasks();
+      if (S.money >= LC.THING_COST && !S.letters.includes('l12')) giveLetter('l12');
+      if (S.washUntil && !washing() && !S.flags.washPinged) { S.flags.washPinged = true; LC.world.washerShake(false); LC.audio.sfx('ding'); toast(`${ic('🧺')}<div><b>The washing's done!</b><br><small>Go and check the pockets.</small></div>`); }
+      if (washing()) S.flags.washPinged = false;
       if (panelVisible('notebook')) renderStats();
       if (panelVisible('bank')) renderBank();
       if (panelVisible('home')) renderHome();
@@ -1813,6 +1900,8 @@
     if (!S.pig || S.pig.smashed) newPig(); else showPig();
     syncStall(); LC.world.setStallUps(S.stallUps); renderHotbar();
     if (crafted('robocat')) LC.world.evolve('cat');
+    LC.world.setLoftPigs(Object.keys(S.loftPigs).filter((k) => S.loftPigs[k] === 'done').map(Number));
+    if (washing() || S.washUntil) LC.world.washerShake(washing());
     renderCard();
     if (!loaded) queueEvent(() => modal({ icon: '🛋️', title: 'Loose Change',
       text: `You're saving up for something. You're not sure what. It's under a sheet in the hall, and it costs <b>${fmt(LC.THING_COST)}</b>.<br><br>You have 0p.<br><br>Better check down the back of the sofa.`,
@@ -1851,7 +1940,8 @@
     LC.game = {
       rummage, dig, hitPig, nextPig, collect, gooseBite, tryBuyThing, say, floatAt, setPrompt, setCompass,
       sofaPrompt, digPrompt, setPulse, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
-      onUnderground, pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
+      onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,
+      pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),

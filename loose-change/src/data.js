@@ -60,6 +60,7 @@ LC.UPGRADES = [ // shop: where you buy it (charity shop, corner shop, hardware s
   { id: 'shopmate', shop: 'corner', icon: '🏪', name: 'Mate At The Corner Shop', cost: 30000, kind: 'stock', value: 3, desc: 'Shop keeps 3 more cards for you.' },
   { id: 'magnet1', shop: 'hardware', icon: '🧲', name: 'Magnetic Trousers', cost: 250, kind: 'magnet', value: 1.5, desc: 'Coins on the floor fly to you from further away.' },
   { id: 'magnet2', shop: 'hardware', icon: '👖', name: 'Extremely Magnetic Trousers', cost: 2e6, kind: 'magnet', value: 2.5, desc: 'Coins fly to you from even further. Your keys are stuck to you.' },
+  { id: 'oldbook', shop: 'charity', icon: '📕', name: 'An Old Book', cost: 50, kind: 'letter', value: 'l11', desc: '"A Hundred Places To Hide Money". Something is tucked inside.' },
   { id: 'horseshoe', shop: 'charity', icon: '🧲', name: 'Magnetic Horseshoe', cost: 5e7, kind: 'luck', value: 1, desc: 'Even better scratch card odds. Mildly cursed.' },
 ];
 
@@ -83,6 +84,7 @@ LC.DIG_FINDS = [
   { at: 6, icon: '📼', name: 'A 1994 time capsule', text: 'Contains a Tamagotchi. It is still alive. It is hungry.', reward: { cash: 120, junk: 'tamagotchi' } },
   { at: 3.5, icon: '💨', name: 'A stink bomb from 1989', text: 'Still sealed. Still potent. You know exactly whose car this is for.', reward: { item: 'stink' } },
   { at: 15, icon: '🏴‍☠️', name: "A pirate's chest", text: 'Long way inland for a pirate. Good for him.', reward: { cash: 600 } },
+  { at: 20, icon: '🍪', name: 'A biscuit tin', text: 'Inside: no biscuits. A letter, in Grandad\'s handwriting.', reward: { letter: 'l5' } },
   { at: 40, icon: '🚽', name: "Next door's sewer pipe", text: 'Sorry, Brian.', reward: { buttons: 3 } },
   { at: 100, icon: '🦖', name: 'A fossilised £1 coin', text: 'Dinosaurs had money. That is how they could afford to be so big.', reward: { mult: 0.1 } },
   { at: 350, icon: '🅿️', name: 'An underground car park', text: 'Pay and display. You pay. You display.', reward: { cash: 1800 } },
@@ -483,6 +485,10 @@ LC.TASKS = [
   { id: 's2', text: 'Sell 3 things at your stall', target: 3, progress: (s) => s.stats.sold || 0, reward: { secs: 90, min: 15 }, rewardText: 'Ninety seconds of income' },
   { id: 't7', text: 'Read a message on your phone', target: 1, progress: (s) => Object.values(s.texts).filter((t) => t.read).length, reward: { cash: 15 }, rewardText: '£15' },
   { id: 't8', text: 'Find £100 in total', target: 100, progress: (s) => s.lifetime, reward: { gen: ['detectorist', 1] }, rewardText: 'A free Metal Detectorist' },
+  { id: 'k1', text: 'Raid Mum\'s change jar in the kitchen', target: 1, progress: (s) => s.stats.jar || 0, reward: { cash: 3 }, rewardText: '£3 (Mum will never know)' },
+  { id: 'k2', text: 'Do a load of washing (and check the pockets)', target: 1, progress: (s) => s.stats.washes || 0, reward: { secs: 60, min: 10 }, rewardText: 'A minute of income' },
+  { id: 'l1', text: 'Get up into the loft (the hardware shop sells a pole)', target: 1, progress: (s) => (s.flags.loft ? 1 : 0), reward: { secs: 120, min: 20 }, rewardText: 'Two minutes of income' },
+  { id: 'l2', text: "Find 3 of Grandad's letters", target: 3, progress: (s) => (s.letters || []).length, reward: { secs: 300 }, rewardText: 'Five minutes of income' },
   { id: 't9', text: 'Buy a scratch card at the corner shop', target: 1, progress: (s) => s.stats.cards, reward: { secs: 120, min: 20 }, rewardText: 'Two minutes of income' },
   { id: 'b1', text: "Find out where Brian hides his spare key", target: 1, progress: (s) => (s.flags.hasKey ? 1 : 0), reward: { secs: 120, min: 15 }, rewardText: 'Two minutes of income' },
   { id: 'b2', text: "Sneak into Brian's house and raid his sofa 10 times", target: 10, progress: (s) => s.stats.brianSofa || 0, reward: { secs: 240 }, rewardText: 'Four minutes of income' },
@@ -507,6 +513,7 @@ LC.TASKS = [
   { id: 'u3', text: 'Earn the trust of the Mole King', target: 1, progress: (s) => (s.flags.honoraryMole ? 1 : 0), reward: { secs: 1500 }, rewardText: '25 minutes of income' },
   { id: 't22', text: 'Survive 25 random events', target: 25, progress: (s) => s.stats.events, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
   { id: 't23', text: 'Find £1 billion in total', target: 1e9, progress: (s) => s.lifetime, reward: { gen: ['factory', 1] }, rewardText: 'A free Sofa Factory' },
+  { id: 'l3', text: "Find all 12 of Grandad's letters", target: 12, progress: (s) => (s.letters || []).length, reward: { secs: 3600 }, rewardText: 'An hour of income' },
   { id: 't24', text: 'Reach the centre of the Earth', target: 6371000, progress: (s) => s.depth, reward: { secs: 1800 }, rewardText: '30 minutes of income' },
   { id: 't25', text: 'Save up £1 trillion for The Thing', target: 1e12, progress: (s) => s.money, reward: { cash: 0 }, rewardText: 'Find out what it is' },
 ];
@@ -586,6 +593,7 @@ LC.TOOLS = {
 LC.HARDWARE_EXTRAS = [
   { id: 'rucksack', icon: '🎒', name: 'Bigger Rucksack', cost: 800, desc: 'Carry 24 things instead of 12.' },
   { id: 'wheelbarrow', icon: '🛒', name: 'Wheelbarrow', cost: 5e5, desc: 'Carry 48 things. Very serious.' },
+  { id: 'loftpole', icon: '🪝', name: 'Loft Pole', cost: 120, desc: 'A pole with a hook on the end. For opening loft hatches. Hint hint.' },
 ];
 
 // ---- Helpers have names ----
@@ -620,3 +628,84 @@ LC.UNDER_CHAT = {
   rat: ['The rat tips its tiny hat.', 'Rat: "Squeak." (That was rude.)', 'Rat: "Seen a ring? Gold? Shiny? No? Me neither." (It has definitely seen a ring.)', 'Rat: "Lot of coins come down the drains. We don\'t judge."'],
   mole: ['Mole: "A SURFACE DWELLER!"', 'Mole: "Have you met the King? He is very small and very important."', 'Mole: "We trade in shiny things down here."', 'Mole: "Our houses are holes. Your house is a hole above a hole."'],
 };
+
+// ---- Grandad's letters: the real story, found around the world. Shown in the Notes app. ----
+LC.LETTERS = [
+  { id: 'l1', where: 'loft box', title: 'If you are reading this', body: `If you're reading this, you've found my boxes. Good. Nosy, like me.
+
+I've left you something in the hall. Don't let Brian look under the sheet. He's been trying since 1983.
+
+Start with the sofa. You'll see why.
+
+Love, Grandad (Ken)` },
+  { id: 'l2', where: 'loft box', title: 'About the sofa', body: `That sofa was my dad's. And his dad's.
+
+Every Friday since 1961 I've dropped my loose change down the back. Fifty years of Fridays.
+
+That's why it never runs out. Well. That, and something I can't explain.
+
+- Ken` },
+  { id: 'l3', where: 'loft box', title: 'Brian', body: `Brian was my paper boy in 1979. Lovely lad. Terrible at maths.
+
+In 1983 he bet me he could save more than me by the end of the summer. He lost. He has never forgiven me.
+
+He thinks The Thing is his prize. It isn't. It never was.
+
+- Ken` },
+  { id: 'l4', where: 'loft box', title: 'The goose', body: `The goose is called Margaret. She is 41 years old. Geese don't live that long. Margaret does.
+
+I raised her from an egg I found in the post office. She hates everyone except family.
+
+If she bites you, it means she's thinking about it.
+
+- Ken` },
+  { id: 'l5', where: 'the hole', title: 'Buried in a biscuit tin', body: `I buried this tin in 1974, so if you've dug this far, well done.
+
+The garden is older than the house. Romans, pirates, moles. All sorts.
+
+Keep going. The moles are friendly once they know you.
+
+- Ken (age 34, with a spade)` },
+  { id: 'l6', where: "Brian's house", title: 'Found in Brian\'s drawer', body: `(A letter Ken wrote to Brian in 1984. Brian kept it.)
+
+Brian, it was only a bet. The Thing isn't for winning. It's for whoever needs it most.
+
+Come round for tea. Margaret says sorry about your ankle.
+
+- Ken` },
+  { id: 'l7', where: 'Roman chest', title: 'Note in the Roman chest', body: `WE WERE HERE FIRST - THE ROMANS
+
+(Underneath, in biro:) So was I. The coins are mine, the helmet is theirs. - Ken` },
+  { id: 'l8', where: 'the Mole King', title: 'A letter the Mole King kept', body: `To His Majesty the Mole King,
+
+Thank you for the tunnels. Sorry about the noise of the drill. Please look after my grandchild if they ever come down.
+
+Your friend on the surface,
+Ken` },
+  { id: 'l9', where: 'loft trunk', title: 'In the locked trunk', body: `This trunk has my savings book in it. Every penny I ever found, written down.
+
+The total is exactly one trillion pounds. Well. In my head it is.
+
+I never spent it. I wanted to see what you'd do with it.
+
+- Ken` },
+  { id: 'l10', where: 'the sofa', title: 'Folded very small, down the sofa', body: `If you've rummaged this many times, you're definitely my grandchild.
+
+Your Nan thinks I'm daft. She's right. Look after her.
+
+- Ken` },
+  { id: 'l11', where: 'the charity shop', title: 'Inside an old book', body: `I gave this book to the charity shop on purpose. I knew you'd go in eventually.
+
+The best things in life are second-hand. Except socks.
+
+- Ken` },
+  { id: 'l12', where: 'The Thing', title: 'Pinned to the sheet', body: `You did it. A trillion pounds. I knew you would.
+
+Whatever is under this sheet, remember: it was never about the money.
+
+It was about checking down the back of the sofa.
+
+Love you. Go on then. Have a look.
+
+- Grandad` },
+];

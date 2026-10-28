@@ -592,3 +592,13 @@ export function moleCitizen() {
 }
 export function throne() { return group(box(1.6, 0.5, 1.2, 0x8a2a2a, 0, 0.25, 0), box(1.6, 1.8, 0.25, 0x8a2a2a, 0, 1.15, -0.5), box(1.7, 0.2, 0.3, 0xf2b631, 0, 2.1, -0.5)); }
 export function water(w, d) { return part(new THREE.BoxGeometry(w, 0.05, d), 0x3a5a4a, 0, 0, 0, { mat: { roughness: 0.05, emissive: 0x0a1a12, map: null }, shadow: false }); }
+
+// ---------- kitchen & loft ----------
+export function washingMachine() {
+  const g = group(box(0.7, 0.85, 0.65, 0xf3f3f3, 0, 0.43, 0), box(0.7, 0.1, 0.65, 0xdddddd, 0, 0.9, 0), part(new THREE.TorusGeometry(0.2, 0.04, 8, 20), 0x999999, 0, 0.45, 0.33), cyl(0.18, 0.18, 0.02, 0x7ab0d8, 0, 0.45, 0.33, { rot: [Math.PI / 2, 0, 0], mat: { roughness: 0.1, map: null } }), box(0.15, 0.06, 0.02, 0x333333, 0.2, 0.8, 0.33));
+  const drum = cyl(0.15, 0.15, 0.03, 0xffffff, 0, 0.45, 0.31, { rot: [Math.PI / 2, 0, 0] }); drum.name = 'drum'; g.add(drum);
+  return g;
+}
+export function basket() { return group(cyl(0.3, 0.25, 0.45, 0xd8b878, 0, 0.23, 0, { seg: 12 }), ball(0.25, 0x5b8bd9, 0.05, 0.45, 0, { scale: [1, 0.4, 1] }), ball(0.18, 0xd9534f, -0.1, 0.5, 0.05, { scale: [1, 0.4, 1] })); }
+export function rockingHorse() { return group(box(1.0, 0.06, 0.3, C.woodDark, 0, 0.1, 0, { rot: [0, 0, 0] }), box(0.7, 0.3, 0.25, 0xf3eee4, 0, 0.6, 0), box(0.25, 0.35, 0.2, 0xf3eee4, 0.4, 0.85, 0), box(0.06, 0.45, 0.06, C.woodDark, -0.25, 0.3, 0), box(0.06, 0.45, 0.06, C.woodDark, 0.25, 0.3, 0), box(0.25, 0.08, 0.26, 0xd9534f, 0, 0.78, 0)); }
+export function cardboardBox(label) { const g = group(box(0.7, 0.5, 0.5, 0xc8a070, 0, 0.25, 0), box(0.72, 0.04, 0.2, 0xb08a5a, 0, 0.5, -0.12)); if (label) { const l = signPlane(label, 0.5, 0.16, { bg: '#f3eee4', color: '#2d2118' }); l.position.set(0, 0.3, 0.26); g.add(l); } return g; }

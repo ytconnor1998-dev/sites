@@ -54,6 +54,11 @@ function floor(x0, z0, x1, z1, color, y = 0.01) {
   const m = M.box(x1 - x0, 0.02, z1 - z0, look, (x0 + x1) / 2, y, (z0 + z1) / 2, { shadow: false, sharp: true });
   m.receiveShadow = true; scene.add(m); return m;
 }
+// small things get a bigger invisible target so they're easy to aim at
+function hitbox(obj, w, h, d, y = h / 2) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  m.position.y = y; m.userData.noAO = true; obj.add(m); return obj;
+}
 function interact(obj, def) { obj.traverse((o) => { o.userData.interact = def; }); interactables.push(obj); def.obj = obj; return def; }
 
 // fake volumetric light: a soft additive cone under a lamp
@@ -157,6 +162,19 @@ function buildLevel() {
   const fr = add(M.fridge(), 6.45, 0, -4.4); collideObj(fr);
   add(M.rug(0x3b6ea5), 3, 0, 3.6).scale.set(0.5, 1, 0.35);
   const thing = add(M.theThing(), 4.8, 0, 1.6); collideObj(thing, 0.1);
+  spots.thing = thing;
+  // kitchen: Mum's change jar and the washing machine
+  const mumJar = hitbox(add(M.jar("MUM'S CHANGE"), 3, 0.96, -4.45), 0.7, 0.9, 0.6, 0.3);
+  interact(mumJar, { range: 2.6, prompt: () => LC.game.jarPrompt(), use: () => LC.game.kitchenJar() });
+  const wm = add(M.washingMachine(), 6.55, 0, -2.6, -Math.PI / 2); collideObj(wm);
+  spots.washer = wm;
+  interact(wm, { range: 2.6, prompt: () => LC.game.washPrompt(), use: () => LC.game.washer() });
+  add(M.basket(), 6.3, 0, -1.4);
+  // the loft hatch in the hall ceiling
+  const hatch = M.box(1.0, 0.04, 1.0, 0xe8e0d0, 2.5, 2.79, -2.6, { sharp: true }); scene.add(hatch);
+  const hatchHit = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  hatchHit.position.set(2.5, 2.4, -2.6); hatchHit.userData.noAO = true; scene.add(hatchHit);
+  interact(hatchHit, { range: 3.2, prompt: () => LC.game.hatchPrompt(), use: () => LC.game.hatch() });
   const thingLabel = M.textSprite('???', { size: 0.42 }); thingLabel.position.set(4.8, 2.75, 1.6); scene.add(thingLabel);
   spots.thingLabel = thingLabel;
   interact(thing, { range: 3, prompt: () => LC.game.thingPrompt(), use: () => LC.game.tryBuyThing() });
@@ -358,7 +376,7 @@ function buildUnderground() {
   };
   const ground = (x0, z0, x1, z1, color) => { const m = M.box(x1 - x0, 0.1, z1 - z0, color, (x0 + x1) / 2, -0.05, (z0 + z1) / 2, { sharp: true }); m.receiveShadow = true; scene.add(m); };
   const roof = (x0, z0, x1, z1) => scene.add(M.box(x1 - x0, 0.3, z1 - z0, 0x3a2818, (x0 + x1) / 2, 3.45, (z0 + z1) / 2, { sharp: true }));
-  const light = (x, z, color = 0xffa050, i = 9, d = 11) => { const l = new THREE.PointLight(color, i * 2.4, d * 1.5, 1.5); l.position.set(x, 2.6, z); l.userData.below = true; l.visible = false; scene.add(l); };
+  const light = (x, z, color = 0xffa050, i = 9, d = 11) => { const l = new THREE.PointLight(color, i * 2.4, d * 1.5, 1.5); l.position.set(x, 2.6, z); l.userData.area = 'under'; l.visible = false; scene.add(l); };
   const torchAt = (x, z, ry = 0) => { const t = add(M.torch(), x, 1.2, z, ry); t.rotation.z = 0.3; };
   // arrival chamber + tunnels
   ground(UX - 6, -6, UX + 40, 6, 0x4a3420); roof(UX - 6, -6, UX + 40, 6);
@@ -441,27 +459,69 @@ function gate(x, minDepth) {
   gates.push({ rock, c, minDepth });
 }
 function updateGates(depth) { for (const g of gates) { const open = depth >= g.minDepth; g.c.off = open; g.rock.visible = !open; } }
-let underground = false;
-function goUnderground(down) {
+let area = 'town';
+const AREAS = {
+  town: { sun: 3.4, hemi: 0.9, sky: [0xa8bce0, 0x4a3a2e], fog: [0xd89c78, 22, 120], bg: 0xe0a882, outdoors: true },
+  under: { sun: 0, hemi: 0.65, sky: [0x8a6a4a, 0x3a2a1a], fog: [0x1a120c, 14, 60], bg: 0x0c0806 },
+  loft: { sun: 0, hemi: 0.55, sky: [0xb89a7a, 0x4a3a2a], fog: [0x2a2018, 10, 30], bg: 0x1a1410 },
+};
+function goArea(to, spawn, yaw = 0) {
   const f = document.getElementById('fade');
   f.classList.add('show');
-  LC.audio.sfx('dig');
+  LC.audio.sfx(to === 'loft' || area === 'loft' ? 'click' : 'dig');
   setTimeout(() => {
-    underground = down;
-    if (down) { player.pos.set(UX - 1.5, 0, 0); player.yaw = -Math.PI / 2; }
-    else { player.pos.set(-2, 0, -11.6); player.yaw = 0; }
-    player.pitch = 0;
-    scene.traverse((o) => { if (o.isPointLight) o.visible = !!o.userData.below === down; });
-    sun.intensity = down ? 0 : 3.4;
-    hemi.intensity = down ? 0.65 : 0.9;
-    hemi.color.set(down ? 0x8a6a4a : 0xa8bce0); hemi.groundColor.set(down ? 0x3a2a1a : 0x4a3a2e);
-    scene.fog.color.set(down ? 0x1a120c : 0xd89c78); scene.fog.near = down ? 14 : 22; scene.fog.far = down ? 60 : 120;
-    scene.background.set(down ? 0x0c0806 : 0xe0a882);
-    scene.userData.sky.visible = !down; if (clouds) clouds.visible = !down; if (dust) dust.visible = !down;
-    LC.game.onUnderground(down);
+    area = to;
+    const A = AREAS[to];
+    player.pos.set(spawn[0], 0, spawn[1]); player.yaw = yaw; player.pitch = 0;
+    scene.traverse((o) => { if (o.isPointLight) o.visible = (o.userData.area || 'town') === to; });
+    sun.intensity = A.sun; hemi.intensity = A.hemi; hemi.color.set(A.sky[0]); hemi.groundColor.set(A.sky[1]);
+    scene.fog.color.set(A.fog[0]); scene.fog.near = A.fog[1]; scene.fog.far = A.fog[2];
+    scene.background.set(A.bg);
+    scene.userData.sky.visible = !!A.outdoors; if (clouds) clouds.visible = !!A.outdoors; if (dust) dust.visible = to !== 'under';
+    LC.game.onArea(to);
     setTimeout(() => f.classList.remove('show'), 150);
   }, 380);
 }
+function goUnderground(down) { if (down) goArea('under', [UX - 1.5, 0], -Math.PI / 2); else goArea('town', [-4.6, -14], -Math.PI / 2); }
+
+// ---------- the loft (up the ladder from the hall) ----------
+const LX = -400;
+const loftPigs = [];
+function buildLoft() {
+  const floorM = M.box(12, 0.1, 8, texMat('wood', 5, 3), LX, -0.05, 0, { sharp: true }); floorM.receiveShadow = true; scene.add(floorM);
+  for (const s2 of [-1, 1]) { const r = M.box(12.4, 0.2, 5.4, 0x8a6a4a, LX, 1.9, s2 * 2.3, { sharp: true }); r.rotation.x = s2 * 0.75; scene.add(r); }
+  scene.add(M.box(0.2, 3.4, 8, 0x9a7a5a, LX - 6, 1.7, 0, { sharp: true }), M.box(0.2, 3.4, 8, 0x9a7a5a, LX + 6, 1.7, 0, { sharp: true }));
+  collide(LX - 6.2, -4, LX - 5.9, 4); collide(LX + 5.9, -4, LX + 6.2, 4); collide(LX - 6, -4.1, LX + 6, -2.7); collide(LX - 6, 2.7, LX + 6, 4.1);
+  for (let x = -5; x <= 5; x += 2.5) scene.add(M.box(0.18, 0.18, 6.5, M.C.woodDark, LX + x, 2.55, 0, { sharp: true }));
+  const bulb = M.ball(0.08, 0xfff2c0, 0, 0, 0, { mat: { emissive: 0xffe0a0, emissiveIntensity: 4, map: null } }); bulb.position.set(LX, 2.5, 0); scene.add(bulb);
+  const l = new THREE.PointLight(0xffd9a0, 22, 16, 1.5); l.position.set(LX, 2.4, 0); l.userData.area = 'loft'; l.visible = false; scene.add(l);
+  const l2 = new THREE.PointLight(0xffb070, 8, 9, 1.5); l2.position.set(LX + 4, 1.5, -1.5); l2.userData.area = 'loft'; l2.visible = false; scene.add(l2);
+  // the hatch back down
+  const hole = M.box(1.0, 0.02, 1.0, 0x1a1410, LX - 4.5, 0.01, 0, { sharp: true }); scene.add(hole);
+  const down = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  down.position.set(LX - 4.5, 0.3, 0); down.userData.noAO = true; scene.add(down);
+  interact(down, { range: 2.6, prompt: () => 'Climb back down to the hall', use: () => goArea('town', [2.5, -1.2], 0) });
+  // Grandad's boxes
+  [[LX - 2.5, -2.2], [LX - 1.2, 2.2], [LX + 1.5, -2.3], [LX + 3, 2.2]].forEach(([x, z], i) => {
+    const b = add(M.cardboardBox(['KEN - PRIVATE', 'KEN - SOFA STUFF', 'KEN - BRIAN', 'KEN - MARGARET'][i]), x, 0, z, z > 0 ? Math.PI : 0); collideObj(b);
+    hitbox(b, 0.9, 1.1, 0.8);
+    interact(b, { range: 2.4, prompt: () => LC.game.boxPrompt(i), use: () => LC.game.grandadBox(i) });
+  });
+  // a shelf of old piggy banks
+  scene.add(M.box(4.5, 0.08, 0.5, M.C.wood, LX + 2, 0.95, -2.3, { sharp: true }));
+  for (let i = 0; i < 6; i++) {
+    const p = add(M.piggy(['normal', 'golden', 'kevin', 'nesting', 'normal', 'owl'][i]), LX + 0.2 + i * 0.72, 1.0, -2.25);
+    p.scale.setScalar(0.5);
+    hitbox(p, 1.3, 1.6, 1.3, 0.4);
+    loftPigs.push(p);
+    interact(p, { range: 2.6, tool: 'pig', prompt: () => LC.game.loftPigPrompt(i), use: () => { const r = LC.game.loftPig(i); if (r === 'smash') { burstAt(p.position.clone().setY(1.2), 14, 0xf7a8bd); burstAt(p.position.clone().setY(1.2), 10); p.visible = false; } } });
+  }
+  // the locked trunk and a rocking horse
+  const trunk = add(M.chest(), LX + 4.6, 0, 1.6, -Math.PI / 2); collideObj(trunk);
+  interact(trunk, { range: 2.6, prompt: () => LC.game.trunkPrompt(), use: () => LC.game.trunk() });
+  add(M.rockingHorse(), LX - 2, 0, 1.3, 0.5);
+}
+function setLoftPigs(smashed) { loftPigs.forEach((p, i) => (p.visible = !smashed.includes(i))); }
 
 // ---------- the town: Acacia Road, the high street and the park ----------
 function buildTown() {
@@ -1484,6 +1544,7 @@ function frame(now) {
     hole.getObjectByName('ring').scale.set(0.35 + k * 0.75, 0.35 + k * 0.75, 1);
     hole.getObjectByName('pile').scale.setScalar(0.2 + k * 1.6);
   }
+  if (spots.washer && spots.washer.userData.shake) { spots.washer.position.x = 6.55 + Math.sin(time * 40) * 0.015; const dr = spots.washer.getObjectByName('drum'); if (dr) dr.rotation.y += dt * 12; }
   LC.game.setCompass(goldenBearing());
   if (clouds) clouds.rotation.y += dt * 0.004;
   if (grainPass) grainPass.uniforms.time.value = time % 10;
@@ -1530,6 +1591,7 @@ function init() {
   buildDust();
   buildLevel();
   buildUnderground();
+  buildLoft();
   buildViewModel();
   setQuality(true);
   resize();
@@ -1546,7 +1608,11 @@ LC.world = {
   setPig,
   setGoose,
   talkStart, talkSay, talkEnd, evolve,
-  isUnderground: () => underground,
+  isUnderground: () => area === 'under',
+  area: () => area,
+  goLoft: () => goArea('loft', [LX - 3.4, 0], -Math.PI / 2),
+  setLoftPigs,
+  washerShake: (on) => { if (spots.washer) spots.washer.userData.shake = on; },
   hideRing: () => { if (spots.ring) spots.ring.visible = false; },
   setStallItems, setStallUps, nearStall, spawnCustomer,
   stallScreenPos: () => project(stall.pos.clone().setY(1.2)),
