@@ -49,7 +49,7 @@
   // ---------- sound effects ----------
   let lastScratch = 0;
   const SFX = {
-    coin: (t) => { const p = 1 + Math.random() * 0.12; tone(t, { freq: 1568 * p, type: 'square', dur: 0.07, gain: 0.07, filter: 5000 }); tone(t + 0.05, { freq: 2093 * p, type: 'square', dur: 0.16, gain: 0.07, filter: 5000 }); },
+    coin: (t, pitch = 1) => { const p = (1 + Math.random() * 0.12) * pitch; tone(t, { freq: 1568 * p, type: 'square', dur: 0.07, gain: 0.07, filter: 5000 }); tone(t + 0.05, { freq: 2093 * p, type: 'square', dur: 0.16, gain: 0.07, filter: 5000 }); },
     buy: (t) => { [523, 659, 784].forEach((f, i) => tone(t + i * 0.045, { freq: f, type: 'triangle', dur: 0.12, gain: 0.18 })); },
     nope: (t) => tone(t, { freq: 180, type: 'square', dur: 0.15, gain: 0.08, slideTo: 120, filter: 1200 }),
     click: (t) => tone(t, { freq: 900, type: 'triangle', dur: 0.04, gain: 0.12 }),
@@ -81,9 +81,9 @@
     mower: (t) => { tone(t, { freq: 70 + Math.random() * 10, type: 'sawtooth', dur: 0.4, gain: 0.03, filter: 400 }); },
     ribbit: (t) => { for (let i = 0; i < 3; i++) tone(t + i * 0.05, { freq: 180, type: 'square', dur: 0.04, gain: 0.12, slideTo: 320, filter: 1500 }); },
   };
-  function sfx(name) {
+  function sfx(name, arg) {
     if (!ctx || !sfxOn() || ctx.state !== 'running') return;
-    SFX[name]?.(ctx.currentTime + 0.005);
+    SFX[name]?.(ctx.currentTime + 0.005, arg);
   }
 
   // ---------- music: "Down The Back Of The Sofa" (original, 16 bars, loops) ----------

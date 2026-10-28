@@ -427,6 +427,8 @@ LC.TEXTS = [
   { id: 'brianCaught', from: 'Brian (next door)', when: (s) => s.flags.caught, msgs: ['Stay. Out. Of. My. House.', "I've told your mum.", 'I have also told the gnome.'] },
   { id: 'brian50', from: 'Brian (next door)', when: (s) => (s.brian && s.brian.p >= 0.5), msgs: ["Halfway there, kiddo. How's the sofa going? 🙂"] },
   { id: 'brian85', from: 'Brian (next door)', when: (s) => (s.brian && s.brian.p >= 0.85), msgs: ['Getting close now.', "I've measured my hall. The Thing will fit perfectly."] },
+  { id: 'nanring', from: 'Nan', when: (s) => s.lifetime >= 600, msgs: ["I've been thinking about your grandad.", 'I dropped his wedding ring down a drain on this street in 1987. Never found it.', 'Silly old Nan.'] },
+  { id: 'moleK', from: 'Unknown number', when: (s) => s.depth >= 1000, msgs: ['this is the mole king', 'how did i get a phone', 'come down. we must talk.'] },
   { id: 'moon1', from: 'NASA (probably)', when: (s) => (s.gens.moon || 0) >= 1, msgs: ['Hi. Could you please stop checking the Moon sofa.', 'The astronauts were going to check it.'] },
 ];
 
@@ -486,6 +488,7 @@ LC.TASKS = [
   { id: 'b2', text: "Sneak into Brian's house and raid his sofa 10 times", target: 10, progress: (s) => s.stats.brianSofa || 0, reward: { secs: 240 }, rewardText: 'Four minutes of income' },
   { id: 't10', text: 'Own 10 Nosy Cats', target: 10, progress: (s) => s.gens.cat || 0, reward: { secs: 180 }, rewardText: 'Three minutes of income' },
   { id: 't11', text: 'Dig to 5 m', target: 5, progress: (s) => s.depth, reward: { tool: ['gnome', 1] }, rewardText: 'A free Garden Gnome digger' },
+  { id: 'u1', text: 'Climb down the ladder into your hole', target: 1, progress: (s) => (s.flags.wentDown ? 1 : 0), reward: { secs: 180 }, rewardText: 'Three minutes of income' },
   { id: 't12', text: 'Catch a golden coin', target: 1, progress: (s) => s.stats.golden, reward: { secs: 300 }, rewardText: 'Five minutes of income' },
   { id: 't13', text: 'Find a secret somewhere in town', target: 1, progress: (s) => s.secrets.length, reward: { buttons: 5, secs: 120 }, rewardText: '5 buttons + two minutes of income' },
   { id: 'b3', text: 'Pull a prank on Brian (find something to prank him with first)', target: 1, progress: (s) => s.stats.pranks || 0, reward: { secs: 300, buttons: 5 }, rewardText: 'Five minutes of income + 5 buttons' },
@@ -494,12 +497,14 @@ LC.TASKS = [
   { id: 't16', text: 'Hire a Coin Pusher', target: 1, progress: (s) => s.gens.pusher || 0, reward: { secs: 600 }, rewardText: 'Ten minutes of income' },
   { id: 't17', text: 'Dig to 100 m', target: 100, progress: (s) => s.depth, reward: { secs: 600 }, rewardText: 'Ten minutes of income' },
   { id: 'b4', text: "Raid Brian's Thing Fund jar 3 times", target: 3, progress: (s) => s.stats.fundRaids || 0, reward: { secs: 900 }, rewardText: '15 minutes of income' },
+  { id: 'u2', text: "Find Nan's lost wedding ring", target: 1, progress: (s) => (s.flags.ringReturned ? 1 : 0), reward: { secs: 900 }, rewardText: '15 minutes of income' },
   { id: 't18', text: 'Find 3 secrets', target: 3, progress: (s) => s.secrets.length, reward: { buttons: 10, secs: 900 }, rewardText: '10 buttons + 15 minutes of income' },
   { id: 't19', text: 'Find £1 million in total', target: 1e6, progress: (s) => s.lifetime, reward: { gen: ['pigeons', 2] }, rewardText: 'Two free Pigeon Syndicates' },
   { id: 's3', text: 'Sell something to The Collector', target: 1, progress: (s) => s.stats.collector || 0, reward: { secs: 900 }, rewardText: '15 minutes of income' },
   { id: 't20', text: 'Scratch 10 scratch cards', target: 10, progress: (s) => s.stats.cards, reward: { up: 'luckypen' }, rewardText: 'Free Lucky Scratching Coin' },
   { id: 't21', text: 'Dig to 1 km and meet the Mole King', target: 1000, progress: (s) => s.depth, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
   { id: 'b5', text: 'Prank Brian 5 times', target: 5, progress: (s) => s.stats.pranks || 0, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
+  { id: 'u3', text: 'Earn the trust of the Mole King', target: 1, progress: (s) => (s.flags.honoraryMole ? 1 : 0), reward: { secs: 1500 }, rewardText: '25 minutes of income' },
   { id: 't22', text: 'Survive 25 random events', target: 25, progress: (s) => s.stats.events, reward: { secs: 1200 }, rewardText: '20 minutes of income' },
   { id: 't23', text: 'Find £1 billion in total', target: 1e9, progress: (s) => s.lifetime, reward: { gen: ['factory', 1] }, rewardText: 'A free Sofa Factory' },
   { id: 't24', text: 'Reach the centre of the Earth', target: 6371000, progress: (s) => s.depth, reward: { secs: 1800 }, rewardText: '30 minutes of income' },
@@ -530,6 +535,7 @@ LC.JUNK = {
   medal: { icon: '🎖️', name: "Grandad's old medal", value: 900, min: 30, rarity: 4 },
   ring: { icon: '💍', name: 'Gold ring', value: 1500, min: 60, rarity: 4 },
   crown: { icon: '👑', name: 'Tiny mole crown', value: 3000, min: 120, rarity: 4 },
+  helmet: { icon: '⛑️', name: "Centurion's helmet", value: 2400, min: 100, rarity: 4 },
 };
 // junk you can turn up while digging, deeper = better
 LC.DIG_JUNK = [
@@ -608,3 +614,9 @@ LC.RECIPES = [
   { id: 'charm', icon: '🍀', name: 'Lucky Charm', needs: ['horseshoe', 'foreign', 'medal'], desc: 'All income +25%.' },
   { id: 'molekit', icon: '⛑️', name: "Mole King's Hard Hat", needs: ['crown', 'fossil'], desc: 'Dig speed x3.' },
 ];
+
+LC.UNDER_CHAT = {
+  gary: ['Gary: "Alright?"', 'Gary: "I have seen things down here. Wormy things."', 'Gary: "The rats run the sewer. The moles run everything else."', 'Gary: "Keep digging. The King is waiting."'],
+  rat: ['The rat tips its tiny hat.', 'Rat: "Squeak." (That was rude.)', 'Rat: "Seen a ring? Gold? Shiny? No? Me neither." (It has definitely seen a ring.)', 'Rat: "Lot of coins come down the drains. We don\'t judge."'],
+  mole: ['Mole: "A SURFACE DWELLER!"', 'Mole: "Have you met the King? He is very small and very important."', 'Mole: "We trade in shiny things down here."', 'Mole: "Our houses are holes. Your house is a hole above a hole."'],
+};

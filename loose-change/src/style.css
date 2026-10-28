@@ -409,3 +409,18 @@ button.junk:hover { transform: translateY(-2px); }
 .board .gen::before { content: ''; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; border-radius: 50%; background: #d9534f; border: 2px solid var(--ink); }
 .board .gen { position: relative; }
 .board .shop-head p { color: #3a2a1a; }
+
+/* rummage rhythm */
+.pulse { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border: 3px solid rgba(255, 255, 255, .9); border-radius: 50%; display: none; box-shadow: 0 0 0 2px rgba(45, 33, 24, .5); }
+.pulse.show { display: block; }
+.pulse i { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border: 3px solid var(--gold); border-radius: 50%; animation: pulse-in var(--pulse, .85s) linear infinite; }
+@keyframes pulse-in { from { transform: scale(2.6); opacity: .3; } 90% { opacity: 1; } to { transform: scale(1); opacity: 1; } }
+.combo { position: absolute; left: 50%; top: calc(50% - 74px); transform: translateX(-50%); text-align: center; pointer-events: none; }
+.combo b { display: block; font-size: 22px; color: #fff; text-shadow: 2px 2px 0 var(--ink); }
+.combo b.perfect { color: var(--gold); font-size: 30px; -webkit-text-stroke: 1px var(--ink); }
+.combo span { display: inline-block; background: var(--danger); color: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 0 10px; font-weight: 700; font-size: 14px; }
+.combo.pop { animation: comboPop .25s; }
+@keyframes comboPop { from { transform: translateX(-50%) scale(1.4); } }
+
+.fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .35s; z-index: 95; }
+.fade.show { opacity: 1; }

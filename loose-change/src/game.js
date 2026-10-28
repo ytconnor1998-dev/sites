@@ -120,6 +120,7 @@
     for (const f of S.finds) { const d = LC.DIG_FINDS.find((x) => x.name === f); if (d && d.reward.mult) m += d.reward.mult; }
     m += S.socks * 0.01;
     if (crafted('charm')) m += 0.25;
+    if (S.flags.nanJumper) m += 0.1;
     if (S.flags.derek) m += 0.05;
     if (S.goose.friend) m += 0.1;
     return m * karmaMult();
@@ -161,6 +162,7 @@
     let m = 1;
     for (const f of S.finds) { const d = LC.DIG_FINDS.find((x) => x.name === f); if (d && d.reward.dig) m *= d.reward.dig; }
     if (crafted('molekit')) m *= 3;
+    if (S.flags.honoraryMole) m *= 2;
     return m * buffMult('dig');
   }
   const digRate = () => LC.DIG_TOOLS.reduce((t, d) => t + (S.digTools[d.id] || 0) * d.rate, 0) * digMult();
@@ -288,15 +290,48 @@
   }
 
   // ---------- the sofa ----------
-  function rummage() {
+  // Rummaging has a rhythm: a ring pulses round the crosshair. Click as it lines up for a bonus,
+  // and keep the rhythm going for a combo. Holding the button still works, without the bonus.
+  const PULSE = 0.85; // seconds per pulse
+  let pulseStart = performance.now(), combo = 0, lastHit = 0;
+  function pulsePhase() { return ((performance.now() - pulseStart) / 1000 / PULSE) % 1; }
+  function rummage(auto) {
     LC.audio.unlock();
-    const v = clickValue();
+    let mult = 1, grade = '';
+    const now = performance.now();
+    if (!auto) {
+      const ph = pulsePhase(), off = Math.min(ph, 1 - ph); // 0 = ring exactly on target
+      if (off < 0.07) { mult = 3; grade = 'PERFECT!'; }
+      else if (off < 0.16) { mult = 1.5; grade = 'Nice'; }
+      if (grade && now - lastHit < PULSE * 1000 * 1.9) combo++;
+      else if (!grade) combo = 0;
+      else combo = Math.max(1, combo);
+      lastHit = now;
+    }
+    const comboMult = 1 + Math.min(combo, 20) * 0.1;
+    const v = clickValue() * mult * comboMult;
     gain(v);
     wear('sofa');
     S.stats.clicks++;
-    LC.audio.sfx('coin');
-    if (chance(0.04)) sofaFind();
-    return { value: v };
+    if (grade === 'PERFECT!') S.stats.perfects = (S.stats.perfects || 0) + 1;
+    LC.audio.sfx('coin', 1 + Math.min(combo, 20) * 0.04);
+    if (chance(grade === 'PERFECT!' ? 0.08 : 0.04)) sofaFind();
+    renderCombo(grade);
+    return { value: v, grade, burst: grade === 'PERFECT!' ? 10 : grade ? 5 : 3 };
+  }
+  let comboTimer = 0;
+  function renderCombo(grade) {
+    const c = $('#combo');
+    c.innerHTML = (grade ? `<b class="${grade === 'PERFECT!' ? 'perfect' : ''}">${grade}</b>` : '') + (combo > 1 ? `<span>COMBO x${(1 + Math.min(combo, 20) * 0.1).toFixed(1)}</span>` : '');
+    c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+    clearTimeout(comboTimer);
+    comboTimer = setTimeout(() => { c.innerHTML = ''; }, 900);
+  }
+  function setPulse(on) {
+    const p = $('#pulse');
+    if (on === p.classList.contains('show')) return;
+    p.classList.toggle('show', on);
+    if (on) { pulseStart = performance.now(); p.style.setProperty('--pulse', PULSE + 's'); p.querySelector('i').style.animation = 'none'; void p.offsetWidth; p.querySelector('i').style.animation = ''; }
   }
   function sofaFind() {
     const f = LC.SOFA_FINDS.find((x) => x.text === weighted(LC.SOFA_FINDS.map((x) => [x.text, x.weight || 4])));
@@ -935,6 +970,58 @@
     if (Object.keys(LC.CHAT).every((k) => S.chatted.includes(k))) findSecret('chatty');
   }
 
+  // ---------- underground ----------
+  function onUnderground(down) { if (down) { S.flags.wentDown = true; say(pick(['It is dark. It smells of soil and 2p coins.', 'You climb down. Your hole has become... a place.', 'Somewhere, something squeaks.'])); } }
+  function pilePrompt(i) { const w = waitFor('pile' + i); return w ? `A pile of junk<small>Searched. Give it ${w}s.</small>` : 'Search the junk pile'; }
+  function searchPile(i, tier) {
+    if (!ready('pile' + i, 60)) { LC.audio.sfx('nope'); return; }
+    LC.audio.sfx('dig');
+    if (chance(0.55)) giveJunk(pick(LC.DIG_JUNK[Math.min(tier, LC.DIG_JUNK.length - 1)].ids));
+    const n = lump(30 + tier * 30, 0.5); gain(n); floatAt(null, n);
+  }
+  const underIdx = {};
+  function chatUnder(who) { const l = LC.UNDER_CHAT[who]; underIdx[who] = ((underIdx[who] ?? -1) + 1) % l.length; LC.audio.sfx(who === 'rat' ? 'babbleTiny' : 'babbleLow'); say(l[underIdx[who]]); }
+  function findRing() {
+    if (S.flags.hasRing || S.flags.ringReturned) return;
+    S.flags.hasRing = true;
+    LC.world.hideRing();
+    LC.audio.sfx('fanfare');
+    toast(`${ic('💍')}<div><b>A gold ring!</b> There's an inscription: "K & J, 1961".<br><small>Nan will want to see this.</small></div>`, 'gold');
+    setTimeout(() => queueEvent(() => EVENTS.find((e) => e.id === 'nan').run()), 20000);
+  }
+  function chestPrompt() { return S.flags.chest ? 'An empty Roman chest' : 'Open the Roman chest'; }
+  function openChest() {
+    if (S.flags.chest) { say('Empty. Except for a note: "WE WERE HERE FIRST. - THE ROMANS"'); return; }
+    S.flags.chest = true;
+    const n = lump(1800, 500); gain(n); floatAt(null, n, 'big');
+    giveJunk('helmet', true);
+    LC.audio.sfx('fanfare');
+    toast(`${ic('🏛️')}<div><b>Roman treasure!</b> +${fmt(n)}<br><small>And a centurion's helmet for your pockets.</small></div>`, 'gold');
+  }
+  function moleKing(npc) {
+    if (S.flags.honoraryMole) { modal({ speaker: 'mole', npc, icon: '👑', title: 'The Mole King', text: pick(['"Welcome back, Honorary Mole."', '"The Kingdom prospers. Mostly because of you."', '"Have you tried our market? Very fair prices. For moles."']), choices: [{ label: 'Bow' }] }); return; }
+    const shiny = S.pockets.filter((p) => LC.JUNK[p.id].rarity >= 2);
+    if (shiny.length >= 3) {
+      modal({ speaker: 'mole', npc, icon: '👑', title: 'The Mole King', text: '"You bring SHINY THINGS. Three of them! Give them to me, surface child."', choices: [
+        { label: 'Hand them over', fn: () => {
+          for (let k = 0; k < 3; k++) { const i = S.pockets.findIndex((p) => LC.JUNK[p.id].rarity >= 2); S.pockets.splice(i, 1); }
+          renderHotbar(); S.flags.honoraryMole = true; LC.audio.sfx('fanfare');
+          return { text: '"I name you HONORARY MOLE. Your digging is doubled. The Mole Market is open to you."' };
+        } },
+        { label: 'Not yet', cls: 'ghost' },
+      ] });
+    } else modal({ speaker: 'mole', npc, icon: '👑', title: 'The Mole King', text: `"A surface child. Bring me THREE SHINY THINGS and I shall make you an Honorary Mole." (You have ${shiny.length} uncommon or better.)`, choices: [{ label: 'I\'ll find some' }] });
+  }
+  function moleMarketPrompt() { return S.flags.honoraryMole ? `Mole Market<small>Sell everything in your pockets for 1.5x (${S.pockets.length} things)</small>` : 'Mole Market<small>"Honorary Moles only."</small>'; }
+  function moleMarket() {
+    if (!S.flags.honoraryMole) { say('A mole behind the stall shakes its head. "Honorary Moles only."'); return; }
+    if (!S.pockets.length) { say('"Bring us surface junk! We love surface junk."'); return; }
+    const total = S.pockets.reduce((t, p) => t + p.value * 1.5, 0);
+    S.stats.sold = (S.stats.sold || 0) + S.pockets.length; S.stats.soldFor = (S.stats.soldFor || 0) + total;
+    S.pockets = []; renderHotbar(); gain(total); floatAt(null, total, 'big'); LC.audio.sfx('buy');
+    say(`The moles buy the lot for ${fmt(total)}. One of them is wearing your sock as a hat.`);
+  }
+
   // ---------- things you pick up in the world ----------
   function goldenReward() {
     S.stats.golden++;
@@ -969,7 +1056,11 @@
           ? (gain(S.money * 0.25 + 1), { text: 'You win! The seagull drops its stash of stolen coins. +25%!' })
           : (S.money *= 0.85, { text: 'You lose. Badly. It took 15% and your dignity.' }) },
       ] }) },
-    { id: 'nan', w: 10, run: () => modal({ speaker: 'nan', icon: '👵', title: "Nan's popped round",
+    { id: 'nan', w: 10, run: () => S.flags.hasRing && !S.flags.ringReturned ? modal({ speaker: 'nan', icon: '💍', title: 'Nan', text: 'Is that... is that KEN\'S RING? Where on earth did you find it?',
+      choices: [{ label: 'Give Nan the ring', fn: () => {
+        S.flags.ringReturned = true; S.flags.hasRing = false; const n = lump(1200, 50); gain(n); S.flags.nanJumper = true; LC.audio.sfx('fanfare');
+        return { icon: '🧶', text: `Nan cries a bit. Then she gives you ${fmt(n)} and a knitted jumper with a coin on it. "He'd be so proud." (All income +10%)` };
+      } }] }) : modal({ speaker: 'nan', icon: '👵', title: "Nan's popped round",
       text: 'She has her handbag. The handbag always has something in it.',
       choices: [
         { label: 'Put the kettle on', fn: () => { const n = lump(120, 5); gain(n); return { text: `She gives you ${fmt(n)} and says you look thin.` }; } },
@@ -1759,7 +1850,8 @@
 
     LC.game = {
       rummage, dig, hitPig, nextPig, collect, gooseBite, tryBuyThing, say, floatAt, setPrompt, setCompass,
-      sofaPrompt, digPrompt, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
+      sofaPrompt, digPrompt, setPulse, pigPrompt, thingPrompt, openScreen, onLockChange, magnet,
+      onUnderground, pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),
@@ -1777,6 +1869,6 @@
     LC.debug = { quiet: () => { nextEventAt = nextGoldenAt = Date.now() + 1e9; }, gain, ending: playEnding, event: (id) => EVENTS.find((e) => e.id === id)?.run(), state: () => S, setDepth: (m) => addDepth(m - S.depth), golden: () => LC.world.spawnGolden() };
   }
   // the world module needs LC.game before its first frame, so set a stub early
-  LC.game = { setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };
+  LC.game = { setPulse: () => {}, setSuspicion: () => {}, brianEvent: () => {}, toolTier: () => 0, isBlocked: () => true, setPrompt: () => {}, setCompass: () => {}, depth: () => 0, magnet: () => 1, canLock: () => false, onLockChange: () => {} };
   addEventListener('load', boot);
 })();

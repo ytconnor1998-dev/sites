@@ -558,3 +558,37 @@ export function stallTable() {
   const cloth = signPlane('BARGAINS', 2.0, 0.42, { bg: '#d9534f', color: '#fffaf0' }); cloth.position.set(0, 0.47, 0.43); g.add(cloth);
   return g;
 }
+
+// ---------- underground ----------
+export function torch() {
+  return group(cyl(0.04, 0.05, 0.6, C.woodDark, 0, 0.3, 0), cone(0.09, 0.22, 0xffa040, 0, 0.7, 0, { seg: 8, mat: { emissive: 0xff7a20, emissiveIntensity: 3, map: null } }));
+}
+export function rat() {
+  const g = group(ball(0.12, 0x8a8a8a, 0, 0.1, 0, { scale: [0.8, 0.7, 1.4] }), ball(0.07, 0x8a8a8a, 0, 0.14, 0.17), ball(0.03, 0xf7a8bd, 0, 0.13, 0.24),
+    cyl(0.01, 0.015, 0.3, 0xf7a8bd, 0, 0.08, -0.25, { rot: [1.2, 0, 0] }), cyl(0.05, 0.05, 0.06, 0x2d2118, 0, 0.23, 0.15), cyl(0.07, 0.07, 0.01, 0x2d2118, 0, 0.2, 0.15));
+  return g;
+}
+export function column(h = 3.2) { return group(cyl(0.38, 0.42, h, 0xe8e0cc, 0, h / 2, 0, { seg: 14 }), box(1, 0.25, 1, 0xd8d0bc, 0, 0.12, 0), box(1, 0.25, 1, 0xd8d0bc, 0, h - 0.12, 0)); }
+export function brokenColumn() { return group(cyl(0.38, 0.42, 1.2, 0xe8e0cc, 0, 0.6, 0, { seg: 14 }), box(1, 0.25, 1, 0xd8d0bc, 0, 0.12, 0), cyl(0.38, 0.38, 1.5, 0xe8e0cc, 0.9, 0.38, 0.4, { seg: 14, rot: [0, 0, Math.PI / 2] })); }
+export function chest() { return group(box(1.0, 0.55, 0.6, 0x8a5a2a, 0, 0.28, 0), box(1.02, 0.25, 0.62, 0x6e4a2a, 0, 0.62, 0), box(0.12, 0.18, 0.05, 0xf2b631, 0, 0.5, 0.31), box(1.04, 0.06, 0.06, 0xf2b631, 0, 0.56, 0.3)); }
+export function junkPile() { return group(ball(0.7, 0x6a4a2a, 0, 0.1, 0, { scale: [1.2, 0.55, 1], seg: 7, mat: { flatShading: true } }), box(0.25, 0.08, 0.15, 0xc8231f, 0.2, 0.42, 0.1, { rot: [0.3, 0.5, 0] }), cyl(0.05, 0.05, 0.25, 0x5bb0e0, -0.3, 0.38, 0, { rot: [0, 0, 1.2] }), coin(0.07, false).translateY(0.45).translateX(0.05)); }
+export function moleHouse(color = 0x8a5a3a) {
+  const g = group(ball(1.6, 0x6a4a2a, 0, 0, 0, { scale: [1, 0.85, 1], seg: 10, mat: { flatShading: true } }), box(0.8, 1.2, 0.2, color, 0, 0.6, 1.45), ball(0.05, M_GOLD2, 0.25, 0.6, 1.56),
+    box(0.5, 0.5, 0.12, 0xffd08a, 0.95, 0.9, 1.15, { rot: [0, 0.5, 0], mat: { emissive: 0xffa040, emissiveIntensity: 0.8, map: null } }), cyl(0.12, 0.12, 0.6, 0x4a3a2a, -0.6, 1.4, 0));
+  return g;
+}
+const M_GOLD2 = 0xf2b631;
+export function moleKing() {
+  const g = mole(); g.scale.setScalar(3.2);
+  const crown = group(cyl(0.09, 0.08, 0.06, 0xf2b631, 0, 0.27, 0.05, { mat: { emissive: 0x5a3a00 } }));
+  for (let i = 0; i < 5; i++) crown.add(cone(0.02, 0.05, 0xf2b631, Math.cos(i * 1.26) * 0.08, 0.32, 0.05 + Math.sin(i * 1.26) * 0.08));
+  g.add(crown);
+  return g;
+}
+export function moleCitizen() {
+  const g = mole(); g.scale.setScalar(2);
+  g.add(ball(0.03, 0x111111, -0.05, 0.17, 0.18), ball(0.03, 0x111111, 0.05, 0.17, 0.18));
+  return g;
+}
+export function throne() { return group(box(1.6, 0.5, 1.2, 0x8a2a2a, 0, 0.25, 0), box(1.6, 1.8, 0.25, 0x8a2a2a, 0, 1.15, -0.5), box(1.7, 0.2, 0.3, 0xf2b631, 0, 2.1, -0.5)); }
+export function water(w, d) { return part(new THREE.BoxGeometry(w, 0.05, d), 0x3a5a4a, 0, 0, 0, { mat: { roughness: 0.05, emissive: 0x0a1a12, map: null }, shadow: false }); }

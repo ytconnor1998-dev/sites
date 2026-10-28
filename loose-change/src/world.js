@@ -17,7 +17,7 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const EYE = 1.25, CROUCH_EYE = 0.72, RADIUS = 0.32, WALK = 4.2, RUN = 7, GRAVITY = 18;
 const BOUNDS = { x0: -62, x1: 62, z0: -26, z1: 56 };
 
-let renderer, scene, camera, sun, canvas, composer = null, clouds = null, grainPass = null;
+let renderer, scene, camera, sun, hemi, canvas, composer = null, clouds = null, grainPass = null;
 const colliders = [];
 const interactables = [];
 const agents = [];
@@ -142,7 +142,7 @@ function buildLevel() {
   // living room
   const sofa = add(M.sofa(), -3.5, 0, 3.9, Math.PI); collideObj(sofa, 0.05);
   spots.sofa = sofa;
-  interact(sofa, { range: 3.4, hold: true, tool: 'sofa', prompt: () => LC.game.sofaPrompt(), use: () => rummage(sofa) });
+  interact(sofa, { range: 3.4, hold: true, tool: 'sofa', pulse: true, prompt: () => LC.game.sofaPrompt(), use: (auto) => rummage(sofa, auto) });
   const arm = add(M.armchair(), -6.1, 0, 1.4, Math.PI / 2); collideObj(arm, 0.05); spots.armchair = arm;
   add(M.rug(texMat('carpet', 1, 1)), -3.5, 0, 1.4);
   const tbl = add(M.coffeeTable(), -3.5, 0, 2.3); collideObj(tbl);
@@ -173,12 +173,21 @@ function buildLevel() {
   spots.hole = holeG;
   collide(-3, -15, -1, -13);
   // a bigger invisible target so the hole is easy to aim at
-  const holeHit = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 1.2, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  const holeHit = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 1.2, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
   holeHit.position.y = 0.6; holeG.add(holeHit);
   interact(holeG, { range: 4.5, hold: true, tool: 'dig', prompt: () => LC.game.digPrompt(), use: () => dig(holeG) });
   const sign = M.textSprite('0 m', { size: 0.45 }); sign.position.set(-2, 1.9, -12.4); scene.add(sign);
   add(M.box(0.08, 1.6, 0.08, M.C.woodDark, 0, 0, 0), -2, 0.8, -12.45);
   spots.depthSign = sign;
+  // a ladder appears once the hole is deep enough to climb into
+  const ladder = new THREE.Group();
+  ladder.add(M.box(0.06, 1.6, 0.06, M.C.wood, -0.25, 0.4, 0), M.box(0.06, 1.6, 0.06, M.C.wood, 0.25, 0.4, 0));
+  for (let i = 0; i < 4; i++) ladder.add(M.box(0.5, 0.05, 0.05, M.C.wood, 0, -0.1 + i * 0.35, 0));
+  const ladderHit = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.8, 0.6), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  ladderHit.position.y = 0.4; ladderHit.userData.noAO = true; ladder.add(ladderHit);
+  ladder.position.set(-3.3, 0, -14); ladder.rotation.set(0, Math.PI / 2, 0.25); ladder.visible = false; scene.add(ladder);
+  spots.ladder = ladder;
+  interact(ladder, { range: 3, prompt: () => 'Climb down into the hole<small>Mind your head</small>', use: () => goUnderground(true) });
   const shed = add(M.shed(), 8.4, 0, -22.3); collideObj(shed);
   interact(shed, { range: 3.5, prompt: () => 'Open the shed: buy diggers', use: () => LC.game.openScreen('shed') });
   for (const [x, z, h] of [[-9.5, -23, 3.6], [10, -8.5, 3], [-10, -9, 2.6], [3, -24, 3.2]]) { const t = add(M.tree(h), x, 0, z); collide(x - 0.3, z - 0.3, x + 0.3, z + 0.3); }
@@ -337,6 +346,121 @@ function spawnCustomer(kind) {
     }
   } };
   agents.push(a);
+}
+
+// ---------- underground (reached by climbing down your hole) ----------
+const UX = 400; // the caves are built far away from the town and lit separately
+const gates = [];
+function buildUnderground() {
+  const dirt = (x0, z0, x1, z1, h = 3.4) => {
+    const m = M.box(Math.abs(x1 - x0) || 0.4, h, Math.abs(z1 - z0) || 0.4, 0x5a3e28, (x0 + x1) / 2, h / 2, (z0 + z1) / 2, { sharp: true, mat: { flatShading: true } });
+    scene.add(m); collide(Math.min(x0, x1) - 0.2, Math.min(z0, z1) - 0.2, Math.max(x0, x1) + 0.2, Math.max(z0, z1) + 0.2);
+  };
+  const ground = (x0, z0, x1, z1, color) => { const m = M.box(x1 - x0, 0.1, z1 - z0, color, (x0 + x1) / 2, -0.05, (z0 + z1) / 2, { sharp: true }); m.receiveShadow = true; scene.add(m); };
+  const roof = (x0, z0, x1, z1) => scene.add(M.box(x1 - x0, 0.3, z1 - z0, 0x3a2818, (x0 + x1) / 2, 3.45, (z0 + z1) / 2, { sharp: true }));
+  const light = (x, z, color = 0xffa050, i = 9, d = 11) => { const l = new THREE.PointLight(color, i * 2.4, d * 1.5, 1.5); l.position.set(x, 2.6, z); l.userData.below = true; l.visible = false; scene.add(l); };
+  const torchAt = (x, z, ry = 0) => { const t = add(M.torch(), x, 1.2, z, ry); t.rotation.z = 0.3; };
+  // arrival chamber + tunnels
+  ground(UX - 6, -6, UX + 40, 6, 0x4a3420); roof(UX - 6, -6, UX + 40, 6);
+  dirt(UX - 6, -6, UX - 6, 6); dirt(UX - 6, -6, UX + 40, -6); dirt(UX - 6, 6, UX + 40, 6);
+  for (const [x, z] of [[UX + 8, -4.5], [UX + 16, 4.5], [UX + 26, -4.6], [UX + 33, 4.4]]) scene.add(M.box(2.5, 3.4, 1.8, 0x5a3e28, x, 1.7, z, { sharp: true, mat: { flatShading: true } })), collide(x - 1.3, z - 0.9, x + 1.3, z + 0.9);
+  const rope = add(M.cyl(0.04, 0.04, 3.4, 0xc8a070, 0, 1.7, 0), UX - 3, 0, 0);
+  interact(rope, { range: 2.6, prompt: () => 'Climb back up the ladder', use: () => goUnderground(false) });
+  add(M.box(0.5, 0.3, 0.5, 0xffe9b0, 0, 0, 0, { mat: { emissive: 0xffe9b0, emissiveIntensity: 2, map: null } }), UX - 3, 3.3, 0);
+  light(UX - 3, 0, 0xfff0c0, 14, 12);
+  torchAt(UX + 6, -5.6); torchAt(UX + 20, 5.6, Math.PI); torchAt(UX + 34, -5.6);
+  light(UX + 10, -2); light(UX + 25, 2); light(UX + 37, 0);
+  const piles = [[UX + 12, -3.5], [UX + 22, 3.6], [UX + 36, -3.4], [UX + 52, 3.2], [UX + 82, -4.5], [UX + 110, 12], [UX + 135, -12]];
+  piles.forEach(([x, z], i) => { const p = add(M.junkPile(), x, 0, z); interact(p, { range: 2.8, prompt: () => LC.game.pilePrompt(i), use: () => LC.game.searchPile(i, x > UX + 100 ? 3 : x > UX + 70 ? 2 : x > UX + 40 ? 1 : 0) }); });
+  const gary = add(M.cyl(0.07, 0.08, 0.5, 0xd88a9a, 0, 0.25, 0), UX + 17, 0, -2.4);
+  gary.add(M.ball(0.03, 0x2d2118, -0.03, 0.42, 0.06), M.ball(0.03, 0x2d2118, 0.03, 0.42, 0.06));
+  agents.push({ obj: gary, update: (dt, t) => { gary.rotation.z = Math.sin(t * 2) * 0.3; } });
+  interact(gary, { range: 2.4, prompt: () => 'Talk to Gary the worm', use: () => LC.game.chatUnder('gary') });
+  // gate 1 -> the sewer
+  gate(UX + 40, 40);
+  ground(UX + 40, -6, UX + 72, 6, 0x4a4a42); roof(UX + 40, -6, UX + 72, 6);
+  dirt(UX + 40, -6, UX + 72, -6); dirt(UX + 40, 6, UX + 72, 6);
+  const wat = M.water(32, 2.4); wat.position.set(UX + 56, 0.03, 0); scene.add(wat);
+  scene.add(M.box(32, 0.25, 0.25, 0x6a6a62, UX + 56, 0.12, -1.3, { sharp: true }), M.box(32, 0.25, 0.25, 0x6a6a62, UX + 56, 0.12, 1.3, { sharp: true }));
+  for (let x = UX + 42; x < UX + 72; x += 6) scene.add(M.cyl(0.5, 0.5, 0.4, 0x5a5a52, x, 3.0, -5.5, { rot: [Math.PI / 2, 0, 0] }));
+  light(UX + 48, 0, 0x9ad0a0, 7, 11); light(UX + 64, 0, 0x9ad0a0, 7, 11);
+  for (let i = 0; i < 12; i++) { const c = M.coin(0.08, false); c.position.set(UX + 42 + Math.random() * 28, 0.07, (Math.random() - 0.5) * 2); c.rotation.x = Math.PI / 2; scene.add(c); }
+  for (let i = 0; i < 4; i++) {
+    const r = add(M.rat(), UX + 45 + i * 6, 0, (i % 2 ? 3 : -3)); const base = r.position.clone(), sp = 0.6 + i * 0.2;
+    agents.push({ obj: r, update: (dt, t) => { r.position.x = base.x + Math.sin(t * sp + i) * 2.5; r.rotation.y = Math.cos(t * sp + i) > 0 ? Math.PI / 2 : -Math.PI / 2; } });
+    interact(r, { range: 2.2, prompt: () => 'Talk to the rat', use: () => LC.game.chatUnder('rat') });
+  }
+  const ring = add(M.part(new THREE.TorusGeometry(0.08, 0.025, 8, 16), 0xf2b631, 0, 0, 0, { mat: { emissive: 0x8a6a00, emissiveIntensity: 1.5, metalness: 0.8, roughness: 0.2 } }), UX + 66, 0.1, 0.4);
+  ring.rotation.x = Math.PI / 2; spots.ring = ring;
+  agents.push({ obj: ring, update: (dt, t) => { ring.rotation.z = t; } });
+  interact(ring, { range: 2.4, prompt: () => 'Something shiny in the water...', use: () => LC.game.findRing() });
+  // gate 2 -> Roman ruins
+  gate(UX + 72, 350);
+  ground(UX + 72, -8, UX + 100, 8, 0xd8c8a8); roof(UX + 72, -8, UX + 100, 8);
+  dirt(UX + 72, -8, UX + 100, -8); dirt(UX + 72, 8, UX + 100, 8); dirt(UX + 72, -8, UX + 72, -6); dirt(UX + 72, 6, UX + 72, 8);
+  const mosaic = M.signPlane('SPQR · SOFA PER QVAERENDA', 10, 6, { bg: '#c8823a', color: '#f3eee4' }); mosaic.rotation.x = -Math.PI / 2; mosaic.position.set(UX + 86, 0.02, 0); scene.add(mosaic);
+  for (const [x, z] of [[UX + 77, -5], [UX + 77, 5], [UX + 86, -5.5], [UX + 95, -5]]) { add(M.column(), x, 0, z); collide(x - 0.45, z - 0.45, x + 0.45, z + 0.45); }
+  add(M.brokenColumn(), UX + 92, 0, 5);
+  const chest = add(M.chest(), UX + 97, 0, 0, -Math.PI / 2); collideObj(chest);
+  interact(chest, { range: 2.6, prompt: () => LC.game.chestPrompt(), use: () => LC.game.openChest() });
+  light(UX + 80, 0, 0xffc880, 10, 13); light(UX + 94, 0, 0xffc880, 10, 13);
+  torchAt(UX + 82, -7.6); torchAt(UX + 90, 7.6, Math.PI);
+  // gate 3 -> the Mole Kingdom: a whole town underground
+  gate(UX + 100, 1000);
+  ground(UX + 100, -20, UX + 150, 20, 0x3a2a1a); roof(UX + 100, -20, UX + 150, 20);
+  dirt(UX + 100, -20, UX + 150, -20); dirt(UX + 100, 20, UX + 150, 20); dirt(UX + 150, -20, UX + 150, 20); dirt(UX + 100, -20, UX + 100, -6); dirt(UX + 100, 6, UX + 100, 20);
+  const houses = [[UX + 110, -14], [UX + 120, -15], [UX + 130, -14], [UX + 112, 14], [UX + 124, 15], [UX + 136, 14]];
+  houses.forEach(([x, z], i) => { add(M.moleHouse([0x8a5a3a, 0x3b6ea5, 0x6aa84f, 0xd9534f][i % 4]), x, 0, z, z > 0 ? Math.PI : 0); collide(x - 1.5, z - 1.4, x + 1.5, z + 1.4); });
+  const throne = add(M.throne(), UX + 146, 0, 0, -Math.PI / 2); collideObj(throne);
+  const king = add(M.moleKing(), UX + 145.4, 0.5, 0, -Math.PI / 2);
+  interact(king, { range: 3.5, prompt: () => 'Speak to the Mole King', use: () => LC.game.moleKing(king) });
+  const market = add(M.stallTable(), UX + 125, 0, -6); collideObj(market);
+  interact(market, { range: 3, prompt: () => LC.game.moleMarketPrompt(), use: () => LC.game.moleMarket() });
+  for (let i = 0; i < 6; i++) {
+    const m = add(M.moleCitizen(), UX + 110 + i * 5, 0, (i % 2 ? 5 : -5));
+    walker(m, [{ x0: UX + 104, x1: UX + 140, z0: -10, z1: 10 }], 0.8, { pause: 4 });
+    interact(m, { range: 2.4, prompt: () => 'Talk to the mole', use: () => LC.game.chatUnder('mole') });
+  }
+  for (const [x, z] of [[UX + 108, 0], [UX + 125, 8], [UX + 140, -8], [UX + 140, 8], [UX + 125, -10]]) light(x, z, 0xffb060, 10, 15);
+  // glowing mushrooms light the Mole Kingdom
+  for (let i = 0; i < 26; i++) {
+    const x = UX + 103 + Math.random() * 44, z = (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 11);
+    const m = new THREE.Group();
+    const col = [0x7ae0ff, 0xb07aff, 0x7aff9a][i % 3];
+    m.add(M.cyl(0.05, 0.07, 0.35, 0xe8e0cc, 0, 0.17, 0), M.ball(0.22, col, 0, 0.38, 0, { scale: [1, 0.5, 1], mat: { emissive: col, emissiveIntensity: 2, map: null } }));
+    m.position.set(x, 0, z); m.scale.setScalar(0.7 + Math.random() * 1.4); scene.add(m);
+  }
+  light(UX + 115, 14, 0x9a7aff, 8, 14); light(UX + 132, -14, 0x7ad0ff, 8, 14);
+  for (const [x, z] of [[UX + 115, -19.6], [UX + 128, 19.6], [UX + 142, -19.6]]) torchAt(x, z, z > 0 ? Math.PI : 0);
+}
+function gate(x, minDepth) {
+  const rock = M.box(0.9, 3.4, 12, 0x6a5a4a, x, 1.7, 0, { sharp: true, mat: { flatShading: true } });
+  scene.add(rock);
+  const c = collide(x - 0.45, -6, x + 0.45, 6);
+  interact(rock, { range: 3, prompt: () => 'Solid rock<small>Dig your hole deeper to break through here</small>', use: () => LC.game.say('Solid rock. Your hole up top needs to go deeper.') });
+  gates.push({ rock, c, minDepth });
+}
+function updateGates(depth) { for (const g of gates) { const open = depth >= g.minDepth; g.c.off = open; g.rock.visible = !open; } }
+let underground = false;
+function goUnderground(down) {
+  const f = document.getElementById('fade');
+  f.classList.add('show');
+  LC.audio.sfx('dig');
+  setTimeout(() => {
+    underground = down;
+    if (down) { player.pos.set(UX - 1.5, 0, 0); player.yaw = -Math.PI / 2; }
+    else { player.pos.set(-2, 0, -11.6); player.yaw = 0; }
+    player.pitch = 0;
+    scene.traverse((o) => { if (o.isPointLight) o.visible = !!o.userData.below === down; });
+    sun.intensity = down ? 0 : 3.4;
+    hemi.intensity = down ? 0.65 : 0.9;
+    hemi.color.set(down ? 0x8a6a4a : 0xa8bce0); hemi.groundColor.set(down ? 0x3a2a1a : 0x4a3a2e);
+    scene.fog.color.set(down ? 0x1a120c : 0xd89c78); scene.fog.near = down ? 14 : 22; scene.fog.far = down ? 60 : 120;
+    scene.background.set(down ? 0x0c0806 : 0xe0a882);
+    scene.userData.sky.visible = !down; if (clouds) clouds.visible = !down; if (dust) dust.visible = !down;
+    LC.game.onUnderground(down);
+    setTimeout(() => f.classList.remove('show'), 150);
+  }, 380);
 }
 
 // ---------- the town: Acacia Road, the high street and the park ----------
@@ -1030,12 +1154,13 @@ function updateParticles(dt) {
 }
 
 // ---------- using things ----------
-function rummage(sofa) {
-  const r = LC.game.rummage();
+function rummage(sofa, auto) {
+  const r = LC.game.rummage(auto);
   if (!r) return;
   const p = sofa.position.clone().add(new THREE.Vector3(rand(-0.8, 0.8), 0.75, rand(-0.2, 0.2)));
-  burstAt(p, 3);
-  LC.game.floatAt(project(p), r.value);
+  burstAt(p, r.burst || 3);
+  if (r.grade === 'PERFECT!') shake = Math.max(shake, 0.08);
+  LC.game.floatAt(project(p), r.value, r.grade === 'PERFECT!' ? 'big' : '');
   sofa.scale.set(1.03, 0.96, 1.03);
   setTimeout(() => sofa.scale.set(1, 1, 1), 90);
 }
@@ -1212,7 +1337,7 @@ function updateFocus() {
   focus = f;
   LC.game.setPrompt(f && !LC.game.isBlocked() ? f.prompt() : '');
 }
-function useFocus() { if (focus && !LC.game.isBlocked()) { view.swing = 1; focus.use(); } }
+function useFocus(auto) { if (focus && !LC.game.isBlocked()) { view.swing = 1; focus.use(auto); } }
 
 // ---------- projection for floating text ----------
 function project(v) {
@@ -1339,7 +1464,8 @@ function frame(now) {
   updatePlayer(dt);
   updateFocus();
   updateViewModel(dt, keys.has('KeyW') || keys.has('KeyA') || keys.has('KeyS') || keys.has('KeyD'));
-  if (holding && focus && focus.hold) { holdTimer -= dt; if (holdTimer <= 0) { holdTimer = 0.2; useFocus(); } }
+  if (holding && focus && focus.hold) { holdTimer -= dt; if (holdTimer <= 0) { holdTimer = 0.2; useFocus(true); } }
+  LC.game.setPulse(!!(focus && focus.pulse) && !LC.game.isBlocked());
   for (const a of [...agents]) a.update(dt, time);
   updatePickups(dt);
   updateParticles(dt);
@@ -1351,6 +1477,8 @@ function frame(now) {
   const hole = spots.hole;
   if (hole) {
     const d = LC.game.depth();
+    spots.ladder.visible = d >= 2;
+    updateGates(d);
     const k = Math.min(1, Math.log10(1 + d) / 7);
     hole.getObjectByName('pit').scale.set(0.35 + k * 0.75, 1, 0.35 + k * 0.75);
     hole.getObjectByName('ring').scale.set(0.35 + k * 0.75, 0.35 + k * 0.75, 1);
@@ -1379,7 +1507,8 @@ function init() {
   scene.fog = new THREE.Fog(0xd89c78, 22, 120);
   buildSky();
   camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 400);
-  scene.add(new THREE.HemisphereLight(0xa8bce0, 0x4a3a2e, 0.9));
+  hemi = new THREE.HemisphereLight(0xa8bce0, 0x4a3a2e, 0.9);
+  scene.add(hemi);
   sun = new THREE.DirectionalLight(0xffbf86, 3.4);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -1400,6 +1529,7 @@ function init() {
   for (let x = -20; x <= 20; x += 10) lamp(0xffc27a, 4, 7, x + 0.5, 3.7, 9.6);
   buildDust();
   buildLevel();
+  buildUnderground();
   buildViewModel();
   setQuality(true);
   resize();
@@ -1416,6 +1546,8 @@ LC.world = {
   setPig,
   setGoose,
   talkStart, talkSay, talkEnd, evolve,
+  isUnderground: () => underground,
+  hideRing: () => { if (spots.ring) spots.ring.visible = false; },
   setStallItems, setStallUps, nearStall, spawnCustomer,
   stallScreenPos: () => project(stall.pos.clone().setY(1.2)),
   stallWaiting: () => !!stallWaiter,
@@ -1459,6 +1591,7 @@ LC.world = {
     view: (x, z, yaw, pitch = -0.1) => { player.pos.set(x, 0, z); player.yaw = yaw; player.pitch = pitch; updatePlayer(0); camera.updateMatrixWorld(); updateFocus(); },
     use: () => { camera.updateMatrixWorld(); updateFocus(); useFocus(); },
     focus: () => { camera.updateMatrixWorld(); updateFocus(); return focus && focus.prompt(); },
+    hits: () => { camera.updateMatrixWorld(); ray.setFromCamera(center, camera); ray.far = 6; return ray.intersectObjects(interactables, true).map((h) => `${h.distance.toFixed(2)} ${h.object.userData.interact ? h.object.userData.interact.prompt().slice(0, 30) : '-'} vis:${h.object.visible}`); },
   },
   teleportHome: () => { player.pos.set(-3.5, 0, 0.6); player.yaw = Math.PI; player.pitch = -0.12; },
 };
