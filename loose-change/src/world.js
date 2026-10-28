@@ -64,7 +64,7 @@ function interact(obj, def) { obj.traverse((o) => { o.userData.interact = def; }
 
 // fake volumetric light: a soft additive cone under a lamp
 let coneTex = null;
-const streetGlow = [];
+const streetGlow = [], indoorLamps = [];
 function lightCone(x, y, z, h, r, color = 0xffd9a0, strength = 0.045) {
   if (!coneTex) {
     const c = document.createElement('canvas'); c.width = 4; c.height = 128;
@@ -1878,9 +1878,9 @@ function setQuality(high) {
 // ---------- time of day: bright summer day, golden evening, dusk, then Mum calls you in ----------
 // keyframes: t, sun power, sun colour, sun height, hemi power, hemi sky, hemi ground, sky top, sky bottom, fog, cloud, cloud glow, exposure, vignette, grain, saturation, street lamps
 const SKY_KEYS = [
-  [0.00, 2.8, 0xffe6c8, 0.35, 1.15, 0xcfe0ff, 0x8aa06a, 0x5f9ee8, 0xf5dcc0, 0xe8dccc, 0xffffff, 0x705a50, 1.0, 0.3, 0.025, 1.12, 0],
-  [0.10, 3.8, 0xfff4e2, 0.85, 1.4, 0xd4e8ff, 0x8fb070, 0x2f86ec, 0xbfe0ff, 0xcfe4f6, 0xffffff, 0x808a9a, 1.02, 0.25, 0.02, 1.18, 0],
-  [0.55, 3.8, 0xfff0d8, 0.75, 1.35, 0xd4e8ff, 0x8fb070, 0x3a8cec, 0xc6e2ff, 0xd2e4f2, 0xffffff, 0x808a9a, 1.02, 0.25, 0.02, 1.16, 0],
+  [0.00, 2.8, 0xffe6c8, 0.35, 1.15, 0xcfe0ff, 0xb0a080, 0x5f9ee8, 0xf5dcc0, 0xe8dccc, 0xffffff, 0x705a50, 1.0, 0.3, 0.025, 1.12, 0],
+  [0.10, 3.8, 0xfff4e2, 0.85, 1.4, 0xd4e8ff, 0xb4a484, 0x2f86ec, 0xbfe0ff, 0xcfe4f6, 0xffffff, 0x808a9a, 1.02, 0.25, 0.02, 1.18, 0],
+  [0.55, 3.8, 0xfff0d8, 0.75, 1.35, 0xd4e8ff, 0xb4a484, 0x3a8cec, 0xc6e2ff, 0xd2e4f2, 0xffffff, 0x808a9a, 1.02, 0.25, 0.02, 1.16, 0],
   [0.72, 3.4, 0xffc890, 0.3, 1.0, 0xb8c6e0, 0x5a4a3a, 0x3d64a0, 0xf6c49a, 0xe0b08a, 0xffe6cc, 0xa0705a, 0.97, 0.45, 0.035, 1.05, 0.4],
   [0.84, 3.0, 0xffaa70, 0.16, 0.9, 0xa8bce0, 0x4a3a2e, 0x36588f, 0xf6b98a, 0xd89c78, 0xffe2c8, 0xb0705a, 0.95, 0.55, 0.045, 1.0, 1],
   [1.00, 1.0, 0xff7a50, 0.05, 0.5, 0x5a6a9a, 0x2a2430, 0x141e48, 0xc0706a, 0x5a4a6a, 0x9a7a9a, 0x402a40, 0.9, 0.6, 0.05, 0.95, 1],
@@ -1911,6 +1911,7 @@ function updateSky(tod) {
   renderer.toneMappingExposure = n(12);
   if (grainPass) { grainPass.uniforms.vig.value = n(13); grainPass.uniforms.grain.value = n(14); grainPass.uniforms.sat.value = mood ? mood.sat : n(15); }
   const lamps = mood ? mood.lamps : n(16);
+  for (const l of indoorLamps) l.intensity = l.userData.base * (0.3 + 0.7 * lamps);
   for (const g of streetGlow) { if (g.isPointLight) { g.visible = lamps > 0.05; g.intensity = 4 * lamps; } else g.material.opacity = 0.035 * lamps; }
 }
 
@@ -2006,10 +2007,10 @@ function init() {
   sun.shadow.radius = 3;
   scene.add(sun, sun.target);
   // warm practical lights: the lamps do the work indoors
-  const lamp = (color, intensity, dist, x, y, z) => { const l = new THREE.PointLight(color, intensity, dist, 1.8); l.position.set(x, y, z); scene.add(l); return l; };
-  lamp(0xffc27a, 16, 11, -3.5, 2.55, 0);
-  lamp(0xffc27a, 12, 10, 3.5, 2.55, 0);
-  lamp(0xffa850, 5, 5, -0.6, 1.5, 4.3);          // floor lamp
+  const lamp = (color, intensity, dist, x, y, z) => { const l = new THREE.PointLight(color, intensity, dist, 1.8); l.position.set(x, y, z); l.userData.base = intensity; scene.add(l); return l; };
+  indoorLamps.push(lamp(0xffc27a, 16, 11, -3.5, 2.55, 0));
+  indoorLamps.push(lamp(0xffc27a, 12, 10, 3.5, 2.55, 0));
+  indoorLamps.push(lamp(0xffa850, 5, 5, -0.6, 1.5, 4.3));          // floor lamp
   lamp(0xff8a40, 4, 4, -6.3, 0.6, -2);           // fireplace glow
   lamp(0x6ab0ff, 3, 4, -3.5, 1.2, -4.0);         // TV glow
   lamp(0xfff0d0, 14, 12, 0, 3, 22);              // corner shop

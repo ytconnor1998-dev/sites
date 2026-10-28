@@ -74,11 +74,18 @@
 
   function save() {
     S.lastSave = Date.now();
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ }
+    const json = JSON.stringify(S);
+    try { localStorage.setItem(SAVE_KEY, json); } catch (e) { /* storage unavailable */ }
+    try { globalThis.steam?.cloudSave(json); } catch (e) { /* not on Steam */ }
   }
   function load() {
     let raw = null;
     try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { /* ignore */ }
+    // on Steam, use the cloud save if it's newer (e.g. you played on another computer)
+    try {
+      const cloud = globalThis.steam?.cloudLoad();
+      if (cloud && (!raw || (JSON.parse(cloud).lastSave || 0) > (JSON.parse(raw).lastSave || 0))) raw = cloud;
+    } catch (e) { /* not on Steam, or a bad cloud file */ }
     if (!raw) return false;
     try {
       const data = JSON.parse(raw);
@@ -2164,7 +2171,8 @@
       text: `Game design, code, 3D models, music and sound: made for this game, all original.<br><br>
         Icons: <b>Twemoji</b> by Twitter, Inc. and other contributors, licensed under CC-BY 4.0 (creativecommons.org/licenses/by/4.0).<br><br>
         Font: <b>Fredoka</b>, copyright 2016 The Fredoka Project Authors, SIL Open Font License 1.1.<br><br>
-        3D engine: <b>three.js</b>, MIT License.` });
+        3D engine: <b>three.js</b>, MIT License.<br><br>
+        Desktop: <b>Electron</b> and <b>steamworks.js</b>, MIT License.` });
   }
 
   // ---------- boot ----------

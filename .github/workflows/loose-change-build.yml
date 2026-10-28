@@ -1,0 +1,42 @@
+# Builds the Loose Change desktop game for Windows, Mac and Linux.
+# Run it from the Actions tab ("Run workflow"), or push a tag like loose-change-v0.2.0.
+# Each build is attached to the run as a download, ready to upload to Steam.
+name: Loose Change build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['loose-change-v*']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+            out: win-unpacked
+          - os: macos-latest
+            target: --mac
+            out: mac-universal
+          - os: ubuntu-latest
+            target: --linux
+            out: linux-unpacked
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: loose-change
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: loose-change/package-lock.json
+      - run: npm ci
+      - run: npx electron-builder ${{ matrix.target }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loose-change-${{ matrix.os }}
+          path: loose-change/dist/${{ matrix.out }}
