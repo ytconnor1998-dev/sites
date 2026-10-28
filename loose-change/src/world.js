@@ -178,6 +178,7 @@ function buildLevel() {
   hatchHit.position.set(2.5, 2.4, -2.6); hatchHit.userData.noAO = true; scene.add(hatchHit);
   interact(hatchHit, { range: 3.2, prompt: () => LC.game.hatchPrompt(), use: () => LC.game.hatch() });
   buildMuseum();
+  buildDigSites();
   const thingLabel = M.textSprite('???', { size: 0.42 }); thingLabel.position.set(4.8, 2.75, 1.6); scene.add(thingLabel);
   spots.thingLabel = thingLabel;
   interact(thing, { range: 3, prompt: () => LC.game.thingPrompt(), use: () => LC.game.tryBuyThing() });
@@ -238,7 +239,7 @@ function buildLevel() {
   shopSign.position.set(0, 3.9, sz0 - 0.2); scene.add(shopSign);
   for (const s of [-1, 1]) add(M.box(2.6, 1.4, 0.05, M.displayMat('charity'), 0, 0, 0, { shadow: false, sharp: true }), s * 3, 1.6, sz0 - 0.12, Math.PI);
   const counter = add(M.counter(4), 0, 0, 23.6); collideObj(counter);
-  const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222 }), 0, 0, 24.6, Math.PI);
+  const keeper = add(M.person({ shirt: 0x2d6a4f, hair: 0x222222 }), 0, 0, 24.6, Math.PI); spots.keeper = keeper;
   agents.push({ obj: keeper, update: (dt, t) => { keeper.rotation.y = Math.PI + Math.sin(t * 0.7) * 0.3; } });
   interact(counter, { range: 3, prompt: () => 'Shop counter<small>Treats for helpers and scratch cards</small>', use: () => LC.game.openScreen('corner') });
   interact(keeper, { range: 3.5, prompt: () => 'Talk to the shopkeeper', use: () => LC.game.openScreen('corner') });
@@ -367,7 +368,7 @@ function spawnCustomer(kind) {
   let end = new THREE.Vector3(fromLeft ? 45 : -45, 0, 8.9);
   o.position.copy(start); scene.add(o);
   let stage = 'walk', wait = 0, label = null, speed = 1.7, loot = null;
-  const say = (text) => { if (label) o.remove(label); label = M.textSprite(text, { size: 0.32 }); label.position.y = 2.1; o.add(label); setTimeout(() => { if (label) { o.remove(label); label = null; } }, 3500); };
+  const say = (text) => { speak(o, text, kind === 'collector' ? 'Collector' : ''); LC.audio.sfx('babble'); };
   const done = () => { scene.remove(o); agents.splice(agents.indexOf(a), 1); if (stallWaiter === a) stallWaiter = null; };
   const a = { obj: o, update: (dt, t) => {
     if (talker && talker.obj === o) return;
@@ -442,9 +443,9 @@ function buildUnderground() {
   const gary = add(M.cyl(0.07, 0.08, 0.5, 0xd88a9a, 0, 0.25, 0), UX + 17, 0, -2.4);
   gary.add(M.ball(0.03, 0x2d2118, -0.03, 0.42, 0.06), M.ball(0.03, 0x2d2118, 0.03, 0.42, 0.06));
   agents.push({ obj: gary, update: (dt, t) => { gary.rotation.z = Math.sin(t * 2) * 0.3; } });
-  interact(gary, { range: 2.4, prompt: () => 'Talk to Gary the worm', use: () => LC.game.chatUnder('gary') });
+  interact(gary, { range: 2.4, prompt: () => 'Talk to Gary the worm', use: () => LC.game.chatUnder('gary', gary) });
   // gate 1 -> the sewer
-  gate(UX + 40, 40);
+  gate(UX + 40);
   ground(UX + 40, -6, UX + 72, 6, 0x4a4a42); roof(UX + 40, -6, UX + 72, 6);
   dirt(UX + 40, -6, UX + 72, -6); dirt(UX + 40, 6, UX + 72, 6);
   const wat = M.water(32, 2.4); wat.position.set(UX + 56, 0.03, 0); scene.add(wat);
@@ -455,14 +456,14 @@ function buildUnderground() {
   for (let i = 0; i < 4; i++) {
     const r = add(M.rat(), UX + 45 + i * 6, 0, (i % 2 ? 3 : -3)); const base = r.position.clone(), sp = 0.6 + i * 0.2;
     agents.push({ obj: r, update: (dt, t) => { r.position.x = base.x + Math.sin(t * sp + i) * 2.5; r.rotation.y = Math.cos(t * sp + i) > 0 ? Math.PI / 2 : -Math.PI / 2; } });
-    interact(r, { range: 2.2, prompt: () => 'Talk to the rat', use: () => LC.game.chatUnder('rat') });
+    interact(r, { range: 2.2, prompt: () => 'Talk to the rat', use: () => LC.game.chatUnder('rat', r) });
   }
   const ring = add(M.part(new THREE.TorusGeometry(0.08, 0.025, 8, 16), 0xf2b631, 0, 0, 0, { mat: { emissive: 0x8a6a00, emissiveIntensity: 1.5, metalness: 0.8, roughness: 0.2 } }), UX + 66, 0.1, 0.4);
   ring.rotation.x = Math.PI / 2; spots.ring = ring;
   agents.push({ obj: ring, update: (dt, t) => { ring.rotation.z = t; } });
   interact(ring, { range: 2.4, prompt: () => 'Something shiny in the water...', use: () => LC.game.findRing() });
   // gate 2 -> Roman ruins
-  gate(UX + 72, 350);
+  gate(UX + 72);
   ground(UX + 72, -8, UX + 100, 8, 0xd8c8a8); roof(UX + 72, -8, UX + 100, 8);
   dirt(UX + 72, -8, UX + 100, -8); dirt(UX + 72, 8, UX + 100, 8); dirt(UX + 72, -8, UX + 72, -6); dirt(UX + 72, 6, UX + 72, 8);
   const mosaic = M.signPlane('SPQR · SOFA PER QVAERENDA', 10, 6, { bg: '#c8823a', color: '#f3eee4' }); mosaic.rotation.x = -Math.PI / 2; mosaic.position.set(UX + 86, 0.02, 0); scene.add(mosaic);
@@ -473,7 +474,8 @@ function buildUnderground() {
   light(UX + 80, 0, 0xffc880, 10, 13); light(UX + 94, 0, 0xffc880, 10, 13);
   torchAt(UX + 82, -7.6); torchAt(UX + 90, 7.6, Math.PI);
   // gate 3 -> the Mole Kingdom: a whole town underground
-  gate(UX + 100, 1000);
+  gate(UX + 100);
+  buildSiteRopes();
   ground(UX + 100, -20, UX + 150, 20, 0x3a2a1a); roof(UX + 100, -20, UX + 150, 20);
   dirt(UX + 100, -20, UX + 150, -20); dirt(UX + 100, 20, UX + 150, 20); dirt(UX + 150, -20, UX + 150, 20); dirt(UX + 100, -20, UX + 100, -6); dirt(UX + 100, 6, UX + 100, 20);
   const houses = [[UX + 110, -14], [UX + 120, -15], [UX + 130, -14], [UX + 112, 14], [UX + 124, 15], [UX + 136, 14]];
@@ -486,7 +488,7 @@ function buildUnderground() {
   for (let i = 0; i < 6; i++) {
     const m = add(M.moleCitizen(), UX + 110 + i * 5, 0, (i % 2 ? 5 : -5));
     walker(m, [{ x0: UX + 104, x1: UX + 140, z0: -10, z1: 10 }], 0.8, { pause: 4 });
-    interact(m, { range: 2.4, prompt: () => 'Talk to the mole', use: () => LC.game.chatUnder('mole') });
+    interact(m, { range: 2.4, prompt: () => 'Talk to the mole', use: () => LC.game.chatUnder('mole', m) });
   }
   for (const [x, z] of [[UX + 108, 0], [UX + 125, 8], [UX + 140, -8], [UX + 140, 8], [UX + 125, -10]]) light(x, z, 0xffb060, 10, 15);
   // glowing mushrooms light the Mole Kingdom
@@ -500,14 +502,51 @@ function buildUnderground() {
   light(UX + 115, 14, 0x9a7aff, 8, 14); light(UX + 132, -14, 0x7ad0ff, 8, 14);
   for (const [x, z] of [[UX + 115, -19.6], [UX + 128, 19.6], [UX + 142, -19.6]]) torchAt(x, z, z > 0 ? Math.PI : 0);
 }
-function gate(x, minDepth) {
+// solid rock between the parts of the underground: each part has its own way in from the surface
+function gate(x) {
   const rock = M.box(0.9, 3.4, 12, 0x6a5a4a, x, 1.7, 0, { sharp: true, mat: { flatShading: true } });
   scene.add(rock);
-  const c = collide(x - 0.45, -6, x + 0.45, 6);
-  interact(rock, { range: 3, prompt: () => 'Solid rock<small>Dig your hole deeper to break through here</small>', use: () => LC.game.say('Solid rock. Your hole up top needs to go deeper.') });
-  gates.push({ rock, c, minDepth });
+  collide(x - 0.45, -6, x + 0.45, 6);
+  const lines = ['Solid rock. Whatever\'s on the other side, you\'ll need another way in.', 'You knock on the rock. The rock does not knock back.', 'Something is on the other side. You can hear it being smug.'];
+  interact(rock, { range: 3, prompt: () => 'Solid rock<small>There must be another way in from the surface</small>', use: () => LC.game.say(pick(lines)) });
 }
-function updateGates(depth) { for (const g of gates) { const open = depth >= g.minDepth; g.c.off = open; g.rock.visible = !open; } }
+function updateGates() {}
+// ways down from the surface, and the ropes back up
+const SITE_SPAWN = { sewer: [UX + 44, 4.5, -Math.PI / 2], roman: [UX + 75, 5.5, -Math.PI / 2], mole: [UX + 104, 0, -Math.PI / 2] };
+const SITE_EXIT = { sewer: [-14, 14.2, Math.PI], roman: [3.3, 24, 0], mole: [51, 26.2, 0] };
+const sites = {};
+function buildDigSites() {
+  // the drain on Acacia Road
+  const drain = new THREE.Group(); drain.position.set(-14, 0, 12.8); scene.add(drain);
+  const lid = M.cyl(0.45, 0.45, 0.05, 0x3a3a3e, 0, 0.03, 0, { seg: 16 }); lid.name = 'lid'; drain.add(lid);
+  for (let i = -2; i <= 2; i++) lid.add(M.box(0.6, 0.012, 0.05, 0x2a2a2e, 0, 0.03, i * 0.14));
+  // the corner shop cellar trapdoor, behind the counter
+  const cellar = new THREE.Group(); cellar.position.set(3.3, 0, 25.2); scene.add(cellar);
+  const flap = M.box(1.0, 0.05, 1.0, 0x6e4a2a, 0, 0.03, 0); flap.name = 'lid'; cellar.add(flap);
+  flap.add(M.box(0.08, 0.02, 0.5, 0x333333, 0, 0.04, 0));
+  // the big molehill in the park
+  const mole = new THREE.Group(); mole.position.set(51, 0, 28); scene.add(mole);
+  const mound = M.cone(1.1, 0.7, 0x6e4a2a, 0, 0.35, 0, { seg: 10, mat: { flatShading: true } }); mound.name = 'lid'; mole.add(mound);
+  for (const [id, g] of [['drain', drain], ['cellar', cellar], ['molehill', mole]]) {
+    const pit = M.cyl(0.42, 0.42, 0.02, 0x0a0604, 0, 0.02, 0, { seg: 16 }); pit.visible = false; pit.name = 'pit'; g.add(pit);
+    const ladder = M.box(0.5, 0.06, 0.06, 0x8a6a3a, 0, 0.5, 0.3); ladder.visible = false; ladder.name = 'ladder'; g.add(ladder);
+    hitbox(g, 1.6, 1.0, 1.6, 0);
+    sites[id] = g;
+    interact(g, { range: 3, hold: id !== 'drain', tool: id === 'drain' ? null : 'dig', prompt: () => LC.game.sitePrompt(id), use: () => { const r = LC.game.siteUse(id); if (r === 'down') goArea('under', SITE_SPAWN[LC.DIG_SITES[id].spawn].slice(0, 2), SITE_SPAWN[LC.DIG_SITES[id].spawn][2]); else if (r === 'dig') burstAt(g.position.clone().setY(0.4), 5, 0x7a4f2c); } });
+  }
+}
+function setSiteOpen(id, open) {
+  const g = sites[id]; if (!g) return;
+  g.getObjectByName('lid').visible = !open; g.getObjectByName('pit').visible = open; g.getObjectByName('ladder').visible = open;
+}
+function buildSiteRopes() {
+  for (const [key, [x, z]] of Object.entries(SITE_SPAWN)) {
+    const rope = add(M.cyl(0.04, 0.04, 3.4, 0xc8a070, 0, 1.7, 0), x - 1.5, 0, z);
+    add(M.box(0.5, 0.3, 0.5, 0xffe9b0, 0, 0, 0, { mat: { emissive: 0xffe9b0, emissiveIntensity: 2, map: null } }), x - 1.5, 3.3, z);
+    const e = SITE_EXIT[key];
+    interact(rope, { range: 2.6, prompt: () => 'Climb back up to the surface', use: () => goArea('town', [e[0], e[1]], e[2]) });
+  }
+}
 let area = 'town';
 const AREAS = {
   town: { sun: 3.4, hemi: 0.9, sky: [0xa8bce0, 0x4a3a2e], fog: [0xd89c78, 22, 120], bg: 0xe0a882, outdoors: true },
@@ -1090,7 +1129,7 @@ function makeHelper(id, i) {
       o = add(M.cat(pick([0xf08a24, 0x444444, 0xdddddd, 0x8a6a4a])), 0, 0, 0);
       o.position.copy(safeSpot(ZONES.house));
       walker(o, ZONES.house, 0.9, { pause: 6 });
-      interact(o, { range: 2.5, prompt: () => 'Stroke the cat', use: () => { LC.audio.sfx('meow'); if (LC.game.helperUse('cat')) return; LC.game.say(pick(QUOTES.cat)); if (Math.random() < 0.3) LC.game.tip(10); } });
+      interact(o, { range: 2.5, prompt: () => 'Stroke the cat', use: () => { LC.audio.sfx('meow'); if (LC.game.helperUse('cat')) return; voice(o, pick(QUOTES.cat)); if (Math.random() < 0.3) LC.game.tip(10); } });
       break;
     }
     case 'brother': {
@@ -1101,7 +1140,7 @@ function makeHelper(id, i) {
       o.rotation.set(Math.PI - 0.5, ry + Math.PI, 0); o.position.set(x, 0.85, z);
       scene.add(o);
       agents.push({ obj: o, update: (dt, t) => { limbs(o, Math.sin(t * 9 + i)); } });
-      interact(o, { range: 2.5, prompt: () => 'Pull your brother out', use: () => { if (LC.game.helperUse('brother')) return; LC.audio.sfx('nope'); LC.game.say(pick(QUOTES.brother)); } });
+      interact(o, { range: 2.5, prompt: () => 'Pull your brother out', use: () => { if (LC.game.helperUse('brother')) return; LC.audio.sfx('nope'); voice(o, pick(QUOTES.brother), 'Little Brother'); } });
       break;
     }
     case 'detectorist': {
@@ -1112,7 +1151,7 @@ function makeHelper(id, i) {
       o.getObjectByName('armR').rotation.x = -0.9;
       walker(o, ZONES.garden, 0.7, { pause: 4 });
       agents.push({ obj: o, update: (dt, t) => { det.rotation.z = Math.sin(t * 2 + i) * 0.5; } });
-      interact(o, { range: 2.5, prompt: () => 'Chat to the detectorist', use: () => { if (LC.game.helperUse('detectorist')) return; LC.audio.sfx('beep'); LC.game.say(pick(QUOTES.detectorist)); } });
+      interact(o, { range: 2.5, prompt: () => 'Chat to the detectorist', use: () => { if (LC.game.helperUse('detectorist')) return; LC.audio.sfx('beep'); voice(o, pick(QUOTES.detectorist), 'Detectorist'); } });
       break;
     }
     case 'well': o = add(M.well(), spots.well.x, 0, spots.well.z); collideObj(o); break;
@@ -1182,7 +1221,7 @@ function setGoose(mode) {
   if (mode === 'none') { if (goose) goose.visible = false; return; }
   if (!goose) {
     goose = add(M.goose(), -4, 0, -10);
-    interact(goose, { range: 2.5, prompt: () => (gooseMode === 'friend' ? 'Pat the goose' : 'Shoo the goose'), use: () => { LC.audio.sfx('honk'); LC.game.say(pick(QUOTES.goose)); } });
+    interact(goose, { range: 2.5, prompt: () => (gooseMode === 'friend' ? 'Pat the goose' : 'Shoo the goose'), use: () => { LC.audio.sfx('honk'); voice(goose, pick(QUOTES.goose), 'The Goose'); } });
     agents.push({ update: gooseUpdate });
   }
   goose.visible = true;
@@ -1219,7 +1258,7 @@ function gooseUpdate(dt, t) {
 
 // ---------- visitors for random events ----------
 // Characters that come and talk to you: they walk (or fly) up, chat in a speech bubble, then leave.
-const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk' };
+const VOICES = { nan: 'babbleHigh', badger: 'babbleLow', fox: 'fox', seagull: 'squawk', goose: 'honk', icecream: 'babble', man: 'babble', buttonman: 'babbleLow', coin: 'babbleTiny', brian: 'babbleLow', director: 'babble', mayor: 'babbleLow', pigeon: 'squawk', shopkeeper: 'babble', piggy: 'oink', dev: 'babble', mum: 'babbleHigh', aussie: 'babbleLow' };
 function makeVisitor(kind) {
   if (kind === 'nan') return M.person({ shirt: 0xb07ab8, legs: 0x5a4a6a, hat: 'bun', height: 0.92 });
   if (kind === 'badger') { const o = M.badger(); o.scale.setScalar(1.4); const tie = M.box(0.06, 0.18, 0.02, 0xc8231f, 0, 0.28, 0.62); o.add(tie); return o; }
@@ -1395,6 +1434,143 @@ function burstAt(pos, n = 6, color = null) {
     particles.push({ m, vel: new THREE.Vector3(rand(-2, 2), rand(2.5, 5), rand(-2, 2)), life: rand(0.6, 1), spin: rand(5, 15) });
   }
 }
+// ---------- ending scenes: pay, pull the sheet off, turn round, and someone's there ----------
+const cut = { active: false, steps: [], i: 0, wait: 0, props: [], actors: {}, tw: [], done: null, yaw: 0, sub: null };
+const CUT_NAMES = { shopkeeper: 'Shopkeeper', nan: 'Nan', piggy: 'The Thing', goose: 'The Goose', dev: 'The Developer', mum: 'Mum', aussie: 'Bazza', buttonman: 'The Button Baron', brian: 'Brian' };
+const CUT_HEADS = { goose: 2.15, piggy: 2.9, dev: 1.55, buttonman: 2.4 };
+const THING_AT = new THREE.Vector3(4.8, 0, 1.6);
+function tween(dur, fn, then) { cut.tw.push({ t: 0, dur, fn, then }); }
+function subtitle(text) {
+  if (!cut.sub) { cut.sub = document.createElement('div'); cut.sub.className = 'subtitle'; document.body.appendChild(cut.sub); }
+  cut.sub.innerHTML = text || ''; cut.sub.classList.toggle('show', !!text);
+}
+function cutActor(kind) {
+  let o;
+  if (kind === 'shopkeeper') { o = M.person({ shirt: 0x3a6ea5, legs: 0x333333, hair: 0x333333, height: 1.05 }); o.add(M.box(0.36, 0.5, 0.04, 0xffffff, 0, 0.95, 0.15)); }
+  else if (kind === 'dev') { o = M.person({ shirt: 0x2a2a2a, legs: 0x3a3f58, hat: 'beanie' }); }
+  else if (kind === 'mum') o = M.person({ shirt: 0xf7a8bd, legs: 0x3a3f58, hair: 0x8a4a2a });
+  else if (kind === 'aussie') { o = M.person({ shirt: 0xc8a050, legs: 0x6a5a3a, hat: 'cap', hair: 0xd8b060 }); }
+  else if (kind === 'goose') { o = M.goose(); o.scale.setScalar(1.8); }
+  else o = makeVisitor(kind);
+  return o;
+}
+function revealProp(name) {
+  const g = new THREE.Group(); g.position.copy(THING_AT); scene.add(g); cut.props.push(g);
+  if (name === 'mealdeal') {
+    g.add(M.box(0.9, 0.7, 0.6, M.C.wood, 0, 0.35, 0), M.box(0.32, 0.12, 0.2, 0xf3e0b0, -0.22, 0.78, 0, { rot: [0, 0.3, 0] }), M.box(0.2, 0.28, 0.08, 0xd9534f, 0.05, 0.85, 0),
+      M.cyl(0.06, 0.06, 0.26, 0x3b8ad9, 0.28, 0.84, 0));
+  }
+  if (name === 'moon') { const moon = M.ball(0.7, 0xc8c8c0, 0, 1.4, 0, { seg: 20 }); for (let i = 0; i < 9; i++) { const a = Math.random() * 6, b2 = Math.random() * 3; moon.add(M.ball(0.12 + Math.random() * 0.1, 0xa8a8a0, Math.sin(b2) * Math.cos(a) * 0.66, Math.cos(b2) * 0.66, Math.sin(b2) * Math.sin(a) * 0.66)); } moon.name = 'moon'; g.add(moon); g.userData.spin = moon; }
+  if (name === 'scratch') {
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 700; const c2 = cv.getContext('2d');
+    const paint = (lose) => { c2.fillStyle = '#f2b631'; c2.fillRect(0, 0, 512, 700); c2.fillStyle = '#2d2118'; c2.font = '700 64px Fredoka, sans-serif'; c2.textAlign = 'center'; c2.fillText('MEGA', 256, 90); c2.fillText('SCRATCH', 256, 160);
+      c2.fillStyle = lose ? '#fffaf0' : '#b8b8b8'; c2.fillRect(50, 220, 412, 420); c2.fillStyle = '#2d2118'; c2.font = '700 54px Fredoka, sans-serif';
+      if (lose) { c2.fillText('BETTER', 256, 380); c2.fillText('LUCK NEXT', 256, 450); c2.fillText('TIME', 256, 520); } else { c2.fillText('£1,000,000', 256, 420); c2.fillText('JACKPOT?', 256, 490); } tex.needsUpdate = true; };
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; paint(false);
+    const card2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.05), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 })); card2.position.set(-0.6, 1.25, 0); card2.rotation.y = -Math.PI / 2; g.add(card2); g.userData.lose = () => paint(true);
+  }
+  if (name === 'piggy') { const pig = M.piggy('normal'); pig.scale.setScalar(4.2); pig.rotation.y = -Math.PI / 2; g.add(pig); cut.actors.piggy = g; }
+  if (name === 'goose') g.add(M.box(0.05, 0.015, 0.34, 0xffffff, -0.4, 0.02, 0.1, { rot: [0, 0.7, 0], mat: { emissive: 0x444444 } }));
+  if (name === 'dev') { const d = M.desk(); d.position.set(0.5, 0, -0.5); d.rotation.y = -Math.PI / 2; g.add(d); const mo = M.monitor('loose-change.js'); mo.rotation.y = -Math.PI / 2; mo.position.set(0.55, 0, -0.5); g.add(mo); const so = M.sofa(0x6a5a8a, 0x4a3a6a, 1.2); so.position.set(-0.3, 0, 0.4); so.rotation.y = -Math.PI / 2; g.add(so); }
+  return g;
+}
+function lookAtHead(o, headY) {
+  const d = Math.hypot(o.position.x - player.pos.x, o.position.z - player.pos.z);
+  const targetPitch = Math.max(-0.6, Math.min(0.6, Math.atan2(headY * 0.85 - eye, Math.max(0.6, d))));
+  const p0 = player.pitch; tween(0.5, (k) => { player.pitch = p0 + (targetPitch - p0) * k; });
+}
+function playScene(steps, done) {
+  talkEnd(true); bubble(false);
+  cut.active = true; cut.steps = steps; cut.i = 0; cut.wait = 0.6; cut.done = done; cut.tw = [];
+  if (area !== 'town') { area = 'town'; scene.traverse((o) => { if (o.isPointLight) o.visible = !o.userData.area; }); }
+  player.pos.set(2.1, 0, 1.6); player.yaw = -Math.PI / 2; player.pitch = 0.1; cut.yaw = -Math.PI / 2; crouching = false;
+  view.group.visible = false;
+  document.body.classList.add('cutscene');
+}
+function cutStep() {
+  const st = cut.steps[cut.i++];
+  if (!st) { cut.active = false; subtitle(''); bubble(false); setTimeout(() => cut.done && cut.done(), 600); return; }
+  const [type, a, b] = st;
+  const readTime = (t) => Math.max(2.4, 1.2 + t.length * 0.055);
+  if (type === 'pay') {
+    subtitle('You pour £1,000,000,000,000 in loose change into the slot.');
+    for (let i = 0; i < 50; i++) { const c = M.coin(0.06, false); c.position.set(THING_AT.x + rand(-0.4, 0.4), 2.6 + rand(0, 1.5), THING_AT.z + rand(-0.4, 0.4)); c.rotation.set(rand(0, 6), rand(0, 6), 0); scene.add(c); cut.props.push(c); c.userData.vy = -rand(1, 3); }
+    let n = 0; const iv = setInterval(() => { LC.audio.sfx('coin', 0.8 + Math.random() * 0.6); if (++n > 14) clearInterval(iv); }, 140);
+    for (const c of cut.props) if (c.userData.vy) c.userData.y0 = c.position.y;
+    tween(2.4, (k) => { for (const c of cut.props) if (c.userData.vy) { const y = c.userData.y0 - k * k * 5; c.position.y = y; c.rotation.x += 0.2; c.visible = y > 2.1; } });
+    cut.wait = 3; return;
+  }
+  if (type === 'reveal') {
+    subtitle(''); LC.audio.sfx('open');
+    const sheet = spots.thing.children[0];
+    tween(1.4, (k) => { sheet.position.y = 1.15 + k * 2.5; sheet.rotation.z = k * 0.8; sheet.scale.setScalar(1 - k * 0.6); }, () => { spots.thing.visible = false; spots.thingLabel.visible = false; });
+    setTimeout(() => { revealProp(a); LC.audio.sfx('sparkle'); }, 700);
+    cut.wait = 2.2; return;
+  }
+  if (type === 'turn') {
+    const y0 = player.yaw; cut.yaw += Math.PI; const y1 = cut.yaw; LC.audio.sfx('step');
+    tween(1.1, (k) => { const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; player.yaw = y0 + (y1 - y0) * e; });
+    cut.wait = 1.3; return;
+  }
+  if (type === 'actor') {
+    let o = a === 'piggy' ? cut.actors.piggy : cutActor(a);
+    if (a !== 'piggy') {
+      const fwd = new THREE.Vector3(-Math.sin(cut.yaw), 0, -Math.cos(cut.yaw));
+      const at = b === 'thing' ? THING_AT.clone().add(new THREE.Vector3(-0.5, 0, 0)) : b === 'front' ? player.pos.clone().addScaledVector(fwd, 1.7) : new THREE.Vector3(0.55, 0, 1.6);
+      o.position.copy(at); o.rotation.y = Math.atan2(player.pos.x - at.x, player.pos.z - at.z); scene.add(o); cut.props.push(o);
+      if (a === 'dev') { o.position.set(THING_AT.x - 0.5, 0.15, THING_AT.z + 0.4); o.rotation.y = -Math.PI / 2; }
+      cut.actors[a] = o;
+      LC.audio.sfx(a === 'goose' ? 'honk' : 'step');
+    }
+    lookAtHead(o, CUT_HEADS[a] || 2.0);
+    cut.wait = 0.9; return;
+  }
+  if (type === 'say') {
+    subtitle('');
+    const o = cut.actors[a];
+    if (!talker || talker.obj !== o) { talkStart(a, o); talker.head = CUT_HEADS[a] || 2.0; }
+    talkSay(b, CUT_NAMES[a] || '');
+    cut.wait = readTime(b); return;
+  }
+  if (type === 'narrate') { bubble(false); subtitle(a); cut.wait = readTime(a); return; }
+  if (type === 'wait') { cut.wait = a; return; }
+  if (type === 'act') {
+    cut.wait = 1.5;
+    if (a === 'honk') { LC.audio.sfx('honk'); shake = 0.3; }
+    if (a === 'moonZoom') { const m = cut.props.find((g) => g.userData.spin); tween(2.5, (k) => { m.scale.setScalar(1 + k * 2.5); m.position.y = k * 0.5; }); lookAtHead(m, 2.6); cut.wait = 2.8; }
+    if (a === 'scratchLose') { const c = cut.props.find((g) => g.userData.lose); let n = 0; const iv = setInterval(() => { LC.audio.sfx('scratch'); if (++n > 8) { clearInterval(iv); c.userData.lose(); LC.audio.sfx('nope'); } }, 180); cut.wait = 2.2; }
+    if (a === 'piggyLeave') { talkEnd(true); const pg = cut.actors.piggy; const p0 = pg.position.clone(); LC.audio.sfx('oink'); tween(3, (k) => { pg.position.set(p0.x + (3 - p0.x) * Math.min(1, k * 2), 0, p0.z + (9 - p0.z) * k); pg.rotation.y = Math.atan2(3 - pg.position.x, 9 - pg.position.z + 0.01); }); cut.wait = 3; }
+    if (a === 'blur') { const f = document.getElementById('fade'); f.classList.add('white', 'show'); cut.wait = 1.6; }
+    if (a === 'wakeSofa') { player.pos.set(-3.5, 0, 3.55); cut.yaw = 0; player.yaw = 0; player.pitch = -0.05; setTimeout(() => document.getElementById('fade').classList.remove('show'), 300); setTimeout(() => document.getElementById('fade').classList.remove('white'), 900); cut.wait = 1.4; }
+    if (a === 'australia') { const f = document.getElementById('fade'); f.classList.add('show'); setTimeout(() => { player.pos.set(-2, 0, -10.5); cut.yaw = Math.PI; player.yaw = Math.PI; flipTarget = 1; f.classList.remove('show'); }, 500); cut.wait = 2; }
+    if (a === 'knock') { let n = 0; const iv = setInterval(() => { LC.audio.sfx('tap'); if (++n >= 3) clearInterval(iv); }, 350); subtitle('Knock knock knock.'); cut.wait = 1.8; }
+    if (a === 'brianPeek') { talkEnd(true); const br = cut.actors.brian; const p0 = br.position.clone(), to = new THREE.Vector3(THING_AT.x - 1.3, 0, THING_AT.z + 0.9); tween(1.5, (k) => { br.position.lerpVectors(p0, to, k); limbs(br, Math.sin(k * 20)); br.rotation.y = Math.atan2(THING_AT.x - br.position.x, THING_AT.z - br.position.z); }, () => { const sh = spots.thing.children[0]; tween(0.6, (k) => { sh.rotation.x = -k * 0.35; }); }); cut.wait = 2.2; }
+    return;
+  }
+  cut.wait = 0.1;
+}
+let cutLast = performance.now();
+function updateCut() {
+  const now = performance.now(), dt = Math.min(0.25, (now - cutLast) / 1000); cutLast = now;
+  for (let i = cut.tw.length - 1; i >= 0; i--) { const t = cut.tw[i]; t.t += dt; const k = Math.min(1, t.t / t.dur); t.fn(k); if (k >= 1) { cut.tw.splice(i, 1); if (t.then) t.then(); } }
+  for (const g of cut.props) if (g.userData.spin) g.userData.spin.rotation.y += dt * 0.3;
+  if (!cut.active) return;
+  cut.wait -= dt;
+  if (cut.wait <= 0) cutStep();
+}
+function cutSkip() { if (cut.active && cut.wait > 0.4) cut.wait = 0.05; }
+function cutReset() {
+  cut.active = false; cut.tw = [];
+  for (const p of cut.props) scene.remove(p);
+  cut.props = []; cut.actors = {};
+  subtitle(''); talkEnd(true); bubble(false);
+  const sheet = spots.thing.children[0]; sheet.position.y = 1.15; sheet.rotation.set(0, 0, 0); sheet.scale.setScalar(1);
+  spots.thing.visible = true; spots.thingLabel.visible = true;
+  document.getElementById('fade').classList.remove('show', 'white');
+  document.body.classList.remove('cutscene');
+  view.group.visible = true;
+}
+
 function updateParticles(dt) {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
@@ -1595,7 +1771,7 @@ function viewMesh(kind, tier) {
 }
 let heldSprite = null, heldIcon = null;
 function updateViewModel(dt, moving) {
-  view.group.visible = !card.active;
+  view.group.visible = !card.active && !cut.active && !photo;
   const kind = focus && focus.tool ? focus.tool : 'hand';
   // holding something from your pockets while looking at the stall
   const want = focus && focus.slot != null ? LC.game.heldIcon() : null;
@@ -1690,6 +1866,40 @@ function updateFocus() {
 function useFocus(auto) { if (focus && !LC.game.isBlocked()) { view.swing = 1; focus.use(auto); } }
 
 // ---------- projection for floating text ----------
+// ---------- speech bubbles over anyone who says something ----------
+const speech = [];
+const _hb = new THREE.Box3(), _hp = new THREE.Vector3();
+function headOf(obj) {
+  if (obj.userData.head == null) { _hb.setFromObject(obj); obj.updateMatrixWorld(); obj.userData.head = Math.max(0.4, _hb.max.y - obj.getWorldPosition(_hp).y) + 0.2; }
+  return obj.userData.head;
+}
+function speak(obj, text, name = '', secs = 0) {
+  if (!obj) { LC.game.say(text); return; }
+  let s2 = speech.find((x) => x.obj === obj);
+  if (!s2) { const el = document.createElement('div'); el.className = 'bubble3d mini'; el.innerHTML = '<b class="who"></b><span class="line"></span>'; document.body.appendChild(el); s2 = { obj, el }; speech.push(s2); }
+  s2.el.querySelector('.who').textContent = name; s2.el.querySelector('.line').innerHTML = text;
+  s2.until = time + (secs || Math.max(2.8, 1.4 + text.length * 0.05));
+}
+// a line from someone: "quoted" speech goes in a bubble over them, anything else is a caption
+function voice(obj, text, name = '') {
+  const m = text.match(/^(?:([A-Z][\w ]*): )?"([^"]+)"(.*)$/);
+  if (m) return speak(obj, m[2] + (m[3] ? `<small>${m[3].trim()}</small>` : ''), m[1] || name);
+  if (text.length < 16) return speak(obj, text, name);
+  LC.game.say(text);
+}
+function updateSpeech() {
+  for (let i = speech.length - 1; i >= 0; i--) {
+    const s2 = speech[i];
+    if (time > s2.until || !s2.obj.parent) { s2.el.remove(); speech.splice(i, 1); continue; }
+    s2.obj.getWorldPosition(_hp); _hp.y += headOf(s2.obj);
+    const dist = _hp.distanceTo(camera.position), p = dist > 30 ? null : project(_hp);
+    const onScreen = p && p.x > 40 && p.x < innerWidth - 40 && p.y > 60 && p.y < innerHeight - 40;
+    s2.el.classList.add('show');
+    // off screen (behind you, or round a corner): show it at the bottom so you still hear them
+    s2.el.classList.toggle('edge', !onScreen);
+    s2.el.style.transform = onScreen ? `translate(${Math.max(150, Math.min(innerWidth - 150, p.x))}px, ${p.y}px) translate(-50%, -100%)` : `translate(${innerWidth / 2}px, ${innerHeight - 150 - i * 70}px) translate(-50%, -100%)`;
+  }
+}
 function project(v) {
   const p = v.clone().project(camera);
   if (p.z > 1) return null;
@@ -1697,9 +1907,29 @@ function project(v) {
 }
 
 // ---------- golden coin compass ----------
+// ---------- tutorial helpers: people who stand about, walk, and an arrow to where you should go ----------
+let guideTarget = null;
+const GUIDE_SPOTS = { thing: [4.8, 1.6], sofa: [-3.5, 3.0], door: [3.0, 4.2], board: [19.5, 16.2] };
+function guide(name) { const g = name && GUIDE_SPOTS[name]; guideTarget = g ? new THREE.Vector3(g[0], 0, g[1]) : null; }
+function near(name, d = 2.5) { const g = GUIDE_SPOTS[name]; return area === 'town' && Math.hypot(player.pos.x - g[0], player.pos.z - g[1]) < d; }
+function spawnActor(kind, x, z) {
+  const o = cutActor(kind); o.position.set(x, 0, z); scene.add(o);
+  const a = { obj: o, update: (dt, t) => {
+    if (a.path && a.path.length) {
+      const tg = a.path[0], d = new THREE.Vector3(tg[0] - o.position.x, 0, tg[1] - o.position.z);
+      if (d.length() < 0.15) { a.path.shift(); if (!a.path.length && a.then) a.then(); return; }
+      d.normalize(); o.position.addScaledVector(d, 1.6 * dt); o.rotation.y = Math.atan2(d.x, d.z); limbs(o, Math.sin(t * 9));
+    } else { o.rotation.y += ((Math.atan2(player.pos.x - o.position.x, player.pos.z - o.position.z) - o.rotation.y + Math.PI * 3) % (Math.PI * 2) - Math.PI) * Math.min(1, dt * 3); limbs(o, 0); }
+  } };
+  agents.push(a); o.userData.actor = a;
+  return o;
+}
+function walkActor(o, path, then) { const a = o.userData.actor; a.path = path.map((p) => p.slice()); a.then = then; }
+function removeActor(o) { scene.remove(o); const i = agents.indexOf(o.userData.actor); if (i >= 0) agents.splice(i, 1); }
+
 function goldenBearing() {
   const g = pickups.find((p) => p.kind === 'golden');
-  const target = g ? g.obj.position : stallWaiter ? stall.pos : null;
+  const target = guideTarget || (g ? g.obj.position : stallWaiter ? stall.pos : null);
   if (!target) return null;
   const dx = target.x - player.pos.x, dz = target.z - player.pos.z;
   const ang = Math.atan2(-dx, -dz) - player.yaw;
@@ -1728,6 +1958,7 @@ function setupInput() {
     player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch - e.movementY * k));
   });
   document.addEventListener('mousedown', (e) => {
+    if (cut.active && e.button === 0) { cutSkip(); return; }
     if (locked && card.active && e.button === 0) { if (card.done) { endCard(); return; } card.scratching = true; scratchAt(); return; }
     if (locked && e.button === 0) { holding = true; holdTimer = 0.25; useFocus(); }
   });
@@ -1737,6 +1968,7 @@ function setupInput() {
     if (e.code === 'Tab') { e.preventDefault(); LC.game.togglePhone(); return; }
     if (e.code === 'KeyP' && !e.repeat && (locked || padActive) && !LC.game.isBlocked() && !card.active) { togglePhoto(); return; }
     if (e.code === 'Enter' && photo) { wantShot = true; return; }
+    if (cut.active && (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter')) { cutSkip(); return; }
     if (!locked) return;
     keys.add(e.code);
     if (e.code === 'KeyE' && !e.repeat && card.active) { if (card.done) endCard(); else { finishCard(); } return; }
@@ -1955,6 +2187,8 @@ function frame(now) {
   updatePickups(dt);
   updateParticles(dt);
   updateEvent(dt);
+  updateCut();
+  updateSpeech();
   if (pig) {
     pigWobble = Math.max(0, pigWobble - dt * 4);
     pig.rotation.z = Math.sin(time * 40) * 0.15 * pigWobble;
@@ -2037,7 +2271,7 @@ LC.world = {
   syncHelpers,
   setPig,
   setGoose,
-  talkStart, talkSay, talkEnd, evolve,
+  talkStart, talkSay, talkEnd, evolve, speak, voice, guide, near, spawnActor, walkActor, removeActor, setSiteOpen, keeper: () => spots.keeper,
   townEvent, treasureReveal, treasureSpot: () => ev.spot, eventId: () => ev.id, onFilmMark: () => !!(ev.group && ev.group.userData.xmark && player.pos.distanceTo(ev.group.userData.xmark) < 1.2),
   startCard, cardActive: () => card.active,
   isUnderground: () => area === 'under',
@@ -2073,7 +2307,9 @@ LC.world = {
   },
   piglets: (n = 3) => { for (let i = 0; i < n; i++) { const p = randomWalkable(3, 7); if (p) { p.y = 0; spawnPickup('piglet', p, { life: 20 }); } } },
   shake: (s = 0.3) => { shake = s; },
+  playScene, cutActive: () => cut.active, cutIndex: () => cut.i,
   reset: () => {
+    cutReset();
     for (const list of Object.values(helpers)) for (const o of list) { if (o.parent) o.parent.remove(o); const i = interactables.indexOf(o); if (i >= 0) interactables.splice(i, 1); }
     for (const id of Object.keys(helpers)) helpers[id] = [];
     for (const p of pickups) scene.remove(p.obj);

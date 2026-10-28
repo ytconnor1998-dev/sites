@@ -85,10 +85,10 @@ LC.DIG_FINDS = [
   { at: 3.5, icon: '💨', name: 'A stink bomb from 1989', text: 'Still sealed. Still potent. You know exactly whose car this is for.', reward: { item: 'stink' } },
   { at: 15, icon: '🏴‍☠️', name: "A pirate's chest", text: 'Long way inland for a pirate. Good for him.', reward: { cash: 600 } },
   { at: 20, icon: '🍪', name: 'A biscuit tin', text: 'Inside: no biscuits. A letter, in Grandad\'s handwriting.', reward: { letter: 'l5' } },
-  { at: 40, icon: '🚽', name: "Next door's sewer pipe", text: 'Sorry, Brian.', reward: { buttons: 3 } },
+  { at: 40, icon: '🚽', name: "Next door's sewer pipe", text: 'Sorry, Brian. You can hear the sewer beyond it. You\'d need to get in from the street.', reward: { buttons: 3 } },
   { at: 100, icon: '🦖', name: 'A fossilised £1 coin', text: 'Dinosaurs had money. That is how they could afford to be so big.', reward: { mult: 0.1 } },
   { at: 350, icon: '🅿️', name: 'An underground car park', text: 'Pay and display. You pay. You display.', reward: { cash: 1800 } },
-  { at: 1000, icon: '👑', name: 'The Mole Kingdom', text: 'The Mole King knights you. Your dig speed is doubled. He gives you a tiny crown.', reward: { dig: 2, junk: 'crown' } },
+  { at: 1000, icon: '👑', name: 'A lost royal mole', text: 'A mole in a tiny crown. "Wrong hole," it sniffs, and points towards the park. It leaves you its spare crown and a tip: dig smarter. (Dig speed doubled.)', reward: { dig: 2, junk: 'crown' } },
   { at: 5000, icon: '🌊', name: 'An underground lake of 2ps', text: 'You go for a swim. It hurts.', reward: { cash: 3600 } },
   { at: 35000, icon: '🔥', name: 'The bottom of the crust', text: "It's warm down here. Like a sofa.", reward: { mult: 0.15 } },
   { at: 410000, icon: '🧦', name: 'Every sock you ever lost', text: 'The dryer was a portal. Of course it was.', reward: { buttons: 10 } },
@@ -465,7 +465,7 @@ LC.SECRETS = [
 LC.CHAT = {
   jogger: ['"Can\'t stop! Personal best!"', '"Found a quid on my run once. By the phone box."', '"Do you ever just... run?"', '"I\'ve been running for nine years. I don\'t know how to stop."'],
   oldman: ['"Back in my day you\'d find a pound under every park bench."', '"That fountain\'s full of wishes. Shame to waste them."', '"Your grandad and I used to go metal detecting. He never told me what he found."', '"The dog\'s called Biscuit. Biscuit is smarter than me."'],
-  postman: ['"Lot of post for your Grandad lately. Big parcels. Heavy."', '"That goose bit me on Tuesday. And Wednesday."', '"Brian at number 7 gets a lot of parcels from a shop called SPADES R US."', '"Never trust a letterbox with brushes in it."'],
+  postman: ['"Lot of post for your Grandad lately. Big parcels. Heavy."', '"That drain cover on Acacia Road jingles when I walk over it. Jingles! Drains shouldn\'t jingle. Not my department though."', '"That goose bit me on Tuesday. And Wednesday."', '"Brian at number 7 gets a lot of parcels from a shop called SPADES R US."', '"Never trust a letterbox with brushes in it."'],
   mum: ['"Oh hello love! Saving up for something?"', '"The baby swallowed a 2p once. We got it back. Don\'t ask how."', '"I always leave my change in the washing. Every time."', '"Have you seen the size of the hole next door to Brian\'s?"'],
   kid: ['"I\'m saving up too. I have 4p."', '"The fountain is magic. My mate got 50p out of it."', '"Brian shouted at me for touching his gnome."', '"Do you want to swap a Lego for a button?"'],
   lady: ['"Ooh, you\'re Ken\'s grandchild aren\'t you! Lovely man. Hid money everywhere."', '"I put 20p in the phone box in 1994 and it never gave it back."', '"The pigeons round here are organised, dear. Be careful."', '"Have you tried the benches in the park?"'],
@@ -593,6 +593,7 @@ LC.TOOLS = {
 LC.HARDWARE_EXTRAS = [
   { id: 'rucksack', icon: '🎒', name: 'Bigger Rucksack', cost: 800, desc: 'Carry 24 things instead of 12.' },
   { id: 'wheelbarrow', icon: '🛒', name: 'Wheelbarrow', cost: 5e5, desc: 'Carry 48 things. Very serious.' },
+  { id: 'crowbar', icon: '🪛', name: 'Crowbar', cost: 2500, desc: 'For "opening things". The man does not ask what things. He does not want to know.' },
   { id: 'loftpole', icon: '🪝', name: 'Loft Pole', cost: 120, desc: 'A pole with a hook on the end. For opening loft hatches. Hint hint.' },
 ];
 
@@ -624,9 +625,9 @@ LC.RECIPES = [
 ];
 
 LC.UNDER_CHAT = {
-  gary: ['Gary: "Alright?"', 'Gary: "I have seen things down here. Wormy things."', 'Gary: "The rats run the sewer. The moles run everything else."', 'Gary: "Keep digging. The King is waiting."'],
-  rat: ['The rat tips its tiny hat.', 'Rat: "Squeak." (That was rude.)', 'Rat: "Seen a ring? Gold? Shiny? No? Me neither." (It has definitely seen a ring.)', 'Rat: "Lot of coins come down the drains. We don\'t judge."'],
-  mole: ['Mole: "A SURFACE DWELLER!"', 'Mole: "Have you met the King? He is very small and very important."', 'Mole: "We trade in shiny things down here."', 'Mole: "Our houses are holes. Your house is a hole above a hole."'],
+  gary: ['Gary: "Alright? Mind the roof. I\'ve been meaning to fix it for 40 years."', 'Gary: "I\'ve seen things down here. Mostly dirt. Some of it was brown."', 'Gary: "The sewer? Can\'t get there from here, pal. Try the drain on Acacia Road. Bring a crowbar. And a peg for your nose."', 'Gary: "The moles live under the park. Big molehill by the swings. Don\'t mention their eyesight, they\'re sensitive."', 'Gary: "I\'m not a snake. I get that a lot. I\'m a worm with ambition."'],
+  rat: ['The rat tips its tiny hat. It is wearing a bottle cap.', 'Rat: "The Romans built a road down here. Then the corner shop built on top of it. Typical."', 'Rat: "Squeak." (That was rude.)', 'Rat: "Seen a ring? Gold? Shiny? No? Me neither." (It has definitely seen a ring.)', 'Rat: "Lot of coins come down the drains. We don\'t judge."'],
+  mole: ['Mole: "A SURFACE DWELLER! Quick, everyone, pretend to be dirt!"', 'Mole: "You came through the molehill? We call that the front door. Wipe your feet."', 'Mole: "Have you met the King? He is very small and very important."', 'Mole: "We trade in shiny things down here."', 'Mole: "Our houses are holes. Your house is a hole above a hole."'],
 };
 
 // ---- Grandad's letters: the real story, found around the world. Shown in the Notes app. ----
@@ -820,3 +821,102 @@ LC.CHALLENGES = [
   { id: 'nightowl', icon: '🦉', name: 'Night owl', desc: 'Days go twice as fast. Evenings pay double.', karma: 2 },
   { id: 'skinflint', icon: '🪙', name: 'Skinflint street', desc: 'Stall prices are 30% lower, but customers come twice as often.', karma: 2 },
 ];
+
+// ---------- ending scenes, played in the world ----------
+// Steps: ['pay'] pour the coins in · ['reveal', prop] sheet comes off · ['turn'] you turn round ·
+// ['actor', kind, where] someone appears ('behind' you or at 'thing') · ['say', kind, line] they talk in a bubble ·
+// ['narrate', line] a caption at the bottom · ['act', name] a little bit of action · ['wait', secs]
+LC.ENDING_SCENES = {
+  mealdeal: [
+    ['pay'], ['reveal', 'mealdeal'], ['narrate', 'Under the sheet: a sandwich, a packet of crisps and a drink.'],
+    ['turn'], ['actor', 'shopkeeper', 'behind'],
+    ['say', 'shopkeeper', 'That\'s your meal deal, love. Took me eleven years to count all them coins.'],
+    ['say', 'shopkeeper', 'Sandwich, crisps, drink. Lovely.'],
+    ['say', 'shopkeeper', 'Do you want a bag? It\'s 10p.'],
+    ['narrate', 'You check your pockets. You have nothing left.'],
+    ['say', 'shopkeeper', 'Carry it in your hands, then.'] ],
+  moon: [
+    ['pay'], ['reveal', 'moon'], ['narrate', 'Under the sheet, floating in your hall... is the Moon.'],
+    ['turn'], ['actor', 'nan', 'behind'],
+    ['say', 'nan', 'Your grandad always said he\'d buy you the Moon one day.'],
+    ['say', 'nan', 'Go on then. Have a look.'],
+    ['turn'], ['act', 'moonZoom'],
+    ['narrate', 'You fly up to inspect it. It\'s mostly one enormous sofa.'],
+    ['narrate', 'You check down the back. 20p.'],
+    ['say', 'nan', 'Here we go again, love.'] ],
+  scratch: [
+    ['pay'], ['reveal', 'scratch'], ['narrate', 'It\'s a scratch card. The biggest scratch card ever printed.'],
+    ['turn'], ['actor', 'shopkeeper', 'behind'],
+    ['say', 'shopkeeper', 'Biggest one we\'ve ever sold! Good luck, kid!'],
+    ['turn'], ['narrate', 'You scratch it for three days with a 2p.'], ['act', 'scratchLose'],
+    ['narrate', 'BETTER LUCK NEXT TIME.'], ['turn'],
+    ['say', 'shopkeeper', 'Says on the back: "the real jackpot was the coins you found along the way."'],
+    ['narrate', 'You do not find this comforting.'] ],
+  piggy: [
+    ['pay'], ['reveal', 'piggy'], ['narrate', 'A piggy bank big enough to hold all the money in the world.'],
+    ['narrate', 'You pour every coin you have into it.'],
+    ['actor', 'piggy', 'thing'],
+    ['say', 'piggy', '...'],
+    ['say', 'piggy', 'Oink.'],
+    ['say', 'piggy', 'Thanks for the snack. I\'m off.'],
+    ['act', 'piggyLeave'],
+    ['narrate', 'It walks out of the front door and off into the sunset. It is not coming back.'] ],
+  goose: [
+    ['pay'], ['reveal', 'goose'], ['narrate', 'Under the sheet there is... nothing. Just one white feather.'],
+    ['act', 'honk'], ['wait', 1], ['turn'], ['actor', 'goose', 'behind'],
+    ['say', 'goose', 'HONK.'],
+    ['say', 'goose', 'Yes. It was me. It has always been me.'],
+    ['say', 'goose', 'The Thing. The note. Grandad\'s handwriting. All me.'],
+    ['say', 'goose', 'I\'ll be taking that trillion now.'],
+    ['say', 'goose', 'HONK.'] ],
+  dev: [
+    ['pay'], ['reveal', 'dev'], ['narrate', 'Under the sheet: a tiny room, a computer, and a sofa.'],
+    ['actor', 'dev', 'thing'],
+    ['say', 'dev', 'Oh. Hello. I\'m making a game about sofas.'],
+    ['narrate', 'You reach down the back of the sofa.'],
+    ['say', 'dev', 'Oi. Get out of my sofa.'],
+    ['narrate', 'You found 20p.'] ],
+  dream: [
+    ['pay'], ['act', 'blur'], ['narrate', 'You pull off the sheet and the world goes blurry...'],
+    ['act', 'wakeSofa'], ['actor', 'mum', 'front'],
+    ['say', 'mum', 'Wake up, love. You fell asleep on the sofa again.'],
+    ['say', 'mum', 'Dreaming about that goose, were you?'],
+    ['narrate', 'Out of habit, you check down the back of the sofa. A trillion pounds.'],
+    ['narrate', 'You put it back. You go back to sleep.'] ],
+  australia: [
+    ['act', 'australia'], ['narrate', 'You climb out of the hole into bright sunshine. Everything is upside down.'],
+    ['actor', 'aussie', 'front'],
+    ['say', 'aussie', 'G\'day! You just came out of my barbie, mate!'],
+    ['say', 'aussie', 'Here, have a coin. It\'s got a kangaroo on it.'],
+    ['narrate', 'You check down the back of his barbecue.'],
+    ['say', 'aussie', 'Fair dinkum. 20 cents. Good on ya.'] ],
+  buttons: [
+    ['turn'], ['actor', 'buttonman', 'behind'],
+    ['say', 'buttonman', 'You have 100 buttons.'],
+    ['say', 'buttonman', 'You have done well. Buttons are the true currency.'],
+    ['say', 'buttonman', 'Kneel. I crown you... the Button Baron.'],
+    ['narrate', 'Your subjects are buttons. They do not do anything. You are very happy.'] ],
+  brian: [
+    ['act', 'knock'], ['turn'], ['actor', 'brian', 'behind'],
+    ['say', 'brian', 'Afternoon. I\'ve got a cheque here for one trillion pounds.'],
+    ['say', 'brian', 'Your grandad said whoever pays first gets it. So.'],
+    ['turn'], ['act', 'brianPeek'],
+    ['narrate', 'Brian lifts the corner of the sheet. His face goes white.'],
+    ['say', 'brian', '...'],
+    ['say', 'brian', 'You know what? You keep it.'],
+    ['narrate', 'He leaves without another word. You never find out why.'] ],
+};
+
+// ---------- hidden ways underground. Each part of the underground has its own entrance ----------
+// need = digs to break through (each dig counts 1 + your dig tool tier)
+LC.DIG_SITES = {
+  drain: { name: 'the sewer', spawn: 'sewer' },
+  cellar: { name: 'the Roman ruins', spawn: 'roman', need: 45 },
+  molehill: { name: 'the Mole Kingdom', spawn: 'mole', need: 80 },
+};
+LC.SITE_LINES = {
+  cellarNo: ['"Oi. Customers THAT side of the counter."', '"That\'s the cellar. Nothing down there. Definitely not Roman. Stop looking at it."', '"STAFF ONLY. Especially you."'],
+  cellarHint: 'You\'re my best scratch card customer. Nobody loses money like you. So... between us? When we did the cellar, the builders hit old Roman stones and I told them to fill it back in. They were cowboys. They didn\'t. Grab a spade.',
+  drainNo: ['It won\'t budge. You need something to lever it up. Something crow-shaped. And bar-ish.', 'You pull with all your might. The drain wins.', 'You can hear dripping down there. And coins. Definitely coins.'],
+  molehill: ['A mole pops out, looks at you, and goes back in. Rude.', 'You dig. Somewhere below, a tiny voice shouts "KNOCK FIRST!"', 'Dirt. More dirt. A mole-sized "KEEP OUT" sign.', 'The molehill is fighting back. You are winning. Just.'],
+};

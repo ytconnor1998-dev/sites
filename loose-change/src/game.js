@@ -59,12 +59,12 @@
       pockets: [], stall: [], stallPrice: 'fair', stallUps: [],
       tools: { sofa: 0, pig: 0, dig: 0 }, toolDur: {}, request: null, nextRequestAt: 0, boosts: {}, crafted: [],
       letters: [], loftPigs: {}, boxes: [], washUntil: 0,
-      buffs: [], flags: {}, playSecs: 0, town: null, tod: 0.05, day: 1, friends: {}, museum: [null, null, null, null, null, null],
+      buffs: [], flags: {}, playSecs: 0, town: null, tod: 0.05, day: 1, sites: {}, friends: {}, museum: [null, null, null, null, null, null],
       stats: { clicks: 0, pigs: 0, cards: 0, golden: 0, events: 0, sofaFinds: 0, floor: 0 },
       startedAt: Date.now(), lastSave: Date.now(),
       // carried across runs
       endings: keep.endings || [], achievements: keep.achievements || [], runs: keep.runs || 0, secrets: keep.secrets || [],
-      karma: keep.karma || 0, perks: keep.perks || [], best: keep.best || {}, challenge: keep.challenge || null,
+      karma: keep.karma || 0, times: keep.times || [], perks: keep.perks || [], best: keep.best || {}, challenge: keep.challenge || null,
       album: keep.album || { junk: [], finds: [], friends: [], town: [], letters: [] },
       allTime: keep.allTime || 0, settings: keep.settings || { sfx: true, music: true, volume: 0.6 },
     };
@@ -319,7 +319,7 @@
     if (!auto) {
       const ph = pulsePhase(), off = Math.min(ph, 1 - ph); // 0 = ring exactly on target
       const wide = hasPerk('rhythm') ? 1.45 : 1;
-      if (off < 0.07 * wide) { mult = 3; grade = 'PERFECT!'; }
+      if (off < 0.07 * wide) { mult = 3; grade = 'PERFECT!'; S.stats.perfect = (S.stats.perfect || 0) + 1; }
       else if (off < 0.16 * wide) { mult = 1.5; grade = 'Nice'; }
       if (grade && now - lastHit < PULSE * 1000 * 1.9) combo++;
       else if (!grade) combo = 0;
@@ -519,6 +519,7 @@
     if (!card || card.done) return;
     card.done = true;
     S.stats.cards++;
+    if (S.stats.cards >= 10 && !S.flags.cellarKnown) pending.push(cellarHint);
     const sym = LC.SCRATCH_SYMBOLS[card.outcome];
     let msg;
     if (card.outcome === 'lose') { msg = pick(['No match. The frog on the back is laughing at you.', 'Nothing. So close. (Not close.)', 'No win. The corner shop owner buys another boat.']); LC.audio.sfx('nope'); }
@@ -566,6 +567,11 @@
   }
   let taskKey = '';
   function renderTasks() {
+    if (tut && TUTORIAL[tut.i]) {
+      const st = TUTORIAL[tut.i], key = 'tut' + tut.i;
+      if (taskKey !== key) { taskKey = key; $('#tasks').innerHTML = `<div class="tasks-head">${ic('🎓')} Getting started <span>${tut.i + 1} of ${TUTORIAL.length}</span></div><div class="task tut"><div class="task-text">${st.goal}</div><div class="task-reward">${st.hint}</div></div>`; }
+      return;
+    }
     const list = activeTasks();
     const key = list.map((t) => t.id).join();
     const box = $('#tasks');
@@ -968,7 +974,7 @@
     S.pockets.splice(held, 1); renderHotbar();
     const loved = LC.FRIENDS[id].likes.includes(it.id);
     LC.audio.sfx(loved ? 'win' : 'ding');
-    if (!befriend(id, loved ? 4 : 1, npc)) say(loved ? `"A ${LC.JUNK[it.id].name.toLowerCase()}! I LOVE these!" ♥♥` : `"Oh... a ${LC.JUNK[it.id].name.toLowerCase()}. Thanks." ♥`);
+    if (!befriend(id, loved ? 4 : 1, npc)) LC.world.speak(npc, loved ? `A ${LC.JUNK[it.id].name.toLowerCase()}! I LOVE these! ♥♥` : `Oh... a ${LC.JUNK[it.id].name.toLowerCase()}. Thanks. ♥`, LC.FRIENDS[id].name);
   }
   // little gifts from friends while you play
   let friendTimer = 0;
@@ -983,7 +989,7 @@
     const lines = LC.CHAT[who] || ['"Hello."'];
     const i = chatIdx[who] = ((chatIdx[who] ?? -1) + 1) % lines.length;
     LC.audio.sfx('babble');
-    say(lines[i]);
+    LC.world.voice(npc, lines[i], LC.FRIENDS[who] ? LC.FRIENDS[who].name : '');
     if (!S.chatted.includes(who)) S.chatted.push(who);
     if (Object.keys(LC.CHAT).every((k) => S.chatted.includes(k))) findSecret('chatty');
   }
@@ -1073,7 +1079,7 @@
     const n = lump(30 + tier * 30, 0.5); gain(n); floatAt(null, n);
   }
   const underIdx = {};
-  function chatUnder(who) { const l = LC.UNDER_CHAT[who]; underIdx[who] = ((underIdx[who] ?? -1) + 1) % l.length; LC.audio.sfx(who === 'rat' ? 'babbleTiny' : 'babbleLow'); say(l[underIdx[who]]); }
+  function chatUnder(who, npc) { const l = LC.UNDER_CHAT[who]; underIdx[who] = ((underIdx[who] ?? -1) + 1) % l.length; LC.audio.sfx(who === 'rat' ? 'babbleTiny' : 'babbleLow'); LC.world.voice(npc, l[underIdx[who]], { gary: 'Gary', rat: 'Rat', mole: 'Mole' }[who]); }
   function findRing() {
     if (S.flags.hasRing || S.flags.ringReturned) return;
     S.flags.hasRing = true;
@@ -1233,7 +1239,7 @@
   ];
   let nextEventAt = Date.now() + 25000, nextGoldenAt = Date.now() + 40000;
   function eventTick(now) {
-    if (modalOpen || endingPlaying) return;
+    if (modalOpen || endingPlaying || tut) return;
     if (pending.length) { pending.shift()(); return; }
     if (S.lifetime < 2) return;
     if (now >= nextEventAt) {
@@ -1269,6 +1275,112 @@
     setTimeout(() => toast(`${ic('🌅')}<div><b>Day ${S.day} of the summer holidays</b><br><small>${dream} Under your pillow: ${fmt(n)}.</small></div>`, 'gold'), 900);
     S.cooldowns = {};
   }
+  // ---------- hidden ways underground ----------
+  const siteOpen = (id) => !!(S.sites[id] && S.sites[id].open);
+  function syncSites() { for (const id of Object.keys(LC.DIG_SITES)) LC.world.setSiteOpen(id, siteOpen(id)); }
+  function sitePrompt(id) {
+    const def = LC.DIG_SITES[id], st = S.sites[id] || {};
+    if (st.open) return `Climb down into ${def.name}`;
+    if (id === 'drain') return S.stallUps.includes('crowbar') ? 'Lever up the drain cover<small>With your crowbar. Very official.</small>' : 'A heavy drain cover<small>You can hear dripping down there. And coins?</small>';
+    if (id === 'cellar' && !S.flags.cellarKnown) return 'A dusty trapdoor<small>STAFF ONLY</small>';
+    const pct = Math.floor(((st.dug || 0) / def.need) * 100);
+    return `${id === 'cellar' ? 'Dig out the old cellar' : 'Dig into the molehill'} <b>${pct}%</b><small>Hold to keep digging</small>`;
+  }
+  function siteUse(id) {
+    const def = LC.DIG_SITES[id];
+    const st = S.sites[id] = S.sites[id] || { dug: 0, open: false };
+    if (st.open) return 'down';
+    if (id === 'drain') {
+      if (!S.stallUps.includes('crowbar')) { LC.audio.sfx('nope'); say(pick(LC.SITE_LINES.drainNo)); return null; }
+      st.open = true; syncSites(); LC.audio.sfx('open'); say('CLANG. The drain cover slides off. It smells of 1970s pennies and regret.'); return null;
+    }
+    if (id === 'cellar' && !S.flags.cellarKnown) { LC.audio.sfx('nope'); LC.world.voice(LC.world.keeper(), pick(LC.SITE_LINES.cellarNo), 'Shopkeeper'); return null; }
+    st.dug += 1 + toolEff('dig'); wear('dig'); LC.audio.sfx('dig');
+    if (id === 'molehill' && chance(0.12)) say(pick(LC.SITE_LINES.molehill));
+    if (st.dug >= def.need) {
+      st.open = true; syncSites(); LC.audio.sfx('fanfare');
+      toast(`${ic('🕳️')}<div><b>You broke through!</b><br><small>There's a way down into ${def.name}.</small></div>`, 'gold');
+    }
+    return 'dig';
+  }
+  function cellarHint() {
+    if (S.flags.cellarKnown || S.stats.cards < 10) return;
+    if (LC.world.cardActive() || screenOpen) { setTimeout(() => pending.push(cellarHint), 2000); return; }
+    S.flags.cellarKnown = true;
+    modal({ speaker: 'man', npc: LC.world.keeper(), icon: '🏪', title: 'The shopkeeper', text: LC.SITE_LINES.cellarHint,
+      choices: [{ label: 'Roman ruins?! Under a corner shop?' , fn: () => ({ text: '"Where do you think the Romans bought their scratch cards?" The trapdoor is behind the counter.' }) }, { label: 'Is this a trap?', fn: () => ({ text: '"Everything in life is a trap, kid. This one\'s just got a ladder." The trapdoor is behind the counter.' }) }] });
+  }
+
+  // ---------- tutorial: Mum walks you through the first few minutes ----------
+  // each step: what to do (shown top-left), what people say when it starts, and when it's done
+  let tut = null, mum = null;
+  const mumSay = (line) => { LC.world.speak(mum, line, 'Mum', Math.max(4, line.length * 0.06)); LC.audio.sfx('babbleHigh'); };
+  const TUTORIAL = [
+    { goal: 'Go and look at the big thing under the sheet in the hall', hint: 'WASD to walk, mouse to look', guide: 'thing',
+      start: () => mumSay('Morning, love! Grandad\'s left you something in the hall. Big. Sheet over it. Very mysterious. Very Grandad.'),
+      done: () => LC.world.near('thing', 2.6) },
+    { goal: 'Read Grandad\'s note', hint: 'It\'s pinned to the sheet',
+      start: () => modal({ icon: '✉️', title: 'A note pinned to the sheet', text: `<i>"It's yours when you can pay for it. <b>${fmt(LC.THING_COST)}</b>. No peeking. Love, Grandad.<br><br>P.S. Don't let Brian have it."</i>`, choices: [{ label: 'A TRILLION?!' }] }),
+      done: () => !modalOpen },
+    { goal: 'Rummage down the back of the sofa 3 times', hint: 'Look at the sofa and click (or press E)', guide: 'sofa',
+      start: () => mumSay('A trillion?! You\'ve got 0p. Well... start with the sofa. Your dad\'s lost about forty quid down there since 2009.'),
+      done: () => S.stats.clicks >= 3 },
+    { goal: 'Get a PERFECT rummage', hint: 'Click just as the ring lines up with the circle',
+      start: () => mumSay('Little tip: wait for the ring to line up, then go for it. Three times the coins. Your grandad called it "the rhythm of the cushions". He was a strange man.'),
+      done: () => (S.stats.perfect || 0) >= 1 },
+    { goal: 'Open your phone', hint: 'Press Tab', guide: null,
+      start: () => mumSay('Brilliant! Now, your phone\'s been buzzing all morning. Probably your mates. Or the bank, laughing.'),
+      done: () => screenOpen === 'phone' },
+    { goal: 'Put your phone away', hint: 'Press Tab or Esc',
+      start: () => toast(`${ic('📱')}<div><b>Your phone</b><br><small>Messages and notes are full of hints, and people tell you secrets. Nobody will tell you everything. Snoop.</small></div>`, 'msg'),
+      done: () => !screenOpen },
+    { goal: 'Answer the front door', hint: 'Someone\'s knocking', guide: 'door',
+      start: () => { LC.audio.sfx('tap'); setTimeout(() => LC.audio.sfx('tap'), 300); setTimeout(() => LC.audio.sfx('tap'), 600); mumSay('Ooh, someone at the door. If it\'s Brian, I\'m not in. I\'m never in.'); tut.brian = LC.world.spawnActor('brian', 3.0, 6.2); },
+      done: () => LC.world.near('door', 1.8) },
+    { goal: 'Listen to Brian', hint: 'Your rival from next door',
+      start: () => {
+        const lines = ['So. You\'re Ken\'s grandkid.', 'Your grandad promised that Thing to ME. 1983. We shook on it. There was a pint involved.', 'I\'m saving up too. Whoever pays first gets it. May the best man win.', 'It\'s me. I\'m the best man. I\'ve got a spreadsheet.'];
+        lines.forEach((l, i) => setTimeout(() => { LC.world.speak(tut.brian, l, 'Brian', 3.6); LC.audio.sfx('babbleLow'); }, i * 3800));
+        tut.until = Date.now() + lines.length * 3800 + 500;
+      },
+      done: () => Date.now() > tut.until },
+    { goal: 'Beat Brian to The Thing', hint: 'If he pays first, he wins',
+      start: () => {
+        LC.world.walkActor(tut.brian, [[3, 8.8], [-12, 8.8]], () => LC.world.removeActor(tut.brian));
+        mumSay('Ignore him, love. But if he gets it first we\'ll never hear the end of it. Prank him. Sneak round his. I didn\'t say that.');
+        tut.until = Date.now() + 6000;
+      },
+      done: () => Date.now() > tut.until },
+    { goal: 'Hire a helper at the notice board', hint: 'Outside the post office, across the road', guide: 'board',
+      start: () => mumSay('Right, I\'m off to work. Tasks are on your list. Little brother\'s looking for work, apparently, he\'s on the notice board. Don\'t dig up the garden. ...You\'re going to dig up the garden, aren\'t you.'),
+      done: () => Object.values(S.gens).some((n) => n > 0) || S.lifetime > 30 },
+  ];
+  function tutorialStart() {
+    if (S.flags.tutorialDone || S.runs > 0) return;
+    tut = { i: -1 };
+    mum = LC.world.spawnActor('mum', -1.6, 1.2);
+    tutorialNext();
+  }
+  function tutorialNext() {
+    tut.i++;
+    const st = TUTORIAL[tut.i];
+    if (!st) { tutorialEnd(); return; }
+    LC.world.guide(st.guide || null);
+    st.start();
+    taskKey = '';
+  }
+  function tutorialEnd() {
+    S.flags.tutorialDone = true; tut = null; LC.world.guide(null); taskKey = '';
+    if (mum) { const m = mum; LC.world.walkActor(m, [[2.4, 3.6], [3, 5.5], [3, 8.8], [20, 8.8]], () => LC.world.removeActor(m)); mum = null; }
+    LC.audio.sfx('fanfare');
+    toast(`${ic('🎓')}<div><b>That's the basics!</b><br><small>Follow your task list. Watch for things happening around town. Find the secrets. Beat Brian. And never stop checking the sofa.</small></div>`, 'gold');
+  }
+  function tutorialTick() {
+    if (!tut) return;
+    const st = TUTORIAL[tut.i];
+    if (st && st.done()) setTimeout(() => tut && TUTORIAL[tut.i] === st && tutorialNext(), 600);
+  }
+
   // ---------- the museum shelf: rare things on display give a permanent bonus this run ----------
   const MUSEUM_BONUS = [0, 0.01, 0.03, 0.06, 0.12];
   function museumBonus() { return S.museum.reduce((t, id) => t + (id ? MUSEUM_BONUS[LC.JUNK[id].rarity] : 0), 0); }
@@ -1407,12 +1519,12 @@
   }
   function filmExtra(npc) {
     const T = S.town;
-    if (T.used.filmed) return say('"That\'s a wrap on you, kid. Lovely work."');
+    if (T.used.filmed) return LC.world.speak(npc, 'That\'s a wrap on you, kid. Lovely work.', 'Director');
     if (!T.used.briefed) {
       T.used.briefed = true;
       return modal({ speaker: 'director', npc, icon: '🎬', title: 'The film director', text: 'You! Kid! We need an extra. Stand on the red X and look like you\'ve lost something. Then talk to me.', choices: [{ label: 'I was BORN for this' }, { label: 'What\'s the film?', fn: () => ({ text: 'It\'s called "Loose Change". Gritty drama about a kid saving up for something. Nobody will watch it.' }) }] });
     }
-    if (!LC.world.onFilmMark()) return say('"No no no. On the X! The RED X!"');
+    if (!LC.world.onFilmMark()) return LC.world.speak(npc, 'No no no. On the X! The RED X!', 'Director');
     T.used.filmed = true;
     const n = lump(600, 10); gain(n); floatAt(null, n); LC.audio.sfx('fanfare');
     S.flags.filmStar = true;
@@ -1490,18 +1602,15 @@
     const runTime = S.playSecs, prevBest = S.best[id];
     if (!prevBest || runTime < prevBest) S.best[id] = runTime;
     S.best.any = Math.min(S.best.any || Infinity, runTime);
+    const entry = { id, secs: runTime, at: Date.now(), ch: S.challenge || null, run: S.runs + 1 };
+    S.times.push(entry); S.times.sort((a, b) => a.secs - b.secs); S.times = S.times.slice(0, 50);
     checkAchievements();
     save();
     const scr = $('#ending');
-    scr.innerHTML = `<div class="ending-inner"><div class="ending-lines"></div></div>`;
-    scr.classList.add('show');
-    if (id === 'australia') scr.classList.add('upside');
-    const lines = scr.querySelector('.ending-lines');
-    e.lines.forEach((line, i) => setTimeout(() => {
-      lines.appendChild(el('p', 'eline', line));
-      LC.audio.sfx(i === e.lines.length - 1 ? (id === 'goose' ? 'honk' : 'fanfare') : 'tap');
-    }, 900 + i * 2200));
-    setTimeout(() => {
+    scr.innerHTML = `<div class="ending-inner"></div>`;
+    scr.classList.toggle('upside', id === 'australia');
+    LC.world.playScene(LC.ENDING_SCENES[id] || e.lines.map((l) => ['narrate', l]), () => { scr.classList.add('show', 'over'); showCard(); });
+    const showCard = () => {
       const found = S.endings.length, total = LC.ENDINGS.length;
       const box = el('div', 'ending-card', `
         <div class="ending-icon">${ic(e.icon)}</div>
@@ -1509,12 +1618,23 @@
         <p>${isNew ? 'New ending found!' : 'You have seen this one before.'} Endings found: <b>${found} / ${total}</b></p>
         <p>Time: <b>${fmtTime(runTime)}</b>${prevBest ? ` · best for this ending ${fmtTime(Math.min(prevBest, runTime))}` : ''}</p>
         <p>Sofa Karma: <b>+${karmaGot}</b>${ch ? ` (including +${ch.karma} for "${ch.name}")` : ''}</p>
+        ${leaderboard(entry)}
         <p class="small">Starting again keeps your endings, achievements, sticker album and perks. Each ending found gives +25% to everything, forever.</p>`);
       const again = el('button', 'btn big', 'Spend karma and start again');
-      again.onclick = () => { box.remove(); showPerks(); };
+      again.onclick = () => { box.remove(); scr.classList.remove('over'); showPerks(); };
       box.appendChild(again);
       scr.querySelector('.ending-inner').appendChild(box);
-    }, 900 + e.lines.length * 2200 + 600);
+      LC.audio.sfx('fanfare');
+    };
+  }
+  // your fastest runs, any ending
+  function leaderboard(mark) {
+    const rows = S.times.slice(0, 8);
+    if (mark && !rows.includes(mark)) rows.push(mark);
+    return `<div class="board-times"><div class="sub-title">${ic('⏱️')} Fastest summers</div><ol>${rows.map((t) => {
+      const e = LC.ENDINGS.find((x) => x.id === t.id), c = t.ch && LC.CHALLENGES.find((x) => x.id === t.ch);
+      return `<li class="${t === mark ? 'me' : ''}"><span class="rk">${S.times.indexOf(t) + 1}</span>${ic(e.icon)}<b>${fmtTime(t.secs)}</b><span>${e.title}${c ? ` · ${c.icon}` : ''}</span><small>Run ${t.run}</small></li>`;
+    }).join('')}</ol></div>`;
   }
   // between runs: spend karma on perks, then pick one of Grandad's challenges
   let nextChallenge = null;
@@ -1545,11 +1665,12 @@
   }
   const fmtTime = (secs) => { secs = Math.floor(secs); const h = Math.floor(secs / 3600), m = Math.floor(secs / 60) % 60, s2 = secs % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s2).padStart(2, '0'); };
   function newRun() {
-    S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings, secrets: S.secrets, album: S.album, karma: S.karma, perks: S.perks, best: S.best, challenge: nextChallenge });
+    S = freshRun({ endings: S.endings, achievements: S.achievements, runs: S.runs + 1, allTime: S.allTime, settings: S.settings, secrets: S.secrets, album: S.album, times: S.times, karma: S.karma, perks: S.perks, best: S.best, challenge: nextChallenge });
     newPig(); card = null; renderCard();
     renderShop(true); gardenDirty = true; buildGarden();
     LC.world.reset();
     LC.world.setLoftPigs([]);
+    syncSites();
     gooseShown = '';
     if (hasPerk('headstart')) S.money = 50;
     if (hasPerk('grandad')) { S.tools.sofa = Math.max(S.tools.sofa, 1); S.tools.dig = Math.max(S.tools.dig, 1); S.toolDur.sofa = LC.TOOLS.sofa[1].dur; S.toolDur.dig = LC.TOOLS.dig[1].dur; }
@@ -2053,7 +2174,7 @@
     $('#end-grid').innerHTML = LC.ENDINGS.map((e) => {
       const got = S.endings.includes(e.id);
       return `<div class="end ${got ? 'got' : ''}">${ic(got ? e.icon : '❓')}<b>${got ? e.title : e.secret ? 'Secret ending' : '???'}</b><small>${got ? e.lines[e.lines.length - 1] : e.secret ? 'Not found by buying The Thing...' : 'Buy The Thing to find out.'}</small></div>`;
-    }).join('');
+    }).join('') + (S.times.length ? leaderboard(null) : '');
   }
 
   // news ticker
@@ -2096,6 +2217,7 @@
     const before = S.buffs.length;
     S.buffs = S.buffs.filter((b) => b.until > now);
     renderTop();
+    tutorialTick();
     if (panelVisible('finders') || panelVisible('upgrades')) renderShop(false);
     if (panelVisible('shed')) renderGarden();
     if (panelVisible('scratch')) renderShopCards();
@@ -2186,14 +2308,12 @@
     const loaded = load();
     buildShop(); buildGarden(); buildSettings();
     if (!S.pig || S.pig.smashed) newPig(); else showPig();
-    syncStall(); syncMuseum(); LC.world.setStallUps(S.stallUps); renderHotbar();
+    syncStall(); syncMuseum(); syncSites(); LC.world.setStallUps(S.stallUps); renderHotbar();
     if (crafted('robocat')) LC.world.evolve('cat');
     LC.world.setLoftPigs(Object.keys(S.loftPigs).filter((k) => S.loftPigs[k] === 'done').map(Number));
     if (washing() || S.washUntil) LC.world.washerShake(washing());
     renderCard();
-    if (!loaded) queueEvent(() => modal({ icon: '🛋️', title: 'Loose Change',
-      text: `You're saving up for something. You're not sure what. It's under a sheet in the hall, and it costs <b>${fmt(LC.THING_COST)}</b>.<br><br>You have 0p.<br><br>Better check down the back of the sofa.`,
-      choices: [{ label: "Let's go", fn: () => { LC.audio.unlock(); LC.audio.music(S.settings.music); } }] }));
+    if (!loaded || (!S.flags.tutorialDone && S.runs === 0)) setTimeout(tutorialStart, 800);
 
     $('#pause').onclick = () => { LC.audio.unlock(); LC.audio.music(S.settings.music); LC.world.lock(); };
     $('#screen-close').onclick = back;
@@ -2231,7 +2351,7 @@
       onArea, jarPrompt, kitchenJar, washPrompt, washer, hatchPrompt, hatch, boxPrompt, grandadBox, loftPigPrompt, loftPig, trunkPrompt, trunk,
       pilePrompt, searchPile, chatUnder, findRing, chestPrompt, openChest, moleKing, moleMarketPrompt, moleMarket,
       fountainPrompt, fountain, checkBench, phoneBox, gnomeStare, chat, findSecret,
-      resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
+      sitePrompt, siteUse, resolveCard, timeOfDay: () => S.tod, friendPrompt, gift, museumPrompt, museumUse, speedMult: () => (perk('jogger', 3) ? 1.15 : 1),
       hookADuck, binPrompt, bin, cheer, filmExtra, iceCream, snowman, mayor, treasureDig, pigeonStrike, saleSofa, bbqSausage, townOn,
       customerAtStall, customerArrived, customerGaveUp, customerServe, thiefCaught, thiefEscaped, slotPrompt, slotUse, slotAlt, stallTablePrompt, stallTableUse, cycleHeld, selectHeld,
       heldIcon: () => (S.pockets[held] ? LC.JUNK[S.pockets[held].id].icon : null),
