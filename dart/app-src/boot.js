@@ -47,6 +47,7 @@ function modalHTML(m) {
     case "a-ticket": return aTicketModal(m);
     case "d-statement": return statementModal(m);
     case "pin": return pinModal(m);
+    case "photo": return modalShell(m.alt || "Photo", '<img class="photo-big" src="' + safeImg(m.src) + '" alt="' + esc(m.alt || "Photo") + '">');
   }
   return "";
 }
@@ -65,6 +66,9 @@ function wire() {
   document.addEventListener("pointerup", release, true);
   document.addEventListener("pointercancel", release, true);
   root.addEventListener("click", function (e) {
+    // Photos (items, pickup and delivery proof, signatures, documents, chat) open full size.
+    var img = e.target.tagName === "IMG" && e.target.closest(".phs, .proof, .sig-img, .doc-view, .doc-row, .msg, .ph-wrap") ? e.target : null;
+    if (img && !img.closest(".modal") && safeImg(img.getAttribute("src"))) { S.modal = { kind: "photo", src: img.getAttribute("src"), alt: img.getAttribute("alt") || "" }; render(); return; }
     var el = e.target.closest("[data-act]");
     if (!el || !root.contains(el)) return;
     if (el.classList.contains("modal-bg") && e.target !== el) return;

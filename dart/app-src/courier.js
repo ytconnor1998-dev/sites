@@ -342,7 +342,7 @@ function dJob(c) {
     var pp = S.d.pickupPhoto && S.d.pickupPhoto.id === o.id ? S.d.pickupPhoto.src : null;
     h += whereCheck(c, o.pickup, "pickup") + '<div class="card"><b>Photo of the item</b><span class="muted">Take a photo showing you have it, before you leave the pickup.</span>' +
       (pp ? '<img class="proof" src="' + safeImg(pp) + '" alt="Your pickup photo">' : "") +
-      '<label class="file-btn">' + (pp ? "Retake photo" : "Take a photo of the item") + '<input type="file" accept="image/*" capture="environment" data-file="pickup"></label></div>' +
+      '<label class="file-btn">' + (pp ? "Retake photo" : "Take a photo of the item") + '<input type="file" accept="image/*" data-file="pickup"></label></div>' +
       '<button class="btn block big" data-act="d-next"' + (busy || !pp || !atPlace(c, o.pickup) ? " disabled" : "") + ">" + NEXT[o.status][1] + "</button>";
   } else if (NEXT[o.status]) {
     var place = GATE[o.status] === "pickup" ? o.pickup : GATE[o.status] === "dropoff" ? o.dropoff : null;
@@ -353,7 +353,7 @@ function dJob(c) {
       (o.code ? field("Delivery code from the customer", inp("d.proof.code", p.code, 'inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="4 digits" required'), "The customer has it in their DART app or email. Ask the person receiving it.") : "") +
       field("Received by", inp("d.proof.receiver", p.receiver, 'placeholder="Name, or \'Left with concierge\'" required')) +
       (p.photo ? '<img class="proof" src="' + safeImg(p.photo) + '" alt="Your delivery photo">' : "") +
-      '<label class="file-btn">' + (p.photo ? "Retake photo" : "Take a photo of the delivered item") + '<input type="file" accept="image/*" capture="environment" data-file="proof"></label>' +
+      '<label class="file-btn">' + (p.photo ? "Retake photo" : "Take a photo of the delivered item") + '<input type="file" accept="image/*" data-file="proof"></label>' +
       (needSig ? '<div class="sig"><div class="row between"><span class="field-l">Signature of the person receiving it</span><button type="button" class="link" data-act="d-sig-clear">Clear</button></div><canvas id="sig-pad" width="640" height="260" aria-label="Signature pad"></canvas><small class="hint">Ask them to sign with a finger.</small></div>' : "") +
       '<button class="btn ok block"' + (here ? "" : " disabled") + ">Complete delivery</button></form>";
   }
