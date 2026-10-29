@@ -141,6 +141,9 @@ function siteHome(acc) {
   h += sec("For businesses", "<p>Use your normal DART account. Switch it to business in Settings, add your Partita IVA and SDI code, and choose a monthly plan or keep paying per delivery.</p>" +
     (plans.length ? '<ul class="ws-plain">' + plans.map(planLine).join("") + "</ul>" : "") + '<p><button class="ws-more" data-act="w-page" data-v="site-business">Business details →</button></p>');
   h += sec("Where we deliver", "<p>Anywhere inside the Grande Raccordo Anulare. These are the areas you can choose when booking:</p><p class=\"ws-arealist\">" + AREA_NAMES.join(", ") + ".</p>");
+  h += sec("Coming soon", "<p>Two things we're working on next.</p>" + '<div class="ws-who">' +
+    who("Same day.", "Same-day delivery for local online shops.", "Sell online from a shop in Rome? A customer orders in the morning and DART delivers it across the city the same day, so local shops can offer what the big sites do.") +
+    who("Moving.", "House moves, with moving companies bidding.", "For a bigger move, tell us what's going and when. Moving companies in Rome send you their price, and you choose based on the price, their reviews and the date that suits you.") + "</div>", "soon");
   h += sec("Questions", '<div class="ws-faq">' + FAQ.slice(0, 4).map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") + '</div><p><button class="ws-more" data-act="w-page" data-v="site-help">More answers and contact →</button></p>');
   h += "</div>";
   // Closing band that sends would-be couriers to the courier page.

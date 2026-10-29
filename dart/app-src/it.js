@@ -363,6 +363,11 @@ IT["DART collects whatever you need moved in the city, from a signed contract to
 Object.assign(IT, {
   "a letter or documents": "una lettera o documenti", "a parcel up to 40 cm": "un pacco fino a 40 cm", "something large or heavy": "qualcosa di grande o pesante", "a piece of furniture": "un mobile",
   "pickup area": "zona di ritiro", "delivery area": "zona di consegna", "from": "da", "to": "a", "From": "Da", "To": "A",
+  "Coming soon": "Prossimamente", "Two things we're working on next.": "Due cose a cui stiamo lavorando.",
+  "Same day.": "In giornata.", "Same-day delivery for local online shops.": "Consegna in giornata per i negozi online di Roma.",
+  "Sell online from a shop in Rome? A customer orders in the morning and DART delivers it across the city the same day, so local shops can offer what the big sites do.": "Vendi online da un negozio a Roma? Il cliente ordina la mattina e DART lo consegna in città il giorno stesso: così anche i negozi locali offrono quello che offrono i grandi siti.",
+  "Moving.": "Traslochi.", "House moves, with moving companies bidding.": "Traslochi, con le offerte delle ditte.",
+  "For a bigger move, tell us what's going and when. Moving companies in Rome send you their price, and you choose based on the price, their reviews and the date that suits you.": "Per un trasloco più grande, dicci cosa va spostato e quando. Le ditte di traslochi di Roma ti mandano il loro prezzo e tu scegli in base al prezzo, alle recensioni e alla data che ti va bene.",
   "Boxes.": "Scatoloni.", "Armchair.": "Poltrona.", "Contracts.": "Contratti.",
   "of every delivery price goes to the courier.": "del prezzo di ogni consegna va al corriere.",
   "Use your own bicycle, scooter, motorbike, car or van, choose your hours, and only get jobs your vehicle can carry.": "Usi la tua bici, scooter, moto, auto o furgone, scegli i tuoi orari e ricevi solo lavori che il tuo veicolo può portare.",
