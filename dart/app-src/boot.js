@@ -14,10 +14,12 @@ function launcher() {
     (Store.mode === "live" ? '<p class="muted">Everyone you share this link with as a Contributor uses the same live data. Prices, rules and plans can be changed only by you as owner or by Editors.</p>' : '<p class="muted">Live sync isn\'t available in this view, so data stays in this browser. Open two tabs to play customer and courier.</p>') + "</div>";
 }
 
-var root, pending = false, holdRender = false, heldRender = false;
+var root, pending = false, holdRender = false, heldRender = false, picking = 0;
 function render() {
   if (!root) return;
   if (holdRender) { heldRender = true; return; }
+  // While the camera or photo picker is open, keep the screen still so the photo comes back to the same button.
+  if (picking && Date.now() - picking < 60000) { heldRender = true; return; }
   if (Store.mode === "connecting") { root.innerHTML = '<div class="splash">Connecting to DART…</div>'; return; }
   var a = document.activeElement;
   if (a && root.contains(a) && (a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && /^(text|email|tel|search|number|password|)$/.test(a.type)))) { pending = true; return; }
@@ -59,12 +61,33 @@ function bindValue(el) {
   if (p.indexOf("modal.") === 0) { if (S.modal) setPath(S.modal, p.slice(6), v); } else setPath(S, p, v);
   return true;
 }
+// A photo came back (or the picker was closed): hand it to its handler, then catch up on any held redraw.
+function onFile(e) {
+  var el = e.currentTarget, file = el.files && el.files[0], h = FILES[el.dataset.file];
+  picking = 0;
+  if (file && h) h(file, el);
+  el.value = "";
+  if (heldRender) { heldRender = false; render(); }
+}
 function release() { setTimeout(function () { holdRender = false; if (heldRender) { heldRender = false; render(); } }, 0); }
 function wire() {
   // Keep the DOM still between press and release so a tap right after typing isn't lost.
+  // Any tap after the picker has closed means it was cancelled: let the screen move again.
+  document.addEventListener("pointerdown", function () { if (picking && Date.now() - picking > 1000) { picking = 0; if (heldRender) { heldRender = false; setTimeout(render, 0); } } }, true);
   root.addEventListener("pointerdown", function (e) { if (e.target.closest("button, [data-act], label, a")) { holdRender = true; setTimeout(function () { if (holdRender) { holdRender = false; if (heldRender) { heldRender = false; render(); } } }, 1500); } }, true);
   document.addEventListener("pointerup", release, true);
   document.addEventListener("pointercancel", release, true);
+  // Photo buttons get their own listener when tapped, so the photo still arrives if the screen was redrawn meanwhile.
+  root.addEventListener("click", function (e) {
+    var el = e.target;
+    if (el.tagName !== "INPUT" || el.type !== "file") return;
+    picking = Date.now();
+    if (!el._wired) { el._wired = true; el.addEventListener("change", onFile); }
+  }, true);
+  // Back from the picker without a photo: stop holding the screen.
+  function pickerBack() { if (picking) setTimeout(function () { if (picking && Date.now() - picking > 2500) { picking = 0; if (heldRender) { heldRender = false; render(); } } }, 3000); }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) pickerBack(); });
+  window.addEventListener("focus", pickerBack);
   root.addEventListener("click", function (e) {
     // Photos (items, pickup and delivery proof, signatures, documents, chat) open full size.
     var img = e.target.tagName === "IMG" && e.target.closest(".phs, .proof, .sig-img, .doc-view, .doc-row, .msg, .ph-wrap") ? e.target : null;
@@ -79,7 +102,7 @@ function wire() {
   root.addEventListener("input", function (e) { if (e.target.type !== "checkbox" && e.target.tagName !== "SELECT") bindValue(e.target); });
   root.addEventListener("change", function (e) {
     var el = e.target;
-    if (el.type === "file") { var file = el.files && el.files[0], h = FILES[el.dataset.file]; if (file && h) h(file, el); el.value = ""; return; }
+    if (el.type === "file") { if (el._wired) return; var file = el.files && el.files[0], h = FILES[el.dataset.file]; if (file && h) h(file, el); el.value = ""; return; }
     if (el.dataset.onchange && ACT[el.dataset.onchange]) { ACT[el.dataset.onchange]({ v: el.value }, el); return; }
     // Redraw after focus has moved on, so the field being typed into next isn't replaced.
     if (bindValue(el) && (el.dataset.live || el.tagName === "SELECT" || el.type === "checkbox")) setTimeout(render, 0);
