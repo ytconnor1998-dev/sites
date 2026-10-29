@@ -4899,7 +4899,8 @@ function liveStart(go) {
 // The live build sets window.DART_MAPS = { key } when a Maps key is configured. Until Google has
 // loaded (or if it fails), every map is the drawn one, so nothing breaks without a key.
 var GMAP = { cfg: typeof window !== "undefined" ? window.DART_MAPS || null : null, state: "off", cache: {}, specs: {}, seen: {}, geocoder: null };
-function gmapWanted() { return !!(LIVE && GMAP.cfg); }
+// The live site, or a marketing screenshot run of the test build (DART_MAPS_DEMO), uses the real map.
+function gmapWanted() { return !!((LIVE || (typeof window !== "undefined" && window.DART_MAPS_DEMO)) && GMAP.cfg); }
 function gmapLoad() {
   if (GMAP.state !== "off" || !gmapWanted()) return;
   GMAP.state = "loading";
